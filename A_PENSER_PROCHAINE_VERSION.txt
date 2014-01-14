@@ -1,0 +1,8 @@
+* Mettre __...__ voir pas de nom Stela autour de tous les opérateurs style '.', ';;', ... pour éviter les confusions avec des fonctions ou var du même nom
+* Utiliser Vec[ Ref[ T ], ... ] à la place de varargs quand c'est possible
+* PASSER DES STRINGS PLUTÖT QUE DES INT (Nstring) pour les noms de variables
+* Passer des copies des tokens plutôt que des pointeurs
+* "for (a,b),c in ..." ou "(a,b) := ..." ou "(a,b) = ..."
+* gerer les offsets dans des TOK_ADD_OFF et TOK_SUB_OFF et/ou apres chaque TOK_... pour eviter de se taper des sourcefile partout
+
+* constify -> vérifie que la variable n'est pas référencée ailleurs, et la met const...
