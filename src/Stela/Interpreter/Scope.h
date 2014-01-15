@@ -25,9 +25,11 @@ protected:
     template<class T> Var make_var( T val );
     int read_nstring( const Var *sf, BinStreamReader &bin );
     Var get_val_if_GetSetSopInst( const Var &val );
+    Expr simplified_expr( const Var &var );
 
     ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );
     Var disp_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );
+    void set( Var &o, Expr n );
 
     Interpreter *ip;
     Scope       *parent; ///< "accessible" scope, i.e. that can be read to find variables
@@ -39,6 +41,8 @@ protected:
 
     int          base_size;
     int          base_alig;
+
+    Var          sys_state;
 };
 
 #endif // SCOPE_H

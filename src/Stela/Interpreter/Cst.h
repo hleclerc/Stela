@@ -1,11 +1,11 @@
 #ifndef CST_H
 #define CST_H
 
-#include "Expr.h"
+#include "Inst_.h"
 
 /**
 */
-class Cst : public Inst {
+class Cst : public Inst_<1,0> {
 public:
     virtual ~Cst();
     virtual const PI8 *cst_data( int nout ) const;

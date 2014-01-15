@@ -10,6 +10,9 @@
 #define PREPARG_FILE <args.h>
 #include <PrepArg/usage.h>
 
+#define doffsetof(s,memb) ((size_t)((char *)&((s *)0)->memb-(char *)0))
+
+
 int main( int argc, char **argv ) {
     // args
     #include <PrepArg/declarations.h>

@@ -25,6 +25,9 @@ public:
     operator bool() const { return type and data and data->ptr; }
     const PI8 *cst_data() const; ///< return 0 or a pointer on data if known
 
+    Expr get() const;
+    void set( Expr expr );
+
     Ptr<PRef> data;
     Ptr<PRef> type;
     int       flag;

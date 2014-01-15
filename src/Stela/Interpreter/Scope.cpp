@@ -1,6 +1,8 @@
 #include "Interpreter.h"
 #include "SourceFile.h"
 #include "Scope.h"
+
+#include "Syscall.h"
 #include "Cst.h"
 
 #include "../Ir/CallableFlags.h"
@@ -12,6 +14,8 @@ Scope::Scope( Interpreter *ip, Scope *parent, Scope *caller ) : ip( ip ), parent
     instantiated_from_sf = 0;
     base_size = 0;
     base_alig = 1;
+
+    sys_state = parent ? parent->sys_state : Var( ip, &ip->type_Void );
 }
 
 Var Scope::parse( const Var *sf, const PI8 *tok ) {
@@ -216,11 +220,31 @@ Var Scope::disp_error( String msg, const Var *sf, int off, bool warn ) {
     return ip->error_var;
 }
 
+Expr Scope::simplified_expr( const Var &var ) {
+    Var sop = get_val_if_GetSetSopInst( var );
+    return sop.get();
+}
+
+void Scope::set( Var &o, Expr n ) {
+    o.set( n );
+}
+
 #define CHECK_PRIM_ARGS( N ) \
     int n = bin.read_positive_integer(); \
     if ( n != N ) \
         return disp_error( "Expecting " #N " operand", sf, off );
 
+
+Var Scope::parse_syscall( const Var *sf, int off, BinStreamReader bin ) {
+    int n = bin.read_positive_integer();
+    Expr inp[ n ];
+    for( int i = 0; i < n; ++i )
+        inp[ i ] = simplified_expr( parse( sf, bin.read_offset() ) );
+
+    syscall res( simplified_expr( sys_state ), inp, n );
+    set( sys_state, res.sys );
+    return Var( ip, &ip->type_SI64, res.ret );
+}
 
 Var Scope::parse_typeof( const Var *sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );

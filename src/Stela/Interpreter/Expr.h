@@ -17,4 +17,7 @@ public:
     int       nout; ///< num output of inst to use
 };
 
+// bad hack
+inline const Expr &Inst::InpList::operator[]( int ind ) const { return _data[ ind ]; }
+
 #endif // EXPR_H
