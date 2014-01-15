@@ -4,16 +4,23 @@
 #include "../System/Stream.h"
 #include "../System/Ptr.h"
 #include "../System/Vec.h"
+struct Expr;
 
 /**
 */
 class Inst : public ObjectWithCptUse {
 public:
-    Inst();
-    virtual ~Inst();
+    // types
+    typedef Expr  Inp;
+    typedef Inst *Ext;
 
-    virtual const PI8 *cst_data( int nout ) const;
-    virtual void write_to_stream( Stream &os ) const = 0;
+    struct Out {
+        struct Item {
+            Inst *inst;
+            int   ninp;
+        };
+        Vec<Item,-1,1> parents;
+    };
 
     struct OutList {
         int size() const { return _size; }
@@ -27,8 +34,23 @@ public:
         int  _size;
     };
 
+    struct ExtList {
+        int size() const { return _size; }
+        Ext *_data;
+        int  _size;
+    };
+
+    // methods
+    Inst();
+    virtual ~Inst();
+
+    virtual const PI8 *cst_data( int nout ) const;
+    virtual void write_to_stream( Stream &os ) const = 0;
+
+    // attributes
     OutList out;
     InpList inp;
+    ExtList ext;
 };
 
 #endif // INST_H

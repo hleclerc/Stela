@@ -1,8 +1,5 @@
 #include "Inst.h"
 
-Inst::Inst() {
-}
-
 Inst::~Inst() {
 }
 
