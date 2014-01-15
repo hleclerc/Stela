@@ -12,6 +12,7 @@ struct PRef : ObjectWithCptUse {
     };
 
     PRef( Interpreter *ip ) : ip( ip ), flags( 0 ) {}
+    void write_to_stream( Stream &os ) const { os << ptr; }
 
     Ptr<Ref>     ptr;
     Interpreter *ip;

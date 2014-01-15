@@ -18,9 +18,22 @@ Interpreter::Interpreter( ErrorList &error_list ) :
     #include "DeclParmClass.h"
     #undef DECL_BT
     error_var( this, &type_Error ),
+    void_var( this, &type_Void ),
     error_list( error_list ) {
 
     main_scope = 0;
+
+    // constify
+    error_var.data->flags = PRef::CONST;
+    void_var.data->flags = PRef::CONST;
+
+    #define DECL_BT( T ) type_##T.data->flags = PRef::CONST;
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+    #define DECL_BT( T ) class_##T.data->flags = PRef::CONST;
+    #include "DeclBaseClass.h"
+    #include "DeclParmClass.h"
+    #undef DECL_BT
 }
 
 Interpreter::~Interpreter(){
@@ -92,6 +105,14 @@ void Interpreter::set_argv( char **argv ) {
     this->argv = argv;
 }
 
+int Interpreter::ptr_size() const {
+    return sizeof( void * );
+}
+
+int Interpreter::ptr_alig() const {
+    return 32;
+}
+
 ErrorList::Error &Interpreter::make_error( String msg, const Var *sf, int off, Scope *sc, bool warn ) {
     ErrorList::Error &res = error_list.add( msg );
     if ( sf )
@@ -144,4 +165,17 @@ SfInfo &Interpreter::sf_info_of( const Var *sf ) {
     return res;
 }
 
+int Interpreter::glo_nstr( const Var *sf, int n ) {
+    SfInfo &si = sf_info_of( sf );
+    ASSERT( n < si.nstr_cor.size(), "bad nstr" );
+    return si.nstr_cor[ n ];
+}
+
+Var Interpreter::type_of( const Var &var ) {
+    Var res;
+    res.data = var.type;
+    res.type = type_Type.data;
+    res.flag = Var::WEAK_CONST;
+    return res;
+}
 

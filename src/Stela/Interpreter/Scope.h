@@ -2,6 +2,7 @@
 #define SCOPE_H
 
 #include "../System/BinStreamReader.h"
+#include "../System/ErrorList.h"
 #include "Var.h"
 class Interpreter;
 class SourceFile;
@@ -21,7 +22,12 @@ protected:
     #include "../Ir/Decl.h"
     #undef DECL_IR_TOK
 
-    int read_nstring( const SourceFile *sf, BinStreamReader &bin );
+    template<class T> Var make_var( T val );
+    int read_nstring( const Var *sf, BinStreamReader &bin );
+    Var get_val_if_GetSetSopInst( const Var &val );
+
+    ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );
+    Var disp_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );
 
     Interpreter *ip;
     Scope       *parent; ///< "accessible" scope, i.e. that can be read to find variables
@@ -30,6 +36,9 @@ protected:
     bool         do_not_execute_anything;
     Var         *instantiated_from_sf;
     int          instantiated_from_off;
+
+    int          base_size;
+    int          base_alig;
 };
 
 #endif // SCOPE_H

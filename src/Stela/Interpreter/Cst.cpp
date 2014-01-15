@@ -16,9 +16,19 @@ Cst::~Cst() {
     cst_set.erase( this );
 }
 
+void Cst::write_to_stream( Stream &os ) const {
+    const char *c = "0123456789ABCDEF";
+    for( int i = 0; i < value.size(); ++i ) {
+        if ( i )
+            os << ' ';
+        os << c[ value[ i ] >> 4 ] << c[ value[ i ] & 0xF ];
+    }
+}
+
 const PI8 *Cst::cst_data( int nout ) const {
     return value.ptr();
 }
+
 
 Expr cst( Vec<PI8> value ) {
     Cst *tmp = new Cst;

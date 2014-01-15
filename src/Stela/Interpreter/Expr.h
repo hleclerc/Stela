@@ -11,6 +11,7 @@ public:
     Expr();
 
     const PI8 *cst_data() const;
+    void write_to_stream( Stream &os ) const;
 
     Ptr<Inst> inst;
     int       nout; ///< num output of inst to use

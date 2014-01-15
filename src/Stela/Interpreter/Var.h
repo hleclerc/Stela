@@ -11,7 +11,7 @@ class Type;
 class Var {
 public:
     enum {
-        WEAK_CONSTNESS = 1 ///< this variable should be changed, but nothing can guarantee that it won't be changed elsewhere
+        WEAK_CONST = 1 ///< this variable should be changed, but nothing can guarantee that it won't be changed elsewhere
     };
 
     // Où stocker ip ??
@@ -21,6 +21,7 @@ public:
 
     ~Var();
 
+    void write_to_stream( Stream &os ) const;
     operator bool() const { return type and data and data->ptr; }
     const PI8 *cst_data() const; ///< return 0 or a pointer on data if known
 

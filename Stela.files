@@ -93,3 +93,5 @@ src/Stela/Interpreter/Cst.cpp
 src/Stela/Interpreter/RefExpr.h
 src/Stela/Interpreter/RefExpr.cpp
 src/Stela/Interpreter/SfInfo.h
+src/Stela/Interpreter/DeclArytTypes.h
+src/Stela/Interpreter/Inst_.h

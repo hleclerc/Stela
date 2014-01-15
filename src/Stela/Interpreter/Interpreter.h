@@ -4,6 +4,7 @@
 #include "../System/SplittedVec.h"
 #include "../System/ErrorList.h"
 #include "../System/Stream.h"
+#include "../System/Math.h"
 #include "../System/Vec.h"
 #include "../System/S.h"
 #include "NstrCor.h"
@@ -24,19 +25,46 @@ public:
     void add_inc_path( String path );
     void set_argc( int argc );
     void set_argv( char **argv );
+    int  ptr_size() const;
+    int  ptr_alig() const;
 
 protected:
     friend class Scope;
 
     ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
-    void disp_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    void              disp_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    int               glo_nstr( const Var *sf, int n );
 
-    bool already_imported( String filename );
-    const PI8 *tok_data_of( const Var *sf );
-    SfInfo    &sf_info_of ( const Var *sf );
+    bool              already_imported( String filename );
+    const PI8        *tok_data_of( const Var *sf );
+    SfInfo           &sf_info_of( const Var *sf );
+    Var               type_of( const Var &var );
 
-    // basic types
-    #define DECL_BT( T ) Var type_##T;
+    // conversion
+    template<class T>
+    bool conv( T &res, const Var &var ) {
+        if ( const PI8 *data = var.cst_data() ) {
+            #define DECL_BT( U ) \
+                if ( isa_##U( var ) ) \
+                    return ::conv( res, *reinterpret_cast<const U *>( data ) );
+            #include "DeclArytTypes.h"
+            #undef DECL_BT
+        }
+        return false;
+    }
+
+    
+    // base types and class
+    #define DECL_BT( T ) \
+        bool isa( const Var &var, S<T> ) const { return isa_##T( var ); } \
+        Var *type_for( S<T> ) { return &type_##T; }
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+
+    // basic types (not parameterized)
+    #define DECL_BT( T ) \
+        Var type_##T; \
+        bool isa_##T( const Var &var ) const { return var.type == type_##T.data; }
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
@@ -52,6 +80,7 @@ protected:
 
     // std variables
     Var                          error_var;
+    Var                          void_var;
 
     // attributes
     SplittedVec<ToDel *,16>      obj_to_delete;

@@ -17,3 +17,7 @@ Var::~Var() {
 const PI8 *Var::cst_data() const {
     return data and data->ptr ? data->ptr->get().cst_data() : 0;
 }
+
+void Var::write_to_stream( Stream &os ) const {
+    os << type << "( " << data << ")";
+}

@@ -12,6 +12,7 @@ public:
 
     virtual Expr get() const = 0;
     // Ref *set( const Expr &expr ) = 0;
+    virtual void write_to_stream( Stream &os ) const = 0;
 };
 
 #endif // REF_H
