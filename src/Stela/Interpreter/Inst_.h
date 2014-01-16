@@ -21,6 +21,10 @@ public:
         return inp.size();
     }
 
+    virtual void inp_resize( int ns ) {
+        inp.resize( ns );
+    }
+
     virtual void inp_push( Expr var ) {
         int s = inp.size();
         inp.resize( s + 1 );

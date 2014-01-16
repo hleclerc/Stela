@@ -238,8 +238,12 @@ void Scope::set( Var &o, Expr n ) {
 Var Scope::parse_syscall( const Var *sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     Expr inp[ n ];
-    for( int i = 0; i < n; ++i )
-        inp[ i ] = simplified_expr( parse( sf, bin.read_offset() ) );
+    for( int i = 0; i < n; ++i ) {
+        Var v = parse( sf, bin.read_offset() );
+        if ( not ip->isa_ptr_int( v ) )
+            return disp_error( "Expecting size types (size of a pointer)", sf, off );
+        inp[ i ] = simplified_expr( v );
+    }
 
     syscall res( simplified_expr( sys_state ), inp, n );
     set( sys_state, res.sys );

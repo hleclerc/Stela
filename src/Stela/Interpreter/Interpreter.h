@@ -44,6 +44,8 @@ protected:
     SfInfo           &sf_info_of( const Var *sf );
     Var               type_of( const Var &var );
 
+    bool              isa_ptr_int( const Var &var ) const;
+
     // conversion
     template<class T>
     bool conv( T &res, const Var &var ) {

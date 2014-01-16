@@ -54,6 +54,10 @@ public:
         return *stream;
     }
 
+    TS &write_end() {
+        *stream << end;
+        return *stream;
+    }
 
     TS *stream;
     const char *sep;

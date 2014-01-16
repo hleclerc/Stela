@@ -186,3 +186,9 @@ Var Interpreter::type_of( const Var &var ) {
     return res;
 }
 
+bool Interpreter::isa_ptr_int( const Var &var ) const {
+    if ( ptr_size() == 32 )
+        return isa_SI32( var ) or isa_PI32( var );
+    return isa_SI64( var ) or isa_PI64( var );
+}
+

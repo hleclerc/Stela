@@ -100,3 +100,9 @@ src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test.met
 src/Stela/System/VecSlot.h
+src/Stela/Compilers/CppInstCompiler.h
+src/Stela/Compilers/CppInstCompiler.cpp
+src/Stela/Interpreter/InstVisitor.h
+src/Stela/Interpreter/BaseType.h
+src/Stela/Interpreter/BaseType.cpp
+src/Stela/Interpreter/DeclBaseType.h

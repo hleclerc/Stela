@@ -11,6 +11,7 @@
 class Syscall : public Inst_<2,-1> {
 public:
     virtual void write_to_stream( Stream &os ) const;
+    virtual void apply( InstVisitor &visitor ) const;
 };
 
 struct syscall {

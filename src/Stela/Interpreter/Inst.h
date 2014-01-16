@@ -1,16 +1,13 @@
 #ifndef INST_H
 #define INST_H
 
-// #include "../System/VecSlot.h"
 #include "../System/Stream.h"
 #include "../System/Ptr.h"
 #include "../System/Vec.h"
 #include <cstddef>
+struct InstVisitor;
 struct Expr;
 
-#ifdef METIL_COMP_DIRECTIVE
-#pragma cpp_flag -Wno-invalid-offsetof
-#endif
 
 /**
 */
@@ -38,6 +35,7 @@ public:
     // inp
     virtual int inp_size() const = 0;
     virtual void inp_push( Expr var ) = 0;
+    virtual void inp_resize( int ns ) = 0;
     virtual void inp_repl( int num, Expr var ) = 0;
     virtual void inp_repl( Expr src, Expr dst ) = 0;
     virtual const Expr &inp_expr( int num ) const = 0;
@@ -53,7 +51,10 @@ public:
     virtual const Inst *ext_inst( int num_ext ) const = 0;
     virtual Inst *ext_inst( int num_ext ) = 0;
 
+    //
+    virtual void apply( InstVisitor &visitor ) const = 0;
 
+    // attributes
     Inst         *ext_parent;
     static  PI64  cur_op_id; ///<
     mutable PI64  op_id_viz; ///<

@@ -10,6 +10,7 @@ public:
     virtual ~Cst();
     virtual const PI8 *cst_data( int nout ) const;
     virtual void write_to_stream( Stream &os ) const;
+    virtual void apply( InstVisitor &visitor ) const;
 
     Vec<PI8> value; ///< value (should not be changed directly)
     Vec<PI8> known; ///< known bits

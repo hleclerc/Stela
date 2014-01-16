@@ -1,3 +1,4 @@
+#include "InstVisitor.h"
 #include "Cst.h"
 #include <set>
 
@@ -23,6 +24,10 @@ void Cst::write_to_stream( Stream &os ) const {
             os << ' ';
         os << c[ value[ i ] >> 4 ] << c[ value[ i ] & 0xF ];
     }
+}
+
+void Cst::apply( InstVisitor &visitor ) const {
+    visitor( *this );
 }
 
 const PI8 *Cst::cst_data( int nout ) const {
