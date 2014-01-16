@@ -1,6 +1,7 @@
 #ifndef INST_H
 #define INST_H
 
+// #include "../System/VecSlot.h"
 #include "../System/Stream.h"
 #include "../System/Ptr.h"
 #include "../System/Vec.h"
@@ -16,64 +17,48 @@ struct Expr;
 class Inst : public ObjectWithCptUse {
 public:
     // types
-    typedef Expr  Inp;
-    typedef Inst *Ext;
+    typedef Expr      Inp;
+    typedef Ptr<Inst> Ext;
 
     struct Out {
         struct Item {
+            bool operator==( const Item &item ) const { return inst == item.inst and ninp == item.ninp; }
             Inst *inst;
             int   ninp;
         };
         Vec<Item,-1,1> parents;
     };
 
-    struct OutList {
-        int size() const { return _size; }
-        Inst *_inst() { return reinterpret_cast<Inst *>( reinterpret_cast<char*>( this ) - offsetof( Inst, out ) ); }
-
-        Out *_data;
-        int  _size;
-    };
-
-    struct InpList {
-        struct Setter {
-            operator const Expr &() const { return inl->operator[]( ind ); }
-            void operator=( const Expr &expr );
-            InpList *inl;
-            int      ind;
-        };
-        int size() const { return _size; }
-        Inst *_inst() { return reinterpret_cast<Inst *>( reinterpret_cast<char*>( this ) - offsetof( Inst, inp ) ); }
-        void resize( int ns ) { _inst()->_resize_inp( ns ); }
-        const Expr &operator[]( int ind ) const;
-        Setter operator[]( int ind ) { return Setter{ this, ind }; }
-
-        Inp *_data;
-        int  _size;
-    };
-
-    struct ExtList {
-        int size() const { return _size; }
-        Inst *_inst() { return reinterpret_cast<Inst *>( reinterpret_cast<char*>( this ) - offsetof( Inst, ext ) ); }
-
-        Ext *_data;
-        int  _size;
-    };
-
-    // methods
     Inst();
     virtual ~Inst();
 
     virtual const PI8 *cst_data( int nout ) const;
     virtual void write_to_stream( Stream &os ) const = 0;
 
-    // attributes
-    OutList out;
-    InpList inp;
-    ExtList ext;
+    // inp
+    virtual int inp_size() const = 0;
+    virtual void inp_push( Expr var ) = 0;
+    virtual void inp_repl( int num, Expr var ) = 0;
+    virtual void inp_repl( Expr src, Expr dst ) = 0;
+    virtual const Expr &inp_expr( int num ) const = 0;
 
-protected:
-    virtual void _resize_inp( int ns ) = 0;
+    // out
+    virtual int out_size() const = 0;
+    virtual Out &out_expr( int n ) = 0;
+    virtual const Out &out_expr( int n ) const = 0;
+
+    // ext
+    virtual int ext_size() const = 0;
+    virtual void ext_repl( int num, Inst *inst ) = 0;
+    virtual const Inst *ext_inst( int num_ext ) const = 0;
+    virtual Inst *ext_inst( int num_ext ) = 0;
+
+
+    Inst         *ext_parent;
+    static  PI64  cur_op_id; ///<
+    mutable PI64  op_id_viz; ///<
+    mutable PI64  op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
+    mutable void *op_mp;     ///< result of current operations
 };
 
 #endif // INST_H

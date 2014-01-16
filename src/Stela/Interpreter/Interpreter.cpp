@@ -93,6 +93,13 @@ void Interpreter::import( String filename ) {
     main_scope->parse( sf, tok_data_of( sf ) );
 }
 
+Vec<ConstPtr<Inst> > Interpreter::get_outputs() {
+    Vec<ConstPtr<Inst> > res;
+    if ( main_scope->sys_state )
+        res << main_scope->sys_state.get().inst;
+    return res;
+}
+
 void Interpreter::add_inc_path( String path ) {
     inc_paths << path;
 }

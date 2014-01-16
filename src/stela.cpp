@@ -2,6 +2,7 @@
   main file for the stela interpreter / compiler
 */
 #include <Stela/Interpreter/Interpreter.h>
+#include <Stela/Compilers/CppCompiler.h>
 #include <Stela/System/InstallDir.h>
 #include <Stela/Met/IrWriter.h>
 #include <math.h>
@@ -42,6 +43,13 @@ int main( int argc, char **argv ) {
     // parse
     for( int i = 0; i < input_files.size(); ++i )
         ip.import( input_files[ i ] );
+    Vec<ConstPtr<Inst> > outputs = ip.get_outputs();
+
+    // compile
+    CppCompiler cr;
+    for( int i = 0; i < outputs.size(); ++i )
+        cr << outputs[ i ];
+    cr.exec();
 
     return e;
 }

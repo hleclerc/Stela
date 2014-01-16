@@ -22,9 +22,13 @@ public:
     ~Interpreter();
 
     void import( String filename );
+    Vec<ConstPtr<Inst> > get_outputs();
+
     void add_inc_path( String path );
+
     void set_argc( int argc );
     void set_argv( char **argv );
+
     int  ptr_size() const;
     int  ptr_alig() const;
 

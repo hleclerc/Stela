@@ -20,7 +20,7 @@ const PI8 *Var::cst_data() const {
 }
 
 void Var::write_to_stream( Stream &os ) const {
-    os << type << "( " << data << ")";
+    os << type << "(" << data << ")";
 }
 
 Expr Var::get() const {
@@ -28,6 +28,10 @@ Expr Var::get() const {
 }
 
 void Var::set( Expr expr ) {
-    if ( data and data->ptr )
-        data->ptr->set( expr );
+    if ( data ) {
+        if ( data->ptr )
+            data->ptr->set( expr );
+        else
+            data->ptr = new RefExpr( expr );
+    }
 }

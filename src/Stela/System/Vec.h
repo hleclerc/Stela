@@ -41,6 +41,8 @@ public:
     void resize( int s ) const { ASSERT( s == 0, "..." ); }
     void remove( int i ) { ERROR( "..." ); }
 
+    Vec &operator<<( ItemType ) { ERROR( "forbidden" ); return *this; }
+
     T *dummy() const { return 0; }
 };
 
@@ -260,6 +262,8 @@ public:
     }
 
     bool empty() const { return size() == 0; }
+
+    Vec &operator<<( ItemType ) { ERROR( "forbidden" ); return *this; }
 
     void resize( int new_size ) const {
         ASSERT_IF_DEBUG( new_size == static_size );
