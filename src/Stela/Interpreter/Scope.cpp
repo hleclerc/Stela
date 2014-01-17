@@ -10,7 +10,11 @@
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
 
-Scope::Scope( Interpreter *ip, Scope *parent, Scope *caller ) : ip( ip ), parent( parent ), caller( caller ) {
+Scope::Scope( Interpreter *ip, Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
+    ip( ip ), parent( parent ), caller( caller ) {
+
+    static_named_vars = snv ? snv : new VarTable;
+
     do_not_execute_anything = false;
     instantiated_from_sf = 0;
     base_size = 0;
@@ -53,6 +57,11 @@ int Scope::read_nstring( const Var *sf, BinStreamReader &bin ) {
     return ip->glo_nstr( sf, bin.read_positive_integer() );
 }
 
+Var Scope::copy( const Var &var, const Var *sf, int off ) {
+    TODO;
+    return var;
+}
+
 Var Scope::parse_DEF( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_RETURN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -76,21 +85,74 @@ Var Scope::parse_PTR( const Var *sf, int off, BinStreamReader bin ) {
         return make_var( SI32( bin.read_positive_integer() ) );
     return make_var( SI64( bin.read_positive_integer() ) );
 }
-Var Scope::parse_STRING( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_VAR( const Var *sf, int off, BinStreamReader bin ) {
-    int n = read_nstring( sf, bin );
-    PRINT( glob_nstr_cor.str( n ) );
-    TODO;
-    return Var();
+
+Var Scope::parse_STRING( const Var *sf, int off, BinStreamReader bin ) {
+    TODO; return Var();
 }
-Var Scope::parse_ASSIGN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+
+Var Scope::parse_VAR( const Var *sf, int off, BinStreamReader bin ) {
+    int name = read_nstring( sf, bin );
+    if ( Var res = find_var( name ) )
+        return res;
+    return disp_error( "Impossible to find variable '" + glob_nstr_cor.str( name ) + "'.", sf, off );
+}
+
+Var Scope::parse_ASSIGN( const Var *sf, int off, BinStreamReader bin ) {
+    // name
+    int name = read_nstring( sf, bin );
+
+    // flags
+    int flags = bin.read_positive_integer();
+
+    // inst
+    Var var = parse( sf, bin.read_offset() );
+
+    //
+    if ( flags & IR_ASSIGN_TYPE ) {
+        // var = apply( var, 0, 0, 0, 0, 0, true, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD, sf, off );
+        TODO;
+    }
+
+    if ( ( flags & IR_ASSIGN_REF ) == 0 and var.referenced_more_than_one_time() )
+        var = copy( var, sf, off );
+
+    if ( flags & IR_ASSIGN_CONST ) {
+        if ( ( var.flags & Var::WEAK_CONST ) == 0 and var.referenced_more_than_one_time() )
+            disp_error( "Impossible to make this variable fully const (already referenced elsewhere)", sf, off );
+        var.flags |= Var::WEAK_CONST;
+        var.data->flags = PRef::CONST;
+    }
+
+    return reg_var( name, var, sf, off, flags & IR_ASSIGN_STATIC );
+}
 Var Scope::parse_REASSIGN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR_PTR( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR_ASK( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR_PTR_ASK( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR_PA( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_IF( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_IF( const Var *sf, int off, BinStreamReader bin ) {
+    Var cond = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
+
+    // bool conversion
+    if ( not ip->isa_Bool( cond ) ) {
+        // cond = apply();
+    }
+
+    // simplified expression
+    Expr expr = simplified_expr( cond );
+    PRINT( expr );
+
+    // known value
+    //    if ( const PI8 *data = expr.cst_data() ) {
+    //        if ( cond.type == &ip->type_Bool or cond.type == &ip->type_Bool or  ) {
+    //        }
+    //    }
+
+    TODO;
+    return ip->error_var;
+
+}
 Var Scope::parse_WHILE( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_BREAK( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_CONTINUE( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -226,8 +288,40 @@ Expr Scope::simplified_expr( const Var &var ) {
     return sop.get();
 }
 
-void Scope::set( Var &o, Expr n ) {
-    o.set( n );
+void Scope::set( Var &o, Expr n, const Var *sf, int off ) {
+    if ( not o.set( n ) )
+        disp_error( "const slot", sf, off );
+}
+
+Var Scope::reg_var( int name, const Var &var, const Var *sf, int off, bool stat ) {
+    if ( named_vars.get( name ) or static_named_vars->get( name ) )
+        return disp_error( "There is already a variable named '" + glob_nstr_cor.str( name ) + "' in the current scope", sf, off );
+    VarTable *vt = stat ? static_named_vars.ptr() : &named_vars;
+    vt->reg( name, var );
+    return var;
+}
+
+Var Scope::find_var( int name ) {
+    for( Scope *s = this; ; s = s->parent ) {
+        if ( Var res = s->named_vars.get( name ) )
+            return res;
+        if ( Var res = s->static_named_vars->get( name ) )
+            return res;
+        //
+        if ( Scope *p = s->parent ) {
+            if ( not p->parent ) { // -> there is a parent, but the parent is the main scope
+                for( VarTable *vt = p->static_named_vars.ptr(); vt; vt = vt->parent )
+                    if ( Var res = vt->get( name ) )
+                        return res;
+                // non static vars of main scope
+                if ( Var res = p->named_vars.get( name ) )
+                    return res;
+                return Var();
+            }
+        } else
+            break;
+    }
+    return Var();
 }
 
 #define CHECK_PRIM_ARGS( N ) \
@@ -244,14 +338,14 @@ Var Scope::parse_syscall( const Var *sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     Expr inp[ n ];
     for( int i = 0; i < n; ++i ) {
-        Var v = parse( sf, bin.read_offset() );
+        Var v = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
         if ( not ip->isa_ptr_int( v ) )
             return disp_error( "Expecting size types (size of a pointer)", sf, off );
         inp[ i ] = simplified_expr( v );
     }
 
-    syscall res( simplified_expr( sys_state ), inp, n );
-    set( sys_state, res.sys );
+    syscall res( simplified_expr( sys_state ), inp, n, ip->ptr_size() );
+    set( sys_state, res.sys, sf, off );
     return Var( ip, &ip->type_SI64, res.ret );
 }
 

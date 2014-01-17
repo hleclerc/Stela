@@ -8,6 +8,7 @@
 class Cst : public Inst_<1,0> {
 public:
     virtual ~Cst();
+    virtual int size_in_bits( int nout ) const;
     virtual const PI8 *cst_data( int nout ) const;
     virtual void write_to_stream( Stream &os ) const;
     virtual void apply( InstVisitor &visitor ) const;

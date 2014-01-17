@@ -1,6 +1,10 @@
 #include "InstVisitor.h"
 #include "Rand.h"
 
+int Rand::size_in_bits( int nout ) const {
+    return 64;
+}
+
 void Rand::write_to_stream( Stream &os ) const {
     os << "rand";
 }

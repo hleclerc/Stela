@@ -94,6 +94,7 @@ CppCompiler::Reg CppCompiler::get_reg_for( const Inst &inst, int nout ) {
             break;
         }
     }
+    ASSERT( bs <= inst.size_in_bytes( nout ), "not enable to fill the bytes" );
     ASSERT( res.type, "..." );
 
     // register

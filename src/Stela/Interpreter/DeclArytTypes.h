@@ -1,3 +1,5 @@
+DECL_BT( Bool )
+
 DECL_BT( SI32 )
 DECL_BT( PI32 )
 

@@ -180,9 +180,9 @@ int Interpreter::glo_nstr( const Var *sf, int n ) {
 
 Var Interpreter::type_of( const Var &var ) {
     Var res;
-    res.data = var.type;
-    res.type = type_Type.data;
-    res.flag = Var::WEAK_CONST;
+    res.data  = var.type;
+    res.type  = type_Type.data;
+    res.flags = Var::WEAK_CONST;
     return res;
 }
 

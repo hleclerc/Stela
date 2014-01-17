@@ -1,4 +1,10 @@
+# variables
+# classes et fonctions.
 # if
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
-___syscall 60l, ___rand()
+a := 10l
+___syscall 60l, a
+
+# if ___rand()
+    # ___syscall 60l, 10l

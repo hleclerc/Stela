@@ -17,6 +17,10 @@ Cst::~Cst() {
     cst_set.erase( this );
 }
 
+int Cst::size_in_bits( int nout ) const {
+    return value.size() * 8;
+}
+
 void Cst::write_to_stream( Stream &os ) const {
     const char *c = "0123456789ABCDEF";
     for( int i = 0; i < value.size(); ++i ) {

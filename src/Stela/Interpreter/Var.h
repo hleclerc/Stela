@@ -24,13 +24,14 @@ public:
     void write_to_stream( Stream &os ) const;
     operator bool() const { return type and data and data->ptr; }
     const PI8 *cst_data() const; ///< return 0 or a pointer on data if known
+    bool referenced_more_than_one_time() const;
 
     Expr get() const;
-    void set( Expr expr );
+    bool set( Expr expr );
 
     Ptr<PRef> data;
     Ptr<PRef> type;
-    int       flag;
+    int       flags;
 };
 
 #endif // VAR_H

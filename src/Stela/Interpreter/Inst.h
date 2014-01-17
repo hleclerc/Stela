@@ -29,6 +29,8 @@ public:
     Inst();
     virtual ~Inst();
 
+    virtual int size_in_bits( int nout ) const = 0;
+    virtual int size_in_bytes( int nout ) const;
     virtual const PI8 *cst_data( int nout ) const;
     virtual void write_to_stream( Stream &os ) const = 0;
 

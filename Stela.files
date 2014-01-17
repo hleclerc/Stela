@@ -5,6 +5,7 @@ make_class.met
 bin/generation.py
 src/args.h
 src/Stela/Compilers/CppCompiler.h
+src/Stela/Compilers/CppInstCompiler.h
 src/Stela/Met/Lexem.h
 src/Stela/Met/Lexer.h
 src/Stela/Met/IrWriter.h
@@ -32,11 +33,14 @@ src/Stela/Interpreter/SfInfo.h
 src/Stela/Interpreter/RefExpr.h
 src/Stela/Interpreter/SourceFile.h
 src/Stela/Interpreter/NstrCor.h
+src/Stela/Interpreter/BaseType.h
 src/Stela/Interpreter/Syscall.h
 src/Stela/Interpreter/DeclParmClass.h
 src/Stela/Interpreter/Scope.h
 src/Stela/Interpreter/DeclBaseClass.h
+src/Stela/Interpreter/InstVisitor.h
 src/Stela/Interpreter/DeclArytTypes.h
+src/Stela/Interpreter/Rand.h
 src/Stela/Interpreter/Expr.h
 src/Stela/Interpreter/Cst.h
 src/Stela/Interpreter/Inst.h
@@ -64,6 +68,7 @@ src/Stela/System/StreamSep.h
 src/Stela/System/Vec.h
 src/Stela/System/rcast.h
 src/Stela/System/Stream.h
+src/Stela/System/VecSlot.h
 src/Stela/System/S.h
 src/Stela/System/scast.h
 src/Stela/System/TypeInformation.h
@@ -71,6 +76,7 @@ src/Stela/System/TensorOrder.h
 src/Stela/System/Assert.h
 src/Stela/System/ErrorList.h
 src/stela.cpp
+src/Stela/Compilers/CppInstCompiler.cpp
 src/Stela/Compilers/CppCompiler.cpp
 src/Stela/Met/Lexem.cpp
 src/Stela/Met/IrWriter.cpp
@@ -79,8 +85,10 @@ src/Stela/Ir/IrDisplayer.cpp
 src/Stela/Ir/Struct_Operations.cpp
 src/Stela/Ir/RecIrParser.cpp
 src/Stela/Interpreter/Interpreter.cpp
+src/Stela/Interpreter/BaseType.cpp
 src/Stela/Interpreter/Inst.cpp
 src/Stela/Interpreter/NstrCor.cpp
+src/Stela/Interpreter/Rand.cpp
 src/Stela/Interpreter/SourceFile.cpp
 src/Stela/Interpreter/RefExpr.cpp
 src/Stela/Interpreter/Ref.cpp
@@ -99,12 +107,5 @@ src/Stela/System/BinStreamWriter.cpp
 src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test.met
-src/Stela/System/VecSlot.h
-src/Stela/Compilers/CppInstCompiler.h
-src/Stela/Compilers/CppInstCompiler.cpp
-src/Stela/Interpreter/InstVisitor.h
-src/Stela/Interpreter/BaseType.h
-src/Stela/Interpreter/BaseType.cpp
-src/Stela/Interpreter/DeclBaseType.h
-src/Stela/Interpreter/Rand.h
-src/Stela/Interpreter/Rand.cpp
+src/Stela/Interpreter/VarTable.h
+src/Stela/Interpreter/VarTable.cpp
