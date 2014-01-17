@@ -427,6 +427,7 @@ operations = unary_operations + binary_operations
 
 base_primitives = string.split( """
     info
+    rand
     syscall
     set_base_size_and_alig
     set_RawRef_dependancy

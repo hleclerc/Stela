@@ -106,3 +106,5 @@ src/Stela/Interpreter/InstVisitor.h
 src/Stela/Interpreter/BaseType.h
 src/Stela/Interpreter/BaseType.cpp
 src/Stela/Interpreter/DeclBaseType.h
+src/Stela/Interpreter/Rand.h
+src/Stela/Interpreter/Rand.cpp

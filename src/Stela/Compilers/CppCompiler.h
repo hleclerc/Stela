@@ -6,6 +6,7 @@
 #include "../System/StreamSep.h"
 #include "../Interpreter/Expr.h"
 #include <sstream>
+#include <set>
 
 /**
 */
@@ -58,10 +59,13 @@ protected:
     };
 
     Reg get_reg_for(const Inst &inst, int nout );
+    void add_include( String name );
+
 
 
     SplittedVec<Info,64> info_it;
     Vec<ConstPtr<Inst> > outputs;
+    std::set<String>     includes;
     int nb_regs;
 
     StreamSepMaker<std::ostringstream> on;

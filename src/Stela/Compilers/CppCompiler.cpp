@@ -26,6 +26,10 @@ void CppCompiler::exec() {
     compile();
 
     std::ofstream fc( cpp_filename.c_str() );
+
+    for( auto f : includes )
+        fc << "#include <" << f << ">\n";
+
     fc << "int main() {\n";
     fc << os.str();
     fc << "}\n";
@@ -95,4 +99,8 @@ CppCompiler::Reg CppCompiler::get_reg_for( const Inst &inst, int nout ) {
     // register
     INFO( inst )->set_out_reg( nout, res );
     return res;
+}
+
+void CppCompiler::add_include( String name ) {
+    includes.insert( name );
 }

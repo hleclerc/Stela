@@ -12,7 +12,10 @@ public:
 
     CppInstCompiler( CppCompiler *cc );
 
+    virtual void operator()( const Inst    &inst );
+
     virtual void operator()( const Syscall &inst );
+    virtual void operator()( const Rand    &inst );
     virtual void operator()( const Cst     &inst );
 
     CppCompiler *cc;

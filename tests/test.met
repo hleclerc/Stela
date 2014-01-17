@@ -1,4 +1,4 @@
-# exemple simple de compilation avec syscall
+# if
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
-___syscall 60l, 1l
+___syscall 60l, ___rand()

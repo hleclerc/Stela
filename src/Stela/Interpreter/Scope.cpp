@@ -3,6 +3,7 @@
 #include "Scope.h"
 
 #include "Syscall.h"
+#include "Rand.h"
 #include "Cst.h"
 
 #include "../Ir/CallableFlags.h"
@@ -234,6 +235,10 @@ void Scope::set( Var &o, Expr n ) {
     if ( n != N ) \
         return disp_error( "Expecting " #N " operand", sf, off );
 
+Var Scope::parse_rand( const Var *sf, int off, BinStreamReader bin ) {
+    CHECK_PRIM_ARGS( 0 );
+    return Var( ip, &ip->type_PI64, rand_var() );
+}
 
 Var Scope::parse_syscall( const Var *sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();

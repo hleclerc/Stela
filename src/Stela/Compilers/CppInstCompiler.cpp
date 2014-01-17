@@ -3,11 +3,18 @@
 #include "../Interpreter/BaseType.h"
 
 #include "../Interpreter/Syscall.h"
+#include "../Interpreter/Rand.h"
 #include "../Interpreter/Cst.h"
 
 #define INFO( inst ) reinterpret_cast<CppCompiler::Info *>( inst.op_mp )
 
 CppInstCompiler::CppInstCompiler( CppCompiler *cc ) : cc( cc ) {
+}
+
+void CppInstCompiler::operator()( const Inst &inst ) {
+    std::ostringstream ss;
+    std::cerr << inst << std::endl;
+    TODO;
 }
 
 void CppInstCompiler::operator()( const Syscall &inst ) {
@@ -19,6 +26,14 @@ void CppInstCompiler::operator()( const Syscall &inst ) {
         cc->os << INFO( inst )->get_inp_reg( i );
     }
     cc->os << " )";
+    cc->on.write_end();
+}
+
+void CppInstCompiler::operator()( const Rand &inst ) {
+    cc->add_include( "stdlib.h" );
+    Reg reg = cc->get_reg_for( inst, 0 );
+    cc->on.write_beg();
+    reg.write_decl( cc->os ) << "rand();";
     cc->on.write_end();
 }
 

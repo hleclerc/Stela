@@ -3,6 +3,7 @@ SRC = tests/test.met
 INSTALL = `pwd`
 
 all: std
+	cat out.cpp
 
 std: ext/PrepArg install_dir
 	${MC} -O3 src/stela.cpp ${SRC}
