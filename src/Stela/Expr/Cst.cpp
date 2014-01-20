@@ -1,3 +1,4 @@
+#include "../System/Memcpy.h"
 #include "InstVisitor.h"
 #include "Inst_.h"
 #include "Cst.h"
@@ -40,6 +41,12 @@ public:
     }
 
     virtual int inst_id() const { return 1; }
+
+    virtual Expr _smp_slice( int nout, int beg, int end ) {
+        Vec<PI8> data( Size(), ( end - beg + 7 ) / 8 );
+        memcpy_bit( data.ptr(), 0, value.ptr(), beg, end - beg );
+        return cst( data );
+    }
 
     Vec<PI8> value; ///< value (should not be changed directly)
     Vec<PI8> known; ///< known bits

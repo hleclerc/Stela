@@ -1,9 +1,10 @@
-#include <Stela/Expr/Reassign.h>
+#include <Stela/Expr/PointerOn.h>
 #include <Stela/Expr/Syscall.h>
+#include <Stela/Expr/Concat.h>
+#include <Stela/Expr/ValAt.h>
 #include <Stela/Expr/Slice.h>
 #include <Stela/Expr/Rand.h>
 #include <Stela/Expr/Cst.h>
-#include <Stela/Expr/Ptr.h>
 #include <Stela/Expr/Op.h>
 
 using namespace Expr_NS;
@@ -24,8 +25,8 @@ int main() {
     PA( sa );
     PA( sb );
 
-    Expr pa = ptr( tcs[ 0 ], 64 );
-    Expr pb = ptr( tcs[ 0 ], 64 );
+    Expr pa = pointer_on( tcs[ 0 ], 64 );
+    Expr pb = pointer_on( tcs[ 0 ], 64 );
     PA( pa );
     PA( pb );
 
@@ -33,7 +34,15 @@ int main() {
 
     PA( rand( 64 ) );
 
-    PA( reassign( cst( SI64( 0x17 ) ), cst( 0x5 ), 32 ) );
-
     PA( slice( cst( SI64( 0x176548 ) ), 8, 32 ) );
+
+    Expr struct_expr = concat( cst( 0x17 ), rand( 32 ) );
+    PA( struct_expr );
+    PA( slice( struct_expr,  0, 16 ) );
+    PA( slice( struct_expr,  0, 32 ) );
+    PA( slice( struct_expr, 32, 64 ) );
+    PA( slice( struct_expr, 32, 63 ) );
+
+    PA( val_at( pointer_on( cst( 0x32 ), 64 ), 32 ) );
+    PA( pointer_on( val_at( cst( 0x32 ), 32 ), 32 ) );
 }

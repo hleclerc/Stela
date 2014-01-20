@@ -50,6 +50,10 @@ public:
         return inp[ num_inp ];
     }
 
+    virtual Expr &inp_expr( int num_inp ) {
+        return inp[ num_inp ];
+    }
+
 
     // out
     virtual int out_size() const {

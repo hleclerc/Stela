@@ -16,8 +16,8 @@ struct Expr;
 class Inst : public ObjectWithCptUse {
 public:
     // types
-    typedef Expr        Inp;
-    typedef ::Ptr<Inst> Ext;
+    typedef Expr      Inp;
+    typedef Ptr<Inst> Ext;
 
     struct Out {
         struct Item {
@@ -43,6 +43,7 @@ public:
     virtual void inp_repl( int num, Expr var ) = 0;
     virtual void inp_repl( Expr src, Expr dst ) = 0;
     virtual const Expr &inp_expr( int num ) const = 0;
+    virtual Expr &inp_expr( int num ) = 0;
 
     // out
     virtual int out_size() const = 0;
@@ -63,6 +64,11 @@ public:
     /// return inst unless there's already the same operation somewhere
     /// if it's the case, delete inst and return the corresponding instruction
     static Inst *factorized( Inst *inst );
+
+    // methods to construct expressions
+    virtual Expr _smp_slice( int nout, int beg, int end );
+    virtual Expr _smp_val_at( int nout, int size );
+    virtual Expr _smp_pointer_on( int nout );
 
     // attributes
     Inst         *ext_parent;

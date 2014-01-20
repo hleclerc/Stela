@@ -11,7 +11,7 @@ class Expr {
 public:
     typedef Vec<Inst::Out::Item,-1,1> TPar;
 
-    Expr( ::Ptr<Inst> inst, int nout = 0 );
+    Expr( Ptr<Inst> inst, int nout = 0 );
     Expr();
 
     const PI8 *cst_data() const;
@@ -23,7 +23,7 @@ public:
     const TPar &parents() const { return inst->out_expr( nout ).parents; }
     TPar &parents() { return inst->out_expr( nout ).parents; }
 
-    ::Ptr<Inst> inst;
+    Ptr<Inst> inst;
     int         nout; ///< num output of inst to use
 };
 

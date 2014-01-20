@@ -1,4 +1,4 @@
-#include "Expr.h"
+#include "Cst.h"
 
 namespace Expr_NS {
 
@@ -43,6 +43,22 @@ Inst *Inst::factorized( Inst *inst ) {
         }
     }
     return inst;
+}
+
+Expr Inst::_smp_slice( int nout, int beg, int end ) {
+    if ( beg == 0 and end == size_in_bits( nout ) )
+        return Expr( this, nout );
+    if ( beg == end )
+        return cst( Vec<PI8>() );
+    return Expr();
+}
+
+Expr Inst::_smp_val_at( int nout, int size ) {
+    return Expr();
+}
+
+Expr Inst::_smp_pointer_on( int nout ) {
+    return Expr();
 }
 
 }
