@@ -21,6 +21,7 @@ struct InstVisitor {
 
     virtual void operator()( const class Reassign &inst, int off ) { operator()( reinterpret_cast<const Inst &>( inst ) ); }
     virtual void operator()( const class Syscall  &inst, int ptr_size ) { operator()( reinterpret_cast<const Inst &>( inst ) ); }
+    virtual void operator()( const class Slice    &inst, int beg, int end ) { operator()( reinterpret_cast<const Inst &>( inst ) ); }
     virtual void operator()( const class Ptr      &inst, int ptr_size ) { operator()( reinterpret_cast<const Inst &>( inst ) ); }
     virtual void operator()( const class Rand     &inst, int ptr_size ) { operator()( reinterpret_cast<const Inst &>( inst ) ); }
     virtual void operator()( const class Cst      &inst, const Vec<PI8> &data ) { operator()( reinterpret_cast<const Inst &>( inst ) ); }

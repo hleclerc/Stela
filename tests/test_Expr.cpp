@@ -1,5 +1,6 @@
 #include <Stela/Expr/Reassign.h>
 #include <Stela/Expr/Syscall.h>
+#include <Stela/Expr/Slice.h>
 #include <Stela/Expr/Rand.h>
 #include <Stela/Expr/Cst.h>
 #include <Stela/Expr/Ptr.h>
@@ -33,4 +34,6 @@ int main() {
     PA( rand( 64 ) );
 
     PA( reassign( cst( SI64( 0x17 ) ), cst( 0x5 ), 32 ) );
+
+    PA( slice( cst( SI64( 0x176548 ) ), 8, 32 ) );
 }

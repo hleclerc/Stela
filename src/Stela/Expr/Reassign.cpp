@@ -1,13 +1,13 @@
+#include "../System/Memcpy.h"
 #include "InstVisitor.h"
 #include "Reassign.h"
+#include "Slice.h"
 #include "Inst_.h"
 #include "Cst.h"
 
 namespace Expr_NS {
 
-/**
-
-*/
+///
 class Reassign : public Inst_<1,2> {
 public:
     virtual int size_in_bits( int nout ) const { return inp_expr( 0 ).size_in_bits(); }
@@ -27,15 +27,17 @@ Expr reassign( Expr expr, Expr val, int off ) {
     if ( off == 0 and expr.size_in_bits() == val.size_in_bits() )
         return val;
 
-    const PI8 *da = expr.cst_data();
+    int p[] = { 0, off, off + val.size_in_bits(), expr.size_in_bits() };
+    Expr sa = slice( expr, p[ 0 ], p[ 1 ] );
+    Expr sc = slice( expr, p[ 2 ], p[ 3 ] );
+    const PI8 *da = sa.cst_data();
     const PI8 *db = val.cst_data();
-    if ( da and db ) {
-        Vec<PI8> res( Size(), expr.size_in_bytes() );
-        memcpy( res.ptr(), da, expr.size_in_bytes() );
-        if ( off % 8 or val.size_in_bits() % 8 )
-            TODO;
-        else
-            memcpy( res.ptr() + off / 8, db, val.size_in_bytes() );
+    const PI8 *dc = sc.cst_data();
+    if ( da and db and dc ) {
+        Vec<PI8> res( Size(), expr.size_in_bytes(), 0 );
+        memcpy_bit( res.ptr(), p[ 0 ], da, 0, p[ 1 ] - p[ 0 ] );
+        memcpy_bit( res.ptr(), p[ 1 ], db, 0, p[ 2 ] - p[ 1 ] );
+        memcpy_bit( res.ptr(), p[ 2 ], dc, 0, p[ 3 ] - p[ 2 ] );
         return cst( res );
     }
 

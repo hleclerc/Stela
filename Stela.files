@@ -127,3 +127,7 @@ src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Expr.cpp
 tests/test.met
+src/Stela/Expr/Slice.h
+src/Stela/Expr/Slice.cpp
+src/Stela/System/Memcpy.h
+src/Stela/System/Memcpy.cpp
