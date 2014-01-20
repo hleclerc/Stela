@@ -3,8 +3,17 @@
 # if
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
-a := 10l
-___syscall 60l, a
+# 
+# Proposition pour les classes: on stocke une référence sur le code
+# -> les variables contiennent des pointeurs vers les données
+# -> on retrouve les infos à l'aide de tables de correspondance
+# -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
+class Toto
+    t := 0
+    
+# a := 10l
+# ___syscall 60l, a
+t := Toto()
 
 # if ___rand()
     # ___syscall 60l, 10l

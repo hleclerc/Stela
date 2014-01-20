@@ -6,6 +6,10 @@ Var::Var( Interpreter *ip, Var *type, const Expr &expr ) : data( new PRef( ip ) 
     data->ptr = new RefExpr( expr );
 }
 
+Var::Var( Interpreter *ip, Var *type, Ref *ref ) : data( new PRef( ip ) ), type( type->data ), flags( 0 ) {
+    data->ptr = ref;
+}
+
 Var::Var( Interpreter *ip, Var *type ) : data( new PRef( ip ) ), type( type->data ), flags( 0 ) {
 }
 
@@ -45,3 +49,13 @@ bool Var::set( Expr expr ) {
         data->ptr = new RefExpr( expr );
     return true;
 }
+
+Var constified( const Var &var ) {
+    if ( var.referenced_more_than_one_time() and not var.data->is_const() )
+        ERROR( "only var that are not referenced more than one time can be fully constified" );
+    Var res = var;
+    res.data->flags |= PRef::CONST;
+    res.flags |= Var::WEAK_CONST;
+    return res;
+}
+

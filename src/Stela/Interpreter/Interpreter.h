@@ -7,6 +7,7 @@
 #include "../System/Math.h"
 #include "../System/Vec.h"
 #include "../System/S.h"
+#include "ClassInfo.h"
 #include "NstrCor.h"
 #include "SfInfo.h"
 #include "Var.h"
@@ -32,18 +33,27 @@ public:
     int  ptr_size() const;
     int  ptr_alig() const;
 
-protected:
-    friend class Scope;
-
+    //
     ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
     void              disp_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
     int               glo_nstr( const Var *sf, int n );
 
+    // methods for sourcefiles
     bool              already_imported( String filename );
     const PI8        *tok_data_of( const Var *sf );
     SfInfo           &sf_info_of( const Var *sf );
-    Var               type_of( const Var &var );
 
+    // methods for Type variables
+    Var               type_of( const Var &var );
+    ClassInfo        &class_info( const Var &class_var );
+
+    Var              *type_for( ClassInfo &class_info );
+    Var              *type_for( ClassInfo &class_info, Var *parm_0 );
+    Var              *type_for( ClassInfo &class_info, Vec<Var *> parm_l );
+
+    // helpers
+    bool              equal( Var a, Var b );
+    Var               constified( Var &var ); ///< make a copy if referenced several times
     bool              isa_ptr_int( const Var &var ) const;
 
     // conversion
@@ -98,7 +108,8 @@ protected:
     int                          argc;
 
     // context
-    std::map<const PI8 *,SfInfo> sf_info_map;
+    std::map<const PI8 *,SfInfo   > sf_info_map;
+    std::map<Expr       ,ClassInfo> class_info_map;
 };
 
 extern NstrCor glob_nstr_cor;

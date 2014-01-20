@@ -2,11 +2,12 @@ MC = metil_comp -DDEBUG -Wall -march=native -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: std
-	cat out.cpp
+all: test_Expr
+# 	
 
 std: ext/PrepArg install_dir
 	${MC} -O3 src/stela.cpp ${SRC}
+	cat out.cpp
 
 install:
 	sudo cp met.xml /usr/share/kde4/apps/katepart/syntax

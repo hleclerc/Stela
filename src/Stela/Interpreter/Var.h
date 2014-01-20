@@ -16,6 +16,7 @@ public:
 
     // Où stocker ip ??
     Var( Interpreter *ip, Var *type, const Expr &expr );
+    Var( Interpreter *ip, Var *type, Ref *ref );
     Var( Interpreter *ip, Var *type );
     Var();
 
@@ -33,5 +34,7 @@ public:
     Ptr<PRef> type;
     int       flags;
 };
+
+Var constified( const Var &var );
 
 #endif // VAR_H

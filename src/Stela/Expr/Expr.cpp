@@ -1,5 +1,7 @@
 #include "Expr.h"
 
+namespace Expr_NS {
+
 Expr::Expr( Ptr<Inst> inst, int nout ) : inst( inst ), nout( nout ) {
 }
 
@@ -14,4 +16,14 @@ void Expr::write_to_stream( Stream &os ) const {
     os << inst;
     if ( inst->out_size() > 1 )
         os << '(' << nout << ')';
+}
+
+int Expr::size_in_bits() const {
+    return inst->size_in_bits( nout );
+}
+
+int Expr::size_in_bytes() const {
+    return inst->size_in_bytes( nout );
+}
+
 }

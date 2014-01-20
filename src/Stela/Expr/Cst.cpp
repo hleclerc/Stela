@@ -1,0 +1,62 @@
+#include "InstVisitor.h"
+#include "Inst_.h"
+#include "Cst.h"
+
+namespace Expr_NS {
+
+///
+static Vec<Cst *> cst_set;
+
+///
+class Cst : public Inst_<1,0> {
+public:
+    Cst( const Vec<PI8> &value, const Vec<PI8> &known ) : value( value ), known( known ) {
+        cst_set << this;
+    }
+
+    virtual ~Cst() {
+        cst_set.remove_first_unordered( this );
+    }
+
+    virtual int size_in_bits( int nout ) const {
+        return value.size() * 8;
+    }
+
+    virtual const PI8 *cst_data( int nout ) const {
+        return value.ptr();
+    }
+
+    virtual void write_to_stream( Stream &os ) const {
+        const char *c = "0123456789ABCDEF";
+        for( int i = 0; i < value.size(); ++i ) {
+            if ( i )
+                os << ' ';
+            os << c[ value[ i ] >> 4 ] << c[ value[ i ] & 0xF ];
+        }
+    }
+
+    virtual void apply( InstVisitor &visitor ) const {
+        visitor( *this, value );
+    }
+
+    virtual int inst_id() const { return 1; }
+
+    Vec<PI8> value; ///< value (should not be changed directly)
+    Vec<PI8> known; ///< known bits
+};
+
+Expr cst( const Vec<PI8> &value, const Vec<PI8> &known ) {
+    // already an equivalent cst ?
+    for( int i = 0; i < cst_set.size(); ++i )
+        if ( cst_set[ i ]->value == value and cst_set[ i ]->known == known )
+            return Expr( cst_set[ i ], 0 );
+
+    // else, create a new one
+    return Expr( new Cst( value, known ), 0 );
+}
+
+Expr cst( const Vec<PI8> &value ) {
+    return cst( value, Vec<PI8>( Size(), value.size(), 0xFF ) );
+}
+
+}

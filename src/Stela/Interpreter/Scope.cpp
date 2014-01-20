@@ -6,6 +6,8 @@
 #include "Rand.h"
 #include "Cst.h"
 
+#include "RefPtr.h"
+
 #include "../Ir/CallableFlags.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
@@ -63,7 +65,16 @@ Var Scope::copy( const Var &var, const Var *sf, int off ) {
 }
 
 Var Scope::parse_DEF( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) {
+    if ( not sf->cst_data() )
+        return disp_error( "TODO: class in sourcefile wo cst_data" );
+    // we read only the name, because the goal is only to register the class
+    int bin_offset = bin.ptr - sf->cst_data();
+    int name = read_nstring( sf, bin );
+    Var res = ::constified( add( ptr( sf->get(), ip->ptr_size() ), cst( bin_offset ) ) );
+    reg_var( name, res, sf, off, true );
+    return res;
+}
 Var Scope::parse_RETURN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_APPLY( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_SELECT( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }

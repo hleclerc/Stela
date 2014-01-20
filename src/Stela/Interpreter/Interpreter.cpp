@@ -74,7 +74,7 @@ void Interpreter::import( String filename ) {
     Vec<PI8> sf_data;
     SourceFile::make_dat( sf_data, bin_size, filename );
     t.copy_binary_data_to( const_cast<PI8 *>( SourceFile( sf_data.ptr() ).bin_data() ) );
-    Var *sf = sourcefiles.push_back( this, &type_SourceFile, cst( sf_data ) );
+    Var sf = ::constified( *sourcefiles.push_back( this, &type_SourceFile, cst( sf_data ) ) );
 
     //    if ( disp_tokens ) {
     //        //for( int i = 0; i < size; ++i )
@@ -90,7 +90,7 @@ void Interpreter::import( String filename ) {
     if ( not main_scope )
         main_scope = new Scope( this, 0 );
 
-    main_scope->parse( sf, tok_data_of( sf ) );
+    main_scope->parse( &sf, tok_data_of( &sf ) );
 }
 
 Vec<ConstPtr<Inst> > Interpreter::get_outputs() {
@@ -184,6 +184,66 @@ Var Interpreter::type_of( const Var &var ) {
     res.type  = type_Type.data;
     res.flags = Var::WEAK_CONST;
     return res;
+}
+
+ClassInfo &Interpreter::class_info( const Var &class_var ) {
+    Expr cg = class_var.get();
+    auto iter = class_info_map.find( cg );
+    if ( iter != class_info_map.end() )
+        return iter->second;
+    ClassInfo &res = class_info_map[ cg ];
+    res.expr = cg;
+    return res;
+}
+
+Var *Interpreter::type_for( ClassInfo &class_info ) {
+    return type_for( class_info, Vec<Var *>() );
+}
+
+Var *Interpreter::type_for( ClassInfo &class_info, Var *parm_0 ) {
+    return type_for( class_info, Vec<Var *>( parm_0 ) );
+}
+
+Var *Interpreter::type_for( ClassInfo &class_info, Vec<Var *> parm_l ) {
+    PRINT( class_info.expr );
+
+    for( TypeInfo *t = class_info.last; t; t = t->prev ) {
+        ASSERT( t->parameters.size() == parm_l.size(), "parameter lists not of the same size" );
+        for( int i = 0; ; ++i ) {
+            if ( i == t->parameters.size() )
+                return &t->type_var;
+            if ( not equal( t->parameters[ i ], *parm_l[ i ] ) )
+                break;
+        }
+    }
+    // -> new TypeInfo
+    TypeInfo *res = new TypeInfo;
+    for( Var *p: parm_l )
+        res->parameters << constified( *p );
+
+    // Data:
+    //  - ptr to parent class
+    //  - parameter [* nb parameters as defined in parent class]
+    Expr re = cst( Vec<PI8>( Size(), ( 1 + parm_l.size() ) * ptr_size() ) );
+    res->type_var = Var( this, &type_Type, re );
+
+    res->prev = class_info.last;
+    class_info.last = res;
+    return &res->type_var;
+}
+
+bool Interpreter::equal( Var a, Var b ) {
+    if ( isa_Type( a ) and isa_Type( b ) )
+        return a.get() == b.get();
+    TODO;
+    return false;
+}
+
+Var Interpreter::constified( Var &var ) {
+    if ( var.referenced_more_than_one_time() and not var.data->is_const() ) {
+        TODO;
+    }
+    return ::constified( var );
 }
 
 bool Interpreter::isa_ptr_int( const Var &var ) const {

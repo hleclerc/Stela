@@ -5,17 +5,19 @@
 #include "../System/Ptr.h"
 #include "../System/Vec.h"
 #include <cstddef>
+
+namespace Expr_NS {
+
 struct InstVisitor;
 struct Expr;
-
 
 /**
 */
 class Inst : public ObjectWithCptUse {
 public:
     // types
-    typedef Expr      Inp;
-    typedef Ptr<Inst> Ext;
+    typedef Expr        Inp;
+    typedef ::Ptr<Inst> Ext;
 
     struct Out {
         struct Item {
@@ -55,6 +57,12 @@ public:
 
     //
     virtual void apply( InstVisitor &visitor ) const = 0;
+    virtual bool equal( const Inst *b ) const;
+    virtual int  inst_id() const = 0; ///< unique id for each inst
+
+    /// return inst unless there's already the same operation somewhere
+    /// if it's the case, delete inst and return the corresponding instruction
+    static Inst *factorized( Inst *inst );
 
     // attributes
     Inst         *ext_parent;
@@ -63,5 +71,7 @@ public:
     mutable PI64  op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
     mutable void *op_mp;     ///< result of current operations
 };
+
+}
 
 #endif // INST_H
