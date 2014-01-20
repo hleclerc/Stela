@@ -42,8 +42,8 @@ src/Stela/Interpreter/VarTable.h
 src/Stela/Interpreter/DeclBaseClass.h
 src/Stela/Interpreter/TypeInfo.h
 src/Stela/Expr/DeclOp.h
+src/Stela/Expr/Reassign.h
 src/Stela/Expr/Op.h
-src/Stela/Expr/SubValue.h
 src/Stela/Expr/BaseType.h
 src/Stela/Expr/Syscall.h
 src/Stela/Expr/Ptr.h
@@ -110,8 +110,8 @@ src/Stela/Expr/BaseType.cpp
 src/Stela/Expr/Op.cpp
 src/Stela/Expr/Inst.cpp
 src/Stela/Expr/Rand.cpp
+src/Stela/Expr/Reassign.cpp
 src/Stela/Expr/OpStructs.cpp
-src/Stela/Expr/SubValue.cpp
 src/Stela/Expr/Cst.cpp
 src/Stela/Expr/Ptr.cpp
 src/Stela/Expr/Syscall.cpp
