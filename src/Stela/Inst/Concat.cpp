@@ -5,8 +5,6 @@
 #include "Inst_.h"
 #include "Cst.h"
 
-namespace Expr_NS {
-
 ///
 class Concat : public Inst_<1,2> {
 public:
@@ -45,6 +43,4 @@ Expr concat( Expr a, Expr b ) {
     res->inp_repl( 0, a );
     res->inp_repl( 1, b );
     return Expr( Inst::factorized( res ), 0 );
-}
-
 }

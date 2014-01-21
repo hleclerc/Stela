@@ -3,8 +3,6 @@
 
 #include "Inst_.h"
 
-namespace Expr_NS {
-
 /**
   out
      -> new sys state
@@ -15,7 +13,5 @@ struct syscall {
     Expr sys;
     Expr ret;
 };
-
-}
 
 #endif // SYSCALL_H

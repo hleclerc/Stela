@@ -1,7 +1,7 @@
 #ifndef CPPINSTCOMPILER_H
 #define CPPINSTCOMPILER_H
 
-#include "../Interpreter/InstVisitor.h"
+#include "../Inst/InstVisitor.h"
 #include "CppCompiler.h"
 
 /**
@@ -12,11 +12,20 @@ public:
 
     CppInstCompiler( CppCompiler *cc );
 
-    virtual void operator()( const Inst    &inst );
+    virtual void def( const Inst &inst );
 
-    virtual void operator()( const Syscall &inst );
-    virtual void operator()( const Rand    &inst );
-    virtual void operator()( const Cst     &inst );
+    // add, sub, ...
+    #define DECL_OP( OP ) virtual void OP( const Inst &inst );
+    #include "../Inst/DeclOp.h"
+    #undef DECL_OP
+
+    virtual void concat    ( const Inst &inst );
+    virtual void syscall   ( const Inst &inst, int ptr_size );
+    virtual void val_at    ( const Inst &inst, int size );
+    virtual void slice     ( const Inst &inst, int beg, int end );
+    virtual void pointer_on( const Inst &inst, int ptr_size );
+    virtual void rand      ( const Inst &inst, int size );
+    virtual void cst       ( const Inst &inst, const Vec<PI8> &data );
 
     CppCompiler *cc;
 };

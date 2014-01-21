@@ -6,8 +6,6 @@
 #include "../System/Vec.h"
 #include <cstddef>
 
-namespace Expr_NS {
-
 struct InstVisitor;
 struct Expr;
 
@@ -77,7 +75,5 @@ public:
     mutable PI64  op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
     mutable void *op_mp;     ///< result of current operations
 };
-
-}
 
 #endif // INST_H

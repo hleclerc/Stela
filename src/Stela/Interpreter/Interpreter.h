@@ -12,6 +12,7 @@
 #include "SfInfo.h"
 #include "Var.h"
 
+class BaseType;
 class Scope;
 class ToDel;
 
@@ -63,7 +64,7 @@ public:
             #define DECL_BT( U ) \
                 if ( isa_##U( var ) ) \
                     return ::conv( res, *reinterpret_cast<const U *>( data ) );
-            #include "DeclArytTypes.h"
+            #include "../Inst/DeclArytTypes.h"
             #undef DECL_BT
         }
         return false;
@@ -74,7 +75,7 @@ public:
     #define DECL_BT( T ) \
         bool isa( const Var &var, S<T> ) const { return isa_##T( var ); } \
         Var *type_for( S<T> ) { return &type_##T; }
-    #include "DeclArytTypes.h"
+    #include "../Inst/DeclArytTypes.h"
     #undef DECL_BT
 
     // basic types (not parameterized)
@@ -97,6 +98,8 @@ public:
     // std variables
     Var                          error_var;
     Var                          void_var;
+
+    const BaseType              *bt_ST;
 
     // attributes
     SplittedVec<ToDel *,16>      obj_to_delete;

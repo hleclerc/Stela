@@ -1,13 +1,11 @@
-#include <Stela/Expr/PointerOn.h>
-#include <Stela/Expr/Syscall.h>
-#include <Stela/Expr/Concat.h>
-#include <Stela/Expr/ValAt.h>
-#include <Stela/Expr/Slice.h>
-#include <Stela/Expr/Rand.h>
-#include <Stela/Expr/Cst.h>
-#include <Stela/Expr/Op.h>
-
-using namespace Expr_NS;
+#include <Stela/Inst/PointerOn.h>
+#include <Stela/Inst/Syscall.h>
+#include <Stela/Inst/Concat.h>
+#include <Stela/Inst/ValAt.h>
+#include <Stela/Inst/Slice.h>
+#include <Stela/Inst/Rand.h>
+#include <Stela/Inst/Cst.h>
+#include <Stela/Inst/Op.h>
 
 Stream &pp( Stream &os, Expr e ) { os << e << " at " << e.inst.ptr(); return os; }
 #define PA( A ) pp( std::cout << "  " << #A << " -> ", A ) << std::endl

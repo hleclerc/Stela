@@ -2,7 +2,7 @@ MC = metil_comp -DDEBUG -Wall -march=native -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: test_Expr
+all: std
 # 	
 
 std: ext/PrepArg install_dir

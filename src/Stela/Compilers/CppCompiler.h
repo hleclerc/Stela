@@ -1,10 +1,10 @@
 #ifndef CPPCOMPILER_H
 #define CPPCOMPILER_H
 
-#include "../Interpreter/BaseType.h"
 #include "../System/SplittedVec.h"
 #include "../System/StreamSep.h"
-#include "../Interpreter/Expr.h"
+#include "../Inst/BaseType.h"
+#include "../Inst/Expr.h"
 #include <sstream>
 #include <set>
 

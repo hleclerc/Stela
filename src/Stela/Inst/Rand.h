@@ -3,10 +3,6 @@
 
 #include "Expr.h"
 
-namespace Expr_NS {
-
 Expr rand( int size_in_bits );
-
-}
 
 #endif // RAND_H

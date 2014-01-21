@@ -8,5 +8,5 @@ DECL_BT( Def )
 
 DECL_BT( SourceFile )
 
-#include "DeclArytTypes.h"
+#include "../Inst/DeclArytTypes.h"
 

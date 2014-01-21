@@ -3,8 +3,6 @@
 
 #include "Expr.h"
 
-namespace Expr_NS {
-
 template<int nb_out,int nb_inp,int nb_ext=0>
 class Inst_ : public Inst {
 public:
@@ -91,7 +89,5 @@ public:
     Vec<Inp,nb_inp> inp;
     Vec<Ext,nb_ext> ext;
 };
-
-}
 
 #endif // INST__H

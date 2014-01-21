@@ -1,6 +1,6 @@
+#include "../Inst/Cst.h"
 #include "RefExpr.h"
 #include "Var.h"
-#include "Cst.h"
 
 Var::Var( Interpreter *ip, Var *type, const Expr &expr ) : data( new PRef( ip ) ), type( type->data ), flags( 0 ) {
     data->ptr = new RefExpr( expr );

@@ -1,12 +1,12 @@
+#include "../Inst/PointerOn.h"
 #include "Interpreter.h"
-#include "InstPtr.h"
 #include "RefPtr.h"
 
 RefPtr::RefPtr( Var var, int ptr_size ) : var( var ), ptr_size( ptr_size ) {
 }
 
 Expr RefPtr::get() const {
-    return ptr( var.get(), ptr_size );
+    return pointer_on( var.get(), ptr_size );
 }
 
 void RefPtr::set( Expr expr ) {

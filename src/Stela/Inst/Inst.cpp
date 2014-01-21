@@ -1,7 +1,5 @@
 #include "Cst.h"
 
-namespace Expr_NS {
-
 PI64 Inst::cur_op_id = 0;
 
 Inst::Inst() {
@@ -59,6 +57,4 @@ Expr Inst::_smp_val_at( int nout, int size ) {
 
 Expr Inst::_smp_pointer_on( int nout ) {
     return Expr();
-}
-
 }

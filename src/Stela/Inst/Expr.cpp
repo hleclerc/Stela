@@ -1,7 +1,5 @@
 #include "Expr.h"
 
-namespace Expr_NS {
-
 Expr::Expr( Ptr<Inst> inst, int nout ) : inst( inst ), nout( nout ) {
 }
 
@@ -24,6 +22,4 @@ int Expr::size_in_bits() const {
 
 int Expr::size_in_bytes() const {
     return inst->size_in_bytes( nout );
-}
-
 }

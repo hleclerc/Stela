@@ -2,9 +2,11 @@
 #include "SourceFile.h"
 #include "Scope.h"
 
-#include "Syscall.h"
-#include "Rand.h"
-#include "Cst.h"
+#include "../Inst/PointerOn.h"
+#include "../Inst/Syscall.h"
+#include "../Inst/Rand.h"
+#include "../Inst/Cst.h"
+#include "../Inst/Op.h"
 
 #include "RefPtr.h"
 
@@ -69,9 +71,14 @@ Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) {
     if ( not sf->cst_data() )
         return disp_error( "TODO: class in sourcefile wo cst_data" );
     // we read only the name, because the goal is only to register the class
-    int bin_offset = bin.ptr - sf->cst_data();
+    ST  bin_offset = bin.ptr - sf->cst_data();
     int name = read_nstring( sf, bin );
-    Var res = ::constified( add( ptr( sf->get(), ip->ptr_size() ), cst( bin_offset ) ) );
+    Var res = ::constified( Var( ip, &ip->type_Class,
+                add( ip->bt_ST,
+                     pointer_on( sf->get(), ip->ptr_size() ),
+                     cst( bin_offset ) )
+                ) );
+    PRINT( res );
     reg_var( name, res, sf, off, true );
     return res;
 }
@@ -342,7 +349,7 @@ Var Scope::find_var( int name ) {
 
 Var Scope::parse_rand( const Var *sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
-    return Var( ip, &ip->type_PI64, rand_var() );
+    return Var( ip, &ip->type_PI64, rand( ip->ptr_size() ) );
 }
 
 Var Scope::parse_syscall( const Var *sf, int off, BinStreamReader bin ) {
@@ -355,7 +362,7 @@ Var Scope::parse_syscall( const Var *sf, int off, BinStreamReader bin ) {
         inp[ i ] = simplified_expr( v );
     }
 
-    syscall res( simplified_expr( sys_state ), inp, n, ip->ptr_size() );
+    syscall res( simplified_expr( sys_state ), n, inp, ip->ptr_size() );
     set( sys_state, res.sys, sf, off );
     return Var( ip, &ip->type_SI64, res.ret );
 }

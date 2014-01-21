@@ -5,7 +5,9 @@
 #include "Interpreter.h"
 #include "SourceFile.h"
 #include "Scope.h"
-#include "Cst.h"
+
+#include "../Inst/BaseType.h"
+#include "../Inst/Cst.h"
 
 NstrCor glob_nstr_cor;
 
@@ -22,6 +24,8 @@ Interpreter::Interpreter( ErrorList &error_list ) :
     error_list( error_list ) {
 
     main_scope = 0;
+
+    bt_ST = sizeof( ST ) == 8 ? bt_SI64 : bt_SI32;
 
     // constify
     error_var.data->flags = PRef::CONST;
@@ -113,7 +117,7 @@ void Interpreter::set_argv( char **argv ) {
 }
 
 int Interpreter::ptr_size() const {
-    return sizeof( void * );
+    return 8 * sizeof( void * );
 }
 
 int Interpreter::ptr_alig() const {

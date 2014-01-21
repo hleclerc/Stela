@@ -3,10 +3,8 @@
 #include "Inst_.h"
 #include "Cst.h"
 
-namespace Expr_NS {
-
 ///
-static Vec<Cst *> cst_set;
+static Vec<class Cst *> cst_set;
 
 ///
 class Cst : public Inst_<1,0> {
@@ -37,7 +35,7 @@ public:
     }
 
     virtual void apply( InstVisitor &visitor ) const {
-        visitor( *this, value );
+        visitor.cst( *this, value );
     }
 
     virtual int inst_id() const { return 1; }
@@ -64,6 +62,4 @@ Expr cst( const Vec<PI8> &value, const Vec<PI8> &known ) {
 
 Expr cst( const Vec<PI8> &value ) {
     return cst( value, Vec<PI8>( Size(), value.size(), 0xFF ) );
-}
-
 }

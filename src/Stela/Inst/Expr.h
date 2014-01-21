@@ -3,8 +3,6 @@
 
 #include "Inst.h"
 
-namespace Expr_NS {
-
 /**
 */
 class Expr {
@@ -26,7 +24,5 @@ public:
     Ptr<Inst> inst;
     int         nout; ///< num output of inst to use
 };
-
-}
 
 #endif // EXPR_H

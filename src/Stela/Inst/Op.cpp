@@ -4,16 +4,22 @@
 #include "Cst.h"
 #include "Op.h"
 
-namespace Expr_NS {
-
 /**
 */
 template<class TOP>
 class Op : public Inst_<1,TOP::nb_ch> {
 public:
     virtual int size_in_bits( int nout ) const { return bt->size_in_bytes(); }
-    virtual void write_to_stream( Stream &os ) const { os << TOP::name(); }
-    virtual void apply( InstVisitor &visitor ) const { visitor( *this ); }
+    virtual void write_to_stream( Stream &os ) const {
+        os << TOP::name() << "(";
+        for( int i = 0; i < TOP::nb_ch; ++i ) {
+            if ( i )
+                os << ",";
+            os << this->inp_expr( i );
+        }
+        os << ")";
+    }
+    virtual void apply( InstVisitor &visitor ) const;
     virtual int inst_id() const { return 100 + TOP::op_id; }
     virtual bool equal( const Inst *b ) const {
         return Inst::equal( b ) and bt == static_cast<const Op *>( b )->bt;
@@ -63,6 +69,10 @@ static Expr _op( TOP, const BaseType *bt, Expr a ) {
     return Expr( Inst::factorized( res ), 0 );
 }
 
+#define DECL_OP( OP ) template<> void Op<Op_##OP>::apply( InstVisitor &visitor ) const { visitor.OP( *this, bt ); }
+#include "DeclOpBinary.h"
+#undef DECL_OP
+
 #define DECL_OP( OP ) Expr OP( const BaseType *bt, Expr a, Expr b ) { return _op( Op_##OP(), bt, a, b ); }
 #include "DeclOpBinary.h"
 #undef DECL_OP
@@ -70,5 +80,3 @@ static Expr _op( TOP, const BaseType *bt, Expr a ) {
 #define DECL_OP( OP ) Expr OP( const BaseType *bt, Expr a ) { return _op( Op_##OP(), bt, a ); }
 #include "DeclOpUnary.h"
 #undef DECL_OP
-
-}
