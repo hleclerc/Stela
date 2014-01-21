@@ -1,3 +1,4 @@
+#include <string.h>
 #include "Expr.h"
 
 Expr::Expr( Ptr<Inst> inst, int nout ) : inst( inst ), nout( nout ) {
@@ -22,4 +23,12 @@ int Expr::size_in_bits() const {
 
 int Expr::size_in_bytes() const {
     return inst->size_in_bytes( nout );
+}
+
+bool Expr::conv( SI32 &val ) const {
+    if ( const PI8 *data = cst_data() ) {
+        memcpy( &val, data, std::min( int( sizeof( SI32 ) ), size_in_bytes() ) );
+        return true;
+    }
+    return false;
 }

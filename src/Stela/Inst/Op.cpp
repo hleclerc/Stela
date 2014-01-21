@@ -9,7 +9,7 @@
 template<class TOP>
 class Op : public Inst_<1,TOP::nb_ch> {
 public:
-    virtual int size_in_bits( int nout ) const { return bt->size_in_bytes(); }
+    virtual int size_in_bits( int nout ) const { return bt->size_in_bits(); }
     virtual void write_to_stream( Stream &os ) const {
         os << TOP::name() << "(";
         for( int i = 0; i < TOP::nb_ch; ++i ) {
@@ -59,6 +59,7 @@ static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
     Op<TOP> *res = new Op<TOP>;
     res->inp_repl( 0, a );
     res->inp_repl( 1, b );
+    res->bt = bt;
     return Expr( Inst::factorized( res ), 0 );
 }
 

@@ -8,7 +8,7 @@
 Expr cst( const Vec<PI8> &value, const Vec<PI8> &known );
 
 ///
-Expr cst( const Vec<PI8> &value );
+Expr cst( const Vec<PI8> &value = Vec<PI8>() );
 
 /// helper version
 template<class T>

@@ -11,7 +11,8 @@ class Type;
 class Var {
 public:
     enum {
-        WEAK_CONST = 1 ///< this variable should be changed, but nothing can guarantee that it won't be changed elsewhere
+        WEAK_CONST = 1, ///< this variable should be changed, but nothing can guarantee that it won't be changed elsewhere
+        SURDEF     = 2
     };
 
     // Où stocker ip ??
@@ -27,7 +28,10 @@ public:
     const PI8 *cst_data() const; ///< return 0 or a pointer on data if known
     bool referenced_more_than_one_time() const;
 
-    Expr get() const;
+    bool is_weak_const() const;
+    bool is_surdef() const;
+
+    Expr expr() const;
     bool set( Expr expr );
 
     Ptr<PRef> data;

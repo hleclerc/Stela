@@ -4,10 +4,14 @@
 
 #include "../Inst/PointerOn.h"
 #include "../Inst/Syscall.h"
+#include "../Inst/Concat.h"
+#include "../Inst/Slice.h"
+#include "../Inst/ValAt.h"
 #include "../Inst/Rand.h"
 #include "../Inst/Cst.h"
 #include "../Inst/Op.h"
 
+#include "RefExpr.h"
 #include "RefPtr.h"
 
 #include "../Ir/CallableFlags.h"
@@ -25,6 +29,7 @@ Scope::Scope( Interpreter *ip, Scope *parent, Scope *caller, Ptr<VarTable> snv )
     base_alig = 1;
 
     sys_state = parent ? parent->sys_state : Var( ip, &ip->type_Void );
+    self = 0;
 }
 
 Var Scope::parse( const Var *sf, const PI8 *tok ) {
@@ -66,24 +71,59 @@ Var Scope::copy( const Var &var, const Var *sf, int off ) {
     return var;
 }
 
-Var Scope::parse_DEF( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_CALLABLE( const Var *sf, int off, BinStreamReader bin, Var *type ) {
     if ( not sf->cst_data() )
-        return disp_error( "TODO: class in sourcefile wo cst_data" );
+        return disp_error( "TODO: class or def in sourcefile wo cst_data" );
     // we read only the name, because the goal is only to register the class
-    ST  bin_offset = bin.ptr - sf->cst_data();
+    ST bin_offset = bin.ptr - sf->cst_data();
     int name = read_nstring( sf, bin );
-    Var res = ::constified( Var( ip, &ip->type_Class,
-                add( ip->bt_ST,
-                     pointer_on( sf->get(), ip->ptr_size() ),
-                     cst( bin_offset ) )
-                ) );
-    PRINT( res );
+
+    Var res;
+    switch( name ) {
+    #define DECL_BT( T ) case STRING_##T##_NUM: res = ip->class_##T; break;
+    #include "DeclBaseClass.h"
+    #include "DeclParmClass.h"
+    #undef DECL_BT
+    default: res = ::constified( Var( ip, type ) );
+    }
+
+    res.data->ptr = new RefExpr( add( ip->bt_ST,
+                                      pointer_on( sf->expr(), ip->ptr_size() ),
+                                      ip->cst_ptr( bin_offset ) )
+                                 );
+    res.flags |= Var::SURDEF;
     reg_var( name, res, sf, off, true );
-    return res;
+
+    return ip->void_var;
 }
+
+Var Scope::parse_DEF( const Var *sf, int off, BinStreamReader bin ) {
+    return parse_CALLABLE( sf, off, bin, &ip->type_Class );
+}
+
+Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) {
+    return parse_CALLABLE( sf, off, bin, &ip->type_Def );
+}
+
 Var Scope::parse_RETURN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_APPLY( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_APPLY( const Var *sf, int off, BinStreamReader bin ) {
+    Var f = parse( sf, bin.read_offset() );
+
+    int nu = bin.read_positive_integer();
+    Var u_args[ nu ];
+    for( int i = 0; i < nu; ++i )
+        u_args[ i ] = parse( sf, bin.read_offset() );
+
+    int nn = bin.read_positive_integer();
+    int n_name[ nn ];
+    Var n_args[ nn ];
+    for( int i = 0; i < nn; ++i ) {
+        n_name[ i ] = read_nstring( sf, bin );
+        n_args[ i ] = parse( sf, bin.read_offset() );
+    }
+
+    return apply( f, nu, u_args, nn, n_name, n_args, APPLY_MODE_STD, sf, off );
+}
 Var Scope::parse_SELECT( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_CHBEBA( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_SI32( const Var *sf, int off, BinStreamReader bin ) {
@@ -303,7 +343,48 @@ Var Scope::disp_error( String msg, const Var *sf, int off, bool warn ) {
 
 Expr Scope::simplified_expr( const Var &var ) {
     Var sop = get_val_if_GetSetSopInst( var );
-    return sop.get();
+    return sop.expr();
+}
+
+Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off ) {
+    // if error_var -> break
+    if ( ip->isa_Error( f ) )
+        return ip->error_var;
+    for( int i = 0; i < nu; ++i )
+        if ( ip->isa_Error( u_args[ i ] ) )
+            return ip->error_var;
+    for( int i = 0; i < nn; ++i )
+        if ( ip->isa_Error( n_args[ i ] ) )
+            return ip->error_var;
+
+    //int na = nu + nn;
+    if ( ip->isa_Callable( f ) ) {
+        // Callable[ surdef_list, self_type, parm_type ]
+        //  - self ref
+        //  - parm data
+        // type
+        SI32 surdef_list_size, ps = ip->ptr_size();
+        if ( not val_at( slice( f.type->ptr->expr(), 1 * ps, 2 * ps ), 32 ).conv( surdef_list_size ) )
+            return disp_error( "pb decoding callable (to find surdef list)" );
+        Expr surdef_list = val_at( slice( f.type->ptr->expr(), 1 * ps, 2 * ps ), 32 + surdef_list_size * ps );
+        for( int i = 0; i < surdef_list_size; ++i ) {
+            // pb: obtenir le type des surdefs
+            // prop 1: on stocke une référence sur le type dans la liste des surdefs
+            // Rq: pour l'instant, c'est toujours vers des tok qu'on pointe...
+            Expr te = val_at( slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps ), 1 );
+            // -> TODO: val_at( add( ptr( ... ), ... ), ... ) à simplifier
+            PRINT( te );
+            PRINT( (int *)te.cst_data() );
+        }
+
+        PRINT( surdef_list_size );
+        TODO;
+    }
+
+    disp_error( "unmanaged callable type", sf, off );
+    PRINT( f );
+    TODO;
+    return ip->error_var;
 }
 
 void Scope::set( Var &o, Expr n, const Var *sf, int off ) {
@@ -319,7 +400,7 @@ Var Scope::reg_var( int name, const Var &var, const Var *sf, int off, bool stat 
     return var;
 }
 
-Var Scope::find_var( int name ) {
+Var Scope::find_var_first( int name ) {
     for( Scope *s = this; ; s = s->parent ) {
         if ( Var res = s->named_vars.get( name ) )
             return res;
@@ -340,6 +421,57 @@ Var Scope::find_var( int name ) {
             break;
     }
     return Var();
+}
+
+void Scope::find_var_clist( Vec<Var> &lst, int name ) {
+    for( Scope *s = this; ; s = s->parent ) {
+        s->named_vars.get( lst, name );
+        s->static_named_vars->get( lst, name );
+        //
+        if ( Scope *p = s->parent ) {
+            if ( not p->parent ) { // -> there is a parent, but the parent is the main scope
+                for( VarTable *vt = p->static_named_vars.ptr(); vt; vt = vt->parent )
+                    vt->get( lst, name );
+                // non static vars of main scope
+                p->named_vars.get( lst, name );
+            }
+        } else
+            break;
+    }
+}
+
+Var Scope::find_var( int name ) {
+    Var res = find_var_first( name );
+    if ( not res.is_surdef() )
+        return res;
+
+    // -> Callable[ surdef_list, self_type, parm_type ]
+    Vec<Var> lst;
+    find_var_clist( lst, name );
+    Expr surdef_list_data = cst( SI32( lst.size() ) );
+    for( int i = 0; i < lst.size(); ++i )
+        surdef_list_data = concat( surdef_list_data, lst[ i ].expr() );
+    Var surdef_list( ip, &ip->type_SurdefList, surdef_list_data );
+    Var self_type = self_var() ? ip->type_of( *self_var() ) : ip->void_var;
+
+    Vec<Var *> parms;
+    parms << &surdef_list;
+    parms << &self_type;
+    parms << &ip->void_var;
+    Var *callable_type = ip->type_for( ip->class_info( ip->class_Callable ), parms );
+
+    Expr callable_data;
+    if ( Var *s = self_var() )
+        callable_data = ip->ref_expr_on( *s );
+    else
+        callable_data = cst();
+    return Var( ip, callable_type, callable_data );
+}
+
+Var *Scope::self_var() {
+    if ( self )
+        return self;
+    return parent ? parent->self_var() : 0;
 }
 
 #define CHECK_PRIM_ARGS( N ) \

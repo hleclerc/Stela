@@ -15,6 +15,7 @@
 class BaseType;
 class Scope;
 class ToDel;
+class Expr;
 
 /**
 */
@@ -45,17 +46,23 @@ public:
     SfInfo           &sf_info_of( const Var *sf );
 
     // methods for Type variables
-    Var               type_of( const Var &var );
+    Var               type_of( const Var &var ) const;
     ClassInfo        &class_info( const Var &class_var );
 
     Var              *type_for( ClassInfo &class_info );
     Var              *type_for( ClassInfo &class_info, Var *parm_0 );
     Var              *type_for( ClassInfo &class_info, Vec<Var *> parm_l );
 
+
     // helpers
     bool              equal( Var a, Var b );
     Var               constified( Var &var ); ///< make a copy if referenced several times
     bool              isa_ptr_int( const Var &var ) const;
+    Expr              cst_ptr( SI64 val );
+
+    // references
+    Expr              ref_expr_on( const Var &var );
+    bool              is_of_class( const Var &var, const Var &class_ ) const;
 
     // conversion
     template<class T>
@@ -70,6 +77,11 @@ public:
         return false;
     }
 
+    struct VarRef {
+        VarRef() : cpt( -1 ) {}
+        Var var;
+        int cpt;
+    };
     
     // base types and class
     #define DECL_BT( T ) \
@@ -91,7 +103,7 @@ public:
     #undef DECL_BT
 
     // parameterized classes
-    #define DECL_BT( T ) Var class_##T;
+    #define DECL_BT( T ) Var class_##T; bool isa_##T( const Var &var ) const;
     #include "DeclParmClass.h"
     #undef DECL_BT
 
@@ -111,8 +123,9 @@ public:
     int                          argc;
 
     // context
-    std::map<const PI8 *,SfInfo   > sf_info_map;
-    std::map<Expr       ,ClassInfo> class_info_map;
+    std::map<const PI8  *,SfInfo   > sf_info_map;
+    std::map<Expr        ,ClassInfo> class_info_map;
+    std::map<const PRef *,VarRef   > var_refs;
 };
 
 extern NstrCor glob_nstr_cor;

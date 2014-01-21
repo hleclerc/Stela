@@ -450,7 +450,7 @@ base_primitives = string.split( """
 
 std_strings = string.split( """
     break continue abstract
-    Callable Class Def ClassInst DefInst SurdefList
+    SourceFile Callable Class Def ClassInst DefInst SurdefList
     GetSetSopDef GetSetSopInst Ptr Block getr_ptr self_ptr
     Bool Void Error FreeSlot self this
     SI8 SI16 SI32 SI64 PI8 PI16 PI32 PI64 FP32 FP64 FP80

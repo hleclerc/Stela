@@ -10,7 +10,7 @@ class Concat : public Inst_<1,2> {
 public:
     virtual int size_in_bits( int nout ) const { return inp_expr( 0 ).size_in_bits() + inp_expr( 1 ).size_in_bits(); }
     virtual void write_to_stream( Stream &os ) const { os << "concat(" << inp_expr( 0 ) << "," << inp_expr( 1 ) << ")"; }
-    virtual void apply( InstVisitor &visitor ) const { visitor( *this ); }
+    virtual void apply( InstVisitor &visitor ) const { visitor.concat( *this ); }
     virtual int inst_id() const { return 5; }
     virtual Expr _smp_slice( int nout, int beg, int end ) {
         // basic simplifications

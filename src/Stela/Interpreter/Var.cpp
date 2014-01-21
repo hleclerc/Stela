@@ -20,19 +20,27 @@ Var::~Var() {
 }
 
 const PI8 *Var::cst_data() const {
-    return data and data->ptr ? data->ptr->get().cst_data() : 0;
+    return data and data->ptr ? data->ptr->expr().cst_data() : 0;
 }
 
 bool Var::referenced_more_than_one_time() const {
     return data->cpt_use > 1;
 }
 
+bool Var::is_weak_const() const {
+    return flags & WEAK_CONST;
+}
+
+bool Var::is_surdef() const {
+    return flags & SURDEF;
+}
+
 void Var::write_to_stream( Stream &os ) const {
     os << type << "(" << data << ")";
 }
 
-Expr Var::get() const {
-    return data and data->ptr ? data->ptr->get() : cst( Vec<PI8>() );
+Expr Var::expr() const {
+    return data and data->ptr ? data->ptr->expr() : cst( Vec<PI8>() );
 }
 
 bool Var::set( Expr expr ) {

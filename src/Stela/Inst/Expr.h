@@ -21,8 +21,10 @@ public:
     const TPar &parents() const { return inst->out_expr( nout ).parents; }
     TPar &parents() { return inst->out_expr( nout ).parents; }
 
+    bool conv( SI32 &val ) const;
+
     Ptr<Inst> inst;
-    int         nout; ///< num output of inst to use
+    int       nout; ///< num output of inst to use
 };
 
 #endif // EXPR_H

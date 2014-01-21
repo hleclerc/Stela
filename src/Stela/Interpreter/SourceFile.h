@@ -6,7 +6,11 @@
 
 /**
   interface for SourceFile data (stored in Var objects)
-  basically contains int( size_of_tok_data ) + tok_data + int( size_of_filename ) + filename (\0 ended)
+  basically contains
+    - int( size_of_tok_data )
+    - tok_data
+    - int( size_of_filename )
+    - filename (\0 ended)
 */
 class SourceFile {
 public:

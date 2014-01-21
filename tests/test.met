@@ -8,12 +8,29 @@
 # -> les variables contiennent des pointeurs vers les données
 # -> on retrouve les infos à l'aide de tables de correspondance
 # -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
+class Callable
+    pass
+
 class Toto
     t := 0
-    
+
+# -> faire une liste avec les surdefs...
+# -> les variables pour les définitions doivent apparaître dans les paramètres 
+#    template, avec equal défini dessus.
+# -> prop 1: surdef_list est un type de taille variable, avec nb_surdefs puis les refs sur les defs
+# -> REFS: on stocke 
+# class Callable[ surdef_list, self_type, parm_type ]
 # a := 10l
 # ___syscall 60l, a
+# 
+# problème avec f( def toto ... ) -> le code généré pour la fonction f ne sera pas dépendant du type. Ce n'est pas forcément un problème si on gère les virtual dans Def... mais ça se mort la queue : il faut qd même un nouveau type derrière
+# Rq: un type se fait à partir d'un ClassInfo, qui vient de class_type.expr()
+# class_info devrait aussi être un type différent, ...
+# Proposition pour simplifier (ne pas se mordre la queue), class Toto et def Toto ne renvoient rien !
 t := Toto()
 
 # if ___rand()
     # ___syscall 60l, 10l
+
+    
+    

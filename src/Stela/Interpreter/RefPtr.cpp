@@ -5,8 +5,8 @@
 RefPtr::RefPtr( Var var, int ptr_size ) : var( var ), ptr_size( ptr_size ) {
 }
 
-Expr RefPtr::get() const {
-    return pointer_on( var.get(), ptr_size );
+Expr RefPtr::expr() const {
+    return pointer_on( var.expr(), ptr_size );
 }
 
 void RefPtr::set( Expr expr ) {

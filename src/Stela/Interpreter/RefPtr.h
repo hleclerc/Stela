@@ -10,7 +10,7 @@ class RefPtr : public Ref {
 public:
     RefPtr( Var var, int ptr_size );
 
-    virtual Expr get() const;
+    virtual Expr expr() const;
     virtual void set( Expr expr );
     virtual void write_to_stream( Stream &os ) const;
 

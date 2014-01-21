@@ -6,7 +6,11 @@
 #include "SourceFile.h"
 #include "Scope.h"
 
+#include "../Inst/PointerOn.h"
 #include "../Inst/BaseType.h"
+#include "../Inst/Concat.h"
+#include "../Inst/Slice.h"
+#include "../Inst/ValAt.h"
 #include "../Inst/Cst.h"
 
 NstrCor glob_nstr_cor;
@@ -100,7 +104,7 @@ void Interpreter::import( String filename ) {
 Vec<ConstPtr<Inst> > Interpreter::get_outputs() {
     Vec<ConstPtr<Inst> > res;
     if ( main_scope->sys_state )
-        res << main_scope->sys_state.get().inst;
+        res << main_scope->sys_state.expr().inst;
     return res;
 }
 
@@ -182,7 +186,7 @@ int Interpreter::glo_nstr( const Var *sf, int n ) {
     return si.nstr_cor[ n ];
 }
 
-Var Interpreter::type_of( const Var &var ) {
+Var Interpreter::type_of( const Var &var ) const {
     Var res;
     res.data  = var.type;
     res.type  = type_Type.data;
@@ -191,7 +195,7 @@ Var Interpreter::type_of( const Var &var ) {
 }
 
 ClassInfo &Interpreter::class_info( const Var &class_var ) {
-    Expr cg = class_var.get();
+    Expr cg = class_var.expr();
     auto iter = class_info_map.find( cg );
     if ( iter != class_info_map.end() )
         return iter->second;
@@ -209,8 +213,6 @@ Var *Interpreter::type_for( ClassInfo &class_info, Var *parm_0 ) {
 }
 
 Var *Interpreter::type_for( ClassInfo &class_info, Vec<Var *> parm_l ) {
-    PRINT( class_info.expr );
-
     for( TypeInfo *t = class_info.last; t; t = t->prev ) {
         ASSERT( t->parameters.size() == parm_l.size(), "parameter lists not of the same size" );
         for( int i = 0; ; ++i ) {
@@ -228,9 +230,11 @@ Var *Interpreter::type_for( ClassInfo &class_info, Vec<Var *> parm_l ) {
     // Data:
     //  - ptr to parent class
     //  - parameter [* nb parameters as defined in parent class]
-    Expr re = cst( Vec<PI8>( Size(), ( 1 + parm_l.size() ) * ptr_size() ) );
-    res->type_var = Var( this, &type_Type, re );
+    Expr re = pointer_on( class_info.expr, ptr_size() );
+    for( int i = 0; i < res->parameters.size(); ++i )
+        re = concat( re, ref_expr_on( res->parameters[ i ] ) );
 
+    res->type_var = Var( this, &type_Type, re );
     res->prev = class_info.last;
     class_info.last = res;
     return &res->type_var;
@@ -238,7 +242,7 @@ Var *Interpreter::type_for( ClassInfo &class_info, Vec<Var *> parm_l ) {
 
 bool Interpreter::equal( Var a, Var b ) {
     if ( isa_Type( a ) and isa_Type( b ) )
-        return a.get() == b.get();
+        return a.expr() == b.expr();
     TODO;
     return false;
 }
@@ -250,9 +254,32 @@ Var Interpreter::constified( Var &var ) {
     return ::constified( var );
 }
 
+Expr Interpreter::cst_ptr( SI64 val ) {
+    if ( ptr_size() == 32 )
+        return cst( SI32( val ) );
+    return cst( val );
+}
+
+Expr Interpreter::ref_expr_on( const Var &var ) {
+    VarRef &res = var_refs[ var.data.ptr() ];
+    res.var = var;
+    ++res.cpt;
+
+    return pointer_on( var.expr(), ptr_size() );
+}
+
+
 bool Interpreter::isa_ptr_int( const Var &var ) const {
     if ( ptr_size() == 32 )
         return isa_SI32( var ) or isa_PI32( var );
     return isa_SI64( var ) or isa_PI64( var );
 }
+
+bool Interpreter::is_of_class( const Var &var, const Var &class_ ) const {
+    return val_at( slice( var.type->ptr->expr(), 0, ptr_size() ), ptr_size() ) == class_.expr();
+}
+
+#define DECL_BT( T ) bool Interpreter::isa_##T( const Var &var ) const { return is_of_class( var, class_##T ); }
+#include "DeclParmClass.h"
+#undef DECL_BT
 
