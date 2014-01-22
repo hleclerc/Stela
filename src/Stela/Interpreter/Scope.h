@@ -30,13 +30,12 @@ protected:
     Var copy( const Var &var, const Var *sf, int off );
     Var get_val_if_GetSetSopInst( const Var &val );
     Expr simplified_expr( const Var &var );
-    Var apply_surdefs( int nb_surdefs, const PI8 **surdefs, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off );
-    Var apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off );
+    Var apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Var *sf, int off );
 
     ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );
     Var disp_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );
     void set( Var &o, Expr n, const Var *sf, int off );
-    Var reg_var( int name, const Var &var, const Var *sf, int off, bool stat = false );
+    Var reg_var( int name, const Var &var, const Var *sf, int off, bool stat = false, bool check = true );
     Var find_var( int name );
     Var find_var_first( int name ); ///< helper for find_var
     void find_var_clist( Vec<Var> &res, int name ); ///< helper for find_var

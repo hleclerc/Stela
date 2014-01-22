@@ -24,6 +24,10 @@ public:
     const TPar &parents() const { return inst->out_expr( nout ).parents; }
     TPar &parents() { return inst->out_expr( nout ).parents; }
 
+    bool operator==( const Expr &e ) const { return inst == e.inst and nout == e.nout; }
+    bool operator!=( const Expr &e ) const { return inst != e.inst or  nout != e.nout; }
+    bool operator< ( const Expr &e ) const { return inst != e.inst ? inst < e.inst : nout < e.nout; }
+
     template<class T>
     bool basic_conv( T &val ) const {
         if ( const PI8 *data = cst_data() ) {

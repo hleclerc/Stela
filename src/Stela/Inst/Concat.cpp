@@ -44,3 +44,11 @@ Expr concat( Expr a, Expr b ) {
     res->inp_repl( 1, b );
     return Expr( Inst::factorized( res ), 0 );
 }
+
+Expr concat( Expr a, Expr b, Expr c ) {
+    return concat( concat( a, b ), c );
+}
+
+Expr concat( Expr a, Expr b, Expr c, Expr d ) {
+    return concat( concat( concat( a, b ), c ), d );
+}

@@ -11,7 +11,10 @@
 class Callable
     pass
 
-class Toto
+    
+class Toto pertinence 20
+    t := 10
+class Toto pertinence 2
     t := 0
 
 # -> faire une liste avec les surdefs...

@@ -2,9 +2,13 @@
 #include "../System/ToDel.h"
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
+
+#include "CallableInfo.h"
 #include "Interpreter.h"
 #include "SourceFile.h"
 #include "Scope.h"
+
+#include "../Ir/Numbers.h"
 
 #include "../Inst/PointerOn.h"
 #include "../Inst/BaseType.h"
@@ -156,7 +160,11 @@ const PI8 *Interpreter::tok_data_of( const Var *sf ) {
 }
 
 SfInfo &Interpreter::sf_info_of( const Var *sf ) {
-    SourceFile nsf( sf->cst_data() );
+    return sf_info_of( sf->cst_data() );
+}
+
+SfInfo &Interpreter::sf_info_of( const PI8 *sf ) {
+    SourceFile nsf( sf );
     const PI8 *sf_bin_data = nsf.bin_data();
 
     auto iter = sf_info_map.find( sf_bin_data );
@@ -186,6 +194,13 @@ int Interpreter::glo_nstr( const Var *sf, int n ) {
     return si.nstr_cor[ n ];
 }
 
+int Interpreter::glo_nstr( const PI8 *sf, int n ) {
+    SfInfo &si = sf_info_of( sf );
+    ASSERT( n < si.nstr_cor.size(), "bad nstr" );
+    return si.nstr_cor[ n ];
+}
+
+
 Var Interpreter::type_of( const Var &var ) const {
     Var res;
     res.data  = var.type;
@@ -201,6 +216,29 @@ ClassInfo &Interpreter::class_info( const Var &class_var ) {
         return iter->second;
     ClassInfo &res = class_info_map[ cg ];
     res.expr = cg;
+    return res;
+}
+
+CallableInfo *Interpreter::callable_info( Expr ce ) {
+    auto iter = callable_info_map.find( ce );
+    if ( iter != callable_info_map.end() )
+        return iter->second.ptr();
+    // create a new one
+    CallableInfo *res = 0;
+
+    int bin_off = 0, src_off = 0, ps = ptr_size();
+    slice( ce, ps +  0, ps + 32 ).basic_conv( bin_off );
+    slice( ce, ps + 32, ps + 64 ).basic_conv( src_off );
+    const PI8 *sf = slice( ce, 0, ptr_size() ).cst_data_ValAt();
+    const PI8 *td = sf + bin_off;
+
+    switch ( *td ) {
+    case IR_TOK_CLASS: res = new CallableInfo_Class( this, sf, td, src_off ); break;
+    case IR_TOK_DEF  : res = new CallableInfo_Def  ( this, sf, td, src_off ); break;
+    default: PRINT( (int)*td ); TODO;
+    }
+
+    callable_info_map[ ce ] = res;
     return res;
 }
 
@@ -276,7 +314,8 @@ bool Interpreter::isa_ptr_int( const Var &var ) const {
 }
 
 bool Interpreter::is_of_class( const Var &var, const Var &class_ ) const {
-    return val_at( slice( var.type->ptr->expr(), 0, ptr_size() ), ptr_size() ) == class_.expr();
+    Expr class_ptr = slice( var.type->ptr->expr(), 0, ptr_size() );
+    return val_at( class_ptr, ptr_size() + 64 ) == class_.expr();
 }
 
 #define DECL_BT( T ) bool Interpreter::isa_##T( const Var &var ) const { return is_of_class( var, class_##T ); }

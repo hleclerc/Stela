@@ -1,6 +1,11 @@
+#include "CallableInfo.h"
 #include "Interpreter.h"
 #include "SourceFile.h"
 #include "Scope.h"
+
+#include <algorithm>
+
+#include "../System/BinStreamWriter.h"
 
 #include "../Inst/PointerOn.h"
 #include "../Inst/Syscall.h"
@@ -74,8 +79,8 @@ Var Scope::copy( const Var &var, const Var *sf, int off ) {
 Var Scope::parse_CALLABLE( const Var *sf, int off, BinStreamReader bin, Var *type ) {
     if ( not sf->cst_data() )
         return disp_error( "TODO: class or def in sourcefile wo cst_data" );
-    // we read only the name, because the goal is only to register the class
-    ST bin_offset = bin.ptr - sf->cst_data();
+    // we read only the name, because the goal is only to register the def/class
+    int bin_offset = bin.ptr - sf->cst_data() - BinStreamWriter::size_needed_for( off ) - 1;
     int name = read_nstring( sf, bin );
 
     Var res;
@@ -87,12 +92,14 @@ Var Scope::parse_CALLABLE( const Var *sf, int off, BinStreamReader bin, Var *typ
     default: res = ::constified( Var( ip, type ) );
     }
 
-    res.data->ptr = new RefExpr( add( ip->bt_ST,
-                                      pointer_on( sf->expr(), ip->ptr_size() ),
-                                      ip->cst_ptr( bin_offset ) )
-                                 );
+    // &sf, bin_offset, off
+    res.data->ptr = new RefExpr( concat(
+        pointer_on( sf->expr(), ip->ptr_size() ),
+        cst( bin_offset ),
+        cst( off )
+    ) );
     res.flags |= Var::SURDEF;
-    reg_var( name, res, sf, off, true );
+    reg_var( name, res, sf, off, true, false );
 
     return ip->void_var;
 }
@@ -346,12 +353,13 @@ Expr Scope::simplified_expr( const Var &var ) {
     return sop.expr();
 }
 
-Var Scope::apply_surdefs( int nb_surdefs, const PI8 **surdefs, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off ) {
-    TODO;
-    return ip->error_var;
-}
+struct CmpCallableInfobyPertinence {
+    bool operator()( const CallableInfo *a, const CallableInfo *b ) const {
+        return a->pertinence > b->pertinence;
+    }
+};
 
-Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off ) {
+Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Var *sf, int off ) {
     // if error_var -> break
     if ( ip->isa_Error( f ) )
         return ip->error_var;
@@ -373,14 +381,43 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n
         if ( not val_at( surdef_list_ptr, 32 ).basic_conv( nb_surdefs ) )
             return disp_error( "pb decoding callable (to find surdef list)" );
         Expr surdef_list = val_at( surdef_list_ptr, 32 + nb_surdefs * ps );
-        PRINT( surdef_list );
 
-        const PI8 *surdefs[ nb_surdefs ];
+        int pnu = 0, pnn = 0, *pn_names = 0;
+        Var *pu_args = 0, *pn_args = 0;
+
+        CallableInfo *ci[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
-            Expr te = slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps );
-            surdefs[ i ] = te.cst_data_ValAt();
+            Expr surdef = val_at( slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps ), ip->ptr_size() + 64 );
+            ci[ i ] = ip->callable_info( surdef );
         }
-        return apply_surdefs( nb_surdefs, surdefs, nu, u_args, nn, n_name, n_args, am, sf, off );
+        std::sort( ci, ci + nb_surdefs, CmpCallableInfobyPertinence() );
+
+        int nb_ok = 0;
+        CallableInfo::Trial trials[ nb_surdefs ];
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            ci[ i ]->test( trials[ i ], nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off );
+            nb_ok += trials[ i ].reason == 0;
+        }
+
+        if ( nb_ok == 0 ) {
+            std::ostringstream ss;
+            ss << "No matching surdef";
+            //            if ( self ) {
+            //                ss << " (looking for '" << *self.type;
+            //                if ( lst_def.size() )
+            //                    ss << "." << glob_nstr_cor.str( lst_def[ 0 ]->name );
+            //                ss << "' with " << na << " argument";
+            //                ss << ")";
+            //            }
+            ErrorList::Error &err = make_error( ss.str(), sf, off );
+            for( int i = 0; i < nb_surdefs; ++i )
+                err.ap( ci[ i ]->filename(), ci[ i ]->off(), std::string( "possibility (" ) + trials[ i ].reason + ")" );
+            std::cerr << err;
+            return ip->error_var;
+        }
+
+        TODO;
+        return ip->error_var;
     }
 
     disp_error( "unmanaged callable type", sf, off );
@@ -394,8 +431,8 @@ void Scope::set( Var &o, Expr n, const Var *sf, int off ) {
         disp_error( "const slot", sf, off );
 }
 
-Var Scope::reg_var( int name, const Var &var, const Var *sf, int off, bool stat ) {
-    if ( named_vars.get( name ) or static_named_vars->get( name ) )
+Var Scope::reg_var( int name, const Var &var, const Var *sf, int off, bool stat, bool check ) {
+    if ( check and ( named_vars.get( name ) or static_named_vars->get( name ) ) )
         return disp_error( "There is already a variable named '" + glob_nstr_cor.str( name ) + "' in the current scope", sf, off );
     VarTable *vt = stat ? static_named_vars.ptr() : &named_vars;
     vt->reg( name, var );
@@ -452,7 +489,7 @@ Var Scope::find_var( int name ) {
     find_var_clist( lst, name );
     Expr surdef_list_data = cst( SI32( lst.size() ) );
     for( int i = 0; i < lst.size(); ++i )
-        surdef_list_data = concat( surdef_list_data, lst[ i ].expr() );
+        surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr(), ip->ptr_size() ) );
     Var surdef_list( ip, &ip->type_SurdefList, surdef_list_data );
     Var self_type = self_var() ? ip->type_of( *self_var() ) : ip->void_var;
 

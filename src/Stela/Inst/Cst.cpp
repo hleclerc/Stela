@@ -26,11 +26,19 @@ public:
     }
 
     virtual void write_to_stream( Stream &os ) const {
-        const char *c = "0123456789ABCDEF";
-        for( int i = 0; i < value.size(); ++i ) {
-            if ( i )
-                os << ' ';
-            os << c[ value[ i ] >> 4 ] << c[ value[ i ] & 0xF ];
+        if ( value.size() == 4 )
+            os << *reinterpret_cast<const SI32 *>( value.ptr() );
+        else if ( value.size() == 8 )
+            os << *reinterpret_cast<const SI64 *>( value.ptr() );
+        else {
+            const char *c = "0123456789ABCDEF";
+            for( int i = 0; i < std::min( value.size(), ST( 4 ) ); ++i ) {
+                if ( i )
+                    os << ' ';
+                os << c[ value[ i ] >> 4 ] << c[ value[ i ] & 0xF ];
+            }
+            if ( value.size() > 4 )
+                os << "...";
         }
     }
 

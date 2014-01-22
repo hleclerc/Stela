@@ -33,6 +33,7 @@ public:
 
     Expr expr() const;
     bool set( Expr expr );
+    Expr type_expr() const;
 
     Ptr<PRef> data;
     Ptr<PRef> type;

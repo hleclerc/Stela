@@ -3,6 +3,7 @@
 
 #include "../System/SplittedVec.h"
 #include "../System/ErrorList.h"
+#include "../System/AutoPtr.h"
 #include "../System/Stream.h"
 #include "../System/Math.h"
 #include "../System/Vec.h"
@@ -12,6 +13,7 @@
 #include "SfInfo.h"
 #include "Var.h"
 
+class CallableInfo;
 class BaseType;
 class Scope;
 class ToDel;
@@ -38,16 +40,21 @@ public:
     //
     ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
     void              disp_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
-    int               glo_nstr( const Var *sf, int n );
 
     // methods for sourcefiles
     bool              already_imported( String filename );
     const PI8        *tok_data_of( const Var *sf );
+
     SfInfo           &sf_info_of( const Var *sf );
+    SfInfo           &sf_info_of( const PI8 *sf );
+
+    int               glo_nstr( const Var *sf, int n );
+    int               glo_nstr( const PI8 *sf, int n );
 
     // methods for Type variables
     Var               type_of( const Var &var ) const;
     ClassInfo        &class_info( const Var &class_var );
+    CallableInfo     *callable_info( Expr ce );
 
     Var              *type_for( ClassInfo &class_info );
     Var              *type_for( ClassInfo &class_info, Var *parm_0 );
@@ -123,9 +130,10 @@ public:
     int                          argc;
 
     // context
-    std::map<const PI8  *,SfInfo   > sf_info_map;
-    std::map<Expr        ,ClassInfo> class_info_map;
-    std::map<const PRef *,VarRef   > var_refs;
+    std::map<Expr        ,AutoPtr<CallableInfo> > callable_info_map;
+    std::map<const PI8  *,SfInfo                > sf_info_map;
+    std::map<Expr        ,ClassInfo             > class_info_map;
+    std::map<const PRef *,VarRef                > var_refs;
 };
 
 extern NstrCor glob_nstr_cor;

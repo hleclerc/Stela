@@ -58,6 +58,10 @@ bool Var::set( Expr expr ) {
     return true;
 }
 
+Expr Var::type_expr() const {
+    return type->ptr->expr();
+}
+
 Var constified( const Var &var ) {
     if ( var.referenced_more_than_one_time() and not var.data->is_const() )
         ERROR( "only var that are not referenced more than one time can be fully constified" );

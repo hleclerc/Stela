@@ -133,3 +133,5 @@ src/Stela/Interpreter/Interpreter.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Expr.cpp
 tests/test.met
+src/Stela/Interpreter/CallableInfo.h
+src/Stela/Interpreter/CallableInfo.cpp
