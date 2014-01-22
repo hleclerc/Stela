@@ -38,7 +38,7 @@ public:
         visitor.cst( *this, value );
     }
 
-    virtual int inst_id() const { return 1; }
+    virtual int inst_id() const { return Inst::Id_Cst; }
 
     virtual Expr _smp_slice( int nout, int beg, int end ) {
         Vec<PI8> data( Size(), ( end - beg + 7 ) / 8 );

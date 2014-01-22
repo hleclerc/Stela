@@ -9,7 +9,7 @@ public:
     virtual int size_in_bits( int nout ) const { return end - beg; }
     virtual void write_to_stream( Stream &os ) const { os << "slice(" << inp_expr( 0 ) << "," << beg << "," << end << ")"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.slice( *this, beg, end ); }
-    virtual int inst_id() const { return 6; }
+    virtual int inst_id() const { return Inst::Id_Slice; }
     virtual bool equal( const Inst *b ) const {
         return Inst::equal( b ) and 
             beg == static_cast<const Slice *>( b )->beg and 

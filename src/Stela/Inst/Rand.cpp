@@ -9,7 +9,7 @@ public:
     virtual int size_in_bits( int nout ) const { return size; }
     virtual void write_to_stream( Stream &os ) const { os << "rand_" << size; }
     virtual void apply( InstVisitor &visitor ) const { visitor.rand( *this, size ); }
-    virtual int inst_id() const { return 4; }
+    virtual int inst_id() const { return Inst::Id_Rand; }
 
     int size;
 };

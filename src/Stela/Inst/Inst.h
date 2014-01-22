@@ -6,8 +6,9 @@
 #include "../System/Vec.h"
 #include <cstddef>
 
-struct InstVisitor;
-struct Expr;
+class InstVisitor;
+class BaseType;
+class Expr;
 
 /**
 */
@@ -24,6 +25,18 @@ public:
             int   ninp;
         };
         Vec<Item,-1,1> parents;
+    };
+
+    enum { ///< very bad...
+        Id_Concat,
+        Id_Cst,
+        Id_PointerOn,
+        Id_Slice,
+        Id_ValAt,
+        Id_Rand,
+        Id_Syscall,
+
+        Id_Op = 100
     };
 
     Inst();
@@ -48,6 +61,8 @@ public:
     virtual Out &out_expr( int n ) = 0;
     virtual const Out &out_expr( int n ) const = 0;
 
+    virtual const BaseType *out_bt( int n ) const;
+
     // ext
     virtual int ext_size() const = 0;
     virtual void ext_repl( int num, Inst *inst ) = 0;
@@ -67,6 +82,7 @@ public:
     virtual Expr _smp_slice( int nout, int beg, int end );
     virtual Expr _smp_val_at( int nout, int size );
     virtual Expr _smp_pointer_on( int nout );
+    virtual const PI8 *cst_data_ValAt( int nout, int off ) const;
 
     // attributes
     Inst         *ext_parent;

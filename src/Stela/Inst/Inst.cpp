@@ -21,6 +21,10 @@ const PI8 *Inst::cst_data( int nout ) const {
     return 0;
 }
 
+const BaseType *Inst::out_bt( int n ) const {
+    return 0;
+}
+
 bool Inst::equal( const Inst *b ) const {
     if ( inst_id() != b->inst_id() or inp_size() != b->inp_size() )
         return false;
@@ -57,4 +61,8 @@ Expr Inst::_smp_val_at( int nout, int size ) {
 
 Expr Inst::_smp_pointer_on( int nout ) {
     return Expr();
+}
+
+const PI8 *Inst::cst_data_ValAt( int nout, int off ) const {
+    return 0;
 }

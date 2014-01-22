@@ -20,9 +20,34 @@ public:
         os << ")";
     }
     virtual void apply( InstVisitor &visitor ) const;
-    virtual int inst_id() const { return 100 + TOP::op_id; }
+    virtual int inst_id() const { return Inst::Id_Op + TOP::op_id; }
     virtual bool equal( const Inst *b ) const {
         return Inst::equal( b ) and bt == static_cast<const Op *>( b )->bt;
+    }
+    virtual const BaseType *out_bt( int n ) const {
+        return bt;
+    }
+    virtual const PI8 *cst_data_ValAt( int nout, int off ) const {
+        if ( TOP::op_id == ID_add ) {
+            Expr a = this->inp_expr( 0 );
+            Expr b = this->inp_expr( 1 );
+            if ( bt == bt_SI64 or bt == bt_PI64 ) {
+                SI64 nff = 0;
+                // ptr + off
+                if ( b.basic_conv( nff ) )
+                    if ( const PI8 *da = a.inst->cst_data_ValAt( a.nout, off + nff ) )
+                        return da;
+            }
+            if ( bt == bt_SI32 or bt == bt_PI32 ) {
+                SI32 nff = 0;
+                // ptr + off
+                if ( b.basic_conv( nff ) )
+                    if ( const PI8 *da = a.inst->cst_data_ValAt( a.nout, off + nff ) )
+                        return da;
+            }
+            return 0;
+        }
+        return 0;
     }
 
     const BaseType *bt;

@@ -30,6 +30,7 @@ protected:
     Var copy( const Var &var, const Var *sf, int off );
     Var get_val_if_GetSetSopInst( const Var &val );
     Expr simplified_expr( const Var &var );
+    Var apply_surdefs( int nb_surdefs, const PI8 **surdefs, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off );
     Var apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off );
 
     ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, bool warn = false );

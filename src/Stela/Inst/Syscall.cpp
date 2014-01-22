@@ -6,7 +6,7 @@ public:
     virtual int size_in_bits( int nout ) const { return ptr_size; }
     virtual void write_to_stream( Stream &os ) const { os << "syscall"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.syscall( *this, ptr_size ); }
-    virtual int inst_id() const { return 2; }
+    virtual int inst_id() const { return Inst::Id_Syscall; }
     int ptr_size; ///< size in bits of input and output values
 };
 

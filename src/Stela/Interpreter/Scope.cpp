@@ -346,6 +346,11 @@ Expr Scope::simplified_expr( const Var &var ) {
     return sop.expr();
 }
 
+Var Scope::apply_surdefs( int nb_surdefs, const PI8 **surdefs, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off ) {
+    TODO;
+    return ip->error_var;
+}
+
 Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am, const Var *sf, int off ) {
     // if error_var -> break
     if ( ip->isa_Error( f ) )
@@ -362,23 +367,20 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_name, Var *n
         // Callable[ surdef_list, self_type, parm_type ]
         //  - self ref
         //  - parm data
-        // type
-        SI32 surdef_list_size, ps = ip->ptr_size();
-        if ( not val_at( slice( f.type->ptr->expr(), 1 * ps, 2 * ps ), 32 ).conv( surdef_list_size ) )
+        // type = class ptr + parameter refs
+        SI32 nb_surdefs = 0, ps = ip->ptr_size();
+        Expr surdef_list_ptr = slice( f.type->ptr->expr(), 1 * ps, 2 * ps );
+        if ( not val_at( surdef_list_ptr, 32 ).basic_conv( nb_surdefs ) )
             return disp_error( "pb decoding callable (to find surdef list)" );
-        Expr surdef_list = val_at( slice( f.type->ptr->expr(), 1 * ps, 2 * ps ), 32 + surdef_list_size * ps );
-        for( int i = 0; i < surdef_list_size; ++i ) {
-            // pb: obtenir le type des surdefs
-            // prop 1: on stocke une référence sur le type dans la liste des surdefs
-            // Rq: pour l'instant, c'est toujours vers des tok qu'on pointe...
-            Expr te = val_at( slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps ), 1 );
-            // -> TODO: val_at( add( ptr( ... ), ... ), ... ) à simplifier
-            PRINT( te );
-            PRINT( (int *)te.cst_data() );
-        }
+        Expr surdef_list = val_at( surdef_list_ptr, 32 + nb_surdefs * ps );
+        PRINT( surdef_list );
 
-        PRINT( surdef_list_size );
-        TODO;
+        const PI8 *surdefs[ nb_surdefs ];
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            Expr te = slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps );
+            surdefs[ i ] = te.cst_data_ValAt();
+        }
+        return apply_surdefs( nb_surdefs, surdefs, nu, u_args, nn, n_name, n_args, am, sf, off );
     }
 
     disp_error( "unmanaged callable type", sf, off );
