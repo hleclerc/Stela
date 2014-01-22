@@ -20,9 +20,9 @@ struct BaseType_ : BaseType {
         return 8 * sizeof( T );
     }
 
-    virtual void add( PI8 *res, const PI8 *da, const PI8 *db ) const {
-        *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) + *reinterpret_cast<const T *>( da );
-    }
+    virtual void add( PI8 *res, const PI8 *da, const PI8 *db ) const { *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) + *reinterpret_cast<const T *>( da ); }
+    virtual void and_op( PI8 *res, const PI8 *da, const PI8 *db ) const { *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) & *reinterpret_cast<const T *>( da ); }
+    virtual void not_op( PI8 *res, const PI8 *da ) const { *reinterpret_cast<T *>( res ) = ~ *reinterpret_cast<const T *>( da ); }
 
     const char *name;
 };

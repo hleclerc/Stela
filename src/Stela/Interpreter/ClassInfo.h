@@ -8,6 +8,7 @@
 class ClassInfo {
 public:
     ClassInfo();
+    ~ClassInfo();
 
     TypeInfo *last;
     Expr      expr;

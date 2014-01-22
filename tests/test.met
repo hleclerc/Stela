@@ -11,10 +11,7 @@
 class Callable
     pass
 
-    
-class Toto pertinence 20
-    t := 10
-class Toto pertinence 2
+class Toto
     t := 0
 
 # -> faire une liste avec les surdefs...
@@ -30,10 +27,11 @@ class Toto pertinence 2
 # Rq: un type se fait à partir d'un ClassInfo, qui vient de class_type.expr()
 # class_info devrait aussi être un type différent, ...
 # Proposition pour simplifier (ne pas se mordre la queue), class Toto et def Toto ne renvoient rien !
-t := Toto()
+inst := Toto()
+___syscall inst.t
 
 # if ___rand()
-    # ___syscall 60l, 10l
+    # 
 
     
     

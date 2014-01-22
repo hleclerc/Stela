@@ -3,7 +3,8 @@
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
 
-#include "CallableInfo.h"
+#include "CallableInfo_Class.h"
+#include "CallableInfo_Def.h"
 #include "Interpreter.h"
 #include "SourceFile.h"
 #include "Scope.h"

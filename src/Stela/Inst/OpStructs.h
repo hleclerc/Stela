@@ -1,7 +1,9 @@
 #ifndef OPSTRUCTS_H
 #define OPSTRUCTS_H
 
-#define ID_add 0
+#define ID_add    0
+#define ID_and_op 1
+#define ID_not_op 2
 
 #define DECL_OP( OP ) struct Op_##OP { enum { nb_ch = 2, op_id = ID_##OP }; static const char *name(); };
 #include "DeclOpBinary.h"

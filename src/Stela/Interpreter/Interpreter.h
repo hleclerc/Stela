@@ -130,10 +130,11 @@ public:
     int                          argc;
 
     // context
-    std::map<Expr        ,AutoPtr<CallableInfo> > callable_info_map;
-    std::map<const PI8  *,SfInfo                > sf_info_map;
-    std::map<Expr        ,ClassInfo             > class_info_map;
-    std::map<const PRef *,VarRef                > var_refs;
+    typedef AutoPtr<CallableInfo> PCAL;
+    std::map<Expr        ,PCAL     > callable_info_map;
+    std::map<const PI8  *,SfInfo   > sf_info_map;
+    std::map<Expr        ,ClassInfo> class_info_map;
+    std::map<const PRef *,VarRef   > var_refs;
 };
 
 extern NstrCor glob_nstr_cor;

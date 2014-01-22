@@ -54,17 +54,42 @@ public:
 };
 
 // simplification rules
+#define DECL_OP( OP ) \
+    static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da, const PI8 *db ) { \
+        if ( da and db ) { \
+            Vec<PI8> res( Size(), bt->size_in_bytes() ); \
+            bt->OP( res.ptr(), da, db ); \
+            return cst( res ); \
+        } \
+        return Expr(); \
+    }
+#include "DeclOpBinary.h"
+#undef DECL_OP
+
+#define DECL_OP( OP ) \
+    static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da ) { \
+        if ( da ) { \
+            Vec<PI8> res( Size(), bt->size_in_bytes() ); \
+            bt->OP( res.ptr(), da ); \
+            return cst( res ); \
+        } \
+        return Expr(); \
+    }
+#include "DeclOpUnary.h"
+#undef DECL_OP
+
+
 template<class TOP>
-static Expr _simplify( TOP, const BaseType *bt, const PI8 *da, const PI8 *db ) {
+static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, const PI8 *db ) {
+    if ( Expr res = _simplify_cst( op, bt, da, db ) )
+        return res;
     return Expr();
 }
 
-static Expr _simplify( Op_add, const BaseType *bt, const PI8 *da, const PI8 *db ) {
-    if ( da and db ) {
-        Vec<PI8> res( Size(), bt->size_in_bytes() );
-        bt->add( res.ptr(), da, db );
-        return cst( res );
-    }
+template<class TOP>
+static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da ) {
+    if ( Expr res = _simplify_cst( op, bt, da ) )
+        return res;
     return Expr();
 }
 
@@ -89,16 +114,27 @@ static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
 }
 
 template<class TOP>
-static Expr _op( TOP, const BaseType *bt, Expr a ) {
+static Expr _op( TOP top, const BaseType *bt, Expr a ) {
+    ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size" );
+
+    // known values ?
+    const PI8 *da = a.cst_data();
+    if ( Expr res = _simplify( top, bt, da ) )
+        return res;
+
+    // else, create a new inst
     Op<TOP> *res = new Op<TOP>;
     res->inp_repl( 0, a );
+    res->bt = bt;
     return Expr( Inst::factorized( res ), 0 );
 }
 
+// apply
 #define DECL_OP( OP ) template<> void Op<Op_##OP>::apply( InstVisitor &visitor ) const { visitor.OP( *this, bt ); }
-#include "DeclOpBinary.h"
+#include "DeclOp.h"
 #undef DECL_OP
 
+// functions
 #define DECL_OP( OP ) Expr OP( const BaseType *bt, Expr a, Expr b ) { return _op( Op_##OP(), bt, a, b ); }
 #include "DeclOpBinary.h"
 #undef DECL_OP

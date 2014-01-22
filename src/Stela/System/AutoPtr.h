@@ -19,7 +19,7 @@ struct Delete {
     void operator()( T *data ) { delete data; }
 };
 
-template<class T,class M=Free>
+template<class T,class M=Delete>
 struct AutoPtr {
     AutoPtr() : data( 0 ) {}
     AutoPtr( T *obj ) : data( obj ) {}

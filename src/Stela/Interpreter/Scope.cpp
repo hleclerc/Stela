@@ -4,6 +4,7 @@
 #include "Scope.h"
 
 #include <algorithm>
+#include <limits>
 
 #include "../System/BinStreamWriter.h"
 
@@ -19,7 +20,6 @@
 #include "RefExpr.h"
 #include "RefPtr.h"
 
-#include "../Ir/CallableFlags.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
 
@@ -51,6 +51,10 @@ Var Scope::parse( const Var *sf, const PI8 *tok ) {
         #undef DECL_IR_TOK
         default: ip->disp_error( "Unknown token type", sf, off, this ); return ip->error_var;
     }
+}
+
+Interpreter *Scope::interpreter() {
+    return ip;
 }
 
 Var Scope::parse_BLOCK( const Var *sf, int off, BinStreamReader bin ) {
@@ -190,8 +194,107 @@ Var Scope::parse_ASSIGN( const Var *sf, int off, BinStreamReader bin ) {
 
     return reg_var( name, var, sf, off, flags & IR_ASSIGN_STATIC );
 }
-Var Scope::parse_REASSIGN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_GET_ATTR( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+
+Var Scope::parse_REASSIGN( const Var *sf, int off, BinStreamReader bin ) {
+    TODO; return Var();
+}
+
+Var Scope::get_attr( Var self, int attr ) {
+    if ( ip->isa_Error( self ) )
+        return self;
+
+    PRINT( self );
+    TODO; return Var();
+
+    //    if ( self.type->base_class == &ip->class_GetSetSopInst )
+    //        return get_attr( get_val_GetSetSopInst( self, sf, off ), name, sf, off );
+
+    //    // in self or super(s)
+    //    Var res = get_attr_rec( self, name );
+
+    //    // look for external methods
+    //    if ( not res ) {
+    //        for( Scope *s = this; s; s = s->parent ) {
+    //            if ( s->stat_named_vars and ( res = ext_method( s->stat_named_vars->get( name ) ) ) )
+    //                break;
+    //            if ( res = ext_method( s->named_vars.get( name ) ) )
+    //                break;
+    //        }
+    //    }
+
+    //    if ( res ) {
+    //        if ( res.type->base_class == &ip->class_GetSetSopDef ) {
+    //            SI32 get_of = to_int( res.type->parameters[ 0 ] );
+    //            Var getr;
+    //            if ( get_of >= 0 )
+    //                getr = apply( get_attr( self, get_of, sf, off ), 0, 0, 0, 0, 0, true );
+
+    //            Vec<Var> par;
+    //            par << make_type_var( self.type );
+    //            par << make_type_var( getr.type );
+    //            for( int i = 0; i < 3; ++i )
+    //                par << res.type->parameters[ i ];
+    //            Var tmp( ip, ip->class_GetSetSopInst.type_for( this, par, sf, off ) );
+    //            ip->set_ref( tmp.data + 0 * sizeof( void * ), self );
+    //            ip->set_ref( tmp.data + 1 * sizeof( void * ), getr );
+    //            return tmp;
+    //        }
+
+
+    //        if ( res.flags & Var::CALLABLE ) {
+    //            // find all the variants
+    //            Vec<Var> lst;
+
+    //            // in attributes
+    //            if ( const Type::Attr *attr = self.type->find_attr( name ) )
+    //                lst << self.type->make_attr( self, attr );
+
+    //            // static scope
+    //            if ( self.type->stat_named_vars )
+    //                self.type->stat_named_vars->get( lst, name );
+    //            if ( name != STRING_init_NUM and name != STRING_destroy_NUM )
+    //                for( int i = 0; i < self.type->ancestors.size(); ++i )
+    //                    if ( self.type->ancestors[ i ]->stat_named_vars )
+    //                        self.type->ancestors[ i ]->stat_named_vars->get( lst, name );
+
+
+    //            // external methods
+    //            int os = lst.size();
+    //            for( Scope *s = this; s; s = s->parent ) {
+    //                if ( s->stat_named_vars )
+    //                    s->stat_named_vars->get( lst, name );
+    //                s->named_vars.get( lst, name );
+    //            }
+    //            for( int i = os; i < lst.size(); ++i )
+    //                if ( not ext_method( lst[ i ] ) )
+    //                    lst.remove_unordered( i-- );
+
+    //            // template parameters of SurdefList
+    //            Vec<Var> par;
+    //            par << make_type_var( self.type );
+    //            par << make_surdefs_var( lst );
+    //            par << make_type_var( make_varargs_var( Vec<Var>() ).type ); // parameters
+    //            Var res( ip, ip->class_SurdefList.type_for( this, par, sf, off ) );
+    //            ip->set_ref( res.data + 0 * sizeof( void * ), self  );
+    //            ip->set_ref( res.data + 1 * sizeof( void * ), Var() );
+    //            return res;
+    //        }
+
+    //        return res;
+    //    }
+
+    //    write_error( "no attr '" + glob_nstr_cor.str( name ) + "' in object of type '" + to_string( *self.type ) + "'", sf, off );
+    //    return ip->error_var;
+}
+
+Var Scope::parse_GET_ATTR( const Var *sf, int off, BinStreamReader bin ) {
+    Var self = parse( sf, bin.read_offset() );
+    int attr = read_nstring( sf, bin );
+    if ( Var res = get_attr( self, attr ) )
+        return res;
+    return disp_error( "No attribute " + glob_nstr_cor.str( attr ), sf, off );
+
+}
 Var Scope::parse_GET_ATTR_PTR( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR_ASK( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_GET_ATTR_PTR_ASK( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -393,12 +496,32 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
         std::sort( ci, ci + nb_surdefs, CmpCallableInfobyPertinence() );
 
         int nb_ok = 0;
-        CallableInfo::Trial trials[ nb_surdefs ];
+        double guaranted_pertinence = 0;
+        bool   has_guaranted_pertinence = false;
+        AutoPtr<CallableInfo::Trial> trials[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
-            ci[ i ]->test( trials[ i ], nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off );
-            nb_ok += trials[ i ].reason == 0;
+            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
+                trials[ i ] = new CallableInfo::Trial( "Already a more pertinent solution" );
+                break;
+            }
+
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, this );
+
+            if ( trials[ i ]->ok() ) {
+                if ( not trials[ i ]->cond ) {
+                    has_guaranted_pertinence = true;
+                    guaranted_pertinence = ci[ i ]->pertinence;
+                }
+                ++nb_ok;
+            }
         }
 
+        //
+        for( int i = 0; i < nb_surdefs; ++i )
+            if ( ip->isa_Error( trials[ i ]->cond ) )
+                return ip->error_var;
+
+        // no valid surdef ?
         if ( nb_ok == 0 ) {
             std::ostringstream ss;
             ss << "No matching surdef";
@@ -411,13 +534,67 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
             //            }
             ErrorList::Error &err = make_error( ss.str(), sf, off );
             for( int i = 0; i < nb_surdefs; ++i )
-                err.ap( ci[ i ]->filename(), ci[ i ]->off(), std::string( "possibility (" ) + trials[ i ].reason + ")" );
+                err.ap( ci[ i ]->filename(), ci[ i ]->off(), std::string( "possibility (" ) + trials[ i ]->reason + ")" );
             std::cerr << err;
             return ip->error_var;
         }
 
-        TODO;
-        return ip->error_var;
+        // valid surdefs, but only with runtime conditions
+        if ( not has_guaranted_pertinence ) {
+            std::ostringstream ss;
+            ss << "There is no failback surdefinition (only runtime conditions)";
+            ErrorList::Error &err = make_error( ss.str(), sf, off );
+            for( int i = 0; i < nb_surdefs; ++i ) {
+                if ( trials[ i ]->ok() )
+                    err.ap( ci[ i ]->filename(), ci[ i ]->off(), "accepted" );
+                else
+                    err.ap( ci[ i ]->filename(), ci[ i ]->off(), std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+            }
+            std::cerr << err;
+            return ip->error_var;
+        }
+
+        // ambiguous overload ?
+        if ( nb_ok > 1 ) {
+            double best_pertinence = -std::numeric_limits<double>::max();
+            for( int i = 0; i < nb_surdefs; ++i )
+                best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
+            int nb_wp = 0;
+            for( int i = 0; i < nb_surdefs; ++i )
+                nb_wp += ci[ i ]->pertinence == best_pertinence;
+            if ( nb_wp > 1 ) {
+                std::ostringstream ss;
+                ss << "Ambiguous overload";
+                ErrorList::Error &err = make_error( ss.str(), sf, off );
+                for( int i = 0; i < nb_surdefs; ++i ) {
+                    if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
+                        err.ap( ci[ i ]->filename(), ci[ i ]->off(), "possibility" );
+                }
+                std::cerr << err;
+                return ip->error_var;
+            }
+        }
+
+        Var res;
+        Expr cond = cst( true );
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            if ( trials[ i ]->ok() ) {
+                Expr ok_cond;
+                if ( trials[ i ]->cond )
+                    ok_cond = and_op( bt_Bool, cond, trials[ i ]->cond.expr() );
+                else
+                    ok_cond = cond;
+
+                trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, res, ok_cond, this );
+
+                if ( trials[ i ]->cond )
+                    cond = and_op( bt_Bool, cond, not_op( bt_Bool, trials[ i ]->cond.expr() ) );
+                else
+                    break;
+            }
+        }
+
+        return res;
     }
 
     disp_error( "unmanaged callable type", sf, off );

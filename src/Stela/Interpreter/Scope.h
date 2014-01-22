@@ -14,6 +14,7 @@ public:
     Scope( Interpreter *ip, Scope *parent, Scope *caller = 0, Ptr<VarTable> snv = 0 );
 
     Var parse( const Var *sf, const PI8 *tok );
+    Interpreter *interpreter();
 
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
@@ -39,6 +40,7 @@ protected:
     Var find_var( int name );
     Var find_var_first( int name ); ///< helper for find_var
     void find_var_clist( Vec<Var> &res, int name ); ///< helper for find_var
+    Var get_attr( Var self, int attr );
     Var *self_var();
 
     Interpreter   *ip;

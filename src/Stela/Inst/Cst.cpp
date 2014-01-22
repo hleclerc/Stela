@@ -26,7 +26,9 @@ public:
     }
 
     virtual void write_to_stream( Stream &os ) const {
-        if ( value.size() == 4 )
+        if ( value.size() == 1 )
+            os << (int)*reinterpret_cast<const PI8 *>( value.ptr() );
+        else if ( value.size() == 4 )
             os << *reinterpret_cast<const SI32 *>( value.ptr() );
         else if ( value.size() == 8 )
             os << *reinterpret_cast<const SI64 *>( value.ptr() );

@@ -135,3 +135,9 @@ tests/test_Expr.cpp
 tests/test.met
 src/Stela/Interpreter/CallableInfo.h
 src/Stela/Interpreter/CallableInfo.cpp
+src/Stela/Interpreter/CallableInfo_WT.h
+src/Stela/Interpreter/CallableInfo_WT.cpp
+src/Stela/Interpreter/CallableInfo_Class.h
+src/Stela/Interpreter/CallableInfo_Class.cpp
+src/Stela/Interpreter/CallableInfo_Def.h
+src/Stela/Interpreter/CallableInfo_Def.cpp
