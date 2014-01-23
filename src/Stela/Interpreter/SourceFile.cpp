@@ -2,7 +2,7 @@
 #include "Interpreter.h"
 #include "SourceFile.h"
 
-void SourceFile::make_dat( Vec<PI8> &data, ST bin_size, String filename ) {
+void SourceFile::prep_dat( Vec<PI8> &data, ST bin_size, String filename ) {
     data.resize( sizeof( int ) + bin_size + sizeof( int ) + filename.size() + 1 );
     reinterpret_cast<int &>( data[ 0 ] ) = bin_size;
     // -> memcpy( data.ptr() + sizeof( int ), ..., bin_size );
@@ -19,6 +19,14 @@ const char *SourceFile::filename() const{
 
 int SourceFile::bin_size() const {
     return *reinterpret_cast<const int *>( ptr );
+}
+
+int SourceFile::str_size() const {
+    return *reinterpret_cast<const int *>( ptr + sizeof( int ) + bin_size() );
+}
+
+int SourceFile::tot_size() const {
+    return sizeof( int ) + bin_size() + sizeof( int ) + str_size() + 1;
 }
 
 const PI8 *SourceFile::bin_data() const {

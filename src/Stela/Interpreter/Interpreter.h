@@ -38,17 +38,15 @@ public:
     int  ptr_alig() const;
 
     //
-    ErrorList::Error &make_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
-    void              disp_error( String msg, const Var *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    ErrorList::Error &make_error( String msg, const PI8 *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    void              disp_error( String msg, const PI8 *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
 
     // methods for sourcefiles
     bool              already_imported( String filename );
-    const PI8        *tok_data_of( const Var *sf );
+    const PI8        *tok_data_of( const PI8 *sf );
 
-    SfInfo           &sf_info_of( const Var *sf );
     SfInfo           &sf_info_of( const PI8 *sf );
 
-    int               glo_nstr( const Var *sf, int n );
     int               glo_nstr( const PI8 *sf, int n );
 
     // methods for Type variables
@@ -122,7 +120,7 @@ public:
 
     // attributes
     SplittedVec<ToDel *,16>      obj_to_delete;
-    SplittedVec<Var,8>           sourcefiles;
+    SplittedVec<Expr,8>          sourcefiles; ///< contains Cst( data )
     Vec<String>                  inc_paths;
     ErrorList                   &error_list;
     Scope                       *main_scope;

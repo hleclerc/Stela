@@ -84,10 +84,12 @@ void Interpreter::import( String filename ) {
     ST bin_size = t.size_of_binary_data();
 
     // -> make a new SourceFile
-    Vec<PI8> sf_data;
-    SourceFile::make_dat( sf_data, bin_size, filename );
-    t.copy_binary_data_to( const_cast<PI8 *>( SourceFile( sf_data.ptr() ).bin_data() ) );
-    Var sf = ::constified( *sourcefiles.push_back( this, &type_SourceFile, cst( sf_data ) ) );
+    Vec<PI8> tmp_vec;
+    SourceFile::prep_dat( tmp_vec, bin_size, filename );
+    t.copy_binary_data_to( const_cast<PI8 *>( SourceFile( tmp_vec.ptr() ).bin_data() ) );
+
+    Expr *sf_expr = sourcefiles.push_back( cst( tmp_vec.ptr(), 0, 8 * tmp_vec.size() ) );
+    const PI8 *sf_data = sf_expr->cst_data();
 
     //    if ( disp_tokens ) {
     //        //for( int i = 0; i < size; ++i )
@@ -98,12 +100,10 @@ void Interpreter::import( String filename ) {
     //    }
 
     // -> virtual machine
-
-    // -> execute
     if ( not main_scope )
         main_scope = new Scope( this, 0 );
 
-    main_scope->parse( &sf, tok_data_of( &sf ) );
+    main_scope->parse( sf_data, tok_data_of( sf_data ) );
 }
 
 Vec<ConstPtr<Inst> > Interpreter::get_outputs() {
@@ -133,10 +133,10 @@ int Interpreter::ptr_alig() const {
     return 32;
 }
 
-ErrorList::Error &Interpreter::make_error( String msg, const Var *sf, int off, Scope *sc, bool warn ) {
+ErrorList::Error &Interpreter::make_error( String msg, const PI8 *sf, int off, Scope *sc, bool warn ) {
     ErrorList::Error &res = error_list.add( msg );
     if ( sf )
-        res.ac( SourceFile( sf->cst_data() ).filename(), off );
+        res.ac( SourceFile( sf ).filename(), off );
     for( Scope *s = sc; s; s = s->caller )
         if ( s->instantiated_from_sf )
             res.ac( SourceFile( s->instantiated_from_sf->cst_data() ).filename(), s->instantiated_from_off );
@@ -144,25 +144,24 @@ ErrorList::Error &Interpreter::make_error( String msg, const Var *sf, int off, S
     return res;
 }
 
-void Interpreter::disp_error( String msg, const Var *sf, int off, Scope *sc, bool warn ) {
+void Interpreter::disp_error( String msg, const PI8 *sf, int off, Scope *sc, bool warn ) {
     std::cerr << make_error( msg, sf, off, sc, warn );
 }
 
 bool Interpreter::already_imported( String filename ) {
     for( int i = 0; i < sourcefiles.size(); ++i ) {
-        TODO;
+        SourceFile sf( sourcefiles[ i ].cst_data() );
+        if ( sf.filename() == filename )
+            return true;
     }
     return false;
 }
 
-const PI8 *Interpreter::tok_data_of( const Var *sf ) {
+const PI8 *Interpreter::tok_data_of( const PI8 *sf ) {
     SfInfo &res = sf_info_of( sf );
     return res.tok_data;
 }
 
-SfInfo &Interpreter::sf_info_of( const Var *sf ) {
-    return sf_info_of( sf->cst_data() );
-}
 
 SfInfo &Interpreter::sf_info_of( const PI8 *sf ) {
     SourceFile nsf( sf );
@@ -187,12 +186,6 @@ SfInfo &Interpreter::sf_info_of( const PI8 *sf ) {
     res.tok_data = bsr.ptr;
 
     return res;
-}
-
-int Interpreter::glo_nstr( const Var *sf, int n ) {
-    SfInfo &si = sf_info_of( sf );
-    ASSERT( n < si.nstr_cor.size(), "bad nstr" );
-    return si.nstr_cor[ n ];
 }
 
 int Interpreter::glo_nstr( const PI8 *sf, int n ) {

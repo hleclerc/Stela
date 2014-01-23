@@ -21,7 +21,7 @@ struct InstVisitor {
     virtual void slice     ( const Inst &inst, int beg, int end ) { def( inst ); }
     virtual void pointer_on( const Inst &inst, int ptr_size ) { def( inst ); }
     virtual void rand      ( const Inst &inst, int size ) { def( inst ); }
-    virtual void cst       ( const Inst &inst, const Vec<PI8> &data ) { def( inst ); }
+    virtual void cst       ( const Inst &inst, const PI8 *value, const PI8 *known, int size_in_bits ) { def( inst ); }
 };
 
 #endif // EXPR_INSTVISITOR_H

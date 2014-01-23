@@ -46,12 +46,12 @@ void CppInstCompiler::rand( const Inst &inst, int size ) {
     reg.write_decl( cc->os ) << "rand();";
     cc->on.write_end();
 }
-void CppInstCompiler::cst( const Inst &inst, const Vec<PI8> &data ) {
-    if ( data.size() == 0 )
+void CppInstCompiler::cst( const Inst &inst, const PI8 *value, const PI8 *known, int size_in_bits ) {
+    if ( not size_in_bits )
         return;
     Reg reg = cc->get_reg_for( inst, 0 );
     cc->on.write_beg();
-    reg.type->write_to_stream( reg.write_decl( cc->os ), data.ptr() );
+    reg.type->write_to_stream( reg.write_decl( cc->os ), value );
     cc->os << ";";
     cc->on.write_end();
 }

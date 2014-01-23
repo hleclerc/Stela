@@ -48,11 +48,11 @@ CallableInfo_Def::CallableInfo_Def( Interpreter *ip, const PI8 *sf, const PI8 *t
     //    }
 }
 
-CallableInfo::Trial *CallableInfo_Def::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var *sf, int off, Scope *caller ) {
+CallableInfo::Trial *CallableInfo_Def::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Scope *caller ) {
     TrialDef *res = new TrialDef;
     return res->wr( "TODO" );
 }
 
-void CallableInfo_Def::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var *sf, int off, Var &res, Expr cond, Scope *caller ) {
+void CallableInfo_Def::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
     TODO;
 }

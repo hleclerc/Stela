@@ -1,21 +1,16 @@
 #ifndef EXPR_CST_H
 #define EXPR_CST_H
 
-#include <string.h>
 #include "Expr.h"
 
 /// not thread safe
-Expr cst( const Vec<PI8> &value, const Vec<PI8> &known );
+Expr cst( const PI8 *ptr = 0, const PI8 *kno = 0, int size_in_bits = 0 );
 
-///
-Expr cst( const Vec<PI8> &value = Vec<PI8>() );
 
 /// helper version
 template<class T>
 Expr cst( const T &value ) {
-    Vec<PI8> vec( Size(), sizeof( T ) );
-    memcpy( vec.ptr(), &value, sizeof( T ) );
-    return cst( vec );
+    return cst( reinterpret_cast<const PI8 *>( &value ), 0, sizeof( value ) * 8 );
 }
 
 #endif // EXPR_CST_H

@@ -25,7 +25,7 @@ public:
     virtual void slice     ( const Inst &inst, int beg, int end );
     virtual void pointer_on( const Inst &inst, int ptr_size );
     virtual void rand      ( const Inst &inst, int size );
-    virtual void cst       ( const Inst &inst, const Vec<PI8> &data );
+    virtual void cst       ( const Inst &inst, const PI8 *value, const PI8 *known, int size_in_bits );
 
     CppCompiler *cc;
 };
