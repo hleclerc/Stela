@@ -52,6 +52,7 @@ public:
     // methods for Type variables
     Var               type_of( const Var &var ) const;
     ClassInfo        &class_info( const Var &class_var );
+    ClassInfo        &class_info( const Expr &cg );
     CallableInfo     *callable_info( Expr ce );
 
     Var              *type_for( ClassInfo &class_info );

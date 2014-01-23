@@ -7,7 +7,7 @@
 */
 class CallableInfo_WT : public CallableInfo {
 public:
-    CallableInfo_WT( const PI8 *sf, int src_off );
+    CallableInfo_WT( const PI8 *sf, const PI8 *tok_data, int src_off );
     void parse_wt( Interpreter *ip, const PI8 *sf, BinStreamReader &bin );
     virtual const char *filename() const;
     virtual int off() const;
@@ -18,6 +18,7 @@ public:
     bool self_as_arg() const;
 
     const PI8 *sf;
+    const PI8 *tok_data;
     int src_off;
 
     int       name;

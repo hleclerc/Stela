@@ -7,7 +7,7 @@
 #include "Scope.h"
 #include <limits>
 
-CallableInfo_Def::CallableInfo_Def( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, src_off ) {
+CallableInfo_Def::CallableInfo_Def( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
     BinStreamReader bin( tok_data );
     parse_wt( ip, sf, bin );
 

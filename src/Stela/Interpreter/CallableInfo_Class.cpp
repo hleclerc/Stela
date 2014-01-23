@@ -1,14 +1,17 @@
 #include "../System/BinStreamReader.h"
 #include "../Ir/CallableFlags.h"
+#include "../Inst/PointerOn.h"
+#include "../Inst/Concat.h"
 #include "../Inst/Cst.h"
 
 #include "CallableInfo_Class.h"
 #include "Interpreter.h"
+#include "SourceFile.h"
 #include "Scope.h"
 
 #include <limits>
 
-CallableInfo_Class::CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, src_off ) {
+CallableInfo_Class::CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
     BinStreamReader bin( tok_data + 1 );
     parse_wt( ip, sf, bin );
 
@@ -19,6 +22,7 @@ CallableInfo_Class::CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI
 CallableInfo::Trial *CallableInfo_Class::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const PI8 *sf, int off, Scope *caller ) {
     Interpreter *ip = caller->interpreter();
     TrialClass *res = new TrialClass;
+    res->orig = this;
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
     // nb arguments
@@ -85,6 +89,19 @@ void CallableInfo_Class::TrialClass::call( int nu, Var *vu, int nn, int *names, 
     //    Vec<Var>  parameters;
     //    Var       type_var;
 
+    Vec<Var *> arg_ptrs;
+    for( int i = 0; i < args.size(); ++i )
+        arg_ptrs << &args[ i ];
 
-    res = Var( ip, &ip->type_SI32, cst( 17 ) );
+    Expr cg = concat( /// class expr
+        pointer_on( cst( orig->sf, 0, 8 * SourceFile( orig->sf ).tot_size() ), ip->ptr_size() ),
+        cst( orig->tok_data - orig->sf ),
+        cst( orig->src_off )
+    );
+
+    Var *type = ip->type_for( ip->class_info( cg ), arg_ptrs );
+    PRINT( *type );
+    TODO; // parse type
+
+    res = Var( ip, type, cst( 17 ) );
 }

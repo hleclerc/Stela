@@ -5,7 +5,7 @@
 #include "Interpreter.h"
 #include <limits>
 
-CallableInfo_WT::CallableInfo_WT( const PI8 *sf, int src_off ) : sf( sf ), src_off( src_off ) {
+CallableInfo_WT::CallableInfo_WT( const PI8 *sf, const PI8 *tok_data, int src_off ) : sf( sf ), tok_data( tok_data ), src_off( src_off ) {
 }
 
 void CallableInfo_WT::parse_wt( Interpreter *ip, const PI8 *sf, BinStreamReader &bin ) {

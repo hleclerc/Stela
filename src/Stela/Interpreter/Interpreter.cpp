@@ -204,7 +204,10 @@ Var Interpreter::type_of( const Var &var ) const {
 }
 
 ClassInfo &Interpreter::class_info( const Var &class_var ) {
-    Expr cg = class_var.expr();
+    return class_info( class_var.expr() );
+}
+
+ClassInfo &Interpreter::class_info( const Expr &cg ) {
     auto iter = class_info_map.find( cg );
     if ( iter != class_info_map.end() )
         return iter->second;

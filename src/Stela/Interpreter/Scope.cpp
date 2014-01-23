@@ -105,6 +105,8 @@ Var Scope::parse_CALLABLE( const PI8 *sf, int off, BinStreamReader bin, Var *typ
     res.flags |= Var::SURDEF;
     reg_var( name, res, sf, off, true, false );
 
+    PRINT( res.expr() );
+
     return ip->void_var;
 }
 
