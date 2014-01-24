@@ -2,7 +2,10 @@
 #define CALLABLEINFO_CLASS_H
 
 #include "CallableInfo_WT.h"
+class TypeInfo;
 
+/**
+*/
 class CallableInfo_Class : public CallableInfo_WT {
 public:
     struct TrialClass : Trial {
@@ -12,9 +15,14 @@ public:
     };
 
     CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off );
+    ~CallableInfo_Class();
+
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Scope *caller );
 
     Vec<Code> ancestors;
+    TypeInfo *last;
+    Expr      expr;
+
 };
 
 #endif // CALLABLEINFO_CLASS_H

@@ -216,6 +216,23 @@ ClassInfo &Interpreter::class_info( const Expr &cg ) {
     return res;
 }
 
+TypeInfo *Interpreter::type_info( const Expr &type ) {
+    auto iter = type_info_map.find( type );
+    ASSERT( iter != type_info_map.end(), "not registered type var" );
+
+    TypeInfo *res = iter->second;
+
+    Scope scope( this, main_scope, 0 );
+    scope.parse( res->orig );
+
+    const PI8 *sf = res->var;
+
+    PRINT( res->orig->expr );
+    PRINT( res->var );
+    TODO;
+    return res;
+}
+
 CallableInfo *Interpreter::callable_info( Expr ce ) {
     auto iter = callable_info_map.find( ce );
     if ( iter != callable_info_map.end() )
@@ -252,13 +269,13 @@ Var *Interpreter::type_for( ClassInfo &class_info, Vec<Var *> parm_l ) {
         ASSERT( t->parameters.size() == parm_l.size(), "parameter lists not of the same size" );
         for( int i = 0; ; ++i ) {
             if ( i == t->parameters.size() )
-                return &t->type_var;
+                return &t->var;
             if ( not equal( t->parameters[ i ], *parm_l[ i ] ) )
                 break;
         }
     }
     // -> new TypeInfo
-    TypeInfo *res = new TypeInfo;
+    TypeInfo *res = new TypeInfo( &class_info );
     for( Var *p: parm_l )
         res->parameters << constified( *p );
 
@@ -269,10 +286,12 @@ Var *Interpreter::type_for( ClassInfo &class_info, Vec<Var *> parm_l ) {
     for( int i = 0; i < res->parameters.size(); ++i )
         re = concat( re, ref_expr_on( res->parameters[ i ] ) );
 
-    res->type_var = Var( this, &type_Type, re );
+    type_info_map[ re ] = res;
+
+    res->var = Var( this, &type_Type, re );
     res->prev = class_info.last;
     class_info.last = res;
-    return &res->type_var;
+    return &res->var;
 }
 
 bool Interpreter::equal( Var a, Var b ) {

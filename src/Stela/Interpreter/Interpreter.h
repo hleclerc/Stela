@@ -20,6 +20,10 @@ class ToDel;
 class Expr;
 
 /**
+  Gestion des types
+    - proposition: on se base sur les expression Class et Type pour trouver CallInfo et TypeInfo
+
+
 */
 class Interpreter {
 public:
@@ -53,6 +57,7 @@ public:
     Var               type_of( const Var &var ) const;
     ClassInfo        &class_info( const Var &class_var );
     ClassInfo        &class_info( const Expr &cg );
+    TypeInfo         *type_info( const Expr &type );
     CallableInfo     *callable_info( Expr ce );
 
     Var              *type_for( ClassInfo &class_info );
@@ -130,10 +135,11 @@ public:
 
     // context
     typedef AutoPtr<CallableInfo> PCAL;
-    std::map<Expr        ,PCAL     > callable_info_map;
-    std::map<const PI8  *,SfInfo   > sf_info_map;
-    std::map<Expr        ,ClassInfo> class_info_map;
-    std::map<const PRef *,VarRef   > var_refs;
+    std::map<Expr        ,PCAL      > callable_info_map; ///<
+    std::map<Expr        ,ClassInfo > class_info_map;
+    std::map<Expr        ,TypeInfo *> type_info_map;
+    std::map<const PI8  *,SfInfo    > sf_info_map;
+    std::map<const PRef *,VarRef    > var_refs;
 };
 
 extern NstrCor glob_nstr_cor;

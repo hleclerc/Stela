@@ -7,6 +7,7 @@
 #include "CallableInfo_Class.h"
 #include "Interpreter.h"
 #include "SourceFile.h"
+#include "TypeInfo.h"
 #include "Scope.h"
 
 #include <limits>
@@ -17,6 +18,14 @@ CallableInfo_Class::CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI
 
     for( int i = 0, nb_anc = bin.read_positive_integer(); i < nb_anc; ++i )
         ancestors << Code( sf, bin.read_offset() );
+}
+
+CallableInfo_Class::~CallableInfo_Class() {
+    for( TypeInfo *t = last; t;  ) {
+        TypeInfo *l = t;
+        t = t->prev;
+        delete l;
+    }
 }
 
 CallableInfo::Trial *CallableInfo_Class::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const PI8 *sf, int off, Scope *caller ) {
@@ -100,7 +109,11 @@ void CallableInfo_Class::TrialClass::call( int nu, Var *vu, int nn, int *names, 
     );
 
     Var *type = ip->type_for( ip->class_info( cg ), arg_ptrs );
+    TypeInfo *ti = ip->type_info( type->expr() );
+    ASSERT( ti, "not a registered type" );
+
     PRINT( *type );
+    PRINT( ti );
     TODO; // parse type
 
     res = Var( ip, type, cst( 17 ) );

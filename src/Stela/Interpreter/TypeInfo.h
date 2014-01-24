@@ -3,16 +3,18 @@
 
 #include "../System/Vec.h"
 #include "Var.h"
+class ClassInfo;
 
 /**
 */
 class TypeInfo {
 public:
-    TypeInfo();
+    TypeInfo( ClassInfo *orig );
 
-    Vec<Var>  parameters;
-    Var       type_var;
-    TypeInfo *prev;
+    Vec<Var>   parameters;
+    ClassInfo *orig;
+    Var        var;
+    TypeInfo  *prev;
 };
 
 #endif // TYPEINFO_H

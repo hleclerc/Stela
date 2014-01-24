@@ -13,6 +13,7 @@ struct PRef : ObjectWithCptUse {
 
     PRef( Interpreter *ip ) : ip( ip ), flags( 0 ) {}
     void write_to_stream( Stream &os ) const { os << ptr; }
+    Expr expr() const { return ptr->expr(); }
 
     bool is_const() const { return flags & CONST; }
 
