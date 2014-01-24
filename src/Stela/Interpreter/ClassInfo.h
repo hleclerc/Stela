@@ -1,21 +1,21 @@
-#ifndef CALLABLEINFO_CLASS_H
-#define CALLABLEINFO_CLASS_H
+#ifndef ClassInfo_H
+#define ClassInfo_H
 
 #include "CallableInfo_WT.h"
 class TypeInfo;
 
 /**
 */
-class CallableInfo_Class : public CallableInfo_WT {
+class ClassInfo : public CallableInfo_WT {
 public:
     struct TrialClass : Trial {
         virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller );
-        CallableInfo_Class *orig;
+        ClassInfo *orig;
         Vec<Var> args;
     };
 
-    CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off );
-    ~CallableInfo_Class();
+    ClassInfo( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off );
+    virtual ~ClassInfo();
 
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Scope *caller );
 
@@ -25,4 +25,4 @@ public:
 
 };
 
-#endif // CALLABLEINFO_CLASS_H
+#endif // ClassInfo_H

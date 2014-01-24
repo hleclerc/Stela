@@ -2,12 +2,11 @@
 #include "../Ir/CallableFlags.h"
 #include "../Inst/Cst.h"
 
-#include "CallableInfo_Def.h"
 #include "Interpreter.h"
+#include "DefInfo.h"
 #include "Scope.h"
-#include <limits>
 
-CallableInfo_Def::CallableInfo_Def( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
+DefInfo::DefInfo( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
     BinStreamReader bin( tok_data );
     parse_wt( ip, sf, bin );
 
@@ -48,11 +47,11 @@ CallableInfo_Def::CallableInfo_Def( Interpreter *ip, const PI8 *sf, const PI8 *t
     //    }
 }
 
-CallableInfo::Trial *CallableInfo_Def::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Scope *caller ) {
+CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Scope *caller ) {
     TrialDef *res = new TrialDef;
     return res->wr( "TODO" );
 }
 
-void CallableInfo_Def::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
+void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
     TODO;
 }

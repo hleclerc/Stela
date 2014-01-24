@@ -9,6 +9,7 @@
 #include "../System/Vec.h"
 #include "../System/S.h"
 #include "ClassInfo.h"
+#include "DefInfo.h"
 #include "NstrCor.h"
 #include "SfInfo.h"
 #include "Var.h"
@@ -31,17 +32,15 @@ public:
     ~Interpreter();
 
     void import( String filename );
-    Vec<ConstPtr<Inst> > get_outputs();
+    Vec<ConstPtr<Inst> > get_outputs(); ///< output instructions
 
     void add_inc_path( String path );
 
-    void set_argc( int argc );
-    void set_argv( char **argv );
-
+    // architecture information
     int  ptr_size() const;
     int  ptr_alig() const;
 
-    //
+    // error messages
     ErrorList::Error &make_error( String msg, const PI8 *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
     void              disp_error( String msg, const PI8 *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
 
@@ -128,18 +127,18 @@ public:
     SplittedVec<ToDel *,16>      obj_to_delete;
     SplittedVec<Expr,8>          sourcefiles; ///< contains Cst( data )
     Vec<String>                  inc_paths;
+
     ErrorList                   &error_list;
     Scope                       *main_scope;
-    char                       **argv;
-    int                          argc;
 
     // context
-    typedef AutoPtr<CallableInfo> PCAL;
-    std::map<Expr        ,PCAL      > callable_info_map; ///<
-    std::map<Expr        ,ClassInfo > class_info_map;
-    std::map<Expr        ,TypeInfo *> type_info_map;
-    std::map<const PI8  *,SfInfo    > sf_info_map;
-    std::map<const PRef *,VarRef    > var_refs;
+    std::map<Expr        ,CallableInfo *> callable_info_map; ///< pointer to either ClassInfo or DefInfo
+    std::map<Expr        ,ClassInfo     > class_info_map;
+    std::map<Expr        ,DefInfo       > def_info_map;
+    std::map<Expr        ,TypeInfo     *> type_info_map;
+    std::map<const PI8  *,SfInfo        > sf_info_map;
+
+    std::map<const PRef *,VarRef        > var_refs; ///< references
 };
 
 extern NstrCor glob_nstr_cor;

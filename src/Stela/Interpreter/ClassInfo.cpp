@@ -4,15 +4,15 @@
 #include "../Inst/Concat.h"
 #include "../Inst/Cst.h"
 
-#include "CallableInfo_Class.h"
 #include "Interpreter.h"
 #include "SourceFile.h"
+#include "ClassInfo.h"
 #include "TypeInfo.h"
 #include "Scope.h"
 
 #include <limits>
 
-CallableInfo_Class::CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
+ClassInfo::ClassInfo( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
     BinStreamReader bin( tok_data + 1 );
     parse_wt( ip, sf, bin );
 
@@ -20,7 +20,7 @@ CallableInfo_Class::CallableInfo_Class( Interpreter *ip, const PI8 *sf, const PI
         ancestors << Code( sf, bin.read_offset() );
 }
 
-CallableInfo_Class::~CallableInfo_Class() {
+ClassInfo::~ClassInfo() {
     for( TypeInfo *t = last; t;  ) {
         TypeInfo *l = t;
         t = t->prev;
@@ -28,7 +28,7 @@ CallableInfo_Class::~CallableInfo_Class() {
     }
 }
 
-CallableInfo::Trial *CallableInfo_Class::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const PI8 *sf, int off, Scope *caller ) {
+CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const PI8 *sf, int off, Scope *caller ) {
     Interpreter *ip = caller->interpreter();
     TrialClass *res = new TrialClass;
     res->orig = this;
@@ -92,7 +92,7 @@ CallableInfo::Trial *CallableInfo_Class::test( int nu, Var *u_args, int nn, int 
     return res;
 }
 
-void CallableInfo_Class::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
+void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
     Interpreter *ip = caller->interpreter();
     // TypeInfo
     //    Vec<Var>  parameters;

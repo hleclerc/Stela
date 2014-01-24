@@ -117,14 +117,6 @@ void Interpreter::add_inc_path( String path ) {
     inc_paths << path;
 }
 
-void Interpreter::set_argc( int argc ) {
-    this->argc = argc;
-}
-
-void Interpreter::set_argv( char **argv ) {
-    this->argv = argv;
-}
-
 int Interpreter::ptr_size() const {
     return 8 * sizeof( void * );
 }

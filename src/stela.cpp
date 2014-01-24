@@ -34,8 +34,6 @@ int main( int argc, char **argv ) {
     ErrorList e;
     Interpreter ip( e );
     ip.add_inc_path( base_met_files );
-    ip.set_argc( argc - beg_files );
-    ip.set_argv( argv + beg_files );
 
     // parse
     for( int i = 0; i < input_files.size(); ++i )
