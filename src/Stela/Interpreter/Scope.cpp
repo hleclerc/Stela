@@ -84,7 +84,7 @@ Var Scope::parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *ty
     if ( not sf )
         return disp_error( "TODO: class or def in sourcefile wo cst_data" );
     // we read only the name, because the goal is only to register the def/class
-    int bin_offset = bin.ptr - sf - BinStreamWriter::size_needed_for( off ) - 1;
+    int bin_offset = bin.ptr - sf->cst_data() - BinStreamWriter::size_needed_for( off ) - 1;
     int name = read_nstring( sf, bin );
 
     Var res;
@@ -97,11 +97,12 @@ Var Scope::parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *ty
     }
 
     // &sf, bin_offset, off
-    res.data->ptr = new RefExpr( concat(
+    TODO;
+    /*res.data->ptr = new RefExpr( concat(
         pointer_on( cst( sf, 0, 8 * SourceFile( sf ).tot_size() ), ip->ptr_size() ),
         cst( bin_offset ),
         cst( off )
-    ) );
+    ) );*/
     res.flags |= Var::SURDEF;
     reg_var( name, res, sf, off, true, false );
 

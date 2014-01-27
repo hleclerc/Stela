@@ -1,3 +1,8 @@
+Les classes et les type démarrent avec les bons types
+
+Rq: on pourrait stocker les types avec des Expr mais il faudrait avoir la bonne valeur dès le début
+On pourrait utiliser un Expr *
+
     
 Toto[ ... ] -> comment sauver les ... ?
     -> avec constity si possible (sinon on fait une copie et on constity)

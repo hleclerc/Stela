@@ -6,7 +6,7 @@
 #include "DefInfo.h"
 #include "Scope.h"
 
-DefInfo::DefInfo( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
+DefInfo::DefInfo( Interpreter *ip, const Expr *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
     BinStreamReader bin( tok_data );
     parse_wt( ip, sf, bin );
 
@@ -47,11 +47,11 @@ DefInfo::DefInfo( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_o
     //    }
 }
 
-CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Scope *caller ) {
+CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller ) {
     TrialDef *res = new TrialDef;
     return res->wr( "TODO" );
 }
 
-void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
+void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller ) {
     TODO;
 }

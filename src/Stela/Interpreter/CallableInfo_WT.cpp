@@ -5,10 +5,10 @@
 #include "Interpreter.h"
 #include <limits>
 
-CallableInfo_WT::CallableInfo_WT( const PI8 *sf, const PI8 *tok_data, int src_off ) : sf( sf ), tok_data( tok_data ), src_off( src_off ) {
+CallableInfo_WT::CallableInfo_WT( const Expr *sf, const PI8 *tok_data, int src_off ) : sf( sf ), tok_data( tok_data ), src_off( src_off ) {
 }
 
-void CallableInfo_WT::parse_wt( Interpreter *ip, const PI8 *sf, BinStreamReader &bin ) {
+void CallableInfo_WT::parse_wt( Interpreter *ip, const Expr *sf, BinStreamReader &bin ) {
     src_off = bin.read_positive_integer();
     name  = ip->glo_nstr( sf, bin.read_positive_integer() );
     flags = bin.read_positive_integer();
@@ -33,7 +33,7 @@ void CallableInfo_WT::parse_wt( Interpreter *ip, const PI8 *sf, BinStreamReader 
 }
 
 const char *CallableInfo_WT::filename() const {
-    return SourceFile( sf ).filename();
+    return SourceFile( sf->cst_data() ).filename();
 }
 
 int CallableInfo_WT::off() const {

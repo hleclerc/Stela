@@ -6,6 +6,7 @@
 #include "Interpreter.h"
 #include "SourceFile.h"
 #include "ClassInfo.h"
+#include "TypeInfo.h"
 #include "DefInfo.h"
 #include "Scope.h"
 
@@ -127,7 +128,7 @@ int Interpreter::ptr_alig() const {
 ErrorList::Error &Interpreter::make_error( String msg, const Expr *sf, int off, Scope *sc, bool warn ) {
     ErrorList::Error &res = error_list.add( msg );
     if ( sf )
-        res.ac( SourceFile( sf ).filename(), off );
+        res.ac( SourceFile( sf->cst_data() ).filename(), off );
     for( Scope *s = sc; s; s = s->caller )
         if ( s->instantiated_from_sf )
             res.ac( SourceFile( s->instantiated_from_sf->cst_data() ).filename(), s->instantiated_from_off );
@@ -205,9 +206,13 @@ ClassInfo &Interpreter::class_info( const Expr &cg ) {
     auto iter = class_info_map.find( cg );
     if ( iter != class_info_map.end() )
         return iter->second;
-    ClassInfo &res = class_info_map[ cg ];
-    res.expr = cg;
-    return res;
+    TODO;
+    ClassInfo *t = 0;
+    return *t;
+    //class_info_map.insert( cg, ClassInfo( this, sf, tok_data, src_off ) );
+    // &res = class_info_map[ cg ];
+    //res.expr = cg;
+    //return res;
 }
 
 TypeInfo *Interpreter::type_info( const Expr &type ) {
@@ -215,30 +220,28 @@ TypeInfo *Interpreter::type_info( const Expr &type ) {
     ASSERT( iter != type_info_map.end(), "not a registered type var" );
 
     TypeInfo *res = iter->second;
+    if ( not res->parsed ) {
+        Scope scope( this, main_scope, 0 );
+        scope.parse( res->orig->sf, res->orig->tok_data );
 
-    Scope scope( this, main_scope, 0 );
-    scope.parse( res->orig );
-
-    const Expr *sf = res->var;
-
-    PRINT( res->orig->expr );
-    PRINT( res->var );
-    TODO;
+        PRINT( res->orig->expr );
+        TODO;
+    }
     return res;
 }
 
 CallableInfo *Interpreter::callable_info( const Expr &ce ) {
     auto iter = callable_info_map.find( ce );
     if ( iter != callable_info_map.end() )
-        return iter->second.ptr();
+        return iter->second;
     // create a new one
     CallableInfo *res = 0;
 
     int bin_off = 0, src_off = 0, ps = ptr_size();
     slice( ce, ps +  0, ps + 32 ).basic_conv( bin_off );
     slice( ce, ps + 32, ps + 64 ).basic_conv( src_off );
-    const Expr *sf = slice( ce, 0, ptr_size() ).cst_data_ValAt();
-    const PI8 *td = sf + bin_off;
+/*    const Expr sf = val_at( slice( ce, 0, ptr_size() ) );
+    const PI8 *td = sf.cst_data() + bin_off;
 
     switch ( *td ) {
     case IR_TOK_CLASS: res = new CallableInfo_Class( this, sf, td, src_off ); break;
@@ -247,6 +250,8 @@ CallableInfo *Interpreter::callable_info( const Expr &ce ) {
     }
 
     callable_info_map[ ce ] = res;
+    */
+    TODO;
     return res;
 }
 

@@ -12,7 +12,7 @@
 
 #include <limits>
 
-ClassInfo::ClassInfo( Interpreter *ip, const PI8 *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
+ClassInfo::ClassInfo( Interpreter *ip, const Expr *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
     BinStreamReader bin( tok_data + 1 );
     parse_wt( ip, sf, bin );
 
@@ -28,7 +28,7 @@ ClassInfo::~ClassInfo() {
     }
 }
 
-CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const PI8 *sf, int off, Scope *caller ) {
+CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const Expr *sf, int off, Scope *caller ) {
     Interpreter *ip = caller->interpreter();
     TrialClass *res = new TrialClass;
     res->orig = this;
@@ -92,7 +92,7 @@ CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, 
     return res;
 }
 
-void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const PI8 *sf, int off, Var &res, Expr cond, Scope *caller ) {
+void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller ) {
     Interpreter *ip = caller->interpreter();
     // TypeInfo
     //    Vec<Var>  parameters;
@@ -103,8 +103,8 @@ void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, 
         arg_ptrs << &args[ i ];
 
     Expr cg = concat( /// class expr
-        pointer_on( cst( orig->sf, 0, 8 * SourceFile( orig->sf ).tot_size() ), ip->ptr_size() ),
-        cst( orig->tok_data - orig->sf ),
+        pointer_on( *orig->sf, ip->ptr_size() ),
+        cst( orig->tok_data - orig->sf->cst_data() ),
         cst( orig->src_off )
     );
 

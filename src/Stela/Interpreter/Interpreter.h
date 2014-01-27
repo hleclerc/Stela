@@ -127,7 +127,7 @@ public:
 
     // attributes
     SplittedVec<ToDel *,16>      obj_to_delete;
-    SplittedVec<Expr,8>          sourcefiles; ///< contains Cst( data )
+    SplittedVec<Expr,8>          sourcefiles; ///< contains Cst( data ) for each opened sourcefile
     Vec<String>                  inc_paths;
 
     ErrorList                   &error_list;

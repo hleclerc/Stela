@@ -1,4 +1,4 @@
 #include "TypeInfo.h"
 
-TypeInfo::TypeInfo( ClassInfo *orig ) : orig( orig ) {
+TypeInfo::TypeInfo( ClassInfo *orig ) : orig( orig ), parsed( false ) {
 }

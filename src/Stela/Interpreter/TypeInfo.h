@@ -11,10 +11,16 @@ class TypeInfo {
 public:
     TypeInfo( ClassInfo *orig );
 
+    // input
     Vec<Var>   parameters;
     ClassInfo *orig;
     Var        var;
-    TypeInfo  *prev;
+
+    //
+    bool       parsed;
+
+    //
+    TypeInfo  *prev; ///< prev type in ClassInfo
 };
 
 #endif // TYPEINFO_H

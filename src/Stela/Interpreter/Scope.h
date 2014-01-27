@@ -18,9 +18,9 @@ public:
 
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
-    friend class CallableInfo_Class;
-    friend class CallableInfo_Def;
     friend class Interpreter;
+    friend class ClassInfo;
+    friend class DefInfo;
 
     #define DECL_IR_TOK( N ) Var parse_##N( const Expr *sf, int off, BinStreamReader bin ); ///< parse a given IR_TOK
     #include "../Ir/Decl.h"
@@ -52,7 +52,7 @@ protected:
     VarTable       named_vars;
 
     bool           do_not_execute_anything;
-    Var           *instantiated_from_sf;
+    Expr          *instantiated_from_sf;
     int            instantiated_from_off;
 
     int            base_size;
