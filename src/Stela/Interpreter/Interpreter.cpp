@@ -3,10 +3,10 @@
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
 
-#include "CallableInfo_Class.h"
-#include "CallableInfo_Def.h"
 #include "Interpreter.h"
 #include "SourceFile.h"
+#include "ClassInfo.h"
+#include "DefInfo.h"
 #include "Scope.h"
 
 #include "../Ir/Numbers.h"
@@ -88,8 +88,7 @@ void Interpreter::import( String filename ) {
     SourceFile::prep_dat( tmp_vec, bin_size, filename );
     t.copy_binary_data_to( const_cast<PI8 *>( SourceFile( tmp_vec.ptr() ).bin_data() ) );
 
-    Expr *sf_expr = sourcefiles.push_back( cst( tmp_vec.ptr(), 0, 8 * tmp_vec.size() ) );
-    const PI8 *sf_data = sf_expr->cst_data();
+    Expr *sf = sourcefiles.push_back( cst( tmp_vec.ptr(), 0, 8 * tmp_vec.size() ) );
 
     //    if ( disp_tokens ) {
     //        //for( int i = 0; i < size; ++i )
@@ -103,7 +102,7 @@ void Interpreter::import( String filename ) {
     if ( not main_scope )
         main_scope = new Scope( this, 0 );
 
-    main_scope->parse( sf_data, tok_data_of( sf_data ) );
+    main_scope->parse( sf, tok_data_of( sf ) );
 }
 
 Vec<ConstPtr<Inst> > Interpreter::get_outputs() {
@@ -125,7 +124,7 @@ int Interpreter::ptr_alig() const {
     return 32;
 }
 
-ErrorList::Error &Interpreter::make_error( String msg, const PI8 *sf, int off, Scope *sc, bool warn ) {
+ErrorList::Error &Interpreter::make_error( String msg, const Expr *sf, int off, Scope *sc, bool warn ) {
     ErrorList::Error &res = error_list.add( msg );
     if ( sf )
         res.ac( SourceFile( sf ).filename(), off );
@@ -136,7 +135,7 @@ ErrorList::Error &Interpreter::make_error( String msg, const PI8 *sf, int off, S
     return res;
 }
 
-void Interpreter::disp_error( String msg, const PI8 *sf, int off, Scope *sc, bool warn ) {
+void Interpreter::disp_error( String msg, const Expr *sf, int off, Scope *sc, bool warn ) {
     std::cerr << make_error( msg, sf, off, sc, warn );
 }
 
@@ -149,20 +148,23 @@ bool Interpreter::already_imported( String filename ) {
     return false;
 }
 
-const PI8 *Interpreter::tok_data_of( const PI8 *sf ) {
+const PI8 *Interpreter::tok_data_of( const Expr *sf ) {
     SfInfo &res = sf_info_of( sf );
     return res.tok_data;
 }
 
 
-SfInfo &Interpreter::sf_info_of( const PI8 *sf ) {
-    SourceFile nsf( sf );
-    const PI8 *sf_bin_data = nsf.bin_data();
-
-    auto iter = sf_info_map.find( sf_bin_data );
+SfInfo &Interpreter::sf_info_of( const Expr *sf ) {
+    auto iter = sf_info_map.find( *sf );
     if ( iter != sf_info_map.end() )
         return iter->second;
-    SfInfo &res = sf_info_map[ sf_bin_data ];
+
+    // new SfInfo
+    SfInfo &res = sf_info_map[ *sf ];
+
+    // get a pointer to nstr table and tok data
+    SourceFile nsf( sf->cst_data() );
+    const PI8 *sf_bin_data = nsf.bin_data();
 
     // nstr_cor
     BinStreamReader bsr( sf_bin_data );
@@ -180,7 +182,7 @@ SfInfo &Interpreter::sf_info_of( const PI8 *sf ) {
     return res;
 }
 
-int Interpreter::glo_nstr( const PI8 *sf, int n ) {
+int Interpreter::glo_nstr( const Expr *sf, int n ) {
     SfInfo &si = sf_info_of( sf );
     ASSERT( n < si.nstr_cor.size(), "bad nstr" );
     return si.nstr_cor[ n ];
@@ -210,14 +212,14 @@ ClassInfo &Interpreter::class_info( const Expr &cg ) {
 
 TypeInfo *Interpreter::type_info( const Expr &type ) {
     auto iter = type_info_map.find( type );
-    ASSERT( iter != type_info_map.end(), "not registered type var" );
+    ASSERT( iter != type_info_map.end(), "not a registered type var" );
 
     TypeInfo *res = iter->second;
 
     Scope scope( this, main_scope, 0 );
     scope.parse( res->orig );
 
-    const PI8 *sf = res->var;
+    const Expr *sf = res->var;
 
     PRINT( res->orig->expr );
     PRINT( res->var );
@@ -225,7 +227,7 @@ TypeInfo *Interpreter::type_info( const Expr &type ) {
     return res;
 }
 
-CallableInfo *Interpreter::callable_info( Expr ce ) {
+CallableInfo *Interpreter::callable_info( const Expr &ce ) {
     auto iter = callable_info_map.find( ce );
     if ( iter != callable_info_map.end() )
         return iter->second.ptr();
@@ -235,7 +237,7 @@ CallableInfo *Interpreter::callable_info( Expr ce ) {
     int bin_off = 0, src_off = 0, ps = ptr_size();
     slice( ce, ps +  0, ps + 32 ).basic_conv( bin_off );
     slice( ce, ps + 32, ps + 64 ).basic_conv( src_off );
-    const PI8 *sf = slice( ce, 0, ptr_size() ).cst_data_ValAt();
+    const Expr *sf = slice( ce, 0, ptr_size() ).cst_data_ValAt();
     const PI8 *td = sf + bin_off;
 
     switch ( *td ) {

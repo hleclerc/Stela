@@ -41,27 +41,29 @@ public:
     int  ptr_alig() const;
 
     // error messages
-    ErrorList::Error &make_error( String msg, const PI8 *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
-    void              disp_error( String msg, const PI8 *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    ErrorList::Error &make_error( String msg, const Expr *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    void              disp_error( String msg, const Expr *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
 
     // methods for sourcefiles
     bool              already_imported( String filename );
-    const PI8        *tok_data_of( const PI8 *sf );
 
-    SfInfo           &sf_info_of( const PI8 *sf );
-
-    int               glo_nstr( const PI8 *sf, int n );
+    SfInfo           &sf_info_of( const Expr *sf ); ///< ref on a buffer for sourcefile data
+    int               glo_nstr( const Expr *sf, int n ); ///< global string id for string n in sourcefile sf
+    const PI8        *tok_data_of( const Expr *sf );
 
     // methods for Type variables
-    Var               type_of( const Var &var ) const;
-    ClassInfo        &class_info( const Var &class_var );
-    ClassInfo        &class_info( const Expr &cg );
+    Var               type_of( const Var &var ) const; ///< a variable to represent var.type
     TypeInfo         *type_info( const Expr &type );
-    CallableInfo     *callable_info( Expr ce );
 
-    Var              *type_for( ClassInfo &class_info );
-    Var              *type_for( ClassInfo &class_info, Var *parm_0 );
-    Var              *type_for( ClassInfo &class_info, Vec<Var *> parm_l );
+    Var              *type_for( ClassInfo &class_info ); ///< type for class_info without template arguments
+    Var              *type_for( ClassInfo &class_info, Var *parm_0 ); ///< type for class_info with 1 template argument
+    Var              *type_for( ClassInfo &class_info, Vec<Var *> parm_l ); ///< type for class_info with template arguments
+
+    /// callable
+    CallableInfo     *callable_info( const Expr &ce );
+    ClassInfo        &class_info( const Var &class_var ); ///<
+    ClassInfo        &class_info( const Expr &cg );
+
 
 
     // helpers
@@ -136,7 +138,7 @@ public:
     std::map<Expr        ,ClassInfo     > class_info_map;
     std::map<Expr        ,DefInfo       > def_info_map;
     std::map<Expr        ,TypeInfo     *> type_info_map;
-    std::map<const PI8  *,SfInfo        > sf_info_map;
+    std::map<Expr        ,SfInfo        > sf_info_map;
 
     std::map<const PRef *,VarRef        > var_refs; ///< references
 };
