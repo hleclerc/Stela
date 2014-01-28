@@ -6,11 +6,20 @@ Expr::Expr( Ptr<Inst> inst, int nout ) : inst( inst ), nout( nout ) {
 Expr::Expr() {
 }
 
-const PI8 *Expr::cst_data() const {
-    return inst->cst_data( nout );
+const PI8 *Expr::cst_data( int beg, int end ) const {
+    return inst->cst_data( nout, beg, end );
 }
-const PI8 *Expr::cst_data_ValAt( int off ) const {
-    return inst->cst_data_ValAt( nout, off );
+
+const PI8 *Expr::cst_data( int beg ) const {
+    return cst_data( beg, size_in_bits() );
+}
+
+const PI8 *Expr::vat_data( int beg, int end ) const {
+    return inst->vat_data( nout, beg, end );
+}
+
+const PI8 *Expr::vat_data( int beg ) const {
+    return vat_data( beg, size_in_bits() );
 }
 
 void Expr::write_to_stream( Stream &os ) const {

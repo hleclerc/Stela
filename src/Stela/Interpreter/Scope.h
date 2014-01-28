@@ -11,7 +11,7 @@ class SourceFile;
 */
 class Scope {
 public:
-    Scope( Interpreter *ip, Scope *parent, Scope *caller = 0, Ptr<VarTable> snv = 0 );
+    Scope( Scope *parent, Scope *caller = 0, Ptr<VarTable> snv = 0 );
 
     Var parse( const Expr *sf, const PI8 *tok );
     Interpreter *interpreter();
@@ -26,6 +26,7 @@ protected:
     #include "../Ir/Decl.h"
     #undef DECL_IR_TOK
 
+    template<class T>
     Var parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *type );
 
     template<class T> Var make_var( T val );
@@ -45,7 +46,6 @@ protected:
     Var get_attr( Var self, int attr, const Expr *sf, int off );
     Var *self_var();
 
-    Interpreter   *ip;
     Scope         *parent; ///< "accessible" scope, i.e. that can be read to find variables
     Scope         *caller; ///< caller scope, if this serves as the body of a function
     Ptr<VarTable>  static_named_vars;

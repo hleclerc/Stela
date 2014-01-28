@@ -1,6 +1,7 @@
 #ifndef ClassInfo_H
 #define ClassInfo_H
 
+#include "../System/BinStreamReader.h"
 #include "CallableInfo_WT.h"
 class TypeInfo;
 
@@ -14,14 +15,14 @@ public:
         Vec<Var> args;
     };
 
-    ClassInfo( Interpreter *ip, const Expr *sf, const PI8 *tok_data, int src_off );
+    ClassInfo( const Expr *sf, int src_off, BinStreamReader bin, Expr class_ptr );
     virtual ~ClassInfo();
 
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller );
 
     Vec<Code> ancestors;
+    Expr      class_ptr;
     TypeInfo *last;
-    Expr      expr;
 };
 
 #endif // ClassInfo_H

@@ -1,4 +1,3 @@
-# variables
 # classes et fonctions.
 # if
 # fonctions -> avec scope statique, surdefs, ...
@@ -8,11 +7,25 @@
 # -> les variables contiennent des pointeurs vers les données
 # -> on retrouve les infos à l'aide de tables de correspondance
 # -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
+# class Callable
+    # pass
+    
+# MUST be defined first
+class Class
+    pass
+    
+class Def
+    pass
+    
+# MUST be defined before any find_var
 class Callable
     pass
 
+    
 class Toto
     t := 0
+
+Toto
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 
@@ -27,8 +40,8 @@ class Toto
 # Rq: un type se fait à partir d'un ClassInfo, qui vient de class_type.expr()
 # class_info devrait aussi être un type différent, ...
 # Proposition pour simplifier (ne pas se mordre la queue), class Toto et def Toto ne renvoient rien !
-inst := Toto()
-___syscall inst.t
+# inst := Toto()
+# ___syscall inst.t
 
 # if ___rand()
     # 

@@ -1,7 +1,10 @@
 #include "InstVisitor.h"
+#include "PointerOn.h"
 #include "Slice.h"
 #include "Inst_.h"
+#include "Arch.h"
 #include "Cst.h"
+#include "Op.h"
 
 ///
 class Slice : public Inst_<1,1> {
@@ -14,6 +17,16 @@ public:
         return Inst::equal( b ) and 
             beg == static_cast<const Slice *>( b )->beg and 
             end == static_cast<const Slice *>( b )->end;
+    }
+    virtual const PI8 *cst_data( int nout, int lbeg, int lend ) const {
+        return inp_expr( 0 ).cst_data( beg + lbeg, beg + lend );
+    }
+    virtual Expr _smp_pointer_on( int nout ) {
+        if ( Expr res = Inst::_smp_pointer_on( nout ) )
+            return res;
+        if ( beg % 8 )
+            TODO;
+        return add( arch->bt_ptr(), pointer_on( inp_expr( 0 ) ), arch->cst_ptr( beg / 8 ) );
     }
     int beg, end;
 };

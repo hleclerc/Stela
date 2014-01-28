@@ -1,6 +1,7 @@
 #ifndef DefInfo_H
 #define DefInfo_H
 
+#include "../System/BinStreamReader.h"
 #include "CallableInfo_WT.h"
 
 class DefInfo : public CallableInfo_WT {
@@ -9,7 +10,7 @@ public:
         virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller );
     };
 
-    DefInfo( Interpreter *ip, const Expr *sf, const PI8 *tok_data, int src_off );
+    DefInfo( const Expr *sf, int src_off, BinStreamReader bin );
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller );
 
     Code block_with_ret;

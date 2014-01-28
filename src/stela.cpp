@@ -32,13 +32,13 @@ int main( int argc, char **argv ) {
 
     // context
     ErrorList e;
-    Interpreter ip( e );
-    ip.add_inc_path( base_met_files );
+    ip = new Interpreter( e );
+    ip->add_inc_path( base_met_files );
 
     // parse
     for( int i = 0; i < input_files.size(); ++i )
-        ip.import( input_files[ i ] );
-    Vec<ConstPtr<Inst> > outputs = ip.get_outputs();
+        ip->import( input_files[ i ] );
+    Vec<ConstPtr<Inst> > outputs = ip->get_outputs();
 
     // compile
     CppCompiler cr;
@@ -46,6 +46,7 @@ int main( int argc, char **argv ) {
         cr << outputs[ i ];
     cr.exec();
 
+    delete ip;
     return e;
 }
 

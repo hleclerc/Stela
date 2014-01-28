@@ -3,6 +3,6 @@
 
 #include "Expr.h"
 
-Expr pointer_on( Expr expr, int ptr_size );
+Expr pointer_on( Expr expr );
 
 #endif // Expr_PointerOn_H

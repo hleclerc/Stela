@@ -1,6 +1,5 @@
 #include "CallableInfo.h"
 #include "Interpreter.h"
-#include "SourceFile.h"
 #include "Scope.h"
 
 #include <algorithm>
@@ -14,17 +13,18 @@
 #include "../Inst/Slice.h"
 #include "../Inst/ValAt.h"
 #include "../Inst/Rand.h"
+#include "../Inst/Arch.h"
 #include "../Inst/Cst.h"
 #include "../Inst/Op.h"
 
+#include "RefPointerOn.h"
 #include "RefExpr.h"
-#include "RefPtr.h"
 
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
 
-Scope::Scope( Interpreter *ip, Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
-    ip( ip ), parent( parent ), caller( caller ) {
+Scope::Scope( Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
+    parent( parent ), caller( caller ) {
 
     static_named_vars = snv ? snv : new VarTable;
 
@@ -33,7 +33,7 @@ Scope::Scope( Interpreter *ip, Scope *parent, Scope *caller, Ptr<VarTable> snv )
     base_size = 0;
     base_alig = 1;
 
-    sys_state = parent ? parent->sys_state : Var( ip, &ip->type_Void );
+    sys_state = parent ? parent->sys_state : Var( &ip->type_Void );
     self = 0;
 }
 
@@ -68,7 +68,7 @@ template<class T>
 Var Scope::make_var( T val ) {
     Vec<PI8> data( Size(), sizeof( T ) );
     memcpy( data.ptr(), &val, sizeof( T ) );
-    return Var( ip, ip->type_for( S<T>() ), cst( data ) );
+    return Var( ip->type_for( S<T>() ), cst( data ) );
 }
 
 int Scope::read_nstring( const Expr *sf, BinStreamReader &bin ) {
@@ -80,41 +80,49 @@ Var Scope::copy( const Var &var, const Expr *sf, int off ) {
     return var;
 }
 
+template<class T>
 Var Scope::parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *type ) {
     if ( not sf )
         return disp_error( "TODO: class or def in sourcefile wo cst_data" );
     // we read only the name, because the goal is only to register the def/class
-    int bin_offset = bin.ptr - sf->cst_data() - BinStreamWriter::size_needed_for( off ) - 1;
+    int bin_offset = bin.ptr - sf->vat_data();
     int name = read_nstring( sf, bin );
 
+
+    // supporting variable
     Var res;
     switch( name ) {
     #define DECL_BT( T ) case STRING_##T##_NUM: res = ip->class_##T; break;
     #include "DeclBaseClass.h"
     #include "DeclParmClass.h"
     #undef DECL_BT
-    default: res = ::constified( Var( ip, type ) );
+    default: res = constified( Var( type ) );
     }
 
-    // &sf, bin_offset, off
-    TODO;
-    /*res.data->ptr = new RefExpr( concat(
-        pointer_on( cst( sf, 0, 8 * SourceFile( sf ).tot_size() ), ip->ptr_size() ),
-        cst( bin_offset ),
-        cst( off )
-    ) );*/
+    // make a variable with ( &sf, bin_offset, off ) as attributes
+    Expr class_expr = concat( *sf, cst( bin_offset ), cst( off ) );
+    res.data->ptr = new RefExpr( class_expr );
     res.flags |= Var::SURDEF;
-    reg_var( name, res, sf, off, true, false );
 
+    // update ip->type_...
+    switch( name ) {
+    #define DECL_BT( T ) case STRING_##T##_NUM: ip->_update_base_type_from_class_expr( ip->type_##T, class_expr ); break;
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+    default: break;
+    }
+
+    // register it
+    reg_var( name, res, sf, off, true, false );
     return ip->void_var;
 }
 
 Var Scope::parse_DEF( const Expr *sf, int off, BinStreamReader bin ) {
-    return parse_CALLABLE( sf, off, bin, &ip->type_Class );
+    return parse_CALLABLE<DefInfo>( sf, off, bin, &ip->type_Def );
 }
 
 Var Scope::parse_CLASS( const Expr *sf, int off, BinStreamReader bin ) {
-    return parse_CALLABLE( sf, off, bin, &ip->type_Def );
+    return parse_CALLABLE<ClassInfo>( sf, off, bin, &ip->type_Class );
 }
 
 Var Scope::parse_RETURN( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -151,7 +159,7 @@ Var Scope::parse_PI64( const Expr *sf, int off, BinStreamReader bin ) {
     return make_var( PI64( bin.read_positive_integer() ) );
 }
 Var Scope::parse_PTR( const Expr *sf, int off, BinStreamReader bin ) {
-    if ( ip->ptr_size() == 32 )
+    if ( arch->ptr_size == 32 )
         return make_var( SI32( bin.read_positive_integer() ) );
     return make_var( SI64( bin.read_positive_integer() ) );
 }
@@ -164,7 +172,7 @@ Var Scope::parse_VAR( const Expr *sf, int off, BinStreamReader bin ) {
     int name = read_nstring( sf, bin );
     if ( Var res = find_var( name ) )
         return res;
-    return disp_error( "Impossible to find variable '" + glob_nstr_cor.str( name ) + "'.", sf, off );
+    return disp_error( "Impossible to find variable '" + ip->glob_nstr_cor.str( name ) + "'.", sf, off );
 }
 
 Var Scope::parse_ASSIGN( const Expr *sf, int off, BinStreamReader bin ) {
@@ -294,7 +302,7 @@ Var Scope::parse_GET_ATTR( const Expr *sf, int off, BinStreamReader bin ) {
     int attr = read_nstring( sf, bin );
     if ( Var res = get_attr( self, attr, sf, off ) )
         return res;
-    return disp_error( "No attribute " + glob_nstr_cor.str( attr ), sf, off );
+    return disp_error( "No attribute " + ip->glob_nstr_cor.str( attr ), sf, off );
 
 }
 Var Scope::parse_GET_ATTR_PTR( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -481,7 +489,7 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
         //  - self ref
         //  - parm data
         // type = class ptr + parameter refs
-        SI32 nb_surdefs = 0, ps = ip->ptr_size();
+        SI32 nb_surdefs = 0, ps = arch->ptr_size;
         Expr surdef_list_ptr = slice( f.type->ptr->expr(), 1 * ps, 2 * ps );
         if ( not val_at( surdef_list_ptr, 32 ).basic_conv( nb_surdefs ) )
             return disp_error( "pb decoding callable (to find surdef list)" );
@@ -492,7 +500,7 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
 
         CallableInfo *ci[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
-            Expr surdef = val_at( slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps ), ip->ptr_size() + 64 );
+            Expr surdef = val_at( slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps ), arch->ptr_size + 64 );
             ci[ i ] = ip->callable_info( surdef );
         }
         std::sort( ci, ci + nb_surdefs, CmpCallableInfobyPertinence() );
@@ -612,7 +620,7 @@ void Scope::set( Var &o, Expr n, const Expr *sf, int off ) {
 
 Var Scope::reg_var( int name, const Var &var, const Expr *sf, int off, bool stat, bool check ) {
     if ( check and ( named_vars.get( name ) or static_named_vars->get( name ) ) )
-        return disp_error( "There is already a variable named '" + glob_nstr_cor.str( name ) + "' in the current scope", sf, off );
+        return disp_error( "There is already a variable named '" + ip->glob_nstr_cor.str( name ) + "' in the current scope", sf, off );
     VarTable *vt = stat ? static_named_vars.ptr() : &named_vars;
     vt->reg( name, var );
     return var;
@@ -663,19 +671,24 @@ Var Scope::find_var( int name ) {
     if ( not res.is_surdef() )
         return res;
 
-    // -> Callable[ surdef_list, self_type, parm_type ]
+    // surdef_list = nb_surdefs, [ surdef_expr ]*n
     Vec<Var> lst;
     find_var_clist( lst, name );
     Expr surdef_list_data = cst( SI32( lst.size() ) );
     for( int i = 0; i < lst.size(); ++i )
-        surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr(), ip->ptr_size() ) );
-    Var surdef_list( ip, &ip->type_SurdefList, surdef_list_data );
+        PRINT( lst[ i ] );
+    for( int i = 0; i < lst.size(); ++i )
+        surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr() ) );
+    Var surdef_list( &ip->type_SurdefList, surdef_list_data );
+
+    //
     Var self_type = self_var() ? ip->type_of( *self_var() ) : ip->void_var;
 
-    Vec<Var *> parms;
-    parms << &surdef_list;
-    parms << &self_type;
-    parms << &ip->void_var;
+    // -> Callable[ surdef_list, self_type, parm_type ]
+    Var *parms[ 3 ];
+    parms[ 0 ] = &surdef_list;
+    parms[ 1 ] = &self_type;
+    parms[ 2 ] = &ip->void_var;
     Var *callable_type = ip->type_for( ip->class_info( ip->class_Callable ), parms );
 
     Expr callable_data;
@@ -683,7 +696,7 @@ Var Scope::find_var( int name ) {
         callable_data = ip->ref_expr_on( *s );
     else
         callable_data = cst();
-    return Var( ip, callable_type, callable_data );
+    return Var( callable_type, callable_data );
 }
 
 Var *Scope::self_var() {
@@ -699,7 +712,7 @@ Var *Scope::self_var() {
 
 Var Scope::parse_rand( const Expr *sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
-    return Var( ip, &ip->type_PI64, rand( ip->ptr_size() ) );
+    return Var( &ip->type_PI64, rand( arch->ptr_size ) );
 }
 
 Var Scope::parse_syscall( const Expr *sf, int off, BinStreamReader bin ) {
@@ -712,9 +725,9 @@ Var Scope::parse_syscall( const Expr *sf, int off, BinStreamReader bin ) {
         inp[ i ] = simplified_expr( v );
     }
 
-    syscall res( simplified_expr( sys_state ), n, inp, ip->ptr_size() );
+    syscall res( simplified_expr( sys_state ), n, inp );
     set( sys_state, res.sys, sf, off );
-    return Var( ip, &ip->type_SI64, res.ret );
+    return Var( &ip->type_SI64, res.ret );
 }
 
 Var Scope::parse_typeof( const Expr *sf, int off, BinStreamReader bin ) {
@@ -739,7 +752,7 @@ Var Scope::parse_size_of( const Expr *sf, int off, BinStreamReader bin ) {
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var r = apply( a, 0, 0, 0, 0, 0, true, APPLY_MODE_PARTIAL_INST, sf, bin.read_positive_integer() ); // partial_instanciation
 // 
-//     Var res( ip, ip->type_for( S<ST>() ) );
+//     Var res( ip->type_for( S<ST>() ) );
 //     *reinterpret_cast<ST *>( res.data ) = r.type->size_in_bits;
 //     return res;
     TODO; return ip->void_var;
@@ -750,7 +763,7 @@ Var Scope::parse_alig_of( const Expr *sf, int off, BinStreamReader bin ) {
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var r = apply( a, 0, 0, 0, 0, 0, true, APPLY_MODE_PARTIAL_INST, sf, bin.read_positive_integer() ); // partial_instanciation
 // 
-//     Var res( ip, ip->type_for( S<ST>() ) );
+//     Var res( ip->type_for( S<ST>() ) );
 //     *reinterpret_cast<ST *>( res.data ) = r.type->alig_in_bits;
 //     return res;
     TODO; return ip->void_var;
@@ -769,7 +782,7 @@ Var Scope::parse_select_SurdefList( const Expr *sf, int off, BinStreamReader bin
 //         par << ip->void_var;
 //         par << make_surdefs_var( lst );
 //         par << make_type_var( varargs.type );
-//         Var res( ip, ip->class_SurdefList.type_for( this, par ) );
+//         Var res( ip->class_SurdefList.type_for( this, par ) );
 //         ip->set_ref( res.data + 0 * sizeof( void * ), Var() );
 //         ip->set_ref( res.data + 1 * sizeof( void * ), varargs );
 //         return res;
@@ -780,7 +793,7 @@ Var Scope::parse_select_SurdefList( const Expr *sf, int off, BinStreamReader bin
 //     par << surdef_list.type->parameters[ 0 ];
 //     par << surdef_list.type->parameters[ 1 ];
 //     par << make_type_var( varargs.type );
-//     Var res( ip, ip->class_SurdefList.type_for( this, par ) );
+//     Var res( ip->class_SurdefList.type_for( this, par ) );
 //     ip->set_ref( res.data + 0 * sizeof( void * ), surdef_list );
 //     ip->set_ref( res.data + 1 * sizeof( void * ), varargs );
 //     return res;
@@ -791,7 +804,7 @@ Var Scope::parse_address( const Expr *sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 // 
-//     Var res( ip, ip->type_for( S<ST>() ) );
+//     Var res( ip->type_for( S<ST>() ) );
 //     *reinterpret_cast<ST *>( res.data ) = ST( a.data );
 //     return res;
     TODO; return ip->void_var;
@@ -821,7 +834,7 @@ Var Scope::parse_apply_LambdaFunc( const Expr *sf, int off, BinStreamReader bin 
 //     int off = bin.read_positive_integer();
 // 
 //     // new Scope
-//     Scope scope( ip, main_scope(), this );
+//     Scope scope( main_scope(), this );
 //     Var names = lfun.type->parameters[ 0 ];
 //     for( unsigned i = 0; i < names.type->size_in_bytes() / sizeof( SI32 * ); ++i ) {
 //         Var num = make_int_var( SI32( i ) );
@@ -885,7 +898,7 @@ Var Scope::parse_pointed_value( const Expr *sf, int off, BinStreamReader bin ) {
 //         return res;
 //     }
 // 
-//     Var res( ip, type_of_type_var( t ) );
+//     Var res( type_of_type_var( t ) );
 //     res.data  = *reinterpret_cast<PI8 **>( a.data );
 //     res.flags = Var::IS_A_REF;
 //     return res;
@@ -1011,7 +1024,7 @@ Var Scope::parse_block_exec( const Expr *sf, int off, BinStreamReader bin ) {
 // 
 //     int nn = v_names.type->size_in_bytes() / sizeof( SI32 * );
 // 
-//     Scope scope( ip, sc_ptr, this );
+//     Scope scope( sc_ptr, this );
 //     if ( nn != 1 )
 //         TODO;
 //     for( int i = 0; i < nn; ++i )
@@ -1024,16 +1037,16 @@ Var Scope::parse_block_exec( const Expr *sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_ptr_size( const Expr *sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
-    if ( ip->ptr_size() == 32 )
-        return make_var( SI32( ip->ptr_size() ) );
-    return make_var( SI64( ip->ptr_size() ) );
+    if ( arch->ptr_size == 32 )
+        return make_var( SI32( arch->ptr_size ) );
+    return make_var( SI64( arch->ptr_size ) );
 }
 
 Var Scope::parse_ptr_alig( const Expr *sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
-    if ( ip->ptr_size() == 32 )
-        return make_var( SI32( ip->ptr_alig() ) );
-    return make_var( SI64( ip->ptr_alig() ) );
+    if ( arch->ptr_size == 32 )
+        return make_var( SI32( arch->ptr_alig ) );
+    return make_var( SI64( arch->ptr_alig ) );
 }
 
 Var Scope::parse_info( const Expr *sf, int off, BinStreamReader bin ) {

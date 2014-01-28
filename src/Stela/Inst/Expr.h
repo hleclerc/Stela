@@ -13,13 +13,17 @@ public:
     Expr( Ptr<Inst> inst, int nout = 0 );
     Expr();
 
-    const PI8 *cst_data() const;
-    const PI8 *cst_data_ValAt( int off = 0 ) const;
+    const PI8 *cst_data( int beg, int end ) const;
+    const PI8 *cst_data( int beg = 0 ) const;
+
+    const PI8 *vat_data( int beg, int end ) const;
+    const PI8 *vat_data( int beg = 0 ) const;
+
     void write_to_stream( Stream &os ) const;
     operator bool() const { return inst; }
-    int size_in_bits() const;
-    int size_in_bytes() const;
     const BaseType *out_bt() const;
+    int size_in_bytes() const;
+    int size_in_bits() const;
 
     const TPar &parents() const { return inst->out_expr( nout ).parents; }
     TPar &parents() { return inst->out_expr( nout ).parents; }

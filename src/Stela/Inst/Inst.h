@@ -44,8 +44,9 @@ public:
 
     virtual int size_in_bits( int nout ) const = 0;
     virtual int size_in_bytes( int nout ) const;
-    virtual const PI8 *cst_data( int nout ) const;
     virtual void write_to_stream( Stream &os ) const = 0;
+    virtual const PI8 *cst_data( int nout, int beg, int end ) const;
+    virtual const PI8 *vat_data( int nout, int beg, int end ) const;
 
     // inp
     virtual int inp_size() const = 0;
@@ -80,9 +81,8 @@ public:
 
     // methods to construct expressions
     virtual Expr _smp_slice( int nout, int beg, int end );
-    virtual Expr _smp_val_at( int nout, int size );
+    virtual Expr _smp_val_at( int nout, int beg, int end );
     virtual Expr _smp_pointer_on( int nout );
-    virtual const PI8 *cst_data_ValAt( int nout, int off ) const;
 
     // attributes
     Inst         *ext_parent;

@@ -139,3 +139,5 @@ src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Expr.cpp
 tests/test.met
+src/Stela/Inst/Arch.h
+src/Stela/Inst/Arch.cpp

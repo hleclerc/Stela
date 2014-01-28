@@ -1,3 +1,14 @@
+À quoi servent les pointeurs sur des Expr ?
+  - ex: si on fait ptr( slice( a, 32, 64 ) ), est-ce que ça devrait donner la même chose que ptr( a ) + 32 ?
+      -> a priori oui
+      -> ça veut dire qu'il faut garder le slice 
+
+
+      
+Pb: cst_data( 5, 17 ) -> devrait renvoyer un pointeur sur les données décalées en mémoire...
+  -> c'est possible si on fait les version décalées des Cst::data pour les 8 cas possibles (à la demande)
+      
+
 Les classes et les type démarrent avec les bons types
 
 Rq: on pourrait stocker les types avec des Expr mais il faudrait avoir la bonne valeur dès le début

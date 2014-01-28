@@ -16,9 +16,9 @@ public:
     };
 
     // Où stocker ip ??
-    Var( Interpreter *ip, Var *type, const Expr &expr );
-    Var( Interpreter *ip, Var *type, Ref *ref );
-    Var( Interpreter *ip, Var *type );
+    Var( Var *type, const Expr &expr );
+    Var( Var *type, Ref *ref );
+    Var( Var *type );
     Var();
 
     ~Var();

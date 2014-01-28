@@ -17,7 +17,11 @@ int Inst::size_in_bytes( int nout ) const {
     return ( size_in_bits( nout ) + 7 ) / 8;
 }
 
-const PI8 *Inst::cst_data( int nout ) const {
+const PI8 *Inst::cst_data( int nout, int beg, int end ) const {
+    return 0;
+}
+
+const PI8 *Inst::vat_data( int nout, int beg, int end ) const {
     return 0;
 }
 
@@ -51,18 +55,14 @@ Expr Inst::_smp_slice( int nout, int beg, int end ) {
     if ( beg == 0 and end == size_in_bits( nout ) )
         return Expr( this, nout );
     if ( beg == end )
-        return cst( Vec<PI8>() );
+        return cst( 0, 0, 0 );
     return Expr();
 }
 
-Expr Inst::_smp_val_at( int nout, int size ) {
+Expr Inst::_smp_val_at( int nout, int beg, int end ) {
     return Expr();
 }
 
 Expr Inst::_smp_pointer_on( int nout ) {
     return Expr();
-}
-
-const PI8 *Inst::cst_data_ValAt( int nout, int off ) const {
-    return 0;
 }

@@ -9,7 +9,7 @@
      -> return value
 */
 struct syscall {
-    syscall( Expr sys, int ninp, Expr *inp, int ptr_size );
+    syscall( Expr sys, int ninp, Expr *inp );
     Expr sys;
     Expr ret;
 };

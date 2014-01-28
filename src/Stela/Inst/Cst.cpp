@@ -28,8 +28,10 @@ public:
         return size;
     }
 
-    virtual const PI8 *cst_data( int nout ) const {
-        return data.ptr();
+    virtual const PI8 *cst_data( int nout, int beg, int end ) const {
+        if ( beg % 8 )
+            TODO;
+        return data.ptr() + beg / 8;
     }
 
     virtual void write_to_stream( Stream &os ) const {
@@ -60,19 +62,8 @@ public:
 
     virtual int inst_id() const { return Inst::Id_Cst; }
 
-    virtual Expr _smp_slice( int nout, int beg, int end ) {
-        int sb = ( size + 7 ) / 8;
-        if ( beg % 8 ) {
-            int nb = ( end - beg + 7 ) / 8;
-            Vec<PI8> tmp( Size(), nb );
-            memcpy_bit( tmp.ptr() + 0 * nb, 0, data.ptr() + beg + 0 * sb, 0, end - beg );
-            memcpy_bit( tmp.ptr() + 1 * nb, 0, data.ptr() + beg + 1 * sb, 0, end - beg );
-            return cst( tmp.ptr() + 0 * sb, tmp.ptr() + 1 * sb, end - beg );
-        }
-        return cst( data.ptr() + beg / 8 + 0 * sb, data.ptr() + beg / 8 + 1 * sb, end - beg );
-    }
-
     Vec<PI8> data; ///< values and known (should not be changed directly)
+    // Vec<PI8> shifted_data;
     int size;
 };
 

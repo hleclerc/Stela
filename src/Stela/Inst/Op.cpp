@@ -27,22 +27,20 @@ public:
     virtual const BaseType *out_bt( int n ) const {
         return bt;
     }
-    virtual const PI8 *cst_data_ValAt( int nout, int off ) const {
+    virtual const PI8 *vat_data( int nout, int beg, int end ) const {
         if ( TOP::op_id == ID_add ) {
             Expr a = this->inp_expr( 0 );
             Expr b = this->inp_expr( 1 );
             if ( bt == bt_SI64 or bt == bt_PI64 ) {
                 SI64 nff = 0;
-                // ptr + off
                 if ( b.basic_conv( nff ) )
-                    if ( const PI8 *da = a.inst->cst_data_ValAt( a.nout, off + nff ) )
+                    if ( const PI8 *da = a.inst->vat_data( a.nout, beg + 8 * nff, end + 8 * nff ) )
                         return da;
             }
             if ( bt == bt_SI32 or bt == bt_PI32 ) {
                 SI32 nff = 0;
-                // ptr + off
                 if ( b.basic_conv( nff ) )
-                    if ( const PI8 *da = a.inst->cst_data_ValAt( a.nout, off + nff ) )
+                    if ( const PI8 *da = a.inst->vat_data( a.nout, beg + 8 * nff, end + 8 * nff ) )
                         return da;
             }
             return 0;

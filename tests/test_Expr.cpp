@@ -18,7 +18,24 @@ int main() {
     PA( cst( 0 ) );
     PA( cst( 1 ) );
 
-    PA( slice( cst( SI64( 0x176548 ) ), 8, 32 ) );
+    PA( slice( cst( SI64( 0x01234567 ) ), 8, 32 ) );
+
+    Expr gfe = cst( SI64( 0x656667 ) );
+    PRINT( gfe );
+    PRINT( gfe.cst_data() );
+    PRINT( gfe.cst_data( 8 ) );
+
+    Expr pgfe = pointer_on( gfe );
+    PRINT( pgfe );
+    PRINT( pgfe.vat_data() );
+    PRINT( pgfe.vat_data( 8 ) );
+
+    PRINT( slice( gfe, 8, 32 ) );
+    PRINT( slice( gfe, 8, 32 ).cst_data() );
+    PRINT( slice( gfe, 8, 32 ).cst_data( 8 ) );
+
+    PRINT( pointer_on( slice( gfe, 8, 32 ) ) );
+    PRINT( pointer_on( slice( gfe, 8, 32 ) ).vat_data() );
 
 //    Expr sa = syscall( cst( 6 ), 2, tcs, 32 ).ret;
 //    Expr sb = syscall( cst( 6 ), 2, tcs, 32 ).ret;

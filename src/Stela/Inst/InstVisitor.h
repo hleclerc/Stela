@@ -16,11 +16,11 @@ struct InstVisitor {
     #undef DECL_OP
 
     virtual void concat    ( const Inst &inst ) { def( inst ); }
-    virtual void syscall   ( const Inst &inst, int ptr_size ) { def( inst ); }
-    virtual void val_at    ( const Inst &inst, int size ) { def( inst ); }
-    virtual void slice     ( const Inst &inst, int beg, int end ) { def( inst ); }
-    virtual void pointer_on( const Inst &inst, int ptr_size ) { def( inst ); }
+    virtual void syscall   ( const Inst &inst ) { def( inst ); }
+    virtual void pointer_on( const Inst &inst ) { def( inst ); }
     virtual void rand      ( const Inst &inst, int size ) { def( inst ); }
+    virtual void val_at    ( const Inst &inst, int beg, int end ) { def( inst ); }
+    virtual void slice     ( const Inst &inst, int beg, int end ) { def( inst ); }
     virtual void cst       ( const Inst &inst, const PI8 *value, const PI8 *known, int size_in_bits ) { def( inst ); }
 };
 

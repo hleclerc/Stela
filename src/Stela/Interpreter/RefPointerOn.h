@@ -1,14 +1,14 @@
-#ifndef REFPTR_H
-#define REFPTR_H
+#ifndef RefPointerOn_H
+#define RefPointerOn_H
 
 #include "Ref.h"
 #include "Var.h"
 
 /**
 */
-class RefPtr : public Ref {
+class RefPointerOn : public Ref {
 public:
-    RefPtr( Var var, int ptr_size );
+    RefPointerOn( Var var, int ptr_size );
 
     virtual Expr expr() const;
     virtual void set( Expr expr );
@@ -18,6 +18,6 @@ public:
     int ptr_size;
 };
 
-Var ptr( Interpreter *ip, Var var );
+Var pointer_on( Var var );
 
-#endif // REFPTR_H
+#endif // RefPointerOn_H

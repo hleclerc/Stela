@@ -6,10 +6,7 @@
 #include "DefInfo.h"
 #include "Scope.h"
 
-DefInfo::DefInfo( Interpreter *ip, const Expr *sf, const PI8 *tok_data, int src_off ) : CallableInfo_WT( sf, tok_data, src_off ) {
-    BinStreamReader bin( tok_data );
-    parse_wt( ip, sf, bin );
-
+DefInfo::DefInfo( const Expr *sf, int src_off, BinStreamReader bin ) : CallableInfo_WT( sf, src_off, bin ) {
     block_with_ret = Code( sf, bin.read_offset() );
     if ( flags & IR_HAS_RETURN_TYPE )
         return_type = Code( sf, bin.read_offset() );
