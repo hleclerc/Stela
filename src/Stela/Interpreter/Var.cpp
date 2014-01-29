@@ -1,4 +1,5 @@
 #include "../Inst/Slice.h"
+#include "../Inst/ValAt.h"
 #include "../Inst/Arch.h"
 #include "../Inst/Cst.h"
 #include "Interpreter.h"
@@ -38,22 +39,32 @@ bool Var::is_surdef() const {
     return flags & SURDEF;
 }
 
-void Var::write_to_stream( Stream &os ) const {
-    if ( type and type->ptr ) {
-        ClassInfo *ci = ip->class_info( slice( type->expr(), 0, arch->ptr_size ) );
+static void write_var( Stream &os, Expr type, Expr data ) {
+    // type
+    if ( type ) {
+        int ps = arch->ptr_size;
+        ClassInfo *ci = ip->class_info( slice( type, 0, ps ) );
         os << ip->glob_nstr_cor.str( ci->name );
         if ( ci->arg_names.size() ) {
             os << "[";
             for( int i = 0; i < ci->arg_names.size(); ++i ) {
                 if ( i )
                     os << ",";
-                os << "...";
+                write_var( os,
+                           slice( type, ( 2 * i + 1 ) * ps, ( 2 * i + 2 ) * ps ), // type
+                           slice( type, ( 2 * i + 2 ) * ps, ( 2 * i + 3 ) * ps ) // data
+                           );
             }
             os << "]";
         }
     } else
         os << "UndefinedType";
+    //
     os << "(" << data << ")";
+}
+
+void Var::write_to_stream( Stream &os ) const {
+    write_var( os, type ? type->expr() : Expr(), data ? data->expr() : Expr() );
 }
 
 Expr Var::expr() const {

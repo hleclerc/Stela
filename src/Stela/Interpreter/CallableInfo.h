@@ -16,19 +16,18 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller );
+        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 
         Var           cond;
-        CallableInfo *ci;
         const char   *reason;
     };
 
     struct Code {
-        Code( const Expr *sf = 0, const PI8 *tok = 0 ) : sf( sf ), tok( tok ) {}
+        Code( const Expr *sf = 0, const PI8 *tok = 0 ) : sf( sf ? *sf : Expr() ), tok( tok ) {}
         operator bool() const { return sf and tok; }
-        const Expr *sf;
+        Expr sf;
         const PI8 *tok;
     };
 

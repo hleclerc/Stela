@@ -4,6 +4,7 @@
 #include <Stela/Inst/ValAt.h>
 #include <Stela/Inst/Slice.h>
 #include <Stela/Inst/Rand.h>
+#include <Stela/Inst/Arch.h>
 #include <Stela/Inst/Cst.h>
 #include <Stela/Inst/Op.h>
 
@@ -36,6 +37,9 @@ int main() {
 
     PRINT( pointer_on( slice( gfe, 8, 32 ) ) );
     PRINT( pointer_on( slice( gfe, 8, 32 ) ).vat_data() );
+
+    PRINT( add( arch->bt_ptr(), pointer_on( gfe ), cst( 1l ) ) );
+    PRINT( val_at( add( arch->bt_ptr(), pointer_on( gfe ), cst( 1l ) ), 16 ) );
 
 //    Expr sa = syscall( cst( 6 ), 2, tcs, 32 ).ret;
 //    Expr sb = syscall( cst( 6 ), 2, tcs, 32 ).ret;

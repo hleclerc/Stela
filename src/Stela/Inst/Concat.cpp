@@ -18,11 +18,19 @@ public:
             return res;
         // specific ones
         int sep = inp_expr( 0 ).size_in_bits();
-        if ( beg >= sep )
-            return inp_expr( 1 ).inst->_smp_slice( inp_expr( 1 ).nout, beg - sep, end - sep );
         if ( end <= sep )
             return inp_expr( 0 ).inst->_smp_slice( inp_expr( 0 ).nout, beg, end );
+        if ( beg >= sep )
+            return inp_expr( 1 ).inst->_smp_slice( inp_expr( 1 ).nout, beg - sep, end - sep );
         return Expr();
+    }
+    virtual const PI8 *cst_data( int nout, int beg, int end ) const {
+        int sep = inp_expr( 0 ).size_in_bits();
+        if ( end <= sep )
+            return inp_expr( 0 ).cst_data( beg, end );
+        if ( beg >= sep )
+            return inp_expr( 1 ).cst_data( beg - sep, end - sep );
+        return 0;
     }
 };
 

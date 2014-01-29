@@ -7,7 +7,7 @@
 class DefInfo : public CallableInfo_WT {
 public:
     struct TrialDef : Trial {
-        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller );
+        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond );
     };
 
     DefInfo( const Expr *sf, int src_off, BinStreamReader bin );

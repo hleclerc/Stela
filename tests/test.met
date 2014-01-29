@@ -18,14 +18,19 @@ class Def
     pass
     
 # MUST be defined before any find_var
-class Callable
+class Callable[ surdef_list, self_type, parm_type ]
     pass
 
+class SurdefList
+    pass
+    
+class Void
+    pass
     
 class Toto
     t := 0
 
-Toto
+Toto()
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

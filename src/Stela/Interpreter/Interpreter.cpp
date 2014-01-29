@@ -191,7 +191,7 @@ TypeInfo *Interpreter::type_info( const Expr &type ) {
     TypeInfo *res = iter->second;
     if ( not res->parsed ) {
         Scope scope( main_scope, 0 );
-        scope.parse( res->orig->block.sf, res->orig->block.tok );
+        scope.parse( &res->orig->block.sf, res->orig->block.tok );
 
         PRINT( res->orig->class_ptr );
         TODO;
@@ -213,8 +213,8 @@ ClassInfo *Interpreter::class_info( const Expr &class_ptr ) {
     // make a new ClassInfo from class_ptr expr
     SI32 a = arch->ptr_size, b = a + 32, c = b + 32, src_off = 0, bin_off = 0;
     Expr sf = val_at( class_ptr, 0, a );
-    val_at( class_ptr, a, b ).basic_conv( bin_off );
-    val_at( class_ptr, b, c ).basic_conv( src_off );
+    val_at( class_ptr, a, b ).get_val( bin_off );
+    val_at( class_ptr, b, c ).get_val( src_off );
 
     ClassInfo *res = new ClassInfo( &sf, src_off, sf.vat_data() + bin_off, class_ptr );
     class_info_map[ class_ptr ] = res;
@@ -263,10 +263,12 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
 
     // Data:
     //  - ptr to parent class
-    //  - ref on parameter [* nb parameters as defined in parent class]
+    //  - type_ptr + ref on parameter [* nb parameters as defined in parent class]
     Expr re = class_info->class_ptr;
-    for( int i = 0; i < res->parameters.size(); ++i )
-        re = concat( re, ref_expr_on( res->parameters[ i ] ) );
+    for( int i = 0; i < res->parameters.size(); ++i ) {
+        ASSERT( parm_l[ i ]->type, "Type not defined" );
+        re = concat( re, parm_l[ i ]->type->expr(), ref_expr_on( res->parameters[ i ] ) );
+    }
 
     type_info_map[ re ] = res;
 

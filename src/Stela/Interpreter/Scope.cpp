@@ -53,10 +53,6 @@ Var Scope::parse( const Expr *sf, const PI8 *tok ) {
     }
 }
 
-Interpreter *Scope::interpreter() {
-    return ip;
-}
-
 Var Scope::parse_BLOCK( const Expr *sf, int off, BinStreamReader bin ) {
     Var res;
     while ( const PI8 *tok = bin.read_offset() )
@@ -490,17 +486,19 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
         //  - parm data
         // type = class ptr + parameter refs
         SI32 nb_surdefs = 0, ps = arch->ptr_size;
-        Expr surdef_list_ptr = slice( f.type->ptr->expr(), 1 * ps, 2 * ps );
-        if ( not val_at( surdef_list_ptr, 32 ).basic_conv( nb_surdefs ) )
+        Expr surdef_list_ptr_data = slice( f.type->ptr->expr(), 2 * ps, 3 * ps );
+        if ( not surdef_list_ptr_data.get_vat( nb_surdefs ) )
             return disp_error( "pb decoding callable (to find surdef list)" );
-        Expr surdef_list = val_at( surdef_list_ptr, 32 + nb_surdefs * ps );
 
         int pnu = 0, pnn = 0, *pn_names = 0;
         Var *pu_args = 0, *pn_args = 0;
 
         CallableInfo *ci[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
-            Expr surdef = val_at( slice( surdef_list, 32 + ( i + 0 ) * ps, 32 + ( i + 1 ) * ps ), arch->ptr_size + 64 );
+            Expr surdef = val_at( surdef_list_ptr_data,
+                                 32 + ( i + 0 ) * ps,
+                                 32 + ( i + 1 ) * ps
+                                 );
             ci[ i ] = ip->callable_info( surdef );
         }
         std::sort( ci, ci + nb_surdefs, CmpCallableInfobyPertinence() );
@@ -595,7 +593,7 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
                 else
                     ok_cond = cond;
 
-                trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, res, ok_cond, this );
+                trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, this, res, ok_cond );
 
                 if ( trials[ i ]->cond )
                     cond = and_op( bt_Bool, cond, not_op( bt_Bool, trials[ i ]->cond.expr() ) );
@@ -675,8 +673,6 @@ Var Scope::find_var( int name ) {
     Vec<Var> lst;
     find_var_clist( lst, name );
     Expr surdef_list_data = cst( SI32( lst.size() ) );
-    for( int i = 0; i < lst.size(); ++i )
-        PRINT( lst[ i ] );
     for( int i = 0; i < lst.size(); ++i )
         surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr() ) );
     Var surdef_list( &ip->type_SurdefList, surdef_list_data );

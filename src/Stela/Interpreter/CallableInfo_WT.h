@@ -18,7 +18,7 @@ public:
     bool has_varargs() const;
     bool self_as_arg() const;
 
-    const Expr  *sf;
+    Expr         sf;
     int          src_off;
 
     int       name;

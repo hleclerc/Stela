@@ -25,93 +25,85 @@ ClassInfo::~ClassInfo() {
 }
 
 CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const Expr *sf, int off, Scope *caller ) {
-    TODO;
-    return 0;
-//    TrialClass *res = new TrialClass;
-//    res->orig = this;
+    TrialClass *res = new TrialClass( this );
 
-//    if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
-//    // nb arguments
-//    if ( pnu + pnn < min_nb_args() ) return res->wr( "no enough arguments" );
-//    if ( pnu + pnn > max_nb_args() ) return res->wr( "To much arguments" );
+    if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
 
-//    Scope scope = Scope( ip, ip->main_scope, caller );
+    // nb arguments
+    if ( pnu + pnn < min_nb_args() ) return res->wr( "no enough arguments" );
+    if ( pnu + pnn > max_nb_args() ) return res->wr( "To much arguments" );
 
-//    res->args.resize( arg_names.size() );
-//    if ( has_varargs() ) {
-//        TODO;
-//    } else {
-//        for( int i = 0; i < pnu; ++i ) {
-//            scope.reg_var( arg_names[ i ], pu_args[ i ], sf, off );
-//            res->args[ i ] = pu_args[ i ];
-//        }
-//        bool bad = false;
-//        for( int i = 0; i < pnn; ++i ) {
-//            int o = arg_names.first_index_equal_to( pn_name[ i ] );
-//            if ( o < 0 ) {
-//                bad = true;
-//                break;
-//            }
-//            if ( res->args[ o ] )
-//                return res->wr( "arg is already assigned" );
-//            scope.reg_var( pn_name[ i ], pn_args[ i ], sf, off );
-//            res->args[ o ] = pn_args[ i ];
-//        }
-//        if ( bad )
-//            return res->wr( "No argument named as asked" );
-//    }
+    Scope scope = Scope( ip->main_scope, caller );
+    res->args.resize( arg_names.size() );
 
-//    // default values
-//    bool bad = false;
-//    for( int i = 0; i < res->args.size(); ++i ) {
-//        if ( not res->args[ i ] ) {
-//            int j = i - ( arg_names.size() - arg_defaults.size() );
-//            if ( j < 0 ) {
-//                bad = true;
-//                break;
-//            }
-//            Var val = scope.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok );
-//            scope.reg_var( arg_names[ i ], val, sf, off );
-//            res->args[ i ] = val;
-//        }
-//    }
-//    if ( bad )
-//        return res->wr( "Bad default value index (weird)" );
+    if ( has_varargs() ) {
+        TODO;
+    } else {
+        for( int i = 0; i < pnu; ++i ) {
+            scope.reg_var( arg_names[ i ], pu_args[ i ], sf, off );
+            res->args[ i ] = pu_args[ i ];
+        }
+        bool bad = false;
+        for( int i = 0; i < pnn; ++i ) {
+            int o = arg_names.first_index_equal_to( pn_name[ i ] );
+            if ( o < 0 ) {
+                bad = true;
+                break;
+            }
+            if ( res->args[ o ] )
+                return res->wr( "arg is already assigned" );
+            scope.reg_var( pn_name[ i ], pn_args[ i ], sf, off );
+            res->args[ o ] = pn_args[ i ];
+        }
+        if ( bad )
+            return res->wr( "No argument named as asked" );
+    }
 
-//    // condition
-//    if ( condition ) {
-//        Var c = scope.parse( condition.sf, condition.tok );
-//        TODO;
-//        //if ( to_bool( c, sf, off ) != true )
-//        //    return res->wr( "condition = false" );
-//    }
+    // default values
+    bool bad = false;
+    for( int i = 0; i < res->args.size(); ++i ) {
+        if ( not res->args[ i ] ) {
+            int j = i - ( arg_names.size() - arg_defaults.size() );
+            if ( j < 0 ) {
+                bad = true;
+                break;
+            }
+            Var val = scope.parse( &arg_defaults[ j ].sf, arg_defaults[ j ].tok );
+            scope.reg_var( arg_names[ i ], val, sf, off );
+            res->args[ i ] = val;
+        }
+    }
+    if ( bad )
+        return res->wr( "Bad default value index (weird)" );
 
-//    return res;
-//}
+    // condition
+    if ( condition ) {
+        Var c = scope.parse( &condition.sf, condition.tok );
+        TODO;
+        //if ( to_bool( c, sf, off ) != true )
+        //    return res->wr( "condition = false" );
+    }
 
-//void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller ) {
-//    Interpreter *ip = caller->interpreter();
-//    // TypeInfo
-//    //    Vec<Var>  parameters;
-//    //    Var       type_var;
+    return res;
+}
 
-//    Vec<Var *> arg_ptrs;
-//    for( int i = 0; i < args.size(); ++i )
-//        arg_ptrs << &args[ i ];
+// -------------------------------------------------------------------------------------
+void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
+    // TypeInfo
+    //    Vec<Var>  parameters;
+    //    Var       type_var;
 
-//    Expr cg = concat( /// class expr
-//        pointer_on( *orig->sf, ip->ptr_size() ),
-//        cst( orig->tok_data - orig->sf->cst_data() ),
-//        cst( orig->src_off )
-//    );
+    Var *arg_ptrs[ args.size() ];
+    for( int i = 0; i < args.size(); ++i )
+        arg_ptrs[ i ] = &args[ i ];
 
-//    Var *type = ip->type_for( ip->class_info( cg ), arg_ptrs );
-//    TypeInfo *ti = ip->type_info( type->expr() );
-//    ASSERT( ti, "not a registered type" );
+    Var *type = ip->type_for( orig, arg_ptrs );
+    TypeInfo *ti = ip->type_info( type->expr() );
+    ASSERT( ti, "not a registered type" );
 
-//    PRINT( *type );
-//    PRINT( ti );
-//    TODO; // parse type
+    PRINT( *type );
+    PRINT( ti );
+    TODO; // parse type
 
-//    res = Var( ip, type, cst( 17 ) );
+    res = Var( type, cst( 17 ) );
 }

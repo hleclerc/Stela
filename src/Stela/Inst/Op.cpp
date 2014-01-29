@@ -1,6 +1,7 @@
 #include "InstVisitor.h"
 #include "OpStructs.h"
 #include "Inst_.h"
+#include "ValAt.h"
 #include "Cst.h"
 #include "Op.h"
 
@@ -33,20 +34,40 @@ public:
             Expr b = this->inp_expr( 1 );
             if ( bt == bt_SI64 or bt == bt_PI64 ) {
                 SI64 nff = 0;
-                if ( b.basic_conv( nff ) )
+                if ( b.get_val( nff ) )
                     if ( const PI8 *da = a.inst->vat_data( a.nout, beg + 8 * nff, end + 8 * nff ) )
                         return da;
             }
             if ( bt == bt_SI32 or bt == bt_PI32 ) {
                 SI32 nff = 0;
-                if ( b.basic_conv( nff ) )
+                if ( b.get_val( nff ) )
                     if ( const PI8 *da = a.inst->vat_data( a.nout, beg + 8 * nff, end + 8 * nff ) )
                         return da;
             }
-            return 0;
         }
         return 0;
     }
+    virtual Expr _smp_val_at( int nout, int beg, int end ) {
+        if ( Expr res = Inst::_smp_val_at( nout, beg, end ) )
+            return res;
+        if ( TOP::op_id == ID_add ) {
+            Expr a = this->inp_expr( 0 );
+            Expr b = this->inp_expr( 1 );
+            if ( bt == bt_SI64 or bt == bt_PI64 ) {
+                SI64 nff = 0;
+                if ( b.get_val( nff ) )
+                    return val_at( a, beg + 8 * nff, end + 8 * nff );
+            }
+            if ( bt == bt_SI32 or bt == bt_PI32 ) {
+                SI32 nff = 0;
+                if ( b.get_val( nff ) )
+                    return val_at( a, beg + 8 * nff, end + 8 * nff );
+            }
+
+        }
+        return Expr();
+    }
+
 
     const BaseType *bt;
 };
@@ -94,8 +115,8 @@ static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da ) {
 // factory
 template<class TOP>
 static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
-    ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size" );
-    ASSERT( bt->size_in_bits() <= b.size_in_bits(), "wrong size" );
+    ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
+    ASSERT( bt->size_in_bits() <= b.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
 
     // known values ?
     const PI8 *da = a.cst_data();

@@ -49,6 +49,7 @@ CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn
     return res->wr( "TODO" );
 }
 
-void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Var &res, Expr cond, Scope *caller ) {
+// -------------------------------------------------------------------------------------
+void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
     TODO;
 }

@@ -14,7 +14,6 @@ public:
     Scope( Scope *parent, Scope *caller = 0, Ptr<VarTable> snv = 0 );
 
     Var parse( const Expr *sf, const PI8 *tok );
-    Interpreter *interpreter();
 
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };

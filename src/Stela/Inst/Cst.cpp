@@ -19,21 +19,17 @@ public:
                 data[ i ] = 0xFF;
         cst_set << this;
     }
-
     virtual ~Cst() {
         cst_set.remove_first_unordered( this );
     }
-
     virtual int size_in_bits( int nout ) const {
         return size;
     }
-
     virtual const PI8 *cst_data( int nout, int beg, int end ) const {
         if ( beg % 8 )
             TODO;
         return data.ptr() + beg / 8;
     }
-
     virtual void write_to_stream( Stream &os ) const {
         if ( size <= 8 )
             os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
@@ -54,12 +50,10 @@ public:
                 os << "...";
         }
     }
-
     virtual void apply( InstVisitor &visitor ) const {
         int sb = ( size + 7 ) / 8;
         visitor.cst( *this, data.ptr() + 0 * sb, data.ptr() + 1 * sb, size );
     }
-
     virtual int inst_id() const { return Inst::Id_Cst; }
 
     Vec<PI8> data; ///< values and known (should not be changed directly)

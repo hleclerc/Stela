@@ -14,10 +14,10 @@ public:
     Expr();
 
     const PI8 *cst_data( int beg, int end ) const;
-    const PI8 *cst_data( int beg = 0 ) const;
+    const PI8 *cst_data() const;
 
     const PI8 *vat_data( int beg, int end ) const;
-    const PI8 *vat_data( int beg = 0 ) const;
+    const PI8 *vat_data() const;
 
     void write_to_stream( Stream &os ) const;
     operator bool() const { return inst; }
@@ -33,16 +33,22 @@ public:
     bool operator< ( const Expr &e ) const { return inst != e.inst ? inst < e.inst : nout < e.nout; }
 
     template<class T>
-    bool basic_conv( T &val ) const {
-        if ( const PI8 *data = cst_data() ) {
-            if ( size_in_bytes() >= sizeof( T ) ) {
-                memcpy( &val, data, sizeof( T ) );
-                return true;
-            }
+    bool get_val( T &val, int offset = 0 ) const {
+        if ( const PI8 *data = cst_data( offset, offset + 8 * sizeof( T ) ) ) {
+            memcpy( &val, data, sizeof( T ) );
+            return true;
         }
         return false;
     }
 
+    template<class T>
+    bool get_vat( T &val, int offset = 0 ) const {
+        if ( const PI8 *data = vat_data( offset, offset + 8 * sizeof( T ) ) ) {
+            memcpy( &val, data, sizeof( T ) );
+            return true;
+        }
+        return false;
+    }
 
     Ptr<Inst> inst;
     int       nout; ///< num output of inst to use
