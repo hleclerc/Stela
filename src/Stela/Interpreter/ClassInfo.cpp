@@ -24,7 +24,7 @@ ClassInfo::~ClassInfo() {
     }
 }
 
-CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const Expr &sf, int off, Scope *caller ) {
+CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, Var *self, const Expr &sf, int off, Scope *caller ) {
     TrialClass *res = new TrialClass( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
@@ -88,7 +88,7 @@ CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, 
 }
 
 // -------------------------------------------------------------------------------------
-void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
+Var ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) {
     // list compatible for the `type_for` procedure
     Var *arg_ptrs[ args.size() ];
     for( int i = 0; i < args.size(); ++i )
@@ -98,14 +98,15 @@ void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, 
     TypeInfo *ti = ip->type_info( type->expr() ); ///< parse if necessary
 
     // start with a unknown cst
-    Expr eres;
+    Var ret;
     if ( ti->static_size_in_bits >= 0 ) {
-        eres = cst( 0, 0, ti->static_size_in_bits );
+        ret = Var( type, cst( 0, 0, ti->static_size_in_bits ) );
     } else {
         TODO; // eres = undefined cst with unknown size
     }
-    caller->set( res, type, eres, sf, off );
 
     // call init
-    // caller->apply( caller->get_attr( res, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
+    // caller->apply( caller->get_attr( ret, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
+
+    return ret;
 }

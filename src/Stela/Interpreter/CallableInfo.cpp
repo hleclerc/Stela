@@ -10,8 +10,9 @@ CallableInfo::Trial::Trial( const char *reason ) : reason( reason ) {
 CallableInfo::Trial::~Trial() {
 }
 
-void CallableInfo::Trial::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
+Var CallableInfo::Trial::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) {
     ERROR( "weird... should not be here" );
+    return ip->error_var;
 }
 
 // CallableInfo

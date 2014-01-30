@@ -34,7 +34,6 @@ Scope::Scope( Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
 
     sys_state   = parent ? parent->sys_state : Var( &ip->type_Void );
     class_scope = 0;
-    self        = 0;
 }
 
 Var Scope::parse( const Expr &sf, const PI8 *tok ) {
@@ -211,10 +210,6 @@ Var Scope::get_attr( Var self, int attr, const Expr &sf, int off ) {
     if ( ip->isa_Error( self ) )
         return self;
 
-    PRINT( self );
-    disp_error( "pouet", sf, off );
-    TODO; return Var();
-
     //    if ( self.type->base_class == &ip->class_GetSetSopInst )
     //        return get_attr( get_val_GetSetSopInst( self, sf, off ), name, sf, off );
 
@@ -294,6 +289,9 @@ Var Scope::get_attr( Var self, int attr, const Expr &sf, int off ) {
 
     //    write_error( "no attr '" + glob_nstr_cor.str( name ) + "' in object of type '" + to_string( *self.type ) + "'", sf, off );
     //    return ip->error_var;
+    PRINT( self );
+    disp_error( "pouet", sf, off );
+    TODO; return Var();
 }
 
 Var Scope::parse_GET_ATTR( const Expr &sf, int off, BinStreamReader bin ) {
@@ -488,6 +486,7 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
         //  - self ref
         //  - parm data
         // type = class ptr + parameter refs
+        Var *l_self = 0; ///< local self
         SI32 nb_surdefs = 0, ps = arch->ptr_size;
         Expr surdef_list_ptr_data = slice( f.type->ptr->expr(), 2 * ps, 3 * ps );
         if ( not surdef_list_ptr_data.get_vat( nb_surdefs ) )
@@ -516,7 +515,7 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
                 break;
             }
 
-            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, this );
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, l_self, sf, off, this );
 
             if ( trials[ i ]->ok() ) {
                 if ( not trials[ i ]->cond ) {
@@ -596,7 +595,8 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
                 else
                     ok_cond = cond;
 
-                trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, this, res, ok_cond );
+                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, this );
+                set( res, loc, sf, off, cond );
 
                 if ( trials[ i ]->cond )
                     cond = and_op( bt_Bool, cond, not_op( bt_Bool, trials[ i ]->cond.expr() ) );
@@ -614,11 +614,11 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
     return ip->error_var;
 }
 
-void Scope::set( Var &o, Var *type, Expr n, const Expr &sf, int off ) {
-    if ( o.type and o.type != type->data )
+void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond ) {
+    if ( dst.type and dst.type != src.type )
         TODO;
 
-    if ( not o.set( type->data, n ) )
+    if ( not dst.set( src ) )
         disp_error( "const slot", sf, off );
 }
 
@@ -703,7 +703,7 @@ Var Scope::find_var( int name ) {
 
 Var *Scope::self_var() {
     if ( self )
-        return self;
+        return &self;
     return parent ? parent->self_var() : 0;
 }
 
@@ -728,7 +728,7 @@ Var Scope::parse_syscall( const Expr &sf, int off, BinStreamReader bin ) {
     }
 
     syscall res( simplified_expr( sys_state ), n, inp );
-    set( sys_state, &ip->type_Void, res.sys, sf, off );
+    set( sys_state, Var( &ip->type_Void, res.sys ), sf, off );
     return Var( &ip->type_SI64, res.ret );
 }
 

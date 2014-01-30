@@ -16,7 +16,7 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond );
+        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 
@@ -33,7 +33,7 @@ public:
     };
 
     virtual ~CallableInfo();
-    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) = 0;
+    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, Var *self, const Expr &sf, int off, Scope *caller ) = 0;
     virtual const char *filename() const = 0;
     virtual int off() const = 0; ///< src offset (for error messages)
 

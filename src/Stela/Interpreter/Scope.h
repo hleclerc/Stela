@@ -35,7 +35,7 @@ protected:
 
     ErrorList::Error &make_error( String msg, const Expr &sf = Expr(), int off = 0, bool warn = false );
     Var disp_error( String msg, const Expr &sf = Expr(), int off = 0, bool warn = false );
-    void set( Var &o, Var *type, Expr n, const Expr &sf, int off );
+    void set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond = Expr() );
     Var reg_var( int name, const Var &var, const Expr &sf, int off, bool stat = false, bool check = true );
     Var find_var( int name );
     Var find_var_first( int name ); ///< helper for find_var
@@ -56,7 +56,7 @@ protected:
     int            base_alig;
 
     Var            sys_state;
-    Var           *self;
+    Var            self;
     TypeInfo      *class_scope;
 };
 

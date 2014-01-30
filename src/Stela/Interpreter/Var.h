@@ -32,7 +32,7 @@ public:
     bool is_surdef() const;
 
     Expr expr() const;
-    bool set( Ptr<PRef> type_var, Expr expr );
+    bool set( const Var &val );
     Expr type_expr() const;
 
     Ptr<PRef> data;

@@ -31,13 +31,14 @@ class SI32
     ___set_base_size_and_alig 32, 32
     
 class Toto
-    t := 0
+    a := 10
 
 def toto( a )
-    ___info a
+    ___syscall a
     
-toto 10
-
+t := Toto()
+___info t.a
+    
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 
 #    template, avec equal défini dessus.

@@ -71,7 +71,7 @@ Expr Var::expr() const {
     return data and data->ptr ? data->ptr->expr() : cst( Vec<PI8>() );
 }
 
-bool Var::set( Ptr<PRef> type_var, Expr expr ) {
+bool Var::set( const Var &val ) {
     // checkings
     if ( flags & WEAK_CONST )
         return false;
@@ -80,17 +80,17 @@ bool Var::set( Ptr<PRef> type_var, Expr expr ) {
 
     // type
     if ( type )
-        ASSERT( type == type_var, "bad" );
+        ASSERT( type == val.type, "bad" );
     else
-        type = type_var;
+        type = val.type;
 
     // data
     if ( not data )
         data = new PRef;
     if ( data->ptr )
-        data->ptr->set( expr );
+        data->ptr->set( val.expr() );
     else
-        data->ptr = new RefExpr( expr );
+        data->ptr = new RefExpr( val.expr() );
 
     return true;
 }

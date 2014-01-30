@@ -7,11 +7,15 @@
 class DefInfo : public CallableInfo_WT {
 public:
     struct TrialDef : Trial {
-        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond );
+        TrialDef( DefInfo *orig );
+        virtual ~TrialDef();
+        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller );
+        DefInfo *orig;
+        Scope *scope;
     };
 
     DefInfo( const Expr &sf, int src_off, BinStreamReader bin );
-    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller );
+    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, Var *self, const Expr &sf, int off, Scope *caller );
 
     Code block_with_ret;
     Code return_type;

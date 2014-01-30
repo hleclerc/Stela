@@ -47,7 +47,8 @@ Interpreter::Interpreter( ErrorList &error_list ) :
     error_var.data->flags = PRef::CONST;
     void_var.data->flags = PRef::CONST;
 
-    #define DECL_BT( T ) type_##T.data->flags = PRef::CONST;
+    #define DECL_BT( T ) \
+        type_##T.data->flags = PRef::CONST;
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
@@ -194,15 +195,17 @@ TypeInfo *Interpreter::type_info( const Expr &type ) {
 }
 
 CallableInfo *Interpreter::callable_info( const Expr &callable_ptr ) {
-    if ( CallableInfo *ci = class_info( callable_ptr ) ) return ci;
-    if ( CallableInfo *ci =   def_info( callable_ptr ) ) return ci;
+    if ( CallableInfo *ci = class_info( callable_ptr, false ) ) return ci;
+    if ( CallableInfo *ci =   def_info( callable_ptr, false ) ) return ci;
     return 0;
 }
 
-ClassInfo *Interpreter::class_info( const Expr &class_ptr ) {
+ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea ) {
     auto iter = class_info_map.find( class_ptr );
     if ( iter != class_info_map.end() )
         return iter->second;
+    if ( not crea )
+        return 0;
 
     // make a new ClassInfo from class_ptr expr
     SI32 a = arch->ptr_size, b = a + 32, c = b + 32, src_off = 0, bin_off = 0;
@@ -215,12 +218,22 @@ ClassInfo *Interpreter::class_info( const Expr &class_ptr ) {
     return res;
 }
 
-DefInfo *Interpreter::def_info( const Expr &def_ptr ) {
+DefInfo *Interpreter::def_info( const Expr &def_ptr, bool crea ) {
     auto iter = def_info_map.find( def_ptr );
     if ( iter != def_info_map.end() )
         return iter->second;
-    TODO;
-    return 0;
+    if ( not crea )
+        return 0;
+
+    // make a new DefInfo from def_ptr expr
+    SI32 a = arch->ptr_size, b = a + 32, c = b + 32, src_off = 0, bin_off = 0;
+    Expr sf = val_at( def_ptr, 0, a );
+    val_at( def_ptr, a, b ).get_val( bin_off );
+    val_at( def_ptr, b, c ).get_val( src_off );
+
+    DefInfo *res = new DefInfo( sf, src_off, sf.vat_data() + bin_off );
+    def_info_map[ def_ptr ] = res;
+    return res;
 }
 
 
@@ -285,9 +298,15 @@ Expr Interpreter::cst_ptr( SI64 val ) {
     return cst( val );
 }
 
+Var Interpreter::make_varargs_var( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name ) {
+    TODO;
+    return error_var;
+}
+
 void Interpreter::_update_base_type_from_class_expr( Var type, Expr class_expr ) {
     Expr type_expr = pointer_on( class_expr ); // no parameters.
     type.data->ptr = new RefExpr( type_expr );
+    type_for( class_info( pointer_on( class_expr ) ) ); ///< fill type_info_map
 }
 
 Expr Interpreter::ref_expr_on( const Var &var ) {
@@ -308,6 +327,13 @@ bool Interpreter::isa_ptr_int( const Var &var ) const {
 bool Interpreter::is_of_class( const Var &var, const Var &class_ ) const {
     Expr class_ptr = slice( var.type->ptr->expr(), 0, arch->ptr_size );
     return val_at( class_ptr, arch->ptr_size + 2 * 32 ) == class_.expr();
+}
+
+int Interpreter::to_bool( Var val, const Expr &sf, const PI8 *tok ) {
+    if ( not isa_Bool( val ) )
+        TODO;
+    bool res;
+    return conv( res, val ) ? res : -1;
 }
 
 #define DECL_BT( T ) bool Interpreter::isa_##T( const Var &var ) const { return is_of_class( var, class_##T ); }

@@ -44,12 +44,95 @@ DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin ) : CallableI
     //    }
 }
 
-CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) {
-    TrialDef *res = new TrialDef;
-    return res->wr( "TODO" );
+CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, Var *self, const Expr &sf, int off, Scope *caller ) {
+    TrialDef *res = new TrialDef( this );
+
+    if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
+
+    // nb arguments
+    if ( pnu + pnn + nu + nn < min_nb_args() ) return res->wr( "no enough arguments" );
+    if ( pnu + pnn + nu + nn > max_nb_args() ) return res->wr( "To much arguments" );
+
+    res->scope = new Scope( ip->main_scope, caller );
+    if ( self )
+        res->scope->self = self;
+
+
+    Vec<bool> arg_ok( Size(), arg_names.size(), false );
+    if ( pnu + pnn )
+        TODO;
+    if ( has_varargs() ) {
+        Vec<Var> uv_args, nv_args;
+        Vec<int> nv_name;
+
+        for( int i = 0; i < arg_names.size(); ++i ) {
+            res->scope->reg_var( arg_names[ i ], vu[ i ], sf, off, false, true );
+            arg_ok[ i ] = true;
+        }
+        for( int i = arg_names.size(); i < nu; ++i )
+            uv_args << vu[ i ];
+
+        for( int i = 0; i < nn; ++i ) {
+            int o = arg_names.first_index_equal_to( names[ i ] );
+            if ( o >= 0 ) {
+                if ( arg_ok[ o ] )
+                    caller->disp_error( "arg is already assigned", sf, off, true );
+                res->scope->reg_var( names[ i ], vn[ i ], sf, off, false, true );
+                arg_ok[ o ] = true;
+            } else {
+                nv_args << vn   [ i ];
+                nv_name << names[ i ];
+            }
+        }
+
+        Var varargs = ip->make_varargs_var( uv_args, nv_args, nv_name );
+        res->scope->reg_var( STRING_varargs_NUM, varargs, sf, off, false, true );
+    } else {
+        for( int i = 0; i < nu; ++i ) {
+            res->scope->reg_var( arg_names[ i ], vu[ i ], sf, off, false, true );
+            arg_ok[ i ] = true;
+        }
+        for( int i = 0; i < nn; ++i ) {
+            int o = arg_names.first_index_equal_to( names[ i ] );
+            if ( o < 0 )
+                return res->wr( "name=... does not appear in def" );
+            if ( arg_ok[ o ] )
+                caller->disp_error( "arg is already assigned", sf, off );
+            res->scope->reg_var( names[ i ], vn[ i ], sf, off, false, true );
+            arg_ok[ o ] = true;
+        }
+    }
+
+    // default values
+    for( int i = 0; i < arg_ok.size(); ++i ) {
+        if ( not arg_ok[ i ] ) {
+            int j = i - ( arg_names.size() - arg_defaults.size() );
+            if ( j < 0 )
+                return res->wr( "bad num default arg (weird)" );
+            res->scope->reg_var( arg_names[ i ], res->scope->parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok ), sf, off, false, true );
+            arg_ok[ i ] = true;
+        }
+    }
+
+    // condition
+    if ( condition ) {
+        res->cond = res->scope->parse( condition.sf, condition.tok );
+        if ( ip->to_bool( res->cond, condition.sf, condition.tok ) == 0 )
+            return res->wr( "condition = false" );
+    }
+
+    return res;
 }
 
 // -------------------------------------------------------------------------------------
-void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
-    TODO;
+DefInfo::TrialDef::TrialDef( DefInfo *orig ) : orig( orig ), scope( 0 ) {
+}
+
+DefInfo::TrialDef::~TrialDef() {
+    delete scope;
+}
+
+Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) {
+    // inline call
+    return scope->parse( orig->block.sf, orig->block.tok );
 }

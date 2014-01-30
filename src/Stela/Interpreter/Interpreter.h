@@ -56,8 +56,8 @@ public:
 
     /// callable
     CallableInfo     *callable_info( const Expr &callable_ptr );
-    ClassInfo        *class_info( const Expr &class_ptr );
-    DefInfo          *def_info( const Expr &def_ptr );
+    ClassInfo        *class_info( const Expr &class_ptr, bool crea = true );
+    DefInfo          *def_info( const Expr &def_ptr, bool crea = true );
 
     ClassInfo        *class_info( const Var &class_var ); ///< helper
 
@@ -66,6 +66,7 @@ public:
     bool              equal( Var a, Var b );
     bool              isa_ptr_int( const Var &var ) const;
     Expr              cst_ptr( SI64 val );
+    Var               make_varargs_var( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name );
 
     void              _update_base_type_from_class_expr( Var type, Expr class_expr );
 
@@ -85,6 +86,8 @@ public:
         }
         return false;
     }
+
+    int to_bool( Var val, const Expr &sf, const PI8 *tok ); ///< -1 means unknown, 0 means false, 1 means true
 
     struct VarRef {
         VarRef() : cpt( -1 ) {}

@@ -19,7 +19,7 @@ void CppInstCompiler::def( const Inst &inst ) {
 void CppInstCompiler::concat( const Inst &inst ) {
     TODO;
 }
-void CppInstCompiler::syscall( const Inst &inst, int ptr_size ) {
+void CppInstCompiler::syscall( const Inst &inst ) {
     cc->on.write_beg();
     cc->os << "syscall( ";
     for( int i = 1; i < inst.inp_size(); ++i ) {
@@ -30,13 +30,13 @@ void CppInstCompiler::syscall( const Inst &inst, int ptr_size ) {
     cc->os << " )";
     cc->on.write_end();
 }
-void CppInstCompiler::val_at( const Inst &inst, int size ) {
+void CppInstCompiler::val_at( const Inst &inst, int beg, int end ) {
     TODO;
 }
 void CppInstCompiler::slice( const Inst &inst, int beg, int end ) {
     TODO;
 }
-void CppInstCompiler::pointer_on( const Inst &inst, int ptr_size ) {
+void CppInstCompiler::pointer_on( const Inst &inst ) {
     TODO;
 }
 void CppInstCompiler::rand( const Inst &inst, int size ) {
