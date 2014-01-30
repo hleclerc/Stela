@@ -97,7 +97,7 @@ void Interpreter::import( String filename ) {
     reinterpret_cast<SI32 &>( data[ sizeof( int ) + bin_size ] ) = filename.size();
     memcpy( data.ptr() + sizeof( SI32 ) + bin_size + sizeof( SI32 ), filename.c_str(), filename.size() + 1 );
 
-    Expr *sf = sourcefiles.push_back( pointer_on( cst( data.ptr(), 0, 8 * data.size() ) ) );
+    const Expr &sf = *sourcefiles.push_back( pointer_on( cst( data.ptr(), 0, 8 * data.size() ) ) );
 
     // -> virtual machine
     if ( not main_scope )
@@ -116,7 +116,7 @@ void Interpreter::add_inc_path( String path ) {
     inc_paths << path;
 }
 
-ErrorList::Error &Interpreter::make_error( String msg, const Expr *sf, int off, Scope *sc, bool warn ) {
+ErrorList::Error &Interpreter::make_error( String msg, const Expr &sf, int off, Scope *sc, bool warn ) {
     ErrorList::Error &res = error_list.add( msg );
     if ( sf )
         res.ac( sf_info( sf )->filename, off );
@@ -127,27 +127,27 @@ ErrorList::Error &Interpreter::make_error( String msg, const Expr *sf, int off, 
     return res;
 }
 
-void Interpreter::disp_error( String msg, const Expr *sf, int off, Scope *sc, bool warn ) {
+void Interpreter::disp_error( String msg, const Expr &sf, int off, Scope *sc, bool warn ) {
     std::cerr << make_error( msg, sf, off, sc, warn );
 }
 
 bool Interpreter::already_imported( String filename ) {
     for( int i = 0; i < sourcefiles.size(); ++i )
-        if ( sf_info( &sourcefiles[ i ] )->filename == filename )
+        if ( sf_info( sourcefiles[ i ] )->filename == filename )
             return true;
     return false;
 }
 
-SfInfo *Interpreter::sf_info( const Expr *sf ) {
-    auto iter = sf_info_map.find( *sf );
+SfInfo *Interpreter::sf_info( const Expr &sf ) {
+    auto iter = sf_info_map.find( sf );
     if ( iter != sf_info_map.end() )
         return &iter->second;
 
     // -> new SfInfo
-    SfInfo &res = sf_info_map[ *sf ];
+    SfInfo &res = sf_info_map[ sf ];
 
     // get a pointer to nstr table and tok data (@see import for the data format)
-    const PI8 *ptr = sf->vat_data();
+    const PI8 *ptr = sf.vat_data();
 
     // nstr_cor
     BinStreamReader bsr( ptr + sizeof( SI32 ) );
@@ -169,7 +169,7 @@ SfInfo *Interpreter::sf_info( const Expr *sf ) {
     return &res;
 }
 
-int Interpreter::glo_nstr( const Expr *sf, int n ) {
+int Interpreter::glo_nstr( const Expr &sf, int n ) {
     SfInfo *si = sf_info( sf );
     ASSERT( n < si->nstr_cor.size(), "bad nstr" );
     return si->nstr_cor[ n ];
@@ -189,13 +189,7 @@ TypeInfo *Interpreter::type_info( const Expr &type ) {
     ASSERT( iter != type_info_map.end(), "not a registered type var" );
 
     TypeInfo *res = iter->second;
-    if ( not res->parsed ) {
-        Scope scope( main_scope, 0 );
-        scope.parse( &res->orig->block.sf, res->orig->block.tok );
-
-        PRINT( res->orig->class_ptr );
-        TODO;
-    }
+    res->parse_if_necessary();
     return res;
 }
 
@@ -216,7 +210,7 @@ ClassInfo *Interpreter::class_info( const Expr &class_ptr ) {
     val_at( class_ptr, a, b ).get_val( bin_off );
     val_at( class_ptr, b, c ).get_val( src_off );
 
-    ClassInfo *res = new ClassInfo( &sf, src_off, sf.vat_data() + bin_off, class_ptr );
+    ClassInfo *res = new ClassInfo( sf, src_off, sf.vat_data() + bin_off, class_ptr );
     class_info_map[ class_ptr ] = res;
     return res;
 }

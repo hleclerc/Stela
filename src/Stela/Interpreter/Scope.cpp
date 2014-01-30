@@ -29,15 +29,15 @@ Scope::Scope( Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
     static_named_vars = snv ? snv : new VarTable;
 
     do_not_execute_anything = false;
-    instantiated_from_sf = 0;
     base_size = 0;
     base_alig = 1;
 
-    sys_state = parent ? parent->sys_state : Var( &ip->type_Void );
-    self = 0;
+    sys_state   = parent ? parent->sys_state : Var( &ip->type_Void );
+    class_scope = 0;
+    self        = 0;
 }
 
-Var Scope::parse( const Expr *sf, const PI8 *tok ) {
+Var Scope::parse( const Expr &sf, const PI8 *tok ) {
     if ( tok == 0 or do_not_execute_anything )
         return ip->error_var;
 
@@ -53,7 +53,7 @@ Var Scope::parse( const Expr *sf, const PI8 *tok ) {
     }
 }
 
-Var Scope::parse_BLOCK( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_BLOCK( const Expr &sf, int off, BinStreamReader bin ) {
     Var res;
     while ( const PI8 *tok = bin.read_offset() )
         res = parse( sf, tok );
@@ -62,26 +62,23 @@ Var Scope::parse_BLOCK( const Expr *sf, int off, BinStreamReader bin ) {
 
 template<class T>
 Var Scope::make_var( T val ) {
-    Vec<PI8> data( Size(), sizeof( T ) );
-    memcpy( data.ptr(), &val, sizeof( T ) );
-    return Var( ip->type_for( S<T>() ), cst( data ) );
+    return Var( ip->type_for( S<T>() ), cst( val ) );
 }
 
-int Scope::read_nstring( const Expr *sf, BinStreamReader &bin ) {
+int Scope::read_nstring( const Expr &sf, BinStreamReader &bin ) {
     return ip->glo_nstr( sf, bin.read_positive_integer() );
 }
 
-Var Scope::copy( const Var &var, const Expr *sf, int off ) {
+Var Scope::copy( const Var &var, const Expr &sf, int off ) {
     TODO;
     return var;
 }
 
-template<class T>
-Var Scope::parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *type ) {
+Var Scope::parse_CALLABLE( const Expr &sf, int off, BinStreamReader bin, Var *type, bool def ) {
     if ( not sf )
         return disp_error( "TODO: class or def in sourcefile wo cst_data" );
     // we read only the name, because the goal is only to register the def/class
-    int bin_offset = bin.ptr - sf->vat_data();
+    int bin_offset = bin.ptr - sf.vat_data();
     int name = read_nstring( sf, bin );
 
 
@@ -95,8 +92,8 @@ Var Scope::parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *ty
     default: res = constified( Var( type ) );
     }
 
-    // make a variable with ( &sf, bin_offset, off ) as attributes
-    Expr class_expr = concat( *sf, cst( bin_offset ), cst( off ) );
+    // make a variable with ( ptr_sf_data, bin_offset, off ) as attributes
+    Expr class_expr = concat( sf, cst( bin_offset ), cst( off ) );
     res.data->ptr = new RefExpr( class_expr );
     res.flags |= Var::SURDEF;
 
@@ -108,21 +105,27 @@ Var Scope::parse_CALLABLE( const Expr *sf, int off, BinStreamReader bin, Var *ty
     default: break;
     }
 
+    // callable registration
+    if ( def )
+        ip->def_info  ( pointer_on( class_expr ) );
+    else
+        ip->class_info( pointer_on( class_expr ) );
+
     // register it
     reg_var( name, res, sf, off, true, false );
     return ip->void_var;
 }
 
-Var Scope::parse_DEF( const Expr *sf, int off, BinStreamReader bin ) {
-    return parse_CALLABLE<DefInfo>( sf, off, bin, &ip->type_Def );
+Var Scope::parse_DEF( const Expr &sf, int off, BinStreamReader bin ) {
+    return parse_CALLABLE( sf, off, bin, &ip->type_Def  , 1 );
 }
 
-Var Scope::parse_CLASS( const Expr *sf, int off, BinStreamReader bin ) {
-    return parse_CALLABLE<ClassInfo>( sf, off, bin, &ip->type_Class );
+Var Scope::parse_CLASS( const Expr &sf, int off, BinStreamReader bin ) {
+    return parse_CALLABLE( sf, off, bin, &ip->type_Class, 0 );
 }
 
-Var Scope::parse_RETURN( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_APPLY( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_RETURN( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_APPLY( const Expr &sf, int off, BinStreamReader bin ) {
     Var f = parse( sf, bin.read_offset() );
 
     int nu = bin.read_positive_integer();
@@ -140,38 +143,38 @@ Var Scope::parse_APPLY( const Expr *sf, int off, BinStreamReader bin ) {
 
     return apply( f, nu, u_args, nn, n_name, n_args, APPLY_MODE_STD, sf, off );
 }
-Var Scope::parse_SELECT( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_CHBEBA( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_SI32( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_SELECT( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_CHBEBA( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_SI32( const Expr &sf, int off, BinStreamReader bin ) {
     return make_var( SI32( bin.read_positive_integer() ) );
 }
-Var Scope::parse_PI32( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_PI32( const Expr &sf, int off, BinStreamReader bin ) {
     return make_var( SI32( bin.read_positive_integer() ) );
 }
-Var Scope::parse_SI64( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_SI64( const Expr &sf, int off, BinStreamReader bin ) {
     return make_var( SI64( bin.read_positive_integer() ) );
 }
-Var Scope::parse_PI64( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_PI64( const Expr &sf, int off, BinStreamReader bin ) {
     return make_var( PI64( bin.read_positive_integer() ) );
 }
-Var Scope::parse_PTR( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_PTR( const Expr &sf, int off, BinStreamReader bin ) {
     if ( arch->ptr_size == 32 )
         return make_var( SI32( bin.read_positive_integer() ) );
     return make_var( SI64( bin.read_positive_integer() ) );
 }
 
-Var Scope::parse_STRING( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_STRING( const Expr &sf, int off, BinStreamReader bin ) {
     TODO; return Var();
 }
 
-Var Scope::parse_VAR( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_VAR( const Expr &sf, int off, BinStreamReader bin ) {
     int name = read_nstring( sf, bin );
     if ( Var res = find_var( name ) )
         return res;
     return disp_error( "Impossible to find variable '" + ip->glob_nstr_cor.str( name ) + "'.", sf, off );
 }
 
-Var Scope::parse_ASSIGN( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_ASSIGN( const Expr &sf, int off, BinStreamReader bin ) {
     // name
     int name = read_nstring( sf, bin );
 
@@ -200,11 +203,11 @@ Var Scope::parse_ASSIGN( const Expr *sf, int off, BinStreamReader bin ) {
     return reg_var( name, var, sf, off, flags & IR_ASSIGN_STATIC );
 }
 
-Var Scope::parse_REASSIGN( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_REASSIGN( const Expr &sf, int off, BinStreamReader bin ) {
     TODO; return Var();
 }
 
-Var Scope::get_attr( Var self, int attr, const Expr *sf, int off ) {
+Var Scope::get_attr( Var self, int attr, const Expr &sf, int off ) {
     if ( ip->isa_Error( self ) )
         return self;
 
@@ -293,7 +296,7 @@ Var Scope::get_attr( Var self, int attr, const Expr *sf, int off ) {
     //    return ip->error_var;
 }
 
-Var Scope::parse_GET_ATTR( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_GET_ATTR( const Expr &sf, int off, BinStreamReader bin ) {
     Var self = parse( sf, bin.read_offset() );
     int attr = read_nstring( sf, bin );
     if ( Var res = get_attr( self, attr, sf, off ) )
@@ -301,11 +304,11 @@ Var Scope::parse_GET_ATTR( const Expr *sf, int off, BinStreamReader bin ) {
     return disp_error( "No attribute " + ip->glob_nstr_cor.str( attr ), sf, off );
 
 }
-Var Scope::parse_GET_ATTR_PTR( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_GET_ATTR_ASK( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_GET_ATTR_PTR_ASK( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_GET_ATTR_PA( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_IF( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_GET_ATTR_PTR( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_GET_ATTR_ASK( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_GET_ATTR_PTR_ASK( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_GET_ATTR_PA( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     Var cond = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 
     // bool conversion
@@ -327,15 +330,15 @@ Var Scope::parse_IF( const Expr *sf, int off, BinStreamReader bin ) {
     return ip->error_var;
 
 }
-Var Scope::parse_WHILE( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_BREAK( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_CONTINUE( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_FALSE( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_TRUE( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_VOID( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_SELF( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_THIS( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_FOR( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_FALSE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_TRUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_VOID( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_SELF( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_THIS( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_FOR( const Expr &sf, int off, BinStreamReader bin ) {
     //     int nn = bin.read_positive_integer();
     //     SI32 names[ nn ];
     //     for( int i = 0; i < nn; ++i )
@@ -372,7 +375,7 @@ Var Scope::parse_FOR( const Expr *sf, int off, BinStreamReader bin ) {
     //     return ip->void_var;
     TODO; return ip->void_var;
 }
-Var Scope::parse_IMPORT( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_IMPORT( const Expr &sf, int off, BinStreamReader bin ) {
     //     ST size = bin.read_positive_integer();
     //     char data[ size + 1 ];
     //     bin.read( data, size );
@@ -382,8 +385,8 @@ Var Scope::parse_IMPORT( const Expr *sf, int off, BinStreamReader bin ) {
     //     return ip->void_var;
     TODO; return ip->void_var;
 }
-Var Scope::parse_NEW( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_LIST( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_NEW( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_LIST( const Expr &sf, int off, BinStreamReader bin ) {
     //     int dim = bin.read_positive_integer();
     //
     //     Vec<Var> data;
@@ -401,7 +404,7 @@ Var Scope::parse_LIST( const Expr *sf, int off, BinStreamReader bin ) {
     //     return res;
     TODO; return ip->void_var;
 }
-Var Scope::parse_LAMBDA( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_LAMBDA( const Expr &sf, int off, BinStreamReader bin ) {
     //     int nb_vars = bin.read_positive_integer();
     //     Vec<SI32> strs;
     //     for( int i = 0; i < nb_vars; ++i )
@@ -442,17 +445,17 @@ Var Scope::parse_LAMBDA( const Expr *sf, int off, BinStreamReader bin ) {
     //     return res;
     TODO; return ip->void_var;
 }
-Var Scope::parse_NULL_REF( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_NULL_REF( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 
 Var Scope::get_val_if_GetSetSopInst( const Var &val ) {
     return val;
 }
 
-ErrorList::Error &Scope::make_error( String msg, const Expr *sf, int off, bool warn ) {
+ErrorList::Error &Scope::make_error( String msg, const Expr &sf, int off, bool warn ) {
     return ip->make_error( msg, sf, off, this, warn );
 }
 
-Var Scope::disp_error( String msg, const Expr *sf, int off, bool warn ) {
+Var Scope::disp_error( String msg, const Expr &sf, int off, bool warn ) {
     ip->disp_error( msg, sf, off, this, warn );
     return ip->error_var;
 }
@@ -468,7 +471,7 @@ struct CmpCallableInfobyPertinence {
     }
 };
 
-Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Expr *sf, int off ) {
+Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Expr &sf, int off ) {
     // if error_var -> break
     if ( ip->isa_Error( f ) )
         return ip->error_var;
@@ -611,12 +614,15 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
     return ip->error_var;
 }
 
-void Scope::set( Var &o, Expr n, const Expr *sf, int off ) {
-    if ( not o.set( n ) )
+void Scope::set( Var &o, Var *type, Expr n, const Expr &sf, int off ) {
+    if ( o.type and o.type != type->data )
+        TODO;
+
+    if ( not o.set( type->data, n ) )
         disp_error( "const slot", sf, off );
 }
 
-Var Scope::reg_var( int name, const Var &var, const Expr *sf, int off, bool stat, bool check ) {
+Var Scope::reg_var( int name, const Var &var, const Expr &sf, int off, bool stat, bool check ) {
     if ( check and ( named_vars.get( name ) or static_named_vars->get( name ) ) )
         return disp_error( "There is already a variable named '" + ip->glob_nstr_cor.str( name ) + "' in the current scope", sf, off );
     VarTable *vt = stat ? static_named_vars.ptr() : &named_vars;
@@ -706,12 +712,12 @@ Var *Scope::self_var() {
     if ( n != N ) \
         return disp_error( "Expecting " #N " operand", sf, off );
 
-Var Scope::parse_rand( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_rand( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
     return Var( &ip->type_PI64, rand( arch->ptr_size ) );
 }
 
-Var Scope::parse_syscall( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_syscall( const Expr &sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     Expr inp[ n ];
     for( int i = 0; i < n; ++i ) {
@@ -722,17 +728,17 @@ Var Scope::parse_syscall( const Expr *sf, int off, BinStreamReader bin ) {
     }
 
     syscall res( simplified_expr( sys_state ), n, inp );
-    set( sys_state, res.sys, sf, off );
+    set( sys_state, &ip->type_Void, res.sys, sf, off );
     return Var( &ip->type_SI64, res.ret );
 }
 
-Var Scope::parse_typeof( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_typeof( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
     return ip->type_of( a );
 }
 
-Var Scope::parse_set_base_size_and_alig( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_set_base_size_and_alig( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
     Var b = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -743,7 +749,7 @@ Var Scope::parse_set_base_size_and_alig( const Expr *sf, int off, BinStreamReade
     return ip->void_var;
 }
 
-Var Scope::parse_size_of( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_size_of( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var r = apply( a, 0, 0, 0, 0, 0, true, APPLY_MODE_PARTIAL_INST, sf, bin.read_positive_integer() ); // partial_instanciation
@@ -754,7 +760,7 @@ Var Scope::parse_size_of( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_alig_of( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_alig_of( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var r = apply( a, 0, 0, 0, 0, 0, true, APPLY_MODE_PARTIAL_INST, sf, bin.read_positive_integer() ); // partial_instanciation
@@ -765,7 +771,7 @@ Var Scope::parse_alig_of( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_select_SurdefList( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_select_SurdefList( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
 //     Var surdef_list = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var varargs = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -796,7 +802,7 @@ Var Scope::parse_select_SurdefList( const Expr *sf, int off, BinStreamReader bin
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_address( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_address( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 // 
@@ -806,13 +812,13 @@ Var Scope::parse_address( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_get_argc( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_get_argc( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
 //     return make_int_var( ip->argc );
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_get_argv( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_get_argv( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     int num = to_int( a );
@@ -823,7 +829,7 @@ Var Scope::parse_get_argv( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_apply_LambdaFunc( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_apply_LambdaFunc( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
 //     Var lfun = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var args = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -870,7 +876,7 @@ Var Scope::parse_apply_LambdaFunc( const Expr *sf, int off, BinStreamReader bin 
 //     return 0;
 // }
 
-Var Scope::parse_inst_of( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_inst_of( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
 //     Var inst = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var type = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -880,7 +886,7 @@ Var Scope::parse_inst_of( const Expr *sf, int off, BinStreamReader bin ) {
 }
 
 
-Var Scope::parse_pointed_value( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_pointed_value( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
 //     Var t = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -901,7 +907,7 @@ Var Scope::parse_pointed_value( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_set_RawRef_dependancy( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_set_RawRef_dependancy( const Expr &sf, int off, BinStreamReader bin ) {
     TODO;
 //     CHECK_PRIM_ARGS( 2 );
 //     Var ref = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -966,7 +972,7 @@ Var Scope::parse_set_RawRef_dependancy( const Expr *sf, int off, BinStreamReader
 //     return ip->class_EndItemDataRefArray.type_for( this, parameters );
 // }
 
-Var Scope::parse_reassign_rec( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_reassign_rec( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
 //     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
 //     Var b = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
@@ -996,7 +1002,7 @@ Var Scope::parse_reassign_rec( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_set_ptr_val( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_set_ptr_val( const Expr &sf, int off, BinStreamReader bin ) {
 //     CHECK_PRIM_ARGS( 2 );
 //     write_error( "...", sf, bin.read_positive_integer() );
 //     TODO;
@@ -1009,7 +1015,7 @@ Var Scope::parse_set_ptr_val( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_block_exec( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_block_exec( const Expr &sf, int off, BinStreamReader bin ) {
 //     CHECK_PRIM_ARGS( 5 );
 //     const SourceFile *sf_ptr = rcast( to_int( parse( sf, bin.read_offset() ) ) );
 //     const PI8        *tk_ptr = rcast( to_int( parse( sf, bin.read_offset() ) ) );
@@ -1031,21 +1037,21 @@ Var Scope::parse_block_exec( const Expr *sf, int off, BinStreamReader bin ) {
     TODO; return ip->void_var;
 }
 
-Var Scope::parse_ptr_size( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_ptr_size( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
     if ( arch->ptr_size == 32 )
         return make_var( SI32( arch->ptr_size ) );
     return make_var( SI64( arch->ptr_size ) );
 }
 
-Var Scope::parse_ptr_alig( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_ptr_alig( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 0 );
     if ( arch->ptr_size == 32 )
         return make_var( SI32( arch->ptr_alig ) );
     return make_var( SI64( arch->ptr_alig ) );
 }
 
-Var Scope::parse_info( const Expr *sf, int off, BinStreamReader bin ) {
+Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     for( int i = 0; i < n; ++i ) {
         Var v = parse( sf, bin.read_offset() );
@@ -1059,7 +1065,7 @@ Var Scope::parse_info( const Expr *sf, int off, BinStreamReader bin ) {
 
 
 
-#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 #include "../Ir/Decl_UnaryOperations.h"
 #include "../Ir/Decl_BinaryOperations.h"
 #undef DECL_IR_TOK

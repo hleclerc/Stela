@@ -8,7 +8,7 @@ class BinStreamReader;
 */
 class CallableInfo_WT : public CallableInfo {
 public:
-    CallableInfo_WT( const Expr *sf, int src_off, BinStreamReader &bin );
+    CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin );
     virtual const char *filename() const;
     virtual int off() const;
 
@@ -21,15 +21,15 @@ public:
     Expr         sf;
     int          src_off;
 
-    int       name;
-    int       flags;
-    int       nargs;
-    int       dargs;
-    Vec<int>  arg_names;
-    Vec<Code> arg_defaults;
-    Code      comp_pert;
-    Code      condition;
-    Code      block;
+    int          name;
+    int          flags;
+    int          nargs;
+    int          dargs;
+    Vec<int>     arg_names;
+    Vec<Code>    arg_defaults;
+    Code         comp_pert;
+    Code         condition;
+    Code         block;
 };
 
 #endif // CALLABLEINFO_WT_H

@@ -27,10 +27,16 @@ class SurdefList
 class Void
     pass
     
+class SI32
+    ___set_base_size_and_alig 32, 32
+    
 class Toto
     t := 0
 
-Toto()
+def toto( a )
+    ___info a
+    
+toto 10
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

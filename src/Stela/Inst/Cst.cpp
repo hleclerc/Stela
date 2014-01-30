@@ -81,6 +81,18 @@ static bool equal_cst( const Cst *cst, const PI8 *ptr, const PI8 *kno, int size_
 }
 
 Expr cst( const PI8 *ptr, const PI8 *kno, int size_in_bits ) {
+    if ( ptr == 0 ) {
+        ASSERT( kno == 0, "weird" );
+        int sb = ( size_in_bits + 7 ) / 8;
+        PI8 nptr[ sb ];
+        PI8 nkno[ sb ];
+        for( int i = 0; i < sb; ++i ) {
+            nptr[ i ] = 0x00;
+            nkno[ i ] = 0x00;
+        }
+        return cst( nptr, nkno, size_in_bits );
+    }
+
     // already an equivalent cst ?
     for( int i = 0; i < cst_set.size(); ++i )
         if ( equal_cst( cst_set[ i ], ptr, kno, size_in_bits ) )

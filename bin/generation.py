@@ -468,6 +468,8 @@ std_strings = string.split( """
     Type
     apply
     super
+    super_0 super_1 super_2 super_3
+    super_4 super_5 super_6 super_7
     destroy
     LambdaFunc
     get_size

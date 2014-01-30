@@ -37,14 +37,14 @@ public:
     void add_inc_path( String path );
 
     // error messages
-    ErrorList::Error &make_error( String msg, const Expr *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
-    void              disp_error( String msg, const Expr *sf = 0, int off = 0, Scope *sc = 0, bool warn = false );
+    ErrorList::Error &make_error( String msg, const Expr &sf = Expr(), int off = 0, Scope *sc = 0, bool warn = false );
+    void              disp_error( String msg, const Expr &sf = Expr(), int off = 0, Scope *sc = 0, bool warn = false );
 
     // methods for sourcefiles
     bool              already_imported( String filename );
 
-    int               glo_nstr( const Expr *sf, int n ); ///< global string id for string n in sourcefile sf
-    SfInfo           *sf_info( const Expr *sf ); ///< ref on a buffer for sourcefile data
+    int               glo_nstr( const Expr &sf, int n ); ///< global string id for string n in sourcefile sf
+    SfInfo           *sf_info( const Expr &sf ); ///< ref on a buffer for sourcefile data
 
     // methods for Type variables
     Var               type_of( const Var &var ) const; ///< a variable to represent var.type

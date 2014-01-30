@@ -4,7 +4,7 @@
 #include "Interpreter.h"
 #include <limits>
 
-CallableInfo_WT::CallableInfo_WT( const Expr *sf, int src_off, BinStreamReader &bin ) : sf( *sf ), src_off( src_off ) {
+CallableInfo_WT::CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin ) : sf( sf ), src_off( src_off ) {
     name  = ip->glo_nstr( sf, bin.read_positive_integer() );
     flags = bin.read_positive_integer();
     nargs = bin.read_positive_integer();
@@ -24,7 +24,7 @@ CallableInfo_WT::CallableInfo_WT( const Expr *sf, int src_off, BinStreamReader &
 }
 
 const char *CallableInfo_WT::filename() const {
-    return ip->sf_info( &sf )->filename;
+    return ip->sf_info( sf )->filename;
 }
 
 int CallableInfo_WT::off() const {

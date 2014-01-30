@@ -6,7 +6,7 @@
 #include "DefInfo.h"
 #include "Scope.h"
 
-DefInfo::DefInfo( const Expr *sf, int src_off, BinStreamReader bin ) : CallableInfo_WT( sf, src_off, bin ) {
+DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin ) : CallableInfo_WT( sf, src_off, bin ) {
     block_with_ret = Code( sf, bin.read_offset() );
     if ( flags & IR_HAS_RETURN_TYPE )
         return_type = Code( sf, bin.read_offset() );
@@ -44,12 +44,12 @@ DefInfo::DefInfo( const Expr *sf, int src_off, BinStreamReader bin ) : CallableI
     //    }
 }
 
-CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller ) {
+CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) {
     TrialDef *res = new TrialDef;
     return res->wr( "TODO" );
 }
 
 // -------------------------------------------------------------------------------------
-void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
+void DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
     TODO;
 }

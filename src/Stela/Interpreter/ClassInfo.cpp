@@ -11,7 +11,7 @@
 
 #include <limits>
 
-ClassInfo::ClassInfo( const Expr *sf, int src_off, BinStreamReader bin, Expr class_ptr ) : CallableInfo_WT( sf, src_off, bin ), class_ptr( class_ptr ), last( 0 ) {
+ClassInfo::ClassInfo( const Expr &sf, int src_off, BinStreamReader bin, Expr class_ptr ) : CallableInfo_WT( sf, src_off, bin ), class_ptr( class_ptr ), last( 0 ) {
     for( int i = 0, nb_anc = bin.read_positive_integer(); i < nb_anc; ++i )
         ancestors << Code( sf, bin.read_offset() );
 }
@@ -24,7 +24,7 @@ ClassInfo::~ClassInfo() {
     }
 }
 
-CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const Expr *sf, int off, Scope *caller ) {
+CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const Expr &sf, int off, Scope *caller ) {
     TrialClass *res = new TrialClass( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
@@ -68,7 +68,7 @@ CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, 
                 bad = true;
                 break;
             }
-            Var val = scope.parse( &arg_defaults[ j ].sf, arg_defaults[ j ].tok );
+            Var val = scope.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok );
             scope.reg_var( arg_names[ i ], val, sf, off );
             res->args[ i ] = val;
         }
@@ -78,7 +78,7 @@ CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, 
 
     // condition
     if ( condition ) {
-        Var c = scope.parse( &condition.sf, condition.tok );
+        Var c = scope.parse( condition.sf, condition.tok );
         TODO;
         //if ( to_bool( c, sf, off ) != true )
         //    return res->wr( "condition = false" );
@@ -88,22 +88,24 @@ CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, 
 }
 
 // -------------------------------------------------------------------------------------
-void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
-    // TypeInfo
-    //    Vec<Var>  parameters;
-    //    Var       type_var;
-
+void ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond ) {
+    // list compatible for the `type_for` procedure
     Var *arg_ptrs[ args.size() ];
     for( int i = 0; i < args.size(); ++i )
         arg_ptrs[ i ] = &args[ i ];
 
     Var *type = ip->type_for( orig, arg_ptrs );
-    TypeInfo *ti = ip->type_info( type->expr() );
-    ASSERT( ti, "not a registered type" );
+    TypeInfo *ti = ip->type_info( type->expr() ); ///< parse if necessary
 
-    PRINT( *type );
-    PRINT( ti );
-    TODO; // parse type
+    // start with a unknown cst
+    Expr eres;
+    if ( ti->static_size_in_bits >= 0 ) {
+        eres = cst( 0, 0, ti->static_size_in_bits );
+    } else {
+        TODO; // eres = undefined cst with unknown size
+    }
+    caller->set( res, type, eres, sf, off );
 
-    res = Var( type, cst( 17 ) );
+    // call init
+    // caller->apply( caller->get_attr( res, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
 }

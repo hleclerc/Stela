@@ -11,15 +11,15 @@ class ClassInfo : public CallableInfo_WT {
 public:
     struct TrialClass : Trial {
         TrialClass( ClassInfo *orig ) : orig( orig ) {}
-        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller, Var &res, Expr ext_cond );
+        virtual void call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller, Var &res, Expr ext_cond );
         ClassInfo *orig;
         Vec<Var> args;
     };
 
-    ClassInfo( const Expr *sf, int src_off, BinStreamReader bin, Expr class_ptr );
+    ClassInfo( const Expr &sf, int src_off, BinStreamReader bin, Expr class_ptr );
     virtual ~ClassInfo();
 
-    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr *sf, int off, Scope *caller );
+    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller );
 
     Vec<Code> ancestors;
     Expr      class_ptr;
