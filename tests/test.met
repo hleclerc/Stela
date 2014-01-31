@@ -32,7 +32,14 @@ class Type
     
 class SI32
     ___set_base_size_and_alig 32, 32
-    def reassign( val )
+    # rq: on peut avoir une contrainte style type paramétré
+    # val : Toto[ 10 ]...
+    # Proposition: pour l'instant on se base sur le nom de la classe...
+    # Rq: comment faire si le nom n'est pas défini...
+    # Possibilités pour les types
+    #  -> SI32 (un nom de classe)
+    #  -> [ SI64, PI64, ... ] (une liste de noms)
+    def reassign( val : SI32 )
         ___info val
     
 class Toto
