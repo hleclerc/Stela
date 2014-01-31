@@ -6,6 +6,8 @@
 #include "RefExpr.h"
 #include "Var.h"
 
+#include <sstream>
+
 Var::Var( Var *type, const Expr &expr ) : data( new PRef ), type( type->data ), flags( 0 ) {
     data->ptr = new RefExpr( expr );
 }
@@ -39,8 +41,14 @@ bool Var::is_surdef() const {
     return flags & SURDEF;
 }
 
+static void write_var_type( Stream &os, Expr type );
+
 static void write_var( Stream &os, Expr type, Expr data ) {
-    // type
+    write_var_type( os, type );
+    os << "(" << data << ")";
+}
+
+static void write_var_type( Stream &os, Expr type ) {
     if ( type ) {
         int ps = arch->ptr_size;
         ClassInfo *ci = ip->class_info( slice( type, 0, ps ) );
@@ -59,12 +67,17 @@ static void write_var( Stream &os, Expr type, Expr data ) {
         }
     } else
         os << "UndefinedType";
-    //
-    os << "(" << data << ")";
+}
+
+
+String Var::type_disp() const {
+    std::ostringstream ss;
+    write_var_type( ss, type_expr() );
+    return ss.str();
 }
 
 void Var::write_to_stream( Stream &os ) const {
-    write_var( os, type ? type->expr() : Expr(), data ? data->expr() : Expr() );
+    write_var( os, type_expr(), expr() );
 }
 
 Expr Var::expr() const {

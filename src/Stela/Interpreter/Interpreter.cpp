@@ -176,8 +176,37 @@ int Interpreter::glo_nstr( const Expr &sf, int n ) {
     return si->nstr_cor[ n ];
 }
 
+Var Interpreter::ext_method( const Var &var ) {
+    if ( isa_Def( var ) )
+        if ( DefInfo *d = def_info( pointer_on( var.expr() ) ) )
+            if ( d->self_as_arg() )
+                return var;
+    return Var();
+}
+
+Var Interpreter::make_surdef_list( const Vec<Var> &lst, Var self ) {
+    Expr surdef_list_data = cst( SI32( lst.size() ) );
+    for( int i = 0; i < lst.size(); ++i )
+        surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr() ) );
+    Var surdef_list( &type_SurdefList, surdef_list_data );
+
+    //
+    Var self_type = type_of( self ); // returns void if self is not defined
+
+    // -> Callable[ surdef_list, self_type, parm_type ]
+    Var *parms[ 3 ];
+    parms[ 0 ] = &surdef_list;
+    parms[ 1 ] = &self_type;
+    parms[ 2 ] = &void_var;
+
+    Var *callable_type = type_for( class_info( class_Callable ), parms );
+    return Var( callable_type, self ? ref_expr_on( self ) : cst() );
+}
 
 Var Interpreter::type_of( const Var &var ) const {
+    if ( not var.type )
+        return void_var;
+
     Var res;
     res.data  = var.type;
     res.type  = type_Type.data;

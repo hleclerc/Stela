@@ -67,6 +67,8 @@ public:
     bool              isa_ptr_int( const Var &var ) const;
     Expr              cst_ptr( SI64 val );
     Var               make_varargs_var( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name );
+    Var               ext_method( const Var &var ); ///< return var if var is a function with self as arg
+    Var               make_surdef_list( const Vec<Var> &lst, Var self );
 
     void              _update_base_type_from_class_expr( Var type, Expr class_expr );
 

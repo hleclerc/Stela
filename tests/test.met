@@ -26,9 +26,14 @@ class SurdefList
     
 class Void
     pass
+
+class Type
+    pass
     
 class SI32
     ___set_base_size_and_alig 32, 32
+    def reassign( val )
+        ___info val
     
 class Toto
     a := 10
@@ -36,8 +41,12 @@ class Toto
 def toto( a )
     ___syscall a
     
-t := Toto()
-___info t.a
+# t := Toto()
+# ___info t
+# t.a = 17
+# ___info t.a
+a := 987
+a = 55
     
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

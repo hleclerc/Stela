@@ -141,3 +141,5 @@ tests/test_Expr.cpp
 tests/test.met
 src/Stela/Inst/Arch.h
 src/Stela/Inst/Arch.cpp
+src/Stela/Interpreter/RefSlice.h
+src/Stela/Interpreter/RefSlice.cpp
