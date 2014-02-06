@@ -40,7 +40,7 @@ class SI32
     #  -> SI32 (un nom de classe)
     #  -> [ SI64, PI64, ... ] (une liste de noms)
     def reassign( val : SI32 )
-        ___info val
+        ___reassign val
     
 class Toto
     a := 10

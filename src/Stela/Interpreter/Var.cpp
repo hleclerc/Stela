@@ -33,8 +33,18 @@ bool Var::referenced_more_than_one_time() const {
     return data->cpt_use > 1;
 }
 
+Var Var::add_ref( const Var &var ) {
+    if ( data and var )
+        data->add_ref( var );
+    return *this;
+}
+
 bool Var::is_weak_const() const {
     return flags & WEAK_CONST;
+}
+
+bool Var::is_full_const() const {
+    return data and ( data->flags & PRef::CONST );
 }
 
 bool Var::is_surdef() const {
@@ -82,30 +92,6 @@ void Var::write_to_stream( Stream &os ) const {
 
 Expr Var::expr() const {
     return data and data->ptr ? data->ptr->expr() : cst( Vec<PI8>() );
-}
-
-bool Var::set( const Var &val ) {
-    // checkings
-    if ( flags & WEAK_CONST )
-        return false;
-    if ( data and data->flags & PRef::CONST )
-        return false;
-
-    // type
-    if ( type )
-        ASSERT( type == val.type, "bad" );
-    else
-        type = val.type;
-
-    // data
-    if ( not data )
-        data = new PRef;
-    if ( data->ptr )
-        data->ptr->set( val.expr() );
-    else
-        data->ptr = new RefExpr( val.expr() );
-
-    return true;
 }
 
 Expr Var::type_expr() const {
