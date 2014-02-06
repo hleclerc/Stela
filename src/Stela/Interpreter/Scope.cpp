@@ -508,16 +508,26 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
 
     //int na = nu + nn;
     if ( ip->isa_Callable( f ) ) {
+        // (type contains a ptr to orig class + [ptr to parameters]*nb parameters)
         // Callable[ surdef_list, self_type, parm_type ]
         //  - self ref
         //  - parm data
         // type = class ptr + parameter refs
-        Var *l_self = 0; ///< local self
         SI32 nb_surdefs = 0, ps = arch->ptr_size;
         Expr surdef_list_ptr_data = slice( f.type->ptr->expr(), 2 * ps, 3 * ps );
         if ( not surdef_list_ptr_data.get_vat( nb_surdefs ) )
             return disp_error( "pb decoding callable (to find surdef list)" );
 
+        // self
+        Var l_self;
+        Expr self_tp = slice( f.type->ptr->expr(), 3 * ps, 4 * ps );
+        DefInfo *self_di = ip->def_info( self_tp, false );
+        if ( self_di ) {
+            l_self = f.get_ref( 0 );
+            PRINT( l_self );
+        }
+
+        // parm
         int pnu = 0, pnn = 0, *pn_names = 0;
         Var *pu_args = 0, *pn_args = 0;
 
@@ -640,12 +650,27 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
     return ip->error_var;
 }
 
-void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond ) {
-    if ( dst.type and dst.type != src.type )
-        TODO;
+Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond ) {
+    // checkings
+    if ( dst.is_weak_const() or dst.is_full_const() )
+        return disp_error( "non const slot", sf, off );
 
-    if ( not dst.set( src ) )
-        disp_error( "const slot", sf, off );
+    // type equality (should be done elsewhere)
+    if ( dst.type )
+        ASSERT( dst.type == src.type, "not the same types" );
+    else
+        dst.type = src.type;
+
+    // data
+    if ( not dst.data )
+        dst.data = new PRef;
+
+    if ( dst.data->ptr )
+        dst.data->ptr->set( simplified_expr( src, sf, off ) );
+    else
+        dst.data->ptr = new RefExpr( simplified_expr( src, sf, off ) );
+
+    return dst;
 }
 
 Var Scope::reg_var( int name, const Var &var, const Expr &sf, int off, bool stat, bool check ) {
@@ -973,33 +998,19 @@ Var Scope::parse_set_RawRef_dependancy( const Expr &sf, int off, BinStreamReader
 // }
 
 Var Scope::parse_reassign_rec( const Expr &sf, int off, BinStreamReader bin ) {
-    CHECK_PRIM_ARGS( 2 );
-//     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
-//     Var b = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
-//     int off = bin.read_positive_integer();
-//     if ( a.type == ip->type_Error )
-//         return a;
-//     if ( b.type == ip->type_Error )
-//         return b;
-//     if ( a.type != b.type ) {
-//         std::ostringstream ss;
-//         ss << "not the same types... do not known how to reassign (" << *a.type << " and " << *b.type << ")";
-//         return write_error( ss.str(), sf, off );
-//     }
-//     if ( a.type == ip->type_RawRef ) {
-//         if ( a.data )
-//             TODO;
-//         ip->set_ref( a.data, ip->get_ref( *reinterpret_cast<PI8 **>( b.data ) ) );
-//     }
-//     for( int i = 0; i < a.type->attributes.size(); ++i ) {
-//         if ( a.type->attributes[ i ].offset >= 0 ) {
-//             Var sa = a.type->make_attr( a, &a.type->attributes[ i ] );
-//             Var sb = b.type->make_attr( b, &b.type->attributes[ i ] );
-//             apply( get_attr( sa, STRING_reassign_NUM, sf, off ), 1, &sb, 0, 0, 0, false );
-//         }
-//     }
-//     return ip->void_var;
-    TODO; return ip->void_var;
+    int n = bin.read_positive_integer(); \
+    if ( n == 1 ) {
+        if ( not self )
+            return disp_error( "with 1 argument, reassign must be called inside a method", sf, off );
+        Var src = parse( sf, bin.read_offset() );
+        return set( self, src, sf, off );
+    }
+    if ( n == 2 ) {
+        Var dst = parse( sf, bin.read_offset() );
+        Var src = parse( sf, bin.read_offset() );
+        return set( dst, src, sf, off );
+    }
+    return disp_error( "Expecting 1 or 2 operands", sf, off );
 }
 
 Var Scope::parse_set_ptr_val( const Expr &sf, int off, BinStreamReader bin ) {
@@ -1062,7 +1073,6 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
     }
     return Var();
 }
-
 
 
 #define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }

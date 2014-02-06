@@ -200,7 +200,7 @@ Var Interpreter::make_surdef_list( const Vec<Var> &lst, Var self ) {
     parms[ 2 ] = &void_var;
 
     Var *callable_type = type_for( class_info( class_Callable ), parms );
-    return Var( callable_type, self ? ref_expr_on( self ) : cst() );
+    return Var( callable_type, self ? pointer_on( self.expr() ) : cst() ).add_ref( self );
 }
 
 Var Interpreter::type_of( const Var &var ) const {
@@ -303,12 +303,15 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
     Expr re = class_info->class_ptr;
     for( int i = 0; i < res->parameters.size(); ++i ) {
         ASSERT( parm_l[ i ]->type, "Type not defined" );
-        re = concat( re, parm_l[ i ]->type->expr(), ref_expr_on( res->parameters[ i ] ) );
+        re = concat( re, parm_l[ i ]->type->expr(), pointer_on( res->parameters[ i ].expr() ) );
     }
 
     type_info_map[ re ] = res;
 
     res->var = Var( &type_Type, re );
+    for( int i = 0; i < res->parameters.size(); ++i )
+        res->var.add_ref( res->parameters[ i ] );
+
     res->prev = class_info->last;
     class_info->last = res;
     return &res->var;
@@ -337,15 +340,6 @@ void Interpreter::_update_base_type_from_class_expr( Var type, Expr class_expr )
     type.data->ptr = new RefExpr( type_expr );
     type_for( class_info( pointer_on( class_expr ) ) ); ///< fill type_info_map
 }
-
-Expr Interpreter::ref_expr_on( const Var &var ) {
-    VarRef &res = var_refs[ var.data.ptr() ];
-    res.var = var;
-    ++res.cpt;
-
-    return pointer_on( var.expr() );
-}
-
 
 bool Interpreter::isa_ptr_int( const Var &var ) const {
     if ( arch->ptr_size == 32 )

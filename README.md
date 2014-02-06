@@ -5,6 +5,16 @@ Ce qui est mieux que Rust:
 - generic limité -> not metaprogrammation
 
 
+Gestion des références:
+- class Toto a ~= Ref[T]
+- c'est stocké comme un pointeur
+- mais qui permet d'allonger la durée de vie d'une variable (pour appeler le constructeur plus tard)
+    -> prop: on stocke la variable dans un tableau, associée à la variable d'acceuil 
+    -> quand la variable d'acceuil est détruite, on décrémente le VarRef correspondant
+
+
+
+
 Objets Ref[ T ]
 -> idée de base: un pointeur sur une variable, qui empêche la variable d'être détruite 
 -> oblige à gérer une table de correspondance côté interpréteur/compilateur, vers les cptr

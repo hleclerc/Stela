@@ -73,7 +73,6 @@ public:
     void              _update_base_type_from_class_expr( Var type, Expr class_expr );
 
     // references
-    Expr              ref_expr_on( const Var &var );
     bool              is_of_class( const Var &var, const Var &class_ ) const;
 
     // conversion
@@ -146,8 +145,6 @@ public:
     std::map<Expr        ,DefInfo      *> def_info_map;
     std::map<Expr        ,TypeInfo     *> type_info_map;
     std::map<Expr        ,SfInfo        > sf_info_map;
-
-    std::map<const PRef *,VarRef        > var_refs; ///< references
 };
 
 extern Interpreter *ip; ///< global variable made for convenience... starts at 0
