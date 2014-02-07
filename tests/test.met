@@ -5,7 +5,7 @@
 # 
 # Proposition pour les classes: on stocke une référence sur le code
 # -> les variables contiennent des pointeurs vers les données
-# -> on retrouve les infos à l'aide de tables de correspondance
+# -> on retrouve les infos �  l'aide de tables de correspondance
 # -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
     
 # MUST be defined first
@@ -56,7 +56,7 @@ def init self
 
 class Toto
     a := 10
-    def init : a( 50 ) and b( 10 )
+    def init : a( 50 ) # and b( 10 )
     
 
     
@@ -74,7 +74,7 @@ ___info t.a
 # ___syscall 60l, a
 # 
 # problème avec f( def toto ... ) -> le code généré pour la fonction f ne sera pas dépendant du type. Ce n'est pas forcément un problème si on gère les virtual dans Def... mais ça se mort la queue : il faut qd même un nouveau type derrière
-# Rq: un type se fait à partir d'un ClassInfo, qui vient de class_type.expr()
+# Rq: un type se fait �  partir d'un ClassInfo, qui vient de class_type.expr()
 # class_info devrait aussi être un type différent, ...
 # Proposition pour simplifier (ne pas se mordre la queue), class Toto et def Toto ne renvoient rien !
 # inst := Toto()

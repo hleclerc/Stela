@@ -825,7 +825,7 @@ Var Scope::parse_select_SurdefList( const Expr &sf, int off, BinStreamReader bin
 //         par << make_surdefs_var( lst );
 //         par << make_type_var( varargs.type );
 //         Var res( ip->class_SurdefList.type_for( this, par ) );
-//         ip->set_ref( res.data + 0 * sizeof( void * ), Var() );
+//         ip->set_ref( res.data + 0 * sizeof( void * )silvia, Var() );
 //         ip->set_ref( res.data + 1 * sizeof( void * ), varargs );
 //         return res;
 //     }

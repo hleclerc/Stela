@@ -8,16 +8,24 @@
 #include "Scope.h"
 
 DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin ) : CallableInfo_WT( sf, src_off, bin ) {
-    block_with_ret = Code( sf, bin.read_offset() );
     if ( flags & IR_HAS_RETURN_TYPE ) {
-        int nb_args = bin.read_positive_integer();
-        PRINT( nb_args );
-        attr_init.reserve( nb_args );
-        for( int n = 0; n < nb_args; ++n ) {
-            AttrInit *ai = attr_init.push_back();
-
-        }
-        // return_type = Code( sf, bin.read_offset() );
+        if ( name == STRING_init_NUM ) {
+            int nb_args = bin.read_positive_integer();
+            attr_init.reserve( nb_args );
+            for( int n = 0; n < nb_args; ++n ) {
+                AttrInit *ai = attr_init.push_back();
+                ai->name = ip->glo_nstr( sf, bin.read_positive_integer() );
+                ai->nu = bin.read_positive_integer();
+                for( int i = 0; i < ai->nu; ++i )
+                    ai->args.push_back( sf, bin.read_offset() );
+                ai->nn = bin.read_positive_integer();
+                for( int i = 0; i < ai->nn; ++i ) {
+                    ai->args.push_back( sf, bin.read_offset() );
+                    ai->names.push_back( ip->glo_nstr( sf, bin.read_positive_integer() ) );
+                }
+            }
+        } else
+            return_type = Code( sf, bin.read_offset() );
     }
 
     get_of = flags & IR_IS_A_GET ? ip->glo_nstr( sf, bin.read_positive_integer() ) : -1;
@@ -149,10 +157,26 @@ Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int p
             if ( ti->attributes[ i ].dynamic() ) {
                 Var subv = scope->get_attr( self, ti->attributes[ i ].name, sf, off );
                 Var suin = scope->get_attr( subv, STRING_init_NUM, sf, off );
-                if ( ti->attributes[ i ].var.data )
-                    scope->apply( suin, 1, &ti->attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
-                else
-                    scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
+                for( int a = 0; ; ++a ) {
+                    if ( a == orig->attr_init.size() ) {
+                        if ( ti->attributes[ i ].var.data )
+                            scope->apply( suin, 1, &ti->attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
+                        else
+                            scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
+                        break;
+                    }
+                    AttrInit *ai = &orig->attr_init[ a ];
+                    if ( ai->name == ti->attributes[ i ].name ) {
+                        Var vu[ ai->nu ];
+                        for( int i = 0; i < ai->nu; ++i )
+                            vu[ i ] = scope->parse( ai->args[ i ].sf, ai->args[ i ].tok );
+                        Var vn[ ai->nn ];
+                        for( int i = 0; i < ai->nn; ++i )
+                            vn[ i ] = scope->parse( ai->args[ i + ai->nu ].sf, ai->args[ i + ai->nu ].tok );
+                        scope->apply( suin, ai->nu, vu, ai->nn, ai->names.ptr(), vn, Scope::APPLY_MODE_STD, sf, off );
+                        break;
+                    }
+                }
             }
         }
     }
