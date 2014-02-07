@@ -3,6 +3,7 @@
 #include "../Inst/Cst.h"
 
 #include "Interpreter.h"
+#include "TypeInfo.h"
 #include "DefInfo.h"
 #include "Scope.h"
 
@@ -132,7 +133,22 @@ DefInfo::TrialDef::~TrialDef() {
     delete scope;
 }
 
-Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller ) {
+Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller ) {
+    // particular case
+    if ( orig->name == STRING_init_NUM ) {
+        TypeInfo *ti = self.type_info();
+        for( int i = 0; i < ti->attributes.size(); ++i ) {
+            if ( ti->attributes[ i ].dynamic() ) {
+                Var subv = scope->get_attr( self, ti->attributes[ i ].name, sf, off );
+                Var suin = scope->get_attr( subv, STRING_init_NUM, sf, off );
+                if ( ti->attributes[ i ].var.data )
+                    scope->apply( suin, 1, &ti->attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
+                else
+                    scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
+            }
+        }
+    }
+
     // inline call
     return scope->parse( orig->block.sf, orig->block.tok );
 }

@@ -48,6 +48,14 @@ Var Var::get_ref( int offset ) {
     return Var();
 }
 
+ClassInfo *Var::class_info() const {
+    return ip->class_info( slice( type_expr(), 0, arch->ptr_size ) );
+}
+
+TypeInfo *Var::type_info() const {
+    return ip->type_info( type_expr() );
+}
+
 bool Var::is_weak_const() const {
     return flags & WEAK_CONST;
 }
@@ -107,6 +115,7 @@ Expr Var::type_expr() const {
 
 Var constified( const Var &var ) {
     if ( var.referenced_more_than_one_time() and not var.data->is_const() ) {
+        PRINT( var );
         ERROR( "only var that are not referenced more than one time can be fully constified" );
         TODO;
     }

@@ -1,3 +1,4 @@
+#include "../Inst/Concat.h"
 #include "../Inst/Slice.h"
 #include "RefSlice.h"
 
@@ -9,7 +10,11 @@ Expr RefSlice::expr() const {
 }
 
 void RefSlice::set( Expr expr ) {
-    TODO;
+    ASSERT( expr.size_in_bits() == end - beg, "..." );
+
+    Expr orig = var.expr();
+    Expr nexpr = concat( slice( orig, 0, beg ), expr, slice( orig, end, orig.size_in_bits() ) );
+    var.data->ptr->set( nexpr );
 }
 
 void RefSlice::write_to_stream( Stream &os ) const {

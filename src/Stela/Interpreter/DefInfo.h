@@ -9,7 +9,7 @@ public:
     struct TrialDef : Trial {
         TrialDef( DefInfo *orig );
         virtual ~TrialDef();
-        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Expr &sf, int off, Scope *caller );
+        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller );
         DefInfo *orig;
         Scope *scope;
     };

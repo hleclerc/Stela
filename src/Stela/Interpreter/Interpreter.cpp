@@ -308,7 +308,7 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
 
     type_info_map[ re ] = res;
 
-    res->var = Var( &type_Type, re );
+    res->var = constified( Var( &type_Type, re ) );
     for( int i = 0; i < res->parameters.size(); ++i )
         res->var.add_ref( ( 2 + 2 * i ) * arch->ptr_size, res->parameters[ i ] );
 
@@ -320,6 +320,10 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
 bool Interpreter::equal( Var a, Var b ) {
     if ( isa_Type( a ) and isa_Type( b ) )
         return a.expr() == b.expr();
+    if ( isa_SurdefList( a ) and isa_SurdefList( b ) )
+        return a.expr() == b.expr();
+    PRINT( a );
+    PRINT( b );
     TODO;
     return false;
 }

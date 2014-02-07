@@ -10,8 +10,12 @@ class VarTable;
 */
 class TypeInfo {
 public:
+    enum { UNKNOWN_OFFSET = -1 };
     struct Attr {
-        int offset; ///< -2 means static, -1 means unknown (computed during run-time)
+        bool dynamic() const { return offset >= UNKNOWN_OFFSET; }
+        bool stat() const { return offset < UNKNOWN_OFFSET; }
+
+        int offset; ///< -2 means static, UNKNOWN_OFFSET means unknown (i.e. computed during run-time)
         int name;
         Var var;
     };

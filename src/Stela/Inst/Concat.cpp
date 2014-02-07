@@ -35,6 +35,11 @@ public:
 };
 
 Expr concat( Expr a, Expr b ) {
+    if ( a.size_in_bits() == 0 )
+        return b;
+    if ( b.size_in_bits() == 0 )
+        return a;
+
     // simplifications ?
     if ( const PI8 *da = a.cst_data() ) {
         if ( const PI8 *db = b.cst_data() ) {

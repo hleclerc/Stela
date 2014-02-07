@@ -545,7 +545,8 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
         AutoPtr<CallableInfo::Trial> trials[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
-                trials[ i ] = new CallableInfo::Trial( "Already a more pertinent solution" );
+                for( int j = i; j < nb_surdefs; ++j )
+                    trials[ j ] = new CallableInfo::Trial( "Already a more pertinent solution" );
                 break;
             }
 
@@ -629,7 +630,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
                 else
                     ok_cond = cond;
 
-                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, sf, off, this );
+                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, l_self, sf, off, this );
                 set( res, loc, sf, off, cond );
 
                 if ( trials[ i ]->cond )
@@ -688,6 +689,13 @@ Var Scope::find_var_first( int name ) {
         //
         if ( Scope *p = s->parent ) {
             if ( not p->parent ) { // -> there is a parent, but the parent is the main scope
+                // self
+                if ( s->self ) {
+                    TypeInfo *ti =  s->self.type_info();
+                    if ( const TypeInfo::Attr *attr = ti->find_attr( name ) )
+                        return ti->make_attr( s->self, attr );
+                }
+                // static variables
                 for( VarTable *vt = p->static_named_vars.ptr(); vt; vt = vt->parent )
                     if ( Var res = vt->get( name ) )
                         return res;
@@ -709,6 +717,15 @@ void Scope::find_var_clist( Vec<Var> &lst, int name ) {
         //
         if ( Scope *p = s->parent ) {
             if ( not p->parent ) { // -> there is a parent, but the parent is the main scope
+                // self
+                if ( s->self ) {
+                    TypeInfo *ti =  s->self.type_info();
+                    Vec<const TypeInfo::Attr *> attrs;
+                    ti->find_attr( attrs, name );
+                    for( int i = 0; i < attrs.size(); ++i )
+                        lst << ti->make_attr( s->self, attrs[ i ] );
+                }
+                // static variables
                 for( VarTable *vt = p->static_named_vars.ptr(); vt; vt = vt->parent )
                     vt->get( lst, name );
                 // non static vars of main scope

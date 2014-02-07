@@ -7,8 +7,6 @@
 # -> les variables contiennent des pointeurs vers les données
 # -> on retrouve les infos à l'aide de tables de correspondance
 # -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
-# class Callable
-    # pass
     
 # MUST be defined first
 class Class
@@ -25,34 +23,39 @@ class SurdefList
     pass
     
 class Void
-    pass
+    def write_to_stream os
+        os << "void"
 
 class Type
     pass
     
 class SI32
     ___set_base_size_and_alig 32, 32
-    def reassign( val : SI32 )
+    def init
+    
+    def init val : SI32
+        ___reassign_rec val
+    
+    def reassign val : SI32
         ___reassign_rec val
     
 class SI64
     ___set_base_size_and_alig 64, 32
-    def reassign( val : SI64 )
+    def reassign val : SI64
         ___reassign_rec val
+
+void := Void()
+        
+def init self
     
+
 class Toto
     a := 10
 
-def toto( a )
-    ___syscall a
     
-# t := Toto()
-# ___info t
-# t.a = 17
-# ___info t.a
-a := 987l
-a = 55l
-___syscall a
+t := Toto()
+t.init()
+___info t.a
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

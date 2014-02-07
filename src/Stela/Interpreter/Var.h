@@ -2,6 +2,8 @@
 #define VAR_H
 
 #include "PRef.h"
+class ClassInfo;
+class TypeInfo;
 class Type;
 
 /**
@@ -32,6 +34,9 @@ public:
 
     Var add_ref( int offset, const Var &var ); ///< return *this
     Var get_ref( int offset );
+
+    ClassInfo *class_info() const;
+    TypeInfo  *type_info() const;
 
     bool is_weak_const() const;
     bool is_full_const() const;
