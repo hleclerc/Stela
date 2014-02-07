@@ -9,8 +9,16 @@
 
 DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin ) : CallableInfo_WT( sf, src_off, bin ) {
     block_with_ret = Code( sf, bin.read_offset() );
-    if ( flags & IR_HAS_RETURN_TYPE )
-        return_type = Code( sf, bin.read_offset() );
+    if ( flags & IR_HAS_RETURN_TYPE ) {
+        int nb_args = bin.read_positive_integer();
+        PRINT( nb_args );
+        attr_init.reserve( nb_args );
+        for( int n = 0; n < nb_args; ++n ) {
+            AttrInit *ai = attr_init.push_back();
+
+        }
+        // return_type = Code( sf, bin.read_offset() );
+    }
 
     get_of = flags & IR_IS_A_GET ? ip->glo_nstr( sf, bin.read_positive_integer() ) : -1;
     set_of = flags & IR_IS_A_SET ? ip->glo_nstr( sf, bin.read_positive_integer() ) : -1;

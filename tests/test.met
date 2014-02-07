@@ -31,6 +31,7 @@ class Type
     
 class SI32
     ___set_base_size_and_alig 32, 32
+    
     def init
     
     def init val : SI32
@@ -41,6 +42,10 @@ class SI32
     
 class SI64
     ___set_base_size_and_alig 64, 32
+    
+    def init val : SI64
+        ___reassign_rec val
+    
     def reassign val : SI64
         ___reassign_rec val
 
@@ -51,6 +56,8 @@ def init self
 
 class Toto
     a := 10
+    def init : a( 50 ) and b( 10 )
+    
 
     
 t := Toto()

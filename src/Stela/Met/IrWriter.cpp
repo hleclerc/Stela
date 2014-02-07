@@ -825,8 +825,43 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
 
     if ( token_type == IR_TOK_DEF ) {
         // return type
-        if ( return_type )
-            push_delayed_parse( return_type, true );
+        if ( return_type ) {
+            SplittedVec<const Lexem *,16> cha;
+            get_children_of_type( return_type, STRING_and_boolean_NUM, cha );
+            data << cha.size();
+
+            for( int i = 0; i < cha.size(); ++i ) {
+                const Lexem *l = cha[ i ];
+
+                if ( l->children[ 1 ] ) {
+                    get_children_of_type( next_if_CR( l->children[ 1 ] ), STRING_comma_NUM, ch );
+                    for( ; nb_unnamed_children < ch.size() and ch[ nb_unnamed_children ]->type != STRING_reassign_NUM; ++nb_unnamed_children )
+                        ;
+                    for( int i = nb_unnamed_children; i < ch.size(); ++i, ++nb_named_children )
+                        if ( ch[ i ]->type != STRING_reassign_NUM )
+                            return add_error( "after a named argument, all arguments must be named", ch[ i ] );
+                }
+
+                const Lexem *f = l->children[ 0 ] ? l->children[ 0 ] : l;
+
+                // argument
+                if ( f->type != Lexem::VARIABLE )
+                    return add_error( "expecting attribute name", ch[ i ] );
+                push_nstring( f );
+
+                // unnamed arguments
+                data << nb_unnamed_children;
+                for( int i = 0; i < nb_unnamed_children; ++i )
+                    push_delayed_parse( ch[ i ] );
+
+                // named arguments
+                data << nb_named_children;
+                for( int i = 0; i < nb_named_children; ++i ) {
+                    push_nstring( ch[ nb_unnamed_children + i ]->children[ 0 ] );
+                    push_delayed_parse( ch[ nb_unnamed_children + i ]->children[ 1 ] );
+                }
+            }
+        }
         // get set sop
         if ( get_len ) push_nstring( nstring( get_beg, get_beg + get_len ) );
         if ( set_len ) push_nstring( nstring( set_beg, set_beg + set_len ) );
