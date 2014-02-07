@@ -32,15 +32,13 @@ class Type
     
 class SI32
     ___set_base_size_and_alig 32, 32
-    # rq: on peut avoir une contrainte style type paramétré
-    # val : Toto[ 10 ]...
-    # Proposition: pour l'instant on se base sur le nom de la classe...
-    # Rq: comment faire si le nom n'est pas défini...
-    # Possibilités pour les types
-    #  -> SI32 (un nom de classe)
-    #  -> [ SI64, PI64, ... ] (une liste de noms)
     def reassign( val : SI32 )
-        ___reassign val
+        ___reassign_rec val
+    
+class SI64
+    ___set_base_size_and_alig 64, 32
+    def reassign( val : SI64 )
+        ___reassign_rec val
     
 class Toto
     a := 10
@@ -52,9 +50,10 @@ def toto( a )
 # ___info t
 # t.a = 17
 # ___info t.a
-a := 987
-a = 55
-    
+a := 987l
+a = 55l
+___syscall a
+
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 
 #    template, avec equal défini dessus.

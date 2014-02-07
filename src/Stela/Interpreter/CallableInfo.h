@@ -33,7 +33,7 @@ public:
     };
 
     virtual ~CallableInfo();
-    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, Var *self, const Expr &sf, int off, Scope *caller ) = 0;
+    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller ) = 0;
     virtual const char *filename() const = 0;
     virtual int off() const = 0; ///< src offset (for error messages)
 

@@ -495,7 +495,7 @@ struct CmpCallableInfobyPertinence {
     }
 };
 
-Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Expr &sf, int off ) {
+Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Expr &sf, int off ) {
     // if error_var -> break
     if ( ip->isa_Error( f ) )
         return ip->error_var;
@@ -521,11 +521,9 @@ Var Scope::apply( const Var &f, int nu, Var *u_args, int nn, int *n_names, Var *
         // self
         Var l_self;
         Expr self_tp = slice( f.type->ptr->expr(), 3 * ps, 4 * ps );
-        DefInfo *self_di = ip->def_info( self_tp, false );
-        if ( self_di ) {
+        ClassInfo *self_ci = ip->class_info( self_tp, false );
+        if ( self_ci )
             l_self = f.get_ref( 0 );
-            PRINT( l_self );
-        }
 
         // parm
         int pnu = 0, pnn = 0, *pn_names = 0;

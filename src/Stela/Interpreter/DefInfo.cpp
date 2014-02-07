@@ -44,7 +44,7 @@ DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin ) : CallableI
     //    }
 }
 
-CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, Var *self, const Expr &sf, int off, Scope *caller ) {
+CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller ) {
     TrialDef *res = new TrialDef( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );

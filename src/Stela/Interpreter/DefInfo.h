@@ -15,7 +15,7 @@ public:
     };
 
     DefInfo( const Expr &sf, int src_off, BinStreamReader bin );
-    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, Var *self, const Expr &sf, int off, Scope *caller );
+    virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller );
 
     Code block_with_ret;
     Code return_type;

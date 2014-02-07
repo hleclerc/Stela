@@ -200,7 +200,7 @@ Var Interpreter::make_surdef_list( const Vec<Var> &lst, Var self ) {
     parms[ 2 ] = &void_var;
 
     Var *callable_type = type_for( class_info( class_Callable ), parms );
-    return Var( callable_type, self ? pointer_on( self.expr() ) : cst() ).add_ref( self );
+    return Var( callable_type, self ? pointer_on( self.expr() ) : cst() ).add_ref( 0, self );
 }
 
 Var Interpreter::type_of( const Var &var ) const {
@@ -310,7 +310,7 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
 
     res->var = Var( &type_Type, re );
     for( int i = 0; i < res->parameters.size(); ++i )
-        res->var.add_ref( res->parameters[ i ] );
+        res->var.add_ref( ( 2 + 2 * i ) * arch->ptr_size, res->parameters[ i ] );
 
     res->prev = class_info->last;
     class_info->last = res;

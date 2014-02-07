@@ -3,6 +3,7 @@
 
 #include "Ref.h"
 class Interpreter;
+class VRF;
 class Var;
 
 /**
@@ -11,10 +12,6 @@ class Var;
 struct PRef : ObjectWithCptUse {
     enum {
         CONST = 1 ///< this variable cannot be changed (and it's definitive)
-    };
-    struct VRF {
-        Var var;
-        int off; ///< offset in bits
     };
 
     PRef( Ref *ref ) : ptr( ref ), refs( 0 ), flags( 0 ) {}

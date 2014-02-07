@@ -24,7 +24,7 @@ ClassInfo::~ClassInfo() {
     }
 }
 
-CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, Var *self, const Expr &sf, int off, Scope *caller ) {
+CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, Var *v_args, int pnu, Var *pu_args, int pnn, int *pn_name, Var *pn_args, const Var &self, const Expr &sf, int off, Scope *caller ) {
     TrialClass *res = new TrialClass( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
