@@ -16,6 +16,7 @@
 #include "../Inst/Arch.h"
 #include "../Inst/Conv.h"
 #include "../Inst/Cst.h"
+#include "../Inst/Phi.h"
 #include "../Inst/Op.h"
 
 #include "RefPointerOn.h"
@@ -355,16 +356,32 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     // known value
     bool cond_val;
     if ( expr.get_val( cond_val ) ) {
-        Scope if_scope( this );
-        if ( cond_val )
+        if ( cond_val ) {
+            Scope if_scope( this );
             return if_scope.parse( sf, ok );
+        }
         // else
-        return ko ? if_scope.parse( sf, ko ) : ip->void_var;
+        if ( ko ) {
+            Scope if_scope( this );
+            return if_scope.parse( sf, ko );
+        }
+        return ip->void_var;
     }
 
-    TODO;
-    return ip->error_var;
+    Var res;
+    if ( ok ) {
+        Scope if_scope( this );
+        if_scope.cond = expr;
+        set( res, if_scope.parse( sf, ok ), sf, off, expr );
+    }
+    if ( ko ) {
+        expr = not_op( bt_Bool, expr );
 
+        Scope if_scope( this );
+        if_scope.cond = expr;
+        set( res, if_scope.parse( sf, ko ), sf, off, expr );
+    }
+    return res;
 }
 Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -681,10 +698,21 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
     if ( not dst.data )
         dst.data = new PRef;
 
-    if ( dst.data->ptr )
-        dst.data->ptr->set( simplified_expr( src, sf, off ) );
-    else
-        dst.data->ptr = new RefExpr( simplified_expr( src, sf, off ) );
+    Expr src_expr = simplified_expr( src, sf, off );
+    if ( dst.data->ptr ) {
+        Expr dst_expr = simplified_expr( dst, sf, off );
+
+        // phi( ... )
+        if ( ext_cond )
+            src_expr = phi( ext_cond, src_expr, dst_expr );
+        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
+            if ( s->cond )
+                src_expr = phi( s->cond, src_expr, dst_expr );
+
+        //
+        dst.data->ptr->set( src_expr );
+    } else
+        dst.data->ptr = new RefExpr( src_expr );
 
     return dst;
 }

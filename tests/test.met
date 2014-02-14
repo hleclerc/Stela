@@ -79,7 +79,7 @@ class Toto
     
 
 a := 10
-if 1 # ___rand()
+if ___rand()
     a = 20
     
 ___info a

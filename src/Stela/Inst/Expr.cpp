@@ -24,7 +24,7 @@ const PI8 *Expr::vat_data() const {
 
 void Expr::write_to_stream( Stream &os ) const {
     os << inst;
-    if ( inst->out_size() > 1 )
+    if ( inst and inst->out_size() > 1 )
         os << '(' << nout << ')';
 }
 

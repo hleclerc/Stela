@@ -11,9 +11,11 @@ public:
 
     virtual ~Inst_() {
         for( int num = 0; num < inp.size(); ++num )
-            inp[ num ].parents().remove_first_unordered( Out::Item{ this, num } );
+            if ( inp[ num ] )
+                inp[ num ].parents().remove_first_unordered( Out::Item{ this, num } );
         for( int num = 0; num < ext.size(); ++num )
-            ext[ num ]->ext_parent = 0;
+            if ( ext[ num ] )
+                ext[ num ]->ext_parent = 0;
     }
 
     // inp

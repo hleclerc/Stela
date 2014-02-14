@@ -147,3 +147,5 @@ src/Stela/Interpreter/PRef.cpp
 src/Stela/Inst/Conv.h
 src/Stela/Inst/Conv.cpp
 src/Stela/Inst/SizeInBits.h
+src/Stela/Inst/Phi.h
+src/Stela/Inst/Phi.cpp

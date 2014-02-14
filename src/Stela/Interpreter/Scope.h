@@ -59,6 +59,7 @@ protected:
     Var            sys_state;
     Var            self;
     TypeInfo      *class_scope;
+    Expr           cond;
 };
 
 #endif // SCOPE_H
