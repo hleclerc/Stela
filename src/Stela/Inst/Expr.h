@@ -10,7 +10,7 @@
 */
 class Expr {
 public:
-    typedef Vec<Inst::Out::Item,-1,1> TPar;
+    typedef Vec<Inst::Out::Parent,-1,1> TPar;
 
     Expr( Ptr<Inst> inst, int nout = 0 );
     Expr();

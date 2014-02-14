@@ -35,7 +35,7 @@ Scope::Scope( Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
     base_size = 0;
     base_alig = 1;
 
-    sys_state   = parent ? parent->sys_state : Var( &ip->type_Void );
+    sys_state   = parent ? parent->sys_state : Var( &ip->type_Void, cst( 0, 0, 0 ) );
     class_scope = 0;
 
     if ( parent )
@@ -807,6 +807,8 @@ Var Scope::parse_syscall( const Expr &sf, int off, BinStreamReader bin ) {
     Expr inp[ n ];
     for( int i = 0; i < n; ++i ) {
         Var v = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+        if ( ip->isa_Error( v ) )
+            return v;
         if ( not ip->isa_ptr_int( v ) )
             return disp_error( "Expecting size types (size of a pointer)", sf, off );
         inp[ i ] = simplified_expr( v, sf, off );

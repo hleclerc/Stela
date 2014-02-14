@@ -149,3 +149,5 @@ src/Stela/Inst/Conv.cpp
 src/Stela/Inst/SizeInBits.h
 src/Stela/Inst/Phi.h
 src/Stela/Inst/Phi.cpp
+src/Stela/Compilers/CppInstInfo.h
+src/Stela/Compilers/CppInstInfo.cpp

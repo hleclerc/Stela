@@ -6,7 +6,7 @@
 class Phi : public Inst_<1,3> {
 public:
     virtual int size_in_bits( int nout ) const { return inp_expr( 1 ).size_in_bits(); }
-    virtual void write_to_stream( Stream &os ) const { os << "phi(" << inp_expr( 0 ) << "," << inp_expr( 1 ) << "," << inp_expr( 2 ) << ")"; }
+    virtual void write_dot( Stream &os ) const { os << "phi"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.phi( *this ); }
     virtual int inst_id() const { return Inst::Id_Phi; }
     virtual const BaseType *out_bt( int n ) const { return inp_expr( 1 ).out_bt(); }

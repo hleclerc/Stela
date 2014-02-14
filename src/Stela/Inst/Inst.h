@@ -19,12 +19,12 @@ public:
     typedef Ptr<Inst> Ext;
 
     struct Out {
-        struct Item {
-            bool operator==( const Item &item ) const { return inst == item.inst and ninp == item.ninp; }
+        struct Parent {
+            bool operator==( const Parent &item ) const { return inst == item.inst and ninp == item.ninp; }
             Inst *inst;
             int   ninp;
         };
-        Vec<Item,-1,1> parents;
+        Vec<Parent,-1,1> parents;
     };
 
     enum { ///< very bad...
@@ -46,7 +46,9 @@ public:
 
     virtual int size_in_bits( int nout ) const = 0;
     virtual int size_in_bytes( int nout ) const;
-    virtual void write_to_stream( Stream &os ) const = 0;
+    virtual void write_dot( Stream &os ) const = 0;
+    virtual void write_to_stream( Stream &os ) const;
+
     virtual const PI8 *cst_data( int nout, int beg, int end ) const;
     virtual const PI8 *vat_data( int nout, int beg, int end ) const;
 
@@ -77,6 +79,9 @@ public:
     virtual bool equal( const Inst *b ) const;
     virtual int  inst_id() const = 0; ///< unique id for each inst
 
+    static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
+    virtual void write_graph_rec( Stream &os ) const;
+
     /// return inst unless there's already the same operation somewhere
     /// if it's the case, delete inst and return the corresponding instruction
     static Inst *factorized( Inst *inst );
@@ -89,7 +94,7 @@ public:
     // attributes
     Inst         *ext_parent;
     static  PI64  cur_op_id; ///<
-    mutable PI64  op_id_viz; ///<
+    mutable PI64  op_id_vis; ///<
     mutable PI64  op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
     mutable void *op_mp;     ///< result of current operations
 };

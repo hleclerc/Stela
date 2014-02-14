@@ -10,7 +10,7 @@
 class Slice : public Inst_<1,1> {
 public:
     virtual int size_in_bits( int nout ) const { return end - beg; }
-    virtual void write_to_stream( Stream &os ) const { os << "slice(" << inp_expr( 0 ) << "," << beg << "," << end << ")"; }
+    virtual void write_dot( Stream &os ) const { os << "slice[" << beg << "," << end << "]"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.slice( *this, beg, end ); }
     virtual int inst_id() const { return Inst::Id_Slice; }
     virtual bool equal( const Inst *b ) const {

@@ -59,6 +59,12 @@ public:
         return *stream;
     }
 
+    template<class T>
+    TS &write_end( const T &add ) {
+        *stream << add << end;
+        return *stream;
+    }
+
     TS *stream;
     const char *sep;
     const char *end;

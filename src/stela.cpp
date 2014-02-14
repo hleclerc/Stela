@@ -42,6 +42,7 @@ int main( int argc, char **argv ) {
 
     // compile
     CppCompiler cr;
+    cr.disp_inst_graph = disp_inst_g;
     for( int i = 0; i < outputs.size(); ++i )
         cr << outputs[ i ];
     cr.exec();

@@ -9,7 +9,7 @@
 class PointerOn : public Inst_<1,1> {
 public:
     virtual int size_in_bits( int nout ) const { return arch->ptr_size; }
-    virtual void write_to_stream( Stream &os ) const { os << "pointer_on(" << inp_expr( 0 ) << ")"; }
+    virtual void write_dot( Stream &os ) const { os << "pointer_on"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.pointer_on( *this ); }
     virtual int inst_id() const { return Inst::Id_PointerOn; }
     virtual Expr _smp_val_at( int nout, int beg, int end ) { return slice( inp_expr( 0 ), beg, end ); }

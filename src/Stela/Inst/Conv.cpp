@@ -6,7 +6,7 @@
 class Conv : public Inst_<1,2> {
 public:
     virtual int size_in_bits( int nout ) const { return dst->size_in_bits(); }
-    virtual void write_to_stream( Stream &os ) const { os << "conv(" << *dst << "," << *src << "," << this->inp_expr( 0 ) << ")"; }
+    virtual void write_dot( Stream &os ) const { os << "conv[" << *dst << "," << *src << "]"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.conv( *this, dst, src ); }
     virtual int inst_id() const { return Inst::Id_Conv; }
     virtual bool equal( const Inst *b ) const {

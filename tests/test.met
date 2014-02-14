@@ -78,11 +78,12 @@ class Toto
     def init : a( 50 ) # and b( 10 )
     
 
-a := 10
-if ___rand()
-    a = 20
+# a := 10
+# if ___rand()
+    # a = 20
     
-___info a
+# ___info a
+___syscall ___rand()
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

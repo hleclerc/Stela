@@ -12,7 +12,7 @@ public:
     virtual ~Inst_() {
         for( int num = 0; num < inp.size(); ++num )
             if ( inp[ num ] )
-                inp[ num ].parents().remove_first_unordered( Out::Item{ this, num } );
+                inp[ num ].parents().remove_first_unordered( Out::Parent{ this, num } );
         for( int num = 0; num < ext.size(); ++num )
             if ( ext[ num ] )
                 ext[ num ]->ext_parent = 0;
@@ -35,8 +35,8 @@ public:
 
     virtual void inp_repl( int num, Expr var ) {
         if ( inp[ num ] )
-            inp[ num ].parents().remove_first_unordered( Out::Item{ this, num } );
-        var.inst->out_expr( var.nout ).parents << Out::Item({ this, num });
+            inp[ num ].parents().remove_first_unordered( Out::Parent{ this, num } );
+        var.inst->out_expr( var.nout ).parents << Out::Parent({ this, num });
         inp[ num ] = var;
     }
 

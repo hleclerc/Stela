@@ -5,7 +5,7 @@
 class Syscall : public Inst_<2,-1> {
 public:
     virtual int size_in_bits( int nout ) const { return arch->ptr_size; }
-    virtual void write_to_stream( Stream &os ) const { os << "syscall"; }
+    virtual void write_dot( Stream &os ) const { os << "syscall"; }
     virtual void apply( InstVisitor &visitor ) const { visitor.syscall( *this ); }
     virtual int inst_id() const { return Inst::Id_Syscall; }
 };

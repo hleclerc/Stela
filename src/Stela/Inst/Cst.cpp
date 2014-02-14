@@ -31,6 +31,9 @@ public:
         return data.ptr() + beg / 8;
     }
     virtual void write_to_stream( Stream &os ) const {
+        write_dot( os );
+    }
+    virtual void write_dot( Stream &os ) const {
         if ( size <= 8 )
             os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
         else if ( size == 16 )
@@ -81,7 +84,7 @@ static bool equal_cst( const Cst *cst, const PI8 *ptr, const PI8 *kno, int size_
 }
 
 Expr cst( const PI8 *ptr, const PI8 *kno, int size_in_bits ) {
-    if ( ptr == 0 ) {
+    if ( size_in_bits and not ptr ) {
         ASSERT( kno == 0, "weird" );
         int sb = ( size_in_bits + 7 ) / 8;
         PI8 nptr[ sb ];

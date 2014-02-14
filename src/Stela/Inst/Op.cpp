@@ -11,15 +11,7 @@ template<class TOP>
 class Op : public Inst_<1,TOP::nb_ch> {
 public:
     virtual int size_in_bits( int nout ) const { return bt->size_in_bits(); }
-    virtual void write_to_stream( Stream &os ) const {
-        os << TOP::name() << "(";
-        for( int i = 0; i < TOP::nb_ch; ++i ) {
-            if ( i )
-                os << ",";
-            os << this->inp_expr( i );
-        }
-        os << ")";
-    }
+    virtual void write_dot( Stream &os ) const { os << TOP::name(); }
     virtual void apply( InstVisitor &visitor ) const;
     virtual int inst_id() const { return Inst::Id_Op + TOP::op_id; }
     virtual bool equal( const Inst *b ) const {

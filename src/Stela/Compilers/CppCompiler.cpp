@@ -1,10 +1,13 @@
+#include "../Interpreter/Interpreter.h"
+#include "../Inst/BaseType.h"
 #include "CppInstCompiler.h"
 #include "CppCompiler.h"
 #include <fstream>
 
-#define INFO( inst ) reinterpret_cast<CppCompiler::Info *>( inst.op_mp )
+#define INFO( inst ) reinterpret_cast<CppInstInfo *>( (inst)->op_mp )
 
 CppCompiler::CppCompiler() : on( os ) {
+    disp_inst_graph = false;
     cpp_filename = "out.cpp";
     nb_regs = 0;
     on.nsp = 4;
@@ -36,11 +39,19 @@ void CppCompiler::exec() {
 }
 
 void CppCompiler::compile() {
-    // get the leaves
+    if ( disp_inst_graph )
+        Inst::display_graph( outputs );
+
+    // get the leaves and inst->op_mp to new CppInstInfo instances
     Vec<const Inst *> front;
     ++Inst::cur_op_id;
     for( int i = 0; i < outputs.size(); ++i )
         get_front_rec( front, outputs[ i ].ptr() );
+
+    // get BaseType
+    ++Inst::cur_op_id;
+    for( int i = 0; i < outputs.size(); ++i )
+        get_base_type_rec( outputs[ i ].ptr() );
 
     // sweep the tree, starting from the leaves
     PI64 op_id = ++Inst::cur_op_id;
@@ -69,39 +80,63 @@ void CppCompiler::get_front_rec( Vec<const Inst *> &front, const Inst *inst ) {
             get_front_rec( front, inst->inp_expr( i ).inst.ptr() );
     } else
         front << inst;
-
 }
 
 struct CppInstTypeHint : InstVisitor {
     virtual void def( const Inst &inst ) { hint = 0; }
-    virtual void syscall( const Inst &inst ) { hint = bt_SI64; }
+    // virtual void syscall( const Inst &inst ) { hint = ip->bt_ST; }
     const BaseType *hint;
     int ninp;
 };
 
-CppCompiler::Reg CppCompiler::get_reg_for( const Inst &inst, int nout ) {
-    CppCompiler::Reg res;
-    res.num  = nb_regs++;
+void CppCompiler::get_base_type_rec( const Inst *inst ) {
+    if ( inst->op_id == Inst::cur_op_id )
+        return;
+    inst->op_id = Inst::cur_op_id;
 
-    // find an hint to choose the type
-    int bs = 0;
-    for( const auto &p : inst.out_expr( nout ).parents ) {
-        CppInstTypeHint ch; ch.ninp = p.ninp;
-        p.inst->apply( ch );
-        if ( ch.hint and bs < ch.hint->size_in_bytes() ) {
-            bs = ch.hint->size_in_bytes();
-            res.type = ch.hint;
-            break;
+    for( int no = 0; no < inst->out_size(); ++no ) {
+        if ( const BaseType *bt = inst->out_bt( no ) ) {
+            INFO( inst )->out[ no ].type = bt;
+            continue;
+        }
+        // else look in parents if there is a particular utilisation
+        int ps = inst->out_expr( no ).parents.size();
+        CppInstTypeHint citi;
+        for( int np = 0; np < ps; ++np ) {
+            const Inst::Out::Parent &p = inst->out_expr( no ).parents[ np ];
+            citi.ninp = p.ninp;
+            p.inst->apply( citi );
+            if ( citi.hint )
+                break;
+        }
+        if ( citi.hint ) {
+            INFO( inst )->out[ no ].type = citi.hint;
+            continue;
+        }
+        // else, make a "fake" bt
+        int s = inst->size_in_bits( no );
+        switch ( s ) {
+        case (  0 ): break;
+        case (  1 ): INFO( inst )->out[ no ].type = bt_Bool; break;
+        case (  8 ): INFO( inst )->out[ no ].type = bt_PI8 ; break;
+        case ( 16 ): INFO( inst )->out[ no ].type = bt_PI16; break;
+        case ( 32 ): INFO( inst )->out[ no ].type = bt_PI32; break;
+        case ( 64 ): INFO( inst )->out[ no ].type = bt_PI64; break;
+        default:
+            PRINT( s );
+            TODO; // make an internal "fake" bt
         }
     }
-    ASSERT( bs <= inst.size_in_bytes( nout ), "not enable to fill the bytes" );
-    ASSERT( res.type, "..." );
 
-    // register
-    INFO( inst )->set_out_reg( nout, res );
-    return res;
+    for( int i = 0; i < inst->inp_size(); ++i )
+        get_base_type_rec( inst->inp_expr( i ).inst.ptr() );
 }
+
 
 void CppCompiler::add_include( String name ) {
     includes.insert( name );
+}
+
+int CppCompiler::get_free_reg( const BaseType *bt ) {
+    return nb_regs++;
 }
