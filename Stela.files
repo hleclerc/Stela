@@ -144,3 +144,5 @@ src/Stela/Inst/Arch.cpp
 src/Stela/Interpreter/RefSlice.h
 src/Stela/Interpreter/RefSlice.cpp
 src/Stela/Interpreter/PRef.cpp
+src/Stela/Inst/Conv.h
+src/Stela/Inst/Conv.cpp

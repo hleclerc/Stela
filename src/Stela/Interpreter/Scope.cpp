@@ -14,6 +14,7 @@
 #include "../Inst/ValAt.h"
 #include "../Inst/Rand.h"
 #include "../Inst/Arch.h"
+#include "../Inst/Conv.h"
 #include "../Inst/Cst.h"
 #include "../Inst/Op.h"
 
@@ -337,7 +338,8 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
 
     // bool conversion
     if ( not ip->isa_Bool( cond ) ) {
-        // cond = apply();
+        cond = apply( find_var( STRING_Bool_NUM ), 1, &cond, 0, 0, 0, APPLY_MODE_STD, sf, off );
+        PRINT( cond );
     }
 
     // simplified expression
@@ -357,8 +359,8 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
 Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_FALSE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_TRUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_FALSE( const Expr &sf, int off, BinStreamReader bin ) { return make_var( false ); }
+Var Scope::parse_TRUE( const Expr &sf, int off, BinStreamReader bin ) { return make_var( true ); }
 Var Scope::parse_VOID( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_SELF( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_THIS( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -655,9 +657,16 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
         return disp_error( "non const slot", sf, off );
 
     // type equality (should be done elsewhere)
-    if ( dst.type )
-        ASSERT( dst.type == src.type, "not the same types" );
-    else
+    if ( dst.type ) {
+        PRINT( ip->bt_of( dst ) );
+        PRINT( ip->bt_of( src ) );
+        if ( dst.type != src.type ) {
+            if ( const BaseType *td = ip->bt_of( dst ) )
+                if ( const BaseType *ts = ip->bt_of( src ) )
+                    return set( dst, Var( dst.type, conv( td, ts, simplified_expr( src, sf, off ) ) ), sf, off, ext_cond );
+            return disp_error( "not the same types (and no known conversion func)", sf, off );
+        }
+    } else
         dst.type = src.type;
 
     // data

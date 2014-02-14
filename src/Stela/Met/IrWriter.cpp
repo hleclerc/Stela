@@ -830,7 +830,6 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
                 SplittedVec<const Lexem *,16> cha;
                 get_children_of_type( return_type, STRING_and_boolean_NUM, cha );
                 data << cha.size();
-                PRINT( cha.size() );
 
                 for( int i = 0; i < cha.size(); ++i ) {
                     SplittedVec<const Lexem *,16> ch;

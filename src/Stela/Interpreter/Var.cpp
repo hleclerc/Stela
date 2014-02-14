@@ -10,6 +10,9 @@
 
 static void write_var_type( Stream &os, Expr type );
 
+Var::Var( Ptr<PRef> type, const Expr &expr ) : data( new PRef ), type( type ), flags( 0 ) {
+    data->ptr = new RefExpr( expr );
+}
 
 Var::Var( Var *type, const Expr &expr ) : data( new PRef ), type( type->data ), flags( 0 ) {
     data->ptr = new RefExpr( expr );
@@ -110,7 +113,7 @@ Expr Var::expr() const {
 }
 
 Expr Var::type_expr() const {
-    return type->ptr->expr();
+    return type and type->ptr ? type->ptr->expr() : Expr();
 }
 
 Var constified( const Var &var ) {

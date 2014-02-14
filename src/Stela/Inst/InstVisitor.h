@@ -22,6 +22,7 @@ struct InstVisitor {
     virtual void val_at    ( const Inst &inst, int beg, int end ) { def( inst ); }
     virtual void slice     ( const Inst &inst, int beg, int end ) { def( inst ); }
     virtual void cst       ( const Inst &inst, const PI8 *value, const PI8 *known, int size_in_bits ) { def( inst ); }
+    virtual void conv      ( const Inst &inst, const BaseType *dst, const BaseType *src ) { def( inst ); }
 };
 
 #endif // EXPR_INSTVISITOR_H

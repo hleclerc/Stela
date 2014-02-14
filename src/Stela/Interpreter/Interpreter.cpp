@@ -367,3 +367,9 @@ int Interpreter::to_bool( Var val, const Expr &sf, const PI8 *tok ) {
 #include "DeclParmClass.h"
 #undef DECL_BT
 
+const BaseType *Interpreter::bt_of( const Var &var ) const {
+    #define DECL_BT( T ) if ( isa_##T( var ) ) return bt_##T;
+    #include "../Inst/DeclArytTypes.h"
+    #undef DECL_BT
+    return 0;
+}

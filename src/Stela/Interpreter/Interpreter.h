@@ -103,6 +103,8 @@ public:
     #include "../Inst/DeclArytTypes.h"
     #undef DECL_BT
 
+    const BaseType *bt_of( const Var &var ) const;
+
     // basic types (not parameterized)
     #define DECL_BT( T ) \
         Var type_##T; \

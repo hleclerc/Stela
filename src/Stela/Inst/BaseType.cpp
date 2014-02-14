@@ -1,3 +1,4 @@
+#include "../System/Math.h"
 #include "BaseType.h"
 #include <string.h>
 
@@ -23,6 +24,13 @@ struct BaseType_ : BaseType {
     virtual void add( PI8 *res, const PI8 *da, const PI8 *db ) const { *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) + *reinterpret_cast<const T *>( da ); }
     virtual void and_op( PI8 *res, const PI8 *da, const PI8 *db ) const { *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) & *reinterpret_cast<const T *>( da ); }
     virtual void not_op( PI8 *res, const PI8 *da ) const { *reinterpret_cast<T *>( res ) = ~ *reinterpret_cast<const T *>( da ); }
+
+    virtual bool conv( PI8 *res, const BaseType *ta, const PI8 *da ) const {
+        #define DECL_BT( U ) if ( ta == bt_##U ) return ::conv( *reinterpret_cast<T *>( res ), *reinterpret_cast<const U *>( da ) );
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+        return 0;
+    }
 
     const char *name;
 };

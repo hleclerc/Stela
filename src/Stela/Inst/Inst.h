@@ -35,6 +35,7 @@ public:
         Id_ValAt,
         Id_Rand,
         Id_Syscall,
+        Id_Conv,
 
         Id_Op = 100
     };

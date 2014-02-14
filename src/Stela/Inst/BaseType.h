@@ -20,6 +20,9 @@ public:
     #define DECL_OP( OP ) virtual void OP( PI8 *res, const PI8 *da ) const = 0;
     #include "DeclOpUnary.h"
     #undef DECL_OP
+
+    //
+    virtual bool conv( PI8 *res, const BaseType *ta, const PI8 *da ) const = 0;
 };
 
 #define DECL_BT( T ) extern const BaseType *bt_##T;
