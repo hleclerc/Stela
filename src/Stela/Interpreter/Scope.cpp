@@ -335,22 +335,32 @@ Var Scope::parse_GET_ATTR_PTR_ASK( const Expr &sf, int off, BinStreamReader bin 
 Var Scope::parse_GET_ATTR_PA( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     Var cond = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    if ( ip->isa_Error( cond ) )
+        return cond;
 
     // bool conversion
     if ( not ip->isa_Bool( cond ) ) {
         cond = apply( find_var( STRING_Bool_NUM ), 1, &cond, 0, 0, 0, APPLY_MODE_STD, sf, off );
-        PRINT( cond );
+        if ( ip->isa_Error( cond ) )
+            return cond;
     }
 
     // simplified expression
     Expr expr = simplified_expr( cond, sf, off );
-    PRINT( expr );
+
+    //
+    const PI8 *ok = bin.read_offset();
+    const PI8 *ko = bin.read_offset();
 
     // known value
-    //    if ( const PI8 *data = expr.cst_data() ) {
-    //        if ( cond.type == &ip->type_Bool or cond.type == &ip->type_Bool or  ) {
-    //        }
-    //    }
+    bool cond_val;
+    if ( expr.get_val( cond_val ) ) {
+        Scope if_scope( this );
+        if ( cond_val )
+            return if_scope.parse( sf, ok );
+        // else
+        return ko ? if_scope.parse( sf, ko ) : ip->void_var;
+    }
 
     TODO;
     return ip->error_var;

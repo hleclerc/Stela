@@ -78,12 +78,11 @@ class Toto
     def init : a( 50 ) # and b( 10 )
     
 
-b := Bool 0
-# a.init( 23 )
-# if ___rand()
-    # a = 20
+a := 10
+if 1 # ___rand()
+    a = 20
     
-___info b
+___info a
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

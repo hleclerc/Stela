@@ -1,6 +1,8 @@
 #ifndef EXPR_H
 #define EXPR_H
 
+#include "../System/Memcpy.h"
+#include "SizeInBits.h"
 #include <string.h>
 #include "Inst.h"
 
@@ -34,8 +36,8 @@ public:
 
     template<class T>
     bool get_val( T &val, int offset = 0 ) const {
-        if ( const PI8 *data = cst_data( offset, offset + 8 * sizeof( T ) ) ) {
-            memcpy( &val, data, sizeof( T ) );
+        if ( const PI8 *data = cst_data( offset, offset + SizeInBits<T>::res ) ) {
+            memcpy_bit( (PI8 *)&val, data, SizeInBits<T>::res );
             return true;
         }
         return false;
@@ -44,7 +46,7 @@ public:
     template<class T>
     bool get_vat( T &val, int offset = 0 ) const {
         if ( const PI8 *data = vat_data( offset, offset + 8 * sizeof( T ) ) ) {
-            memcpy( &val, data, sizeof( T ) );
+            memcpy_bit( (PI8 *)&val, data, SizeInBits<T>::res );
             return true;
         }
         return false;

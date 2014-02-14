@@ -73,7 +73,7 @@ bool Var::is_surdef() const {
 
 static void write_var( Stream &os, Expr type, Expr data ) {
     write_var_type( os, type );
-    os << "(" << data << ")";
+    os << "{" << data << "}";
 }
 
 static void write_var_type( Stream &os, Expr type ) {

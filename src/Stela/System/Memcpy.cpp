@@ -12,3 +12,6 @@ void memcpy_bit( PI8 *dst, int off_dst, const PI8 *src, int off_src, int len ) {
         memcpy( dst, src, ( len + 7 ) / 8 );
 }
 
+void memcpy_bit( PI8 *dst, const PI8 *src, int len ) {
+    return memcpy_bit( dst, 0, src, 0, len );
+}

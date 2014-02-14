@@ -1,14 +1,8 @@
 #include "../System/Math.h"
+#include "SizeInBits.h"
 #include "BaseType.h"
 #include <string.h>
 
-template<class T>
-static int _sb( S<T> ) {
-    return 8 * sizeof( T );
-}
-static int _sb( S<Bool> ) {
-    return 1;
-}
 
 /**
 */
@@ -23,10 +17,10 @@ struct BaseType_ : BaseType {
         os << name;
     }
     virtual int size_in_bytes() const {
-        return ( _sb( S<T>() ) + 7 ) / 8;
+        return ( SizeInBits<T>::res + 7 ) / 8;
     }
     virtual int size_in_bits() const {
-        return _sb( S<T>() );
+        return SizeInBits<T>::res;
     }
 
     virtual void add( PI8 *res, const PI8 *da, const PI8 *db ) const { *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) + *reinterpret_cast<const T *>( da ); }
