@@ -12,8 +12,16 @@ CallableInfo_WT::CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &
     pertinence = flags & IR_HAS_COMPUTED_PERT ? 0 : FP64( bin.read_positive_integer() ) / FP64( bin.read_positive_integer() );
     if ( flags & IR_NEG_PERT )
         pertinence = - pertinence;
-    for( int i = 0; i < nargs; ++i )
+    for( int i = 0; i < nargs; ++i ) {
+        // arg name
         arg_names << ip->glo_nstr( sf, bin.read_positive_integer() );
+
+        // constraints
+        ArgCst *ac = arg_constraints.push_back();
+        int nb = bin.read_positive_integer();
+        for( int i = 0; i < nb; ++i )
+            ac->class_names = ip->glo_nstr( sf, bin.read_positive_integer() );
+    }
     for( int i = 0; i < dargs; ++i )
         arg_defaults << Code( sf, bin.read_offset() );
     if ( flags & IR_HAS_COMPUTED_PERT )

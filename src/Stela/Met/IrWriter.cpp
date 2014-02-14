@@ -767,8 +767,8 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         Argument &arg = arguments[ i ];
         if ( arg.name->eq( "self" ) )
             add_error( "'self' as non first argument name of a def is weird.", arg.name );
-        if ( arg.type_constraint and arg.type_constraint->type != Lexem::VARIABLE )
-            add_error( "type constraints must be simple variables (no composition).", arg.type_constraint );
+        //if ( arg.type_constraint and arg.type_constraint->type != Lexem::VARIABLE )
+        //    add_error( "type constraints must be simple variables (no composition).", arg.type_constraint );
     }
 
     // abstract
@@ -811,6 +811,26 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
             push_nstring( arguments[ i ].name );
         else
             TODO;
+
+        // nb_constraints + constraints
+        if ( arguments[ i ].type_constraint ) {
+            if ( arguments[ i ].type_constraint->type == Lexem::VARIABLE ) {
+                data << 1;
+                push_nstring( arguments[ i ].type_constraint );
+            } else if ( arguments[ i ].type_constraint->type == Lexem::PAREN ) {
+                SplittedVec<const Lexem *,8> ch;
+                get_leaves( ch, arguments[ i ].type_constraint );
+                data << ch.size();
+                for( int j = 0; j < ch.size(); ++j ) {
+                    if ( ch[ j ]->type == Lexem::VARIABLE )
+                        push_nstring( ch[ j ] );
+                    else
+                        return add_error( "constraints must be simple variables", ch[ j ] );
+                }
+            } else
+                TODO;
+        } else
+            data << 0;
     }
     for( int i = 0; i < arguments.size(); ++i )
         if ( arguments[ i ].default_value )

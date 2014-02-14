@@ -131,6 +131,20 @@ CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn
         }
     }
 
+    // arg constraints
+    for( int i = 0; i < arg_constraints.size(); ++i ) {
+        Var v = res->scope->find_var( arg_names[ i ] );
+        int n = v.class_info()->name;
+        if ( int t = arg_constraints[ i ].class_names.size() ) {
+            for( int j = 0; ; ++j ) {
+                if ( j == t )
+                    return res->wr( "type constraint not fullfilled" );
+                if ( arg_constraints[ i ].class_names[ j ] == n )
+                    break;
+            }
+        }
+    }
+
     // condition
     if ( condition ) {
         res->cond = res->scope->parse( condition.sf, condition.tok );

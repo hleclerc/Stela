@@ -84,7 +84,7 @@ void CppCompiler::get_front_rec( Vec<const Inst *> &front, const Inst *inst ) {
 
 struct CppInstTypeHint : InstVisitor {
     virtual void def( const Inst &inst ) { hint = 0; }
-    // virtual void syscall( const Inst &inst ) { hint = ip->bt_ST; }
+    virtual void syscall( const Inst &inst ) { hint = ip->bt_ST; }
     const BaseType *hint;
     int ninp;
 };

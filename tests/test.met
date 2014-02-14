@@ -36,7 +36,7 @@ class SI32
     
     def init
     
-    def init val : SI32
+    def init val : [ SI32, SI64, PI64 ]
         ___reassign_rec val
     
     def reassign val : SI32
@@ -82,8 +82,8 @@ class Toto
 # if ___rand()
     # a = 20
     
-# ___info a
-___syscall ___rand()
+___info SI32 ___rand()
+# ___syscall SI64 SI32 ___rand()
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 
