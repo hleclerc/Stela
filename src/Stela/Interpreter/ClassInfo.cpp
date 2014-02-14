@@ -102,11 +102,11 @@ Var ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, i
     if ( ti->static_size_in_bits >= 0 ) {
         ret = Var( type, cst( 0, 0, ti->static_size_in_bits ) );
     } else {
-        TODO; // eres = undefined cst with unknown size
+        TODO; // res = undefined cst with unknown size
     }
 
     // call init
-    // caller->apply( caller->get_attr( ret, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
+    caller->apply( caller->get_attr( ret, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
 
     return ret;
 }

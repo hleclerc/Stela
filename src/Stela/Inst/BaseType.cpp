@@ -2,6 +2,14 @@
 #include "BaseType.h"
 #include <string.h>
 
+template<class T>
+static int _sb( S<T> ) {
+    return 8 * sizeof( T );
+}
+static int _sb( S<Bool> ) {
+    return 1;
+}
+
 /**
 */
 template<class T>
@@ -15,10 +23,10 @@ struct BaseType_ : BaseType {
         os << name;
     }
     virtual int size_in_bytes() const {
-        return sizeof( T );
+        return ( _sb( S<T>() ) + 7 ) / 8;
     }
     virtual int size_in_bits() const {
-        return 8 * sizeof( T );
+        return _sb( S<T>() );
     }
 
     virtual void add( PI8 *res, const PI8 *da, const PI8 *db ) const { *reinterpret_cast<T *>( res ) = *reinterpret_cast<const T *>( da ) + *reinterpret_cast<const T *>( da ); }

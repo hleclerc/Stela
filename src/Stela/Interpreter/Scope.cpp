@@ -658,13 +658,11 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
 
     // type equality (should be done elsewhere)
     if ( dst.type ) {
-        PRINT( ip->bt_of( dst ) );
-        PRINT( ip->bt_of( src ) );
         if ( dst.type != src.type ) {
             if ( const BaseType *td = ip->bt_of( dst ) )
                 if ( const BaseType *ts = ip->bt_of( src ) )
                     return set( dst, Var( dst.type, conv( td, ts, simplified_expr( src, sf, off ) ) ), sf, off, ext_cond );
-            return disp_error( "not the same types (and no known conversion func)", sf, off );
+            return disp_error( "not the same types, and no known conversion func", sf, off );
         }
     } else
         dst.type = src.type;

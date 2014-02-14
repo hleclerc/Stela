@@ -71,6 +71,7 @@ public:
     Var               make_surdef_list( const Vec<Var> &lst, Var self );
 
     void              _update_base_type_from_class_expr( Var type, Expr class_expr );
+    Var               _get_type_var( ClassInfo *class_info );
 
     // references
     bool              is_of_class( const Var &var, const Var &class_ ) const;
@@ -142,11 +143,11 @@ public:
     NstrCor                      glob_nstr_cor; ///< string <-> global int number
 
     // maps
-    std::map<Expr        ,CallableInfo *> callable_info_map; ///< pointer to either ClassInfo or DefInfo
-    std::map<Expr        ,ClassInfo    *> class_info_map;
-    std::map<Expr        ,DefInfo      *> def_info_map;
-    std::map<Expr        ,TypeInfo     *> type_info_map;
-    std::map<Expr        ,SfInfo        > sf_info_map;
+    std::map<Expr,CallableInfo *> callable_info_map; ///< pointer to either ClassInfo or DefInfo
+    std::map<Expr,ClassInfo    *> class_info_map;
+    std::map<Expr,DefInfo      *> def_info_map;
+    std::map<Expr,TypeInfo     *> type_info_map;
+    std::map<Expr,SfInfo        > sf_info_map;
 };
 
 extern Interpreter *ip; ///< global variable made for convenience... starts at 0

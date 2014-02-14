@@ -281,6 +281,13 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var *parm_0 ) {
     return type_for( class_info, &parm_0 );
 }
 
+Var Interpreter::_get_type_var( ClassInfo *class_info ) {
+    #define DECL_BT( T ) if ( class_info->name == STRING_##T##_NUM ) return type_##T;
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+    return Var( &type_Type );
+}
+
 Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
     for( TypeInfo *t = class_info->last; t; t = t->prev ) {
         // ASSERT( t->parameters.size() == parm_s, "parameter lists not of the same size" );
@@ -308,7 +315,8 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
 
     type_info_map[ re ] = res;
 
-    res->var = constified( Var( &type_Type, re ) );
+    res->var = constified( _get_type_var( class_info ) );
+    res->var.data->ptr = new RefExpr( re );
     for( int i = 0; i < res->parameters.size(); ++i )
         res->var.add_ref( ( 2 + 2 * i ) * arch->ptr_size, res->parameters[ i ] );
 
