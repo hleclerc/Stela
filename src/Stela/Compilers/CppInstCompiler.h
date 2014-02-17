@@ -14,9 +14,9 @@ public:
     virtual void def( const Inst &inst );
 
     // add, sub, ...
-    #define DECL_OP( OP ) virtual void OP( const Inst &inst );
-    #include "../Inst/DeclOp.h"
-    #undef DECL_OP
+    #define DECL_IR_TOK( OP ) virtual void op_##OP( const Inst &inst );
+    #include "../Ir/Decl_Operations.h"
+    #undef DECL_IR_TOK
 
     virtual void phi       ( const Inst &inst );
     virtual void concat    ( const Inst &inst );

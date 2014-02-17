@@ -13,13 +13,13 @@ public:
     virtual int size_in_bits() const = 0;
 
     // operations
-    #define DECL_OP( OP ) virtual void OP( PI8 *res, const PI8 *da, const PI8 *db ) const = 0;
-    #include "DeclOpBinary.h"
-    #undef DECL_OP
+    #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da, const PI8 *db ) const = 0;
+    #include "../Ir/Decl_BinaryOperations.h"
+    #undef DECL_IR_TOK
 
-    #define DECL_OP( OP ) virtual void OP( PI8 *res, const PI8 *da ) const = 0;
-    #include "DeclOpUnary.h"
-    #undef DECL_OP
+    #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da ) const = 0;
+    #include "../Ir/Decl_UnaryOperations.h"
+    #undef DECL_IR_TOK
 
     //
     virtual bool conv( PI8 *res, const BaseType *ta, const PI8 *da ) const = 0;

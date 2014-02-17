@@ -1,5 +1,5 @@
 #include "OpStructs.h"
 
-#define DECL_OP( OP ) const char *Op_##OP::name() { return #OP; }
-#include "DeclOp.h"
-#undef DECL_OP
+#define DECL_IR_TOK( OP ) const char *Op_##OP::name() { return #OP; }
+#include "../Ir/Decl_Operations.h"
+#undef DECL_IR_TOK

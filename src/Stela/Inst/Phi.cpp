@@ -18,6 +18,10 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
     if ( cond.get_val( v ) )
         return v ? ok : ko;
 
+    // the same value in all the cases ?
+    if ( ok == ko )
+        return ok;
+
     // else, create a new inst
     Phi *res = new Phi;
     res->inp_repl( 0, cond );

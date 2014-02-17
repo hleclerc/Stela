@@ -2,11 +2,13 @@
 #include "../Inst/BaseType.h"
 #include "CppInstCompiler.h"
 #include "CppCompiler.h"
+#include "PhiToIf.h"
 #include <fstream>
 
 #define INFO( inst ) reinterpret_cast<CppInstInfo *>( (inst)->op_mp )
 
 CppCompiler::CppCompiler() : on( os ) {
+    disp_inst_graph_wo_phi = false;
     disp_inst_graph = false;
     cpp_filename = "out.cpp";
     nb_regs = 0;
@@ -42,16 +44,19 @@ void CppCompiler::compile() {
     if ( disp_inst_graph )
         Inst::display_graph( outputs );
 
+    //
+    Vec<ConstPtr<Inst> > pti_outputs = phi_to_if( outputs );
+
     // get the leaves and inst->op_mp to new CppInstInfo instances
     Vec<const Inst *> front;
     ++Inst::cur_op_id;
-    for( int i = 0; i < outputs.size(); ++i )
-        get_front_rec( front, outputs[ i ].ptr() );
+    for( int i = 0; i < pti_outputs.size(); ++i )
+        get_front_rec( front, pti_outputs[ i ].ptr() );
 
     // get BaseType
     ++Inst::cur_op_id;
-    for( int i = 0; i < outputs.size(); ++i )
-        get_base_type_rec( outputs[ i ].ptr() );
+    for( int i = 0; i < pti_outputs.size(); ++i )
+        get_base_type_rec( pti_outputs[ i ].ptr() );
 
     // sweep the tree, starting from the leaves
     PI64 op_id = ++Inst::cur_op_id;

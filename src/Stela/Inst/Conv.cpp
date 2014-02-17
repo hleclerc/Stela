@@ -3,7 +3,7 @@
 #include "Conv.h"
 #include "Cst.h"
 
-class Conv : public Inst_<1,2> {
+class Conv : public Inst_<1,1> {
 public:
     virtual int size_in_bits( int nout ) const { return dst->size_in_bits(); }
     virtual void write_dot( Stream &os ) const { os << "conv[" << *dst << "," << *src << "]"; }

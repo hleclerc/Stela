@@ -398,29 +398,29 @@ def make_primitive_inc():
 operators = Operators()
 
 unary_operations = string.split( """
-    Not
-    Log
-    Ceil
-    Conv
+    not
+    log
+    ceil
 """ )
+# conv
 
 binary_operations = string.split( """
-    Or
-    And
+    or
+    and
 
-    Add
-    Sub
-    Mul
-    Div
-    Pow
-    Mod
+    add
+    sub
+    mul
+    div
+    pow
+    mod
 
-    Equ
-    Neq
-    Sup
-    Inf
-    SupEq
-    InfEq
+    equ
+    neq
+    dup
+    inf
+    sup_eq
+    inf_eq
 """ )
 
 operations = unary_operations + binary_operations

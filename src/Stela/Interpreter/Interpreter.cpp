@@ -330,6 +330,10 @@ bool Interpreter::equal( Var a, Var b ) {
         return a.expr() == b.expr();
     if ( isa_SurdefList( a ) and isa_SurdefList( b ) )
         return a.expr() == b.expr();
+    if ( isa_Void( a ) )
+        return isa_Void( b );
+    if ( isa_Void( b ) )
+        return isa_Void( a );
     PRINT( a );
     PRINT( b );
     TODO;

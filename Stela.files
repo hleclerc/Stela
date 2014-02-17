@@ -151,3 +151,5 @@ src/Stela/Inst/Phi.h
 src/Stela/Inst/Phi.cpp
 src/Stela/Compilers/CppInstInfo.h
 src/Stela/Compilers/CppInstInfo.cpp
+src/Stela/Compilers/PhiToIf.h
+src/Stela/Compilers/PhiToIf.cpp

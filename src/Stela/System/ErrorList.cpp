@@ -149,7 +149,7 @@ void ErrorList::Error::write_to_stream( Stream &os ) const {
     // possibilities
     if ( possibilities.size() ) {
         os << "Possibilities are:" << std::endl;
-        for ( int i = 0;i < possibilities.size();++i ) {
+        for ( int i = 0; i < possibilities.size();++i ) {
             for( int j = 0; ; ++j ) {
                 if ( j==i ) {
                     const ErrorList::Provenance & po = possibilities[ i ];

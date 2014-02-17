@@ -19,7 +19,7 @@ public:
     void exec();
 
     String cpp_filename;
-    bool disp_inst_graph;
+    bool disp_inst_graph, disp_inst_graph_wo_phi;
 protected:
     friend class CppInstCompiler;
     friend class CppInstInfo;

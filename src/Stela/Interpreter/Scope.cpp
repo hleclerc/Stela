@@ -375,7 +375,7 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
         set( res, if_scope.parse( sf, ok ), sf, off, expr );
     }
     if ( ko ) {
-        expr = not_op( bt_Bool, expr );
+        expr = op_not( bt_Bool, expr );
 
         Scope if_scope( this );
         if_scope.cond = expr;
@@ -635,15 +635,14 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
                 best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
             int nb_wp = 0;
             for( int i = 0; i < nb_surdefs; ++i )
-                nb_wp += ci[ i ]->pertinence == best_pertinence;
+                nb_wp += trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence;
             if ( nb_wp > 1 ) {
                 std::ostringstream ss;
                 ss << "Ambiguous overload";
                 ErrorList::Error &err = make_error( ss.str(), sf, off );
-                for( int i = 0; i < nb_surdefs; ++i ) {
+                for( int i = 0; i < nb_surdefs; ++i )
                     if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
                         err.ap( ci[ i ]->filename(), ci[ i ]->off(), "possibility" );
-                }
                 std::cerr << err;
                 return ip->error_var;
             }
@@ -655,7 +654,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
             if ( trials[ i ]->ok() ) {
                 Expr ok_cond;
                 if ( trials[ i ]->cond )
-                    ok_cond = and_op( bt_Bool, cond, trials[ i ]->cond.expr() );
+                    ok_cond = op_and( bt_Bool, cond, trials[ i ]->cond.expr() );
                 else
                     ok_cond = cond;
 
@@ -663,7 +662,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
                 set( res, loc, sf, off, cond );
 
                 if ( trials[ i ]->cond )
-                    cond = and_op( bt_Bool, cond, not_op( bt_Bool, trials[ i ]->cond.expr() ) );
+                    cond = op_and( bt_Bool, cond, op_not( bt_Bool, trials[ i ]->cond.expr() ) );
                 else
                     break;
             }
@@ -775,6 +774,7 @@ void Scope::find_var_clist( Vec<Var> &lst, int name ) {
                     vt->get( lst, name );
                 // non static vars of main scope
                 p->named_vars.get( lst, name );
+                break;
             }
         } else
             break;
@@ -809,8 +809,10 @@ Var Scope::parse_syscall( const Expr &sf, int off, BinStreamReader bin ) {
         Var v = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
         if ( ip->isa_Error( v ) )
             return v;
-        if ( not ip->isa_ptr_int( v ) )
+        if ( not ip->isa_ptr_int( v ) ) {
+            PRINT( v );
             return disp_error( "Expecting size types (size of a pointer)", sf, off );
+        }
         inp[ i ] = simplified_expr( v, sf, off );
     }
 
@@ -1136,9 +1138,32 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
     return Var();
 }
 
+template<class Op>
+Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op ) {
+    CHECK_PRIM_ARGS( 1 );
+    TODO;
+    return Var();
+}
 
-#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+template<class Op>
+Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n ) {
+    CHECK_PRIM_ARGS( 2 );
+    Var va = parse( sf, bin.read_offset() );
+    Var vb = parse( sf, bin.read_offset() );
+    PRINT( va );
+    PRINT( vb );
+    Expr a = simplified_expr( va, sf, off );
+    Expr b = simplified_expr( vb, sf, off );
+    PRINT( a );
+    PRINT( b );
+    return Var( va.type, op( bt_SI32, a, b, op_n ) );
+}
+
+#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { return parse_una_op( sf, off, bin, Op_##N() ); }
 #include "../Ir/Decl_UnaryOperations.h"
+#undef DECL_IR_TOK
+
+#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { return parse_bin_op( sf, off, bin, Op_##N() ); }
 #include "../Ir/Decl_BinaryOperations.h"
 #undef DECL_IR_TOK
 

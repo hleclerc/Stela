@@ -11,9 +11,9 @@ struct InstVisitor {
     virtual void def( const Inst &inst ) {} // default
 
     // add, sub, ...
-    #define DECL_OP( OP ) virtual void OP( const Inst &inst, const BaseType *bt ) { def( inst ); }
-    #include "DeclOp.h"
-    #undef DECL_OP
+    #define DECL_IR_TOK( OP ) virtual void op_##OP( const Inst &inst, const BaseType *bt ) { def( inst ); }
+    #include "../Ir/Decl_Operations.h"
+    #undef DECL_IR_TOK
 
     virtual void phi       ( const Inst &inst ) { def( inst ); }
     virtual void concat    ( const Inst &inst ) { def( inst ); }

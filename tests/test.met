@@ -45,7 +45,7 @@ class SI32
 class SI64
     ___set_base_size_and_alig 64, 32
     
-    def init val : SI64
+    def init val : [ SI32, PI32, SI64, PI64 ]
         ___reassign_rec val
     
     def reassign val : SI64
@@ -63,7 +63,7 @@ class PI64
 class Bool
     ___set_base_size_and_alig 1, 1
 
-    def init val : SI32
+    def init val : [ SI32, SI64, PI64 ]
         ___reassign_rec val
     
     
@@ -76,14 +76,18 @@ def init self
 class Toto
     a := 10
     def init : a( 50 ) # and b( 10 )
-    
+        r := 10
 
-# a := 10
-# if ___rand()
-    # a = 20
+def add( a, b )
+    ___add a, b
     
-___info SI32 ___rand()
-# ___syscall SI64 SI32 ___rand()
+r := ___rand()
+a := 10 + r
+if ___rand()
+    a = 20 + r
+
+___syscall SI64( a )
+# SI64 SI32 ___rand()
 
 # -> faire une liste avec les surdefs...
 # -> les variables pour les définitions doivent apparaître dans les paramètres 

@@ -21,7 +21,7 @@ public:
         return bt;
     }
     virtual const PI8 *vat_data( int nout, int beg, int end ) const {
-        if ( TOP::op_id == ID_add ) {
+        if ( TOP::op_id == int( ID_add ) ) {
             Expr a = this->inp_expr( 0 );
             Expr b = this->inp_expr( 1 );
             if ( bt == bt_SI64 or bt == bt_PI64 ) {
@@ -42,7 +42,7 @@ public:
     virtual Expr _smp_val_at( int nout, int beg, int end ) {
         if ( Expr res = Inst::_smp_val_at( nout, beg, end ) )
             return res;
-        if ( TOP::op_id == ID_add ) {
+        if ( TOP::op_id == int( ID_add ) ) {
             Expr a = this->inp_expr( 0 );
             Expr b = this->inp_expr( 1 );
             if ( bt == bt_SI64 or bt == bt_PI64 ) {
@@ -65,29 +65,29 @@ public:
 };
 
 // simplification rules
-#define DECL_OP( OP ) \
+#define DECL_IR_TOK( OP ) \
     static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da, const PI8 *db ) { \
         if ( da and db ) { \
             Vec<PI8> res( Size(), bt->size_in_bytes() ); \
-            bt->OP( res.ptr(), da, db ); \
+            bt->op_##OP( res.ptr(), da, db ); \
             return cst( res ); \
         } \
         return Expr(); \
     }
-#include "DeclOpBinary.h"
-#undef DECL_OP
+#include "../Ir/Decl_BinaryOperations.h"
+#undef DECL_IR_TOK
 
-#define DECL_OP( OP ) \
+#define DECL_IR_TOK( OP ) \
     static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da ) { \
         if ( da ) { \
             Vec<PI8> res( Size(), bt->size_in_bytes() ); \
-            bt->OP( res.ptr(), da ); \
+            bt->op_##OP( res.ptr(), da ); \
             return cst( res ); \
         } \
         return Expr(); \
     }
-#include "DeclOpUnary.h"
-#undef DECL_OP
+#include "../Ir/Decl_UnaryOperations.h"
+#undef DECL_IR_TOK
 
 
 template<class TOP>
@@ -141,15 +141,23 @@ static Expr _op( TOP top, const BaseType *bt, Expr a ) {
 }
 
 // apply
-#define DECL_OP( OP ) template<> void Op<Op_##OP>::apply( InstVisitor &visitor ) const { visitor.OP( *this, bt ); }
-#include "DeclOp.h"
-#undef DECL_OP
+#define DECL_IR_TOK( OP ) template<> void Op<Op_##OP>::apply( InstVisitor &visitor ) const { visitor.op_##OP( *this, bt ); }
+#include "../Ir/Decl_Operations.h"
+#undef DECL_IR_TOK
 
 // functions
-#define DECL_OP( OP ) Expr OP( const BaseType *bt, Expr a, Expr b ) { return _op( Op_##OP(), bt, a, b ); }
-#include "DeclOpBinary.h"
-#undef DECL_OP
+#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a, Expr b ) { return _op( Op_##OP(), bt, a, b ); }
+#include "../Ir/Decl_BinaryOperations.h"
+#undef DECL_IR_TOK
 
-#define DECL_OP( OP ) Expr OP( const BaseType *bt, Expr a ) { return _op( Op_##OP(), bt, a ); }
-#include "DeclOpUnary.h"
-#undef DECL_OP
+#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a ) { return _op( Op_##OP(), bt, a ); }
+#include "../Ir/Decl_UnaryOperations.h"
+#undef DECL_IR_TOK
+
+#define DECL_IR_TOK( OP ) Expr op( const BaseType *bt, Expr a, Expr b, Op_##OP ) { return op_##OP( bt, a, b ); }
+#include "../Ir/Decl_BinaryOperations.h"
+#undef DECL_IR_TOK
+
+#define DECL_IR_TOK( OP ) Expr op( const BaseType *bt, Expr a, Op_##OP ) { return op_##OP( bt, a ); }
+#include "../Ir/Decl_UnaryOperations.h"
+#undef DECL_IR_TOK

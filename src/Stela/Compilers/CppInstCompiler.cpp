@@ -16,9 +16,9 @@ void CppInstCompiler::def( const Inst &inst ) {
     TODO;
 }
 
-#define DECL_OP( OP ) void CppInstCompiler::OP( const Inst &inst ) { TODO; }
-#include "../Inst/DeclOp.h"
-#undef DECL_OP
+#define DECL_IR_TOK( OP ) void CppInstCompiler::op_##OP( const Inst &inst ) { TODO; }
+#include "../Ir/Decl_Operations.h"
+#undef DECL_IR_TOK
 
 void CppInstCompiler::phi( const Inst &inst ) {
     TODO;
@@ -57,14 +57,18 @@ void CppInstCompiler::pointer_on( const Inst &inst ) {
 
 void CppInstCompiler::rand( const Inst &inst, int size ) {
     cc->add_include( "stdlib.h" );
-    if ( inline_inst )
-        cc->os << "rand()";
-    else if ( inst.out_expr( 0 ).parents.size() > 1 )
-        cc->on << INFO( inst )->decl_writer( cc, 0 ) << "rand();";
+    //    if ( inline_inst )
+    //        cc->os << "rand()";
+    //    else if ( inst.out_expr( 0 ).parents.size() > 1 )
+    cc->on << INFO( inst )->decl_writer( cc, 0 ) << "rand();";
 }
 
 void CppInstCompiler::conv( const Inst &inst, const BaseType *dst, const BaseType *src ) {
-    TODO;
+    CppInstInfo::InstWriter iw = INFO( *inst.inp_expr( 0 ).inst )->inst_writer( cc, inst.inp_expr( 0 ).nout );
+    if ( inline_inst )
+        cc->os << *INFO( inst )->out[ 0 ].type << "( " << iw << " )";
+    else if ( decl( inst, 0 ) )
+        cc->on << INFO( inst )->decl_writer( cc, 0 ) << iw;
 }
 
 void CppInstCompiler::cst( const Inst &inst, const PI8 *value, const PI8 *known, int size_in_bits ) {

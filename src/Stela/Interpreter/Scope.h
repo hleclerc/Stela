@@ -24,6 +24,9 @@ protected:
     #include "../Ir/Decl.h"
     #undef DECL_IR_TOK
 
+    template<class Op> Var parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op );
+    template<class Op> Var parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op );
+
     Var parse_CALLABLE( const Expr &sf, int off, BinStreamReader bin, Var *type, bool def );
 
     template<class T> Var make_var( T val );

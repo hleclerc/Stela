@@ -20,7 +20,7 @@ CallableInfo_WT::CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &
         ArgCst *ac = arg_constraints.push_back();
         int nb = bin.read_positive_integer();
         for( int i = 0; i < nb; ++i )
-            ac->class_names = ip->glo_nstr( sf, bin.read_positive_integer() );
+            ac->class_names << ip->glo_nstr( sf, bin.read_positive_integer() );
     }
     for( int i = 0; i < dargs; ++i )
         arg_defaults << Code( sf, bin.read_offset() );

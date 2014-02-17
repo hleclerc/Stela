@@ -1,2 +1,2 @@
 DECL_OP( add )
-DECL_OP( and_op )
+DECL_OP( and )

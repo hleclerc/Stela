@@ -20,7 +20,7 @@ int main( int argc, char **argv ) {
     bool add_base_files = not ( disp_lexems or disp_tokens );
 
     // particular case
-    if ( disp_tokens or disp_lexems or disp_inst_g or disp_inst_g_wo_phi )
+    if ( disp_tokens or disp_lexems )
         TODO;
 
     // input files
@@ -43,6 +43,7 @@ int main( int argc, char **argv ) {
     // compile
     CppCompiler cr;
     cr.disp_inst_graph = disp_inst_g;
+    cr.disp_inst_graph_wo_phi = disp_inst_g_wo_phi;
     for( int i = 0; i < outputs.size(); ++i )
         cr << outputs[ i ];
     cr.exec();

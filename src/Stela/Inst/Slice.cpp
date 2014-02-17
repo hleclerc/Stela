@@ -26,7 +26,7 @@ public:
             return res;
         if ( beg % 8 )
             TODO;
-        return add( arch->bt_ptr(), pointer_on( inp_expr( 0 ) ), arch->cst_ptr( beg / 8 ) );
+        return op_add( arch->bt_ptr(), pointer_on( inp_expr( 0 ) ), arch->cst_ptr( beg / 8 ) );
     }
     int beg, end;
 };

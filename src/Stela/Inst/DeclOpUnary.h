@@ -1,1 +1,1 @@
-DECL_OP( not_op )
+DECL_OP( not )
