@@ -23,6 +23,10 @@ public:
 };
 
 Expr conv( const BaseType *dst, const BaseType *src, Expr a ) {
+    // same type ?
+    if ( dst == src )
+        return a;
+
     // known value ?
     if ( const PI8 *da = a.cst_data() ) {
         PI8 tmp[ dst->size_in_bytes() ];

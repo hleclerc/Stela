@@ -385,3 +385,12 @@ const BaseType *Interpreter::bt_of( const Var &var ) const {
     #undef DECL_BT
     return 0;
 }
+
+Var *Interpreter::type_for( const BaseType *bt ) {
+    #define DECL_BT( T ) if ( bt == bt_##T ) return &type_##T;
+    #include "../Inst/DeclArytTypes.h"
+    #undef DECL_BT
+    return 0;
+}
+
+

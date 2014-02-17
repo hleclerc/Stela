@@ -105,6 +105,7 @@ public:
     #undef DECL_BT
 
     const BaseType *bt_of( const Var &var ) const;
+    Var *type_for( const BaseType *bt );
 
     // basic types (not parameterized)
     #define DECL_BT( T ) \

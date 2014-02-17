@@ -22,6 +22,16 @@ template<class T> static T _not ( const T &a ) { return ~ a; }
 template<class T> static T _log ( const T &a ) { return log( a ); }
 template<class T> static T _ceil( const T &a ) { return ceil( a ); }
 
+template<class T> struct IsSigned { enum { res = true }; };
+template<> struct IsSigned<PI8 > { enum { res = false }; };
+template<> struct IsSigned<PI16> { enum { res = false }; };
+template<> struct IsSigned<PI32> { enum { res = false }; };
+template<> struct IsSigned<PI64> { enum { res = false }; };
+
+template<class T> struct IsFp { enum { res = false }; };
+template<> struct IsFp<FP32> { enum { res = true }; };
+template<> struct IsFp<FP64> { enum { res = true }; };
+template<> struct IsFp<FP80> { enum { res = true }; };
 
 /**
 */
@@ -40,6 +50,12 @@ struct BaseType_ : BaseType {
     }
     virtual int size_in_bits() const {
         return SizeInBits<T>::res;
+    }
+    virtual int is_signed() const {
+        return IsSigned<T>::res;
+    }
+    virtual int is_fp() const {
+        return IsFp<T>::res;
     }
 
     #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da, const PI8 *db ) const  { *reinterpret_cast<T *>( res ) = _##OP( *reinterpret_cast<const T *>( da ), *reinterpret_cast<const T *>( db ) ); }
@@ -63,3 +79,17 @@ struct BaseType_ : BaseType {
 #define DECL_BT( T ) BaseType_<T> ibt_##T( #T ); const BaseType *bt_##T = &ibt_##T;
 #include "DeclArytTypes.h"
 #undef DECL_BT
+
+const BaseType *get_bt( int size_in_bits, bool is_signed, bool is_fp ) {
+    #define DECL_BT( T ) if ( IsSigned<T>::res == is_signed and IsFp<T>::res == is_fp and SizeInBits<T>::res >= size_in_bits ) return bt_##T;
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+    return 0;
+}
+
+const BaseType *type_promote( const BaseType *ta, const BaseType *tb ) {
+    return get_bt( std::max( ta->size_in_bits(), tb->size_in_bits() ),
+                   std::max( ta->is_signed(), tb->is_signed() ),
+                   std::max( ta->is_fp(), tb->is_fp() )
+   );
+}
