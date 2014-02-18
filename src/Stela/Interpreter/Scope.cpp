@@ -1159,8 +1159,6 @@ Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n )
             return disp_error( "Assuming basing types", sf, off );
         const BaseType *tr = type_promote( ta, tb );
         Var *vt = ip->type_for( tr );
-        PRINT( *ta );
-        PRINT( *tb );
         return Var( vt, op( tr, conv( tr, ta, a ), conv( tr, tb, b ), op_n ) );
     }
     return Var( va.type, op( bt_SI32, a, b, op_n ) );

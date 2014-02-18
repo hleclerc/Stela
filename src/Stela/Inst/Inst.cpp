@@ -50,6 +50,13 @@ bool Inst::equal( const Inst *b ) const {
     return true;
 }
 
+int Inst::sizeof_additionnal_data() const {
+    return 0;
+}
+
+void Inst::copy_additionnal_data_to( PI8 *dst ) const {
+}
+
 int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename ) {
     ++cur_op_id;
 

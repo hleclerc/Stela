@@ -1,112 +1,101 @@
-# classes et fonctions.
-# if
-# fonctions -> avec scope statique, surdefs, ...
-# boucles
-# 
-# Proposition pour les classes: on stocke une référence sur le code
-# -> les variables contiennent des pointeurs vers les données
-# -> on retrouve les infos �  l'aide de tables de correspondance
-# -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
+# # classes et fonctions.
+# # if
+# # fonctions -> avec scope statique, surdefs, ...
+# # boucles
+# # 
+# # Proposition pour les classes: on stocke une référence sur le code
+# # -> les variables contiennent des pointeurs vers les données
+# # -> on retrouve les infos �  l'aide de tables de correspondance
+# # -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
     
-# MUST be defined first
-class Class
-    pass
+# # MUST be defined first
+# class Class
+    # pass
     
-class Def
-    pass
+# class Def
+    # pass
     
-# MUST be defined before any find_var
-class Callable[ surdef_list, self_type, parm_type ]
-    pass
-
-class SurdefList
-    pass
-    
-class Void
-    def init
-        0
-    def write_to_stream os
-        os << "void"
-
-class Type
-    pass
-    
-class SI32
-    ___set_base_size_and_alig 32, 32
-    
-    def init
-    
-    def init val : [ SI32, SI64, PI64 ]
-        ___reassign_rec val
-    
-    def reassign val : SI32
-        ___reassign_rec val
-    
-class SI64
-    ___set_base_size_and_alig 64, 32
-    
-    def init val : [ SI32, PI32, SI64, PI64 ]
-        ___reassign_rec val
-    
-    def reassign val : SI64
-        ___reassign_rec val
-    
-class PI64
-    ___set_base_size_and_alig 64, 32
-    
-    def init val : PI64
-        ___reassign_rec val
-    
-    def reassign val : PI64
-        ___reassign_rec val
-
-class Bool
-    ___set_base_size_and_alig 1, 1
-
-    def init val : [ SI32, SI64, PI64 ]
-        ___reassign_rec val
-    
-    
-void := Void()
-        
-# default init, that does nothing
-def init self
-    
-
-class Toto
-    a := 10
-    def init : a( 50 ) # and b( 10 )
-        r := 10
-
-def add( a, b )
-    ___add a, b
-    
-r := ___rand()
-a := 10 + r
-___info a
-if ___rand()
-    a = 20 + r
-___syscall SI64( a )
-# SI64 SI32 ___rand()
-
-# -> faire une liste avec les surdefs...
-# -> les variables pour les définitions doivent apparaître dans les paramètres 
-#    template, avec equal défini dessus.
-# -> prop 1: surdef_list est un type de taille variable, avec nb_surdefs puis les refs sur les defs
-# -> REFS: on stocke 
+# # MUST be defined before any find_var
 # class Callable[ surdef_list, self_type, parm_type ]
-# a := 10l
-# ___syscall 60l, a
-# 
-# problème avec f( def toto ... ) -> le code généré pour la fonction f ne sera pas dépendant du type. Ce n'est pas forcément un problème si on gère les virtual dans Def... mais ça se mort la queue : il faut qd même un nouveau type derrière
-# Rq: un type se fait �  partir d'un ClassInfo, qui vient de class_type.expr()
-# class_info devrait aussi être un type différent, ...
-# Proposition pour simplifier (ne pas se mordre la queue), class Toto et def Toto ne renvoient rien !
-# inst := Toto()
-# ___syscall inst.t
+    # pass
 
-# if ___rand()
-    # 
+# class SurdefList
+    # pass
+    
+# class Void
+    # def init
+        # 0
+    # def write_to_stream os
+        # os << "void"
 
+# class Type
+    # pass
+    
+# class SI32
+    # ___set_base_size_and_alig 32, 32
+    
+    # def init
+    
+    # def init val : [ SI32, SI64, PI64 ]
+        # ___reassign_rec val
+    
+    # def reassign val : SI32
+        # ___reassign_rec val
+    
+# class SI64
+    # ___set_base_size_and_alig 64, 32
+    
+    # def init val : [ SI32, PI32, SI64, PI64 ]
+        # ___reassign_rec val
+    
+    # def reassign val : SI64
+        # ___reassign_rec val
+    
+# class PI64
+    # ___set_base_size_and_alig 64, 32
+    
+    # def init val : PI64
+        # ___reassign_rec val
+    
+    # def reassign val : PI64
+        # ___reassign_rec val
+
+# class Bool
+    # ___set_base_size_and_alig 1, 1
+
+    # def init val : [ SI32, SI64, PI64 ]
+        # ___reassign_rec val
     
     
+# void := Void()
+        
+# # default init, that does nothing
+# def init self
+    
+
+# class Toto
+    # a := 10
+    # def init : a( 50 ) # and b( 10 )
+        # r := 10
+
+# def add( a, b )
+    # ___add a, b
+    
+# def mul( a, b )
+    # ___mul a, b
+    
+# # r := ___rand()
+# # a := 10 + r
+# # ___info a
+# # if 10 + ___rand()
+    # # a = 20 + r
+# ___syscall ( ___rand() * 10 ) * 5
+# # SI64 SI32 ___rand()
+
+# # faut-il faire un autre graphe pour la g�n�ration de code ?
+# # -> permet de skipper le const, de doubler les expressions (indispensable), ...
+# # -> complique les simplifications
+
+___syscall ( ___rand() * 10 ) * 5
+
+

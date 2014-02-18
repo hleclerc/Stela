@@ -28,17 +28,10 @@ public:
     };
 
     enum { ///< very bad...
-        Id_Concat,
-        Id_Cst,
-        Id_PointerOn,
-        Id_Slice,
-        Id_ValAt,
-        Id_Rand,
-        Id_Syscall,
-        Id_Conv,
-        Id_Phi,
-
-        Id_Op = 100
+        #define DECL_INST( INST ) Id_##INST,
+        #include "DeclInst.h"
+        #undef DECL_INST
+        Id__fake_end
     };
 
     Inst();
@@ -77,7 +70,10 @@ public:
     //
     virtual void apply( InstVisitor &visitor ) const = 0;
     virtual bool equal( const Inst *b ) const;
-    virtual int  inst_id() const = 0; ///< unique id for each inst
+    virtual int  inst_id() const = 0; ///< unique id for each inst. bad...
+    virtual int  sizeof_additionnal_data() const; ///< to make clones. very bad
+    virtual void copy_additionnal_data_to( PI8 *dst ) const; ///< to make clones. very bad
+
 
     static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
     virtual void write_graph_rec( Stream &os ) const;

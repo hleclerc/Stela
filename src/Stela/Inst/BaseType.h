@@ -31,6 +31,8 @@ public:
 #include "DeclArytTypes.h"
 #undef DECL_BT
 
+extern const BaseType *bt_Void;
+
 const BaseType *get_bt( int size_in_bits, bool is_signed, bool is_fp );
 const BaseType *type_promote( const BaseType *ta, const BaseType *tb );
 

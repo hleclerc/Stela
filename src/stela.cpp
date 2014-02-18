@@ -4,7 +4,9 @@
 #include <Stela/Interpreter/Interpreter.h>
 #include <Stela/Compilers/CppCompiler.h>
 #include <Stela/System/InstallDir.h>
+#include <Stela/System/ReadFile.h>
 #include <Stela/Met/IrWriter.h>
+#include <Stela/Met/Lexer.h>
 #include <math.h>
 
 
@@ -20,8 +22,28 @@ int main( int argc, char **argv ) {
     bool add_base_files = not ( disp_lexems or disp_tokens );
 
     // particular case
-    if ( disp_tokens or disp_lexems )
-        TODO;
+    if ( disp_tokens or disp_lexems ) {
+        // -> source data
+        ReadFile r( argv[ beg_files ] );
+        if ( not r ) {
+            std::cerr << "Impossible to open " << argv[ beg_files ] << std::endl;
+            return 2;
+        }
+
+        // -> lexical data
+        ErrorList e;
+        Lexer l( e );
+        l.parse( r.data, argv[ beg_files ] );
+        if ( e )
+            return 3;
+        if ( disp_lexems )
+            l.display();
+
+        if ( disp_tokens )
+            TODO;
+
+        return 0;
+    }
 
     // input files
     Vec<String> input_files;

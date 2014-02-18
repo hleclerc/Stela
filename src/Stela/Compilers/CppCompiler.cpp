@@ -1,11 +1,8 @@
 #include "../Interpreter/Interpreter.h"
 #include "../Inst/BaseType.h"
-#include "CppInstCompiler.h"
 #include "CppCompiler.h"
-#include "PhiToIf.h"
+// #include "PhiToIf.h"
 #include <fstream>
-
-#define INFO( inst ) reinterpret_cast<CppInstInfo *>( (inst)->op_mp )
 
 CppCompiler::CppCompiler() : on( os ) {
     disp_inst_graph_wo_phi = false;
@@ -20,18 +17,19 @@ CppCompiler &CppCompiler::operator<<( ConstPtr<Inst> inst ) {
     return *this;
 }
 
-static bool all_children_are_done( PI64 op_id, const Inst *inst ) {
-    for( int i = 0; i < inst->inp_size(); ++i )
-        if ( inst->inp_expr( i ).inst->op_id < op_id )
+static bool all_children_are_done( PI64 op_id, const CppInst *inst ) {
+    for( int i = 0; i < inst->inp.size(); ++i )
+        if ( inst->inp[ i ].inst->op_id < op_id )
             return false;
     return true;
 }
 
 void CppCompiler::exec() {
+    // fill os
     compile();
 
+    // headers
     std::ofstream fc( cpp_filename.c_str() );
-
     for( auto f : includes )
         fc << "#include <" << f << ">\n";
 
@@ -44,99 +42,68 @@ void CppCompiler::compile() {
     if ( disp_inst_graph )
         Inst::display_graph( outputs );
 
-    //
-    Vec<ConstPtr<Inst> > pti_outputs = phi_to_if( outputs );
-
-    // get the leaves and inst->op_mp to new CppInstInfo instances
-    Vec<const Inst *> front;
+    // make an alternative graph
     ++Inst::cur_op_id;
-    for( int i = 0; i < pti_outputs.size(); ++i )
-        get_front_rec( front, pti_outputs[ i ].ptr() );
+    Vec<CppInst *> res( Rese(), outputs.size() );
+    for( int i = 0; i < outputs.size(); ++i )
+        res << make_cpp_graph( outputs[ i ].ptr() );
 
-    // get BaseType
-    ++Inst::cur_op_id;
-    for( int i = 0; i < pti_outputs.size(); ++i )
-        get_base_type_rec( pti_outputs[ i ].ptr() );
+    // CppInst::display_graph( res );
+
+    // get the leaves
+    Vec<CppInst *> front;
+    ++CppInst::cur_op_id;
+    for( int i = 0; i < res.size(); ++i )
+        get_front_rec( front, res[ i ] );
 
     // sweep the tree, starting from the leaves
-    PI64 op_id = ++Inst::cur_op_id;
-    CppInstCompiler cic( this );
+    PI64 op_id = ++CppInst::cur_op_id;
     while ( front.size() ) {
-        const Inst *inst = front.pop_back();
+        CppInst *inst = front.pop_back();
+        inst->update_bt_hints();
         inst->op_id = op_id;
 
-        inst->apply( cic );
+        inst->write_code( this );
 
-        for( int nout = 0; nout < inst->out_size(); ++nout )
-            for( const auto &p : inst->out_expr( nout ).parents )
+        for( int nout = 0; nout < inst->out.size(); ++nout )
+            for( CppInst::Out::Parent &p : inst->out[ nout ].parents )
                 if ( all_children_are_done( op_id, p.inst ) )
                     front.push_back_unique( p.inst );
     }
 }
 
-void CppCompiler::get_front_rec( Vec<const Inst *> &front, const Inst *inst ) {
-    if ( inst->op_id == Inst::cur_op_id )
-        return;
+CppInst *CppCompiler::make_cpp_graph( const Inst *inst, bool force_clone ) {
+    if ( inst->op_id == Inst::cur_op_id and force_clone == false )
+        return reinterpret_cast<CppInst *>( inst->op_mp );
     inst->op_id = Inst::cur_op_id;
-    inst->op_mp = info_it.push_back( inst );
 
-    if ( int nch = inst->inp_size() ) {
+    CppInst *res = inst_list.push_back( inst->inst_id(), inst->out_size() );
+    inst->op_mp = res;
+
+    res->additionnal_data = addd_list.get_room_for( inst->sizeof_additionnal_data() );
+    inst->copy_additionnal_data_to( res->additionnal_data );
+
+    for( int i = 0; i < inst->inp_size(); ++i ) {
+        const Inst *ch = inst->inp_expr( i ).inst.ptr();
+        res->add_child( make_cpp_graph( ch, ch->inst_id() == Inst::Id_Cst ) );
+    }
+    for( int i = 0; i < inst->ext_size(); ++i )
+        res->add_child( make_cpp_graph( inst->ext_inst( i ) ) );
+
+    return res;
+}
+
+void CppCompiler::get_front_rec( Vec<CppInst *> &front, CppInst *inst ) {
+    if ( inst->op_id == CppInst::cur_op_id )
+        return;
+    inst->op_id = CppInst::cur_op_id;
+
+    if ( int nch = inst->inp.size() ) {
         for( int i = 0; i < nch; ++i )
-            get_front_rec( front, inst->inp_expr( i ).inst.ptr() );
+            get_front_rec( front, inst->inp[ i ].inst );
     } else
         front << inst;
 }
-
-struct CppInstTypeHint : InstVisitor {
-    virtual void def( const Inst &inst ) { hint = 0; }
-    virtual void syscall( const Inst &inst ) { hint = ip->bt_ST; }
-    const BaseType *hint;
-    int ninp;
-};
-
-void CppCompiler::get_base_type_rec( const Inst *inst ) {
-    if ( inst->op_id == Inst::cur_op_id )
-        return;
-    inst->op_id = Inst::cur_op_id;
-
-    for( int no = 0; no < inst->out_size(); ++no ) {
-        if ( const BaseType *bt = inst->out_bt( no ) ) {
-            INFO( inst )->out[ no ].type = bt;
-            continue;
-        }
-        // else look in parents if there is a particular utilisation
-        int ps = inst->out_expr( no ).parents.size();
-        CppInstTypeHint citi;
-        for( int np = 0; np < ps; ++np ) {
-            const Inst::Out::Parent &p = inst->out_expr( no ).parents[ np ];
-            citi.ninp = p.ninp;
-            p.inst->apply( citi );
-            if ( citi.hint )
-                break;
-        }
-        if ( citi.hint ) {
-            INFO( inst )->out[ no ].type = citi.hint;
-            continue;
-        }
-        // else, make a "fake" bt
-        int s = inst->size_in_bits( no );
-        switch ( s ) {
-        case (  0 ): break;
-        case (  1 ): INFO( inst )->out[ no ].type = bt_Bool; break;
-        case (  8 ): INFO( inst )->out[ no ].type = bt_PI8 ; break;
-        case ( 16 ): INFO( inst )->out[ no ].type = bt_PI16; break;
-        case ( 32 ): INFO( inst )->out[ no ].type = bt_PI32; break;
-        case ( 64 ): INFO( inst )->out[ no ].type = bt_PI64; break;
-        default:
-            PRINT( s );
-            TODO; // make an internal "fake" bt
-        }
-    }
-
-    for( int i = 0; i < inst->inp_size(); ++i )
-        get_base_type_rec( inst->inp_expr( i ).inst.ptr() );
-}
-
 
 void CppCompiler::add_include( String name ) {
     includes.insert( name );

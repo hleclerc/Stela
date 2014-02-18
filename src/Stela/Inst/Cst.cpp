@@ -53,14 +53,23 @@ public:
                 os << "...";
         }
     }
+    virtual int sizeof_additionnal_data() const {
+        return sizeof( int ) + ( size + 7 ) / 8 * 2;
+    }
+    virtual void copy_additionnal_data_to( PI8 *dst ) const {
+        memcpy( dst, &size, sizeof( int ) );
+        memcpy( dst + sizeof( int ), data.ptr(), ( size + 7 ) / 8 * 2 );
+    }
     virtual void apply( InstVisitor &visitor ) const {
         int sb = ( size + 7 ) / 8;
         visitor.cst( *this, data.ptr() + 0 * sb, data.ptr() + 1 * sb, size );
     }
-    virtual int inst_id() const { return Inst::Id_Cst; }
+    virtual int inst_id() const {
+        return Inst::Id_Cst;
+    }
 
     Vec<PI8> data; ///< values and known (should not be changed directly)
-    // Vec<PI8> shifted_data;
+    Vec<PI8> shifted_data;
     int size;
 };
 

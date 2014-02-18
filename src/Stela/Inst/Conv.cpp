@@ -14,6 +14,12 @@ public:
                dst == static_cast<const Conv *>( b )->dst and
                src == static_cast<const Conv *>( b )->src;
     }
+    virtual int sizeof_additionnal_data() const {
+        return 2 * sizeof( const BaseType * );
+    }
+    virtual void copy_additionnal_data_to( PI8 *dsp ) const {
+        memcpy( dsp, &dst, 2 * sizeof( const BaseType * ) );
+    }
     virtual const BaseType *out_bt( int n ) const {
         return dst;
     }

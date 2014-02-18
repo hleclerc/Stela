@@ -70,7 +70,12 @@ struct BaseType_ : BaseType {
         #define DECL_BT( U ) if ( ta == bt_##U ) return ::conv( *reinterpret_cast<T *>( res ), *reinterpret_cast<const U *>( da ) );
         #include "DeclArytTypes.h"
         #undef DECL_BT
-        return 0;
+        if ( ta == bt_Void ) {
+            *reinterpret_cast<T *>( res ) = 0;
+            return true;
+        }
+        return false;
+
     }
 
     const char *name;
@@ -79,6 +84,33 @@ struct BaseType_ : BaseType {
 #define DECL_BT( T ) BaseType_<T> ibt_##T( #T ); const BaseType *bt_##T = &ibt_##T;
 #include "DeclArytTypes.h"
 #undef DECL_BT
+
+struct BaseType_Void : BaseType {
+    BaseType_Void( const char *name ) : name( name ) { }
+    virtual void write_to_stream( Stream &os, const PI8 *data ) const { os << "void"; }
+    virtual void write_to_stream( Stream &os ) const { os << name; }
+    virtual int size_in_bytes() const { return 0; }
+    virtual int size_in_bits() const { return 0; }
+    virtual int is_signed() const { return false; }
+    virtual int is_fp() const { return false; }
+
+    #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da, const PI8 *db ) const  {}
+    #include "../Ir/Decl_BinaryOperations.h"
+    #undef DECL_IR_TOK
+
+    #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da ) const  {}
+    #include "../Ir/Decl_UnaryOperations.h"
+    #undef DECL_IR_TOK
+
+    virtual bool conv( PI8 *res, const BaseType *ta, const PI8 *da ) const {
+        return ta == bt_Void;
+    }
+
+    const char *name;
+};
+
+
+BaseType_Void ibt_Void( "Void" ); const BaseType *bt_Void = &ibt_Void;
 
 const BaseType *get_bt( int size_in_bits, bool is_signed, bool is_fp ) {
     #define DECL_BT( T ) if ( IsSigned<T>::res == is_signed and IsFp<T>::res == is_fp and SizeInBits<T>::res >= size_in_bits ) return bt_##T;

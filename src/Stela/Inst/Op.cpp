@@ -7,18 +7,24 @@
 
 /**
 */
-template<class TOP>
+template<class TOP,int i_id>
 class Op : public Inst_<1,TOP::nb_ch> {
 public:
     virtual int size_in_bits( int nout ) const { return bt->size_in_bits(); }
     virtual void write_dot( Stream &os ) const { os << TOP::name(); }
     virtual void apply( InstVisitor &visitor ) const;
-    virtual int inst_id() const { return Inst::Id_Op + TOP::op_id; }
+    virtual int inst_id() const { return i_id; }
     virtual bool equal( const Inst *b ) const {
         return Inst::equal( b ) and bt == static_cast<const Op *>( b )->bt;
     }
     virtual const BaseType *out_bt( int n ) const {
         return bt;
+    }
+    virtual int sizeof_additionnal_data() const {
+        return sizeof( const BaseType * );
+    }
+    virtual void copy_additionnal_data_to( PI8 *dst ) const {
+        memcpy( dst, &bt, sizeof( const BaseType * ) );
     }
     virtual const PI8 *vat_data( int nout, int beg, int end ) const {
         if ( TOP::op_id == int( ID_add ) ) {
@@ -105,7 +111,7 @@ static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da ) {
 }
 
 // factory
-template<class TOP>
+template<int i_id,class TOP>
 static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
     ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
     ASSERT( bt->size_in_bits() <= b.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
@@ -117,14 +123,14 @@ static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
         return res;
 
     // else, create a new inst
-    Op<TOP> *res = new Op<TOP>;
+    Op<TOP,i_id> *res = new Op<TOP,i_id>;
     res->inp_repl( 0, a );
     res->inp_repl( 1, b );
     res->bt = bt;
     return Expr( Inst::factorized( res ), 0 );
 }
 
-template<class TOP>
+template<int i_id,class TOP>
 static Expr _op( TOP top, const BaseType *bt, Expr a ) {
     ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size" );
 
@@ -134,23 +140,23 @@ static Expr _op( TOP top, const BaseType *bt, Expr a ) {
         return res;
 
     // else, create a new inst
-    Op<TOP> *res = new Op<TOP>;
+    Op<TOP,i_id> *res = new Op<TOP,i_id>;
     res->inp_repl( 0, a );
     res->bt = bt;
     return Expr( Inst::factorized( res ), 0 );
 }
 
 // apply
-#define DECL_IR_TOK( OP ) template<> void Op<Op_##OP>::apply( InstVisitor &visitor ) const { visitor.op_##OP( *this, bt ); }
+#define DECL_IR_TOK( OP ) template<> void Op<Op_##OP,Inst::Id_Op_##OP>::apply( InstVisitor &visitor ) const { visitor.op_##OP( *this, bt ); }
 #include "../Ir/Decl_Operations.h"
 #undef DECL_IR_TOK
 
 // functions
-#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a, Expr b ) { return _op( Op_##OP(), bt, a, b ); }
+#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a, Expr b ) { return _op<Inst::Id_Op_##OP>( Op_##OP(), bt, a, b ); }
 #include "../Ir/Decl_BinaryOperations.h"
 #undef DECL_IR_TOK
 
-#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a ) { return _op( Op_##OP(), bt, a ); }
+#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a ) { return _op<Inst::Id_Op_##OP>( Op_##OP(), bt, a ); }
 #include "../Ir/Decl_UnaryOperations.h"
 #undef DECL_IR_TOK
 
