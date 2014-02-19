@@ -4,6 +4,7 @@
 #include "../System/BinStreamReader.h"
 #include "../System/ErrorList.h"
 #include "VarTable.h"
+#include <map>
 
 /**
 */
@@ -63,6 +64,8 @@ protected:
     Var            self;
     TypeInfo      *class_scope;
     Expr           cond;
+
+    std::map<Ptr<PRef>,Expr> *sv_map;
 };
 
 #endif // SCOPE_H

@@ -74,9 +74,9 @@ public:
 #define DECL_IR_TOK( OP ) \
     static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da, const PI8 *db ) { \
         if ( da and db ) { \
-            Vec<PI8> res( Size(), bt->size_in_bytes() ); \
-            bt->op_##OP( res.ptr(), da, db ); \
-            return cst( res ); \
+            PI8 res[ bt->size_in_bytes() ]; \
+            bt->op_##OP( res, da, db ); \
+            return cst( res, 0, bt->size_in_bits() ); \
         } \
         return Expr(); \
     }
@@ -86,9 +86,9 @@ public:
 #define DECL_IR_TOK( OP ) \
     static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da ) { \
         if ( da ) { \
-            Vec<PI8> res( Size(), bt->size_in_bytes() ); \
-            bt->op_##OP( res.ptr(), da ); \
-            return cst( res ); \
+            PI8 res[ bt->size_in_bytes() ]; \
+            bt->op_##OP( res, da ); \
+            return cst( res, 0, bt->size_in_bits() ); \
         } \
         return Expr(); \
     }
@@ -136,8 +136,9 @@ static Expr _op( TOP top, const BaseType *bt, Expr a ) {
 
     // known values ?
     const PI8 *da = a.cst_data();
-    if ( Expr res = _simplify( top, bt, da ) )
+    if ( Expr res = _simplify( top, bt, da ) ) {
         return res;
+    }
 
     // else, create a new inst
     Op<TOP,i_id> *res = new Op<TOP,i_id>;

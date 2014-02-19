@@ -18,6 +18,7 @@ template<class T> static T _inf   ( const T &a, const T &b ) { return a <  b; }
 template<class T> static T _inf_eq( const T &a, const T &b ) { return a <= b; }
 template<class T> static T _sup_eq( const T &a, const T &b ) { return a >= b; }
 
+static Bool _not ( const Bool &a ) { return not a; }
 template<class T> static T _not ( const T &a ) { return ~ a; }
 template<class T> static T _log ( const T &a ) { return log( a ); }
 template<class T> static T _ceil( const T &a ) { return ceil( a ); }

@@ -48,7 +48,7 @@ class SI64
     def init val : [ SI32, PI32, SI64, PI64 ]
         ___reassign_rec val
     
-    def reassign val : SI64
+    def reassign val : [ SI32, PI32, SI64, PI64 ]
         ___reassign_rec val
     
 class PI64
@@ -63,7 +63,7 @@ class PI64
 class Bool
     ___set_base_size_and_alig 1, 1
 
-    def init val : [ SI32, SI64, PI64 ]
+    def init val : [ Bool, SI32, SI64, PI64 ]
         ___reassign_rec val
     
     
@@ -84,12 +84,27 @@ def add( a, b )
 def mul( a, b )
     ___mul a, b
     
+def mod( a, b )
+    ___mod a, b
+
+def not( a )
+    ___not a
+    
+def not_boolean( a )
+    ___not Bool a
+    
 # r := ___rand()
 # a := 10 + r
-if 10 + ___rand()
-    ___syscall 100l
+# if 10 + ___rand()
+    # ___syscall 100l
     # a = 20 + r
-
+    
+# -> 
+a := 4l
+while 10 # ___rand()
+    a = 30
+___syscall a
+    
 # faut-il faire un autre graphe pour la génération de code ?
 # -> permet de skipper le const, de doubler les expressions (indispensable), ...
 # -> complique les simplifications

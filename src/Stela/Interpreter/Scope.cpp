@@ -37,9 +37,11 @@ Scope::Scope( Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
 
     sys_state   = parent ? parent->sys_state : Var( &ip->type_Void, cst( 0, 0, 0 ) );
     class_scope = 0;
+    sv_map      = 0;
 
     if ( parent )
         self = parent->self;
+
 }
 
 Var Scope::parse( const Expr &sf, const PI8 *tok ) {
@@ -356,6 +358,7 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     // known value
     bool cond_val;
     if ( expr.get_val( cond_val ) ) {
+        PRINT( cond_val );
         if ( cond_val ) {
             Scope if_scope( this );
             return if_scope.parse( sf, ok );
@@ -383,8 +386,28 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     }
     return res;
 }
-Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
+    const PI8 *tok = bin.read_offset();
+
+    // we repeat until there are no external modified values
+    while ( true ) {
+        // a place to store modified values
+        std::map<Ptr<PRef>,Expr> nsv;
+
+        Scope wh_scope( this );
+        wh_scope.sv_map = &nsv;
+        wh_scope.parse( sf, tok );
+
+        for( auto it : nsv )
+            PRINT( it.second );
+
+        break;
+    }
+    return Var();
+}
+Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
+    TODO; return Var();
+}
 Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_FALSE( const Expr &sf, int off, BinStreamReader bin ) { return make_var( false ); }
 Var Scope::parse_TRUE( const Expr &sf, int off, BinStreamReader bin ) { return make_var( true ); }
@@ -707,6 +730,15 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
             if ( s->cond )
                 src_expr = phi( s->cond, src_expr, dst_expr );
+
+        // variable to be saved ?
+        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+            if ( s->sv_map ) {
+                if ( not s->sv_map->count( dst.data ) )
+                    s->sv_map->operator[]( dst.data ) = dst.expr();
+                break;
+            }
+        }
 
         //
         dst.data->ptr->set( src_expr );
@@ -1139,10 +1171,12 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
 }
 
 template<class Op>
-Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op ) {
+Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op_n ) {
     CHECK_PRIM_ARGS( 1 );
-    TODO;
-    return Var();
+    Var va = parse( sf, bin.read_offset() );
+    Expr a = simplified_expr( va, sf, off );
+    const BaseType *ta = ip->bt_of( va );
+    return Var( va.type, op( ta, a, op_n ) );
 }
 
 template<class Op>
@@ -1152,8 +1186,8 @@ Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n )
     Var vb = parse( sf, bin.read_offset() );
     Expr a = simplified_expr( va, sf, off );
     Expr b = simplified_expr( vb, sf, off );
+    const BaseType *ta = ip->bt_of( va );
     if ( va.type != vb.type ) {
-        const BaseType *ta = ip->bt_of( va );
         const BaseType *tb = ip->bt_of( vb );
         if ( ta == 0 or tb == 0 )
             return disp_error( "Assuming basing types", sf, off );
@@ -1161,7 +1195,7 @@ Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n )
         Var *vt = ip->type_for( tr );
         return Var( vt, op( tr, conv( tr, ta, a ), conv( tr, tb, b ), op_n ) );
     }
-    return Var( va.type, op( bt_SI32, a, b, op_n ) );
+    return Var( va.type, op( ta, a, b, op_n ) );
 }
 
 #define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { return parse_una_op( sf, off, bin, Op_##N() ); }

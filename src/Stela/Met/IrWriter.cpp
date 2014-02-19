@@ -480,7 +480,6 @@ void IrWriter::parse_while( const Lexem *l ) {
         push_delayed_parse( child_if_block( l->children[ 0 ] ) ); // ok
         push_delayed_parse(                  0                 ); // ko
     }
-
 }
 
 void IrWriter::parse_return( const Lexem *l ) {
@@ -511,6 +510,15 @@ void IrWriter::parse_const( const Lexem *l ) {
 }
 
 void IrWriter::parse_call_op( const Lexem *l ) {
+    // hum, bad particular case due to Lexer badness
+    if ( l->type == STRING_break_NUM ) {
+        data << IR_TOK_BREAK;
+        push_offset( l );
+        data << 1; // nb of loop to break
+        return;
+    }
+
+
     // operation( a, b )
     data << IR_TOK_APPLY;
     push_offset( l );
