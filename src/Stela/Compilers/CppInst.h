@@ -39,9 +39,20 @@ public:
         int precedance;
     };
 
+    enum { ///< very bad...
+        #define DECL_INST( INST ) Id_##INST,
+        #include "../Inst/DeclInst.h"
+        #undef DECL_INST
+        Id__fake_end
+    };
+
     CppInst( int inst_id, int nb_outputs );
 
-    void add_child( CppExpr expr );
+    int  add_child( CppExpr expr );
+    void set_child( int ninp, CppExpr expr );
+    int  add_out();
+    void check_out_size( int n );
+    void add_ext( CppInst *inst );
     void update_bt_hints() const;
 
     const BaseType *get_bt_hint_for_nout( int nout ) const; ///< helper for update_bt_hints()
@@ -54,15 +65,19 @@ public:
     void write_code( CppCompiler *cc, int prec = -1 );
 
     static int display_graph( const Vec<CppInst *> &res, const char *filename = ".res" );
-    void write_graph_rec( Stream &os ) const;
+    void write_graph_rec( Stream &os, void *omd = 0 ) const;
+    int ext_disp_size() const;
 
     void write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op );
 
     // attributes
     PI8              *additionnal_data; ///< e.g. value for Cst
     int               inst_id;
+    int               ext_ds; // ext_disp_size
     Vec<Out    ,-1,1> out;
     Vec<CppExpr,-1,2> inp;
+    Vec<CppInst    *> ext;
+    CppInst          *ext_parent;
 
     mutable PI64      op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
     mutable void     *op_mp;     ///< result of current operations

@@ -687,10 +687,17 @@ public:
 
     template<class T2>
     int first_index_equal_to( const T2 &d ) const { /// returns -1 if not found
-        for(int i=0;i<_size;++i)
+        for(int i = 0; i < _size; ++i )
             if ( _data[ i ] == d )
                 return i;
         return -1;
+    }
+
+    template<class TA,class TB>
+    void replace( const TA &a, const TB &b ) {
+        for(int i = 0; i < _size; ++i )
+            if ( _data[ i ] == a )
+                _data[ i ] = b;
     }
 
     bool operator==( const Vec &v ) const {

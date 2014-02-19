@@ -10,3 +10,7 @@ DECL_INST( Phi )
 #define DECL_IR_TOK( OP ) DECL_INST( Op_##OP )
 #include "../Ir/Decl_Operations.h"
 #undef DECL_IR_TOK
+
+DECL_INST( If )
+DECL_INST( IfOut )
+DECL_INST( IfInp )

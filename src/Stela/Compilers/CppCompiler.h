@@ -22,6 +22,7 @@ public:
 
 protected:
     friend class CppInst;
+    friend class PhiToIf;
 
     void compile();
 

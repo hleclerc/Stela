@@ -1,101 +1,98 @@
-# # classes et fonctions.
-# # if
-# # fonctions -> avec scope statique, surdefs, ...
-# # boucles
-# # 
-# # Proposition pour les classes: on stocke une r√©f√©rence sur le code
-# # -> les variables contiennent des pointeurs vers les donn√©es
-# # -> on retrouve les infos √  l'aide de tables de correspondance
-# # -> ClassInfo contient la liste de variable de types avec les param√®tres (redondant, mais permettant de manipuler les types pas d√©finis)
+# classes et fonctions.
+# if
+# fonctions -> avec scope statique, surdefs, ...
+# boucles
+# 
+# Proposition pour les classes: on stocke une r√©f√©rence sur le code
+# -> les variables contiennent des pointeurs vers les donn√©es
+# -> on retrouve les infos √  l'aide de tables de correspondance
+# -> ClassInfo contient la liste de variable de types avec les param√®tres (redondant, mais permettant de manipuler les types pas d√©finis)
     
-# # MUST be defined first
-# class Class
-    # pass
+# MUST be defined first
+class Class
+    pass
     
-# class Def
-    # pass
+class Def
+    pass
     
-# # MUST be defined before any find_var
-# class Callable[ surdef_list, self_type, parm_type ]
-    # pass
+# MUST be defined before any find_var
+class Callable[ surdef_list, self_type, parm_type ]
+    pass
 
-# class SurdefList
-    # pass
+class SurdefList
+    pass
     
-# class Void
-    # def init
-        # 0
-    # def write_to_stream os
-        # os << "void"
+class Void
+    def init
+        0
+    def write_to_stream os
+        os << "void"
 
-# class Type
-    # pass
+class Type
+    pass
     
-# class SI32
-    # ___set_base_size_and_alig 32, 32
+class SI32
+    ___set_base_size_and_alig 32, 32
     
-    # def init
+    def init
     
-    # def init val : [ SI32, SI64, PI64 ]
-        # ___reassign_rec val
+    def init val : [ SI32, SI64, PI64 ]
+        ___reassign_rec val
     
-    # def reassign val : SI32
-        # ___reassign_rec val
+    def reassign val : SI32
+        ___reassign_rec val
     
-# class SI64
-    # ___set_base_size_and_alig 64, 32
+class SI64
+    ___set_base_size_and_alig 64, 32
     
-    # def init val : [ SI32, PI32, SI64, PI64 ]
-        # ___reassign_rec val
+    def init val : [ SI32, PI32, SI64, PI64 ]
+        ___reassign_rec val
     
-    # def reassign val : SI64
-        # ___reassign_rec val
+    def reassign val : SI64
+        ___reassign_rec val
     
-# class PI64
-    # ___set_base_size_and_alig 64, 32
+class PI64
+    ___set_base_size_and_alig 64, 32
     
-    # def init val : PI64
-        # ___reassign_rec val
+    def init val : PI64
+        ___reassign_rec val
     
-    # def reassign val : PI64
-        # ___reassign_rec val
+    def reassign val : PI64
+        ___reassign_rec val
 
-# class Bool
-    # ___set_base_size_and_alig 1, 1
+class Bool
+    ___set_base_size_and_alig 1, 1
 
-    # def init val : [ SI32, SI64, PI64 ]
-        # ___reassign_rec val
+    def init val : [ SI32, SI64, PI64 ]
+        ___reassign_rec val
     
     
-# void := Void()
+void := Void()
         
-# # default init, that does nothing
-# def init self
+# default init, that does nothing
+def init self
     
 
-# class Toto
-    # a := 10
-    # def init : a( 50 ) # and b( 10 )
-        # r := 10
+class Toto
+    a := 10
+    def init : a( 50 ) # and b( 10 )
+        r := 10
 
-# def add( a, b )
-    # ___add a, b
+def add( a, b )
+    ___add a, b
     
-# def mul( a, b )
-    # ___mul a, b
+def mul( a, b )
+    ___mul a, b
     
-# # r := ___rand()
-# # a := 10 + r
-# # ___info a
-# # if 10 + ___rand()
-    # # a = 20 + r
-# ___syscall ( ___rand() * 10 ) * 5
-# # SI64 SI32 ___rand()
+r := ___rand()
+a := 10 + r
+if 10 + ___rand()
+    a = 20 + r
+___syscall a
 
-# # faut-il faire un autre graphe pour la gÈnÈration de code ?
-# # -> permet de skipper le const, de doubler les expressions (indispensable), ...
-# # -> complique les simplifications
+# faut-il faire un autre graphe pour la gÈnÈration de code ?
+# -> permet de skipper le const, de doubler les expressions (indispensable), ...
+# -> complique les simplifications
 
-___syscall ( ___rand() * 10 ) * 5
 
 

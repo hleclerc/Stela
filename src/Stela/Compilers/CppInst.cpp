@@ -1,19 +1,21 @@
 #include "../Interpreter/Interpreter.h"
 #include "../Inst/BaseType.h"
-#include "../Inst/Inst.h"
+// #include "../Inst/Inst.h"
 #include "CppCompiler.h"
 #include "CppInst.h"
 #include <fstream>
 
 enum {
-    PREC_mul = 8,
+    PREC_phi =  1,
     PREC_add = 10,
-    PREC_phi = 20
+    PREC_mul = 20
 };
 
 PI64 CppInst::cur_op_id = 0;
 
 CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(), nb_outputs ), op_id( 0 ), op_id_vis( 0 ) {
+    ext_parent = 0;
+    ext_ds = -1;
 }
 
 void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
@@ -49,22 +51,50 @@ CppInst::InstWriter CppInst::inst( CppCompiler *cc, int nout, int precedance ) {
     return res;
 }
 
-void CppInst::add_child( CppExpr expr ) {
-    expr.inst->out[ expr.nout ].parents << Out::Parent{ this, int( inp.size() ) };
+int CppInst::add_child( CppExpr expr ) {
+    int res = inp.size();
+    if ( expr.inst )
+        expr.inst->out[ expr.nout ].parents << Out::Parent{ this, int( inp.size() ) };
     inp << expr;
+    return res;
+}
+
+void CppInst::set_child( int ninp, CppExpr expr ) {
+    if ( inp[ ninp ].inst )
+        inp[ ninp ].inst->out[ inp[ ninp ].nout ].parents.remove_first_unordered( Out::Parent{ this, ninp } );
+    if ( expr.inst )
+        expr.inst->out[ expr.nout ].parents << Out::Parent{ this, ninp };
+    inp[ ninp ] = expr;
+}
+
+int CppInst::add_out() {
+    int res = out.size();
+    out.push_back();
+    return res;
+}
+
+void CppInst::check_out_size( int n ) {
+    if ( out.size() < n )
+        out.resize( n );
+}
+
+void CppInst::add_ext( CppInst *inst ) {
+    ASSERT( not inst->ext_parent, "..." );
+    inst->ext_parent = this;
+    ext << inst;
 }
 
 const BaseType *CppInst::inp_bt_hint( int ninp ) const {
     switch ( inst_id ) {
-        #define DECL_IR_TOK( INST ) case Inst::Id_Op_##INST:
+        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
         #include "../Ir/Decl_Operations.h"
         #undef DECL_IR_TOK
             return *reinterpret_cast<const BaseType **>( additionnal_data );
-    case Inst::Id_Conv:
+    case CppInst::Id_Conv:
         return reinterpret_cast<const BaseType **>( additionnal_data )[ 1 ];
-    case Inst::Id_Syscall:
+    case CppInst::Id_Syscall:
         return ninp ? ip->bt_ST : bt_Void;
-    case Inst::Id_Phi:
+    case CppInst::Id_Phi:
         for( const CppInst::Out::Parent &p : out[ 0 ].parents )
             if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
                 return res;
@@ -79,11 +109,11 @@ const BaseType *CppInst::out_bt_hint( int nout ) const {
 
     // instruction dependant
     switch ( inst_id ) {
-    #define DECL_IR_TOK( INST ) case Inst::Id_Op_##INST:
+    #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
     #include "../Ir/Decl_Operations.h"
     #undef DECL_IR_TOK
         return *reinterpret_cast<const BaseType **>( additionnal_data );
-    case Inst::Id_Conv:
+    case CppInst::Id_Conv:
          return reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ];
     default:
         return 0;
@@ -111,7 +141,7 @@ void CppInst::write_to_stream( Stream &os ) const {
     update_bt_hints();
 
     // particular cases
-    if ( inst_id == Inst::Id_Cst ) {
+    if ( inst_id == CppInst::Id_Cst ) {
         if ( out[ 0 ].bt_hint )
             return out[ 0 ].bt_hint->write_to_stream( os, additionnal_data + sizeof( int ) );
 
@@ -131,7 +161,7 @@ void CppInst::write_to_stream( Stream &os ) const {
     }
 
     switch ( inst_id ) {
-        #define DECL_INST( INST ) case Inst::Id_##INST: os << #INST; break;
+        #define DECL_INST( INST ) case CppInst::Id_##INST: os << #INST; break;
         #include "../Inst/DeclInst.h"
         #undef DECL_INST
         default: ERROR( "?" );
@@ -140,30 +170,30 @@ void CppInst::write_to_stream( Stream &os ) const {
 
 void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op ) {
     if ( prec >= 0 or out[ 0 ].parents.size() > 1 ) {
-        if ( prec < 0 )
-            cc->on.write_beg() << decl( cc, 0 );
+        if ( prec < 0 ) cc->on.write_beg() << decl( cc, 0 );
+        if ( prec > prec_op ) cc->os << "( ";
         cc->os << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout, prec_op ) << op_str << inp[ 1 ].inst->inst( cc, inp[ 1 ].nout, prec_op );
-        if ( prec < 0 )
-            cc->on.write_end( ";" );
+        if ( prec > prec_op ) cc->os << " )";
+        if ( prec < 0 ) cc->on.write_end( ";" );
     }
 }
 
 void CppInst::write_code( CppCompiler *cc, int prec ) {
     switch ( inst_id ) {
-    case Inst::Id_Cst:
+    case CppInst::Id_Cst:
         if ( prec >= 0 )
             out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
         break;
-    case Inst::Id_Rand:
+    case CppInst::Id_Rand:
         cc->on << decl( cc, 0 ) << "rand();";
         break;
-    case Inst::Id_Conv:
+    case CppInst::Id_Conv:
         if ( prec >= 0 )
             cc->os << *out[ 0 ].bt_hint << "( " << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout ) << " )";
         else if ( out[ 0 ].parents.size() > 1 )
             cc->on << decl( cc, 0 ) << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout ) << ";";
         break;
-    case Inst::Id_Phi:
+    case CppInst::Id_Phi:
         if ( prec >= 0 or out[ 0 ].parents.size() > 1 ) {
             if ( prec < 0 )
                 cc->on.write_beg() << decl( cc, 0 );
@@ -174,7 +204,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                 cc->on.write_end( ";" );
         }
         break;
-    case Inst::Id_Syscall:
+    case CppInst::Id_Syscall:
         cc->on.write_beg();
         if ( out[ 1 ].parents.size() )
             cc->os << decl( cc, 1 );
@@ -187,8 +217,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         cc->on.write_end( " );" );
         break;
 
-    case Inst::Id_Op_add: write_code_bin_op( cc, prec, " + ", PREC_add ); break;
-    case Inst::Id_Op_mul: write_code_bin_op( cc, prec, " * ", PREC_mul ); break;
+    case CppInst::Id_Op_add: write_code_bin_op( cc, prec, " + ", PREC_add ); break;
+    case CppInst::Id_Op_mul: write_code_bin_op( cc, prec, " * ", PREC_mul ); break;
 
     default:
         PRINT( inst_id );
@@ -210,7 +240,7 @@ int CppInst::display_graph( const Vec<CppInst *> &res, const char *filename ) {
     return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
 }
 
-void CppInst::write_graph_rec( Stream &os ) const {
+void CppInst::write_graph_rec( Stream &os, void *omd ) const {
     if ( op_id_vis == cur_op_id )
         return;
     op_id_vis = cur_op_id;
@@ -247,19 +277,19 @@ void CppInst::write_graph_rec( Stream &os ) const {
         const CppExpr &ch = inp[ i ];
         os << "    node" << this << ":f" << out.size() + i << " -> node" << ch.inst << ":f" << ch.nout << ";\n";
         if ( ch.inst )
-            ch.inst->write_graph_rec( os );
+            ch.inst->write_graph_rec( os, omd );
     }
 
     // ext
-    // for( int i = 0, n = ext_disp_size(); i < n; ++i ) {
-    //        const Inst *ch = ext_disp_inst( i );
-    //        os << "    node" << this << " -> node" << ch << " [color=\"green\"];\n";
-    //        if ( ch ) {
-    //            os << "    subgraph cluster_" << ch <<" {\ncolor=yellow;\nstyle=dotted;\n";
-    //            ch->write_graph_rec( os, omd );
-    //            os << "    }\n";
-    //        }
-    //    }
+    for( int i = 0, n = ext_disp_size(); i < n; ++i ) {
+        const CppInst *ch = ext[ i ];
+        os << "    node" << this << " -> node" << ch << " [color=\"green\"];\n";
+        if ( ch ) {
+            os << "    subgraph cluster_" << ch <<" {\ncolor=yellow;\nstyle=dotted;\n";
+            ch->write_graph_rec( os, omd );
+            os << "    }\n";
+       }
+    }
 
     // parents
     //    for( int nout = 0; nout < out_size(); ++nout ) {
@@ -271,3 +301,6 @@ void CppInst::write_graph_rec( Stream &os ) const {
     //    }
 }
 
+int CppInst::ext_disp_size() const {
+    return ext_ds >= 0 ? ext_ds : ext.size();
+}

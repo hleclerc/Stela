@@ -1,7 +1,7 @@
 #include "../Interpreter/Interpreter.h"
 #include "../Inst/BaseType.h"
 #include "CppCompiler.h"
-// #include "PhiToIf.h"
+#include "PhiToIf.h"
 #include <fstream>
 
 CppCompiler::CppCompiler() : on( os ) {
@@ -44,11 +44,13 @@ void CppCompiler::compile() {
 
     // make an alternative graph
     ++Inst::cur_op_id;
-    Vec<CppInst *> res( Rese(), outputs.size() );
+    Vec<CppInst *> tmp( Rese(), outputs.size() );
     for( int i = 0; i < outputs.size(); ++i )
-        res << make_cpp_graph( outputs[ i ].ptr() );
+        tmp << make_cpp_graph( outputs[ i ].ptr() );
 
-    // CppInst::display_graph( res );
+    Vec<CppInst *> res = phi_to_if( tmp, this );
+    if ( disp_inst_graph_wo_phi )
+        CppInst::display_graph( res );
 
     // get the leaves
     Vec<CppInst *> front;
