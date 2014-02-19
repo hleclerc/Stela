@@ -32,6 +32,7 @@ public:
 
     struct DeclWriter : GenWriter {
         void write_to_stream( Stream &os ) const;
+        bool equ_sgn;
     };
 
     struct InstWriter : GenWriter {
@@ -59,8 +60,10 @@ public:
     const BaseType *inp_bt_hint( int ninp ) const;
     const BaseType *out_bt_hint( int nout ) const;
 
-    DeclWriter decl( CppCompiler *cc, int nout );
+    DeclWriter decl( CppCompiler *cc, int nout, bool equ_sgn = true );
     InstWriter inst( CppCompiler *cc, int nout, int precedance = 0 );
+    static InstWriter disp( CppCompiler *cc, CppExpr expr, int precedance = 0 );
+
     void write_to_stream( Stream &os ) const;
     void write_code( CppCompiler *cc, int prec = -1 );
 

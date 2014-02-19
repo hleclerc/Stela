@@ -25,6 +25,7 @@ protected:
     friend class PhiToIf;
 
     void compile();
+    void output_code_for( Vec<CppInst *> &res );
 
     CppInst *make_cpp_graph( const Inst *inst, bool force_clone = false );
     void get_front_rec( Vec<CppInst *> &front, CppInst *inst );

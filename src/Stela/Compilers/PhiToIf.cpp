@@ -5,10 +5,6 @@
 #include <map>
 
 struct PhiToIfInfo {
-    PhiToIfInfo( const CppInst *inst ) : inst( inst ), ok( false ), ko( false ) {}
-    //ConstPtr<Inst> *substitution_ext;
-    //Expr *substitution_inp;
-    const CppInst *inst;
     int nb_phi_children;
     bool ok, ko;
 };
@@ -17,23 +13,29 @@ struct PhiToIfInfo {
 
 
 struct PhiToIf {
-    PhiToIf( const Vec<CppInst *> &outputs, CppCompiler *cc ) : cc( cc ) {
+    PhiToIf( const Vec<CppInst *> &outputs, CppCompiler *cc ) : res( outputs ), cc( cc ) {
         // get info (with nb_phi_children)
         pti_op_id = ++CppInst::cur_op_id;
-        for( int i = 0; i < outputs.size(); ++i )
-            make_info_rec( outputs[ i ] );
+        for( int i = 0; i < res.size(); ++i )
+            make_info_rec( res[ i ] );
+    }
 
+    void exec() {
+        while ( iter() )
+            ;
+    }
+
+    bool iter() {
         // get conditions
         ++CppInst::cur_op_id;
-        for( int i = 0; i < outputs.size(); ++i )
-            get_conditions_rec( outputs[ i ] );
+        cond_list.resize( 0 );
+        for( int i = 0; i < res.size(); ++i )
+            get_conditions_rec( res[ i ] );
 
         // make a substitution for the first encoutered condition without phi nodes
         // (to be optimized)
-        res = outputs;
         for( int nc = 0; nc < cond_list.size(); ++nc ) {
             const CppExpr &cond = cond_list[ nc ];
-            PRINT( cond );
             if ( INFO( cond.inst )->nb_phi_children == 0 ) {
                 Vec<CppInst *> phi_nodes;
                 for( int nout = 0; nout < cond.inst->out.size(); ++nout )
@@ -51,14 +53,19 @@ struct PhiToIf {
 
                 // new expressions
                 int nb_out = phi_nodes.size();
-                CppInst *if_inst  = cc->inst_list.push_back( CppInst::Id_If   , nb_out );
-                CppInst *ifinp_ok = cc->inst_list.push_back( CppInst::Id_IfInp, 0 );
-                CppInst *ifinp_ko = cc->inst_list.push_back( CppInst::Id_IfInp, 0 );
-                CppInst *ifout_ok = cc->inst_list.push_back( CppInst::Id_IfOut, 0 );
-                CppInst *ifout_ko = cc->inst_list.push_back( CppInst::Id_IfOut, 0 );
+                CppInst *if_inst  = make_inst( CppInst::Id_If   , nb_out );
+                CppInst *ifinp_ok = make_inst( CppInst::Id_IfInp );
+                CppInst *ifinp_ko = make_inst( CppInst::Id_IfInp );
+                CppInst *ifout_ok = make_inst( CppInst::Id_IfOut );
+                CppInst *ifout_ko = make_inst( CppInst::Id_IfOut );
 
                 if_inst->add_ext( ifout_ok );
                 if_inst->add_ext( ifout_ko );
+                if_inst->add_ext( ifinp_ok );
+                if_inst->add_ext( ifinp_ko );
+                if_inst->ext_ds = 2;
+
+                if_inst->add_child( cond );
 
                 for( int n = 0; n < phi_nodes.size(); ++n ) {
                     // phi node outputs -> outputs of If inst
@@ -68,6 +75,7 @@ struct PhiToIf {
                     // input of ifout = inputs of phi nodes
                     ifout_ok->add_child( phi_nodes[ n ]->inp[ 1 ] );
                     ifout_ko->add_child( phi_nodes[ n ]->inp[ 2 ] );
+                    phi_nodes[ n ]->set_child( 0, CppExpr() );
                     phi_nodes[ n ]->set_child( 1, CppExpr() );
                     phi_nodes[ n ]->set_child( 2, CppExpr() );
                 }
@@ -78,9 +86,10 @@ struct PhiToIf {
                 ++CppInst::cur_op_id;
                 replace_common_exprs( ifout_ko, if_inst, ifinp_ko );
 
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     /// returns nb child phi node
@@ -88,7 +97,7 @@ struct PhiToIf {
         if ( inst->op_id == CppInst::cur_op_id )
             return INFO( inst )->nb_phi_children;
         inst->op_id = CppInst::cur_op_id;
-        inst->op_mp = info_it.push_back( inst );
+        inst->op_mp = info_it.push_back();
 
         int res = inst->inst_id == CppInst::Id_Phi;
         for( int i = 0; i < inst->inp.size(); ++i )
@@ -106,6 +115,9 @@ struct PhiToIf {
         if ( inst->op_id == CppInst::cur_op_id )
             return;
         inst->op_id = CppInst::cur_op_id;
+
+        INFO( inst )->ok = false;
+        INFO( inst )->ko = false;
 
         for( int nout = 0; nout < inst->out.size(); ++nout )
             for( const CppInst::Out::Parent &p : inst->out[ nout ].parents )
@@ -166,8 +178,17 @@ struct PhiToIf {
         }
     }
 
-    CppCompiler                *cc;
+    CppInst *make_inst( int id, int nb_out = 0 ) {
+        CppInst *res = cc->inst_list.push_back( id, nb_out );
+        res->op_mp = info_it.push_back();
+        return res;
+    }
+
+    // input / output
     Vec<CppInst *>              res;
+    CppCompiler                *cc;
+
+    // intermediate data
     Vec<CppExpr>                cond_list;
     PI64                        pti_op_id; ///<
     SplittedVec<PhiToIfInfo,32> info_it;
@@ -175,5 +196,6 @@ struct PhiToIf {
 
 Vec<CppInst *> phi_to_if( const Vec<CppInst *> &outputs, CppCompiler *cc ) {
     PhiToIf pti( outputs, cc );
+    pti.exec();
     return pti.res;
 }

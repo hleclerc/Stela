@@ -1,4 +1,5 @@
 #include "InstVisitor.h"
+#include "BaseType.h"
 #include "Inst_.h"
 #include "Phi.h"
 #include "Cst.h"
@@ -21,6 +22,10 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
     // the same value in all the cases ?
     if ( ok == ko )
         return ok;
+
+    // cond = bool( ... )
+    if ( cond.inst->inst_id() == Inst::Id_Conv and cond.inst->out_bt( 0 ) == bt_Bool )
+        cond = cond.inst->inp_expr( 0 );
 
     // else, create a new inst
     Phi *res = new Phi;

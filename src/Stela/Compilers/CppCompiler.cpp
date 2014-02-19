@@ -19,7 +19,7 @@ CppCompiler &CppCompiler::operator<<( ConstPtr<Inst> inst ) {
 
 static bool all_children_are_done( PI64 op_id, const CppInst *inst ) {
     for( int i = 0; i < inst->inp.size(); ++i )
-        if ( inst->inp[ i ].inst->op_id < op_id )
+        if ( inst->inp[ i ].inst and inst->inp[ i ].inst->op_id < op_id )
             return false;
     return true;
 }
@@ -52,6 +52,10 @@ void CppCompiler::compile() {
     if ( disp_inst_graph_wo_phi )
         CppInst::display_graph( res );
 
+    output_code_for( res );
+}
+
+void CppCompiler::output_code_for( Vec<CppInst *> &res ) {
     // get the leaves
     Vec<CppInst *> front;
     ++CppInst::cur_op_id;
@@ -86,8 +90,8 @@ CppInst *CppCompiler::make_cpp_graph( const Inst *inst, bool force_clone ) {
     inst->copy_additionnal_data_to( res->additionnal_data );
 
     for( int i = 0; i < inst->inp_size(); ++i ) {
-        const Inst *ch = inst->inp_expr( i ).inst.ptr();
-        res->add_child( make_cpp_graph( ch, ch->inst_id() == Inst::Id_Cst ) );
+        const Expr &ch = inst->inp_expr( i );
+        res->add_child( CppExpr( make_cpp_graph( ch.inst.ptr(), ch.inst->inst_id() == Inst::Id_Cst ), ch.nout ) );
     }
     for( int i = 0; i < inst->ext_size(); ++i )
         res->add_child( make_cpp_graph( inst->ext_inst( i ) ) );

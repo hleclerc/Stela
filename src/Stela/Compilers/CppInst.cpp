@@ -1,6 +1,5 @@
 #include "../Interpreter/Interpreter.h"
 #include "../Inst/BaseType.h"
-// #include "../Inst/Inst.h"
 #include "CppCompiler.h"
 #include "CppInst.h"
 #include <fstream>
@@ -24,18 +23,28 @@ void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
     ASSERT( bt, "bad" );
 
     info->out[ nout ].num = cc->get_free_reg( bt );
-    os << *bt << " R" << info->out[ nout ].num << " = ";
+    os << *bt << " R" << info->out[ nout ].num;
+    if ( equ_sgn )
+        os << " = ";
 }
 
 void CppInst::InstWriter::write_to_stream( Stream &os ) const {
+    if ( info->inst_id == CppInst::Id_IfInp ) {
+        InstWriter n = *this;
+        n.info = info->ext_parent->inp[ nout ].inst;
+        n.nout = info->ext_parent->inp[ nout ].nout;
+        return n.write_to_stream( os );
+    }
+
     if ( info->out[ nout ].num >= 0 )
         os << "R" << info->out[ nout ].num;
     else
         info->write_code( cc, precedance );
 }
 
-CppInst::DeclWriter CppInst::decl( CppCompiler *cc, int nout ) {
+CppInst::DeclWriter CppInst::decl( CppCompiler *cc, int nout, bool equ_sgn ) {
     DeclWriter res;
+    res.equ_sgn = equ_sgn;
     res.info = this;
     res.nout = nout;
     res.cc = cc;
@@ -49,6 +58,10 @@ CppInst::InstWriter CppInst::inst( CppCompiler *cc, int nout, int precedance ) {
     res.nout = nout;
     res.cc = cc;
     return res;
+}
+
+CppInst::InstWriter CppInst::disp( CppCompiler *cc, CppExpr expr, int precedance ) {
+    return expr.inst->inst( cc, expr.nout, precedance );
 }
 
 int CppInst::add_child( CppExpr expr ) {
@@ -189,17 +202,17 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         break;
     case CppInst::Id_Conv:
         if ( prec >= 0 )
-            cc->os << *out[ 0 ].bt_hint << "( " << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout ) << " )";
+            cc->os << *out[ 0 ].bt_hint << "( " << disp( cc, inp[ 0 ] ) << " )";
         else if ( out[ 0 ].parents.size() > 1 )
-            cc->on << decl( cc, 0 ) << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout ) << ";";
+            cc->on << decl( cc, 0 ) << disp( cc, inp[ 0 ] ) << ";";
         break;
     case CppInst::Id_Phi:
         if ( prec >= 0 or out[ 0 ].parents.size() > 1 ) {
             if ( prec < 0 )
                 cc->on.write_beg() << decl( cc, 0 );
-            cc->os << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout, PREC_phi ) << " ? "
-                   << inp[ 1 ].inst->inst( cc, inp[ 1 ].nout, PREC_phi ) << " : "
-                   << inp[ 2 ].inst->inst( cc, inp[ 2 ].nout, PREC_phi );
+            cc->os << disp( cc, inp[ 0 ], PREC_phi ) << " ? "
+                   << disp( cc, inp[ 1 ], PREC_phi ) << " : "
+                   << disp( cc, inp[ 2 ], PREC_phi );
             if ( prec < 0 )
                 cc->on.write_end( ";" );
         }
@@ -212,16 +225,50 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         for( int i = 1; i < inp.size(); ++i ) {
             if ( i > 1 )
                 cc->os << ", ";
-            cc->os << inp[ i ].inst->inst( cc, inp[ i ].nout, 0 );
+            cc->os << disp( cc, inp[ i ], 0 );
         }
         cc->on.write_end( " );" );
         break;
+
+    case CppInst::Id_If: {
+        for( int i = 0; i < out.size(); ++i )
+            cc->on << decl( cc, i, false );
+
+        Vec<CppInst *> va[ 2 ];
+        for( int n = 0; n < 2; ++n )
+            for( int i = 0; i < ext[ n ]->inp.size(); ++i )
+                va[ n ] << ext[ n ]->inp[ i ].inst;
+
+        cc->on << "if ( " << disp( cc, inp[ 0 ] ) << " ) {";
+        cc->on.nsp += 4;
+        cc->output_code_for( va[ 0 ] );
+        cc->on.nsp -= 4;
+        cc->on << "} else {";
+        cc->on.nsp += 4;
+        cc->output_code_for( va[ 1 ] );
+        cc->on.nsp -= 4;
+        cc->on << "}";
+        break;
+    }
+
+    case CppInst::Id_IfOut: {
+        CppInst *ii = ext_parent;
+        for( int nout = 0; nout < ii->out.size(); ++nout )
+            cc->on << ii->inst( cc, nout ) << " = " << disp( cc, inp[ 0 ] ) << ";";
+        break;
+    }
+
+    case CppInst::Id_IfInp: {
+        break;
+    }
 
     case CppInst::Id_Op_add: write_code_bin_op( cc, prec, " + ", PREC_add ); break;
     case CppInst::Id_Op_mul: write_code_bin_op( cc, prec, " * ", PREC_mul ); break;
 
     default:
-        PRINT( inst_id );
+        #define DECL_INST( INST ) if ( inst_id == CppInst::Id_##INST ) std::cout << #INST << std::endl;
+        #include "../Inst/DeclInst.h"
+        #undef DECL_INST
         // TODO;
     }
 }
