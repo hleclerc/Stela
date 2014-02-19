@@ -84,11 +84,11 @@ def add( a, b )
 def mul( a, b )
     ___mul a, b
     
-r := ___rand()
-a := 10 + r
+# r := ___rand()
+# a := 10 + r
 if 10 + ___rand()
-    a = 20 + r
-___syscall a
+    ___syscall 100l
+    # a = 20 + r
 
 # faut-il faire un autre graphe pour la génération de code ?
 # -> permet de skipper le const, de doubler les expressions (indispensable), ...

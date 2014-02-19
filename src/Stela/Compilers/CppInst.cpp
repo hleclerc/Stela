@@ -126,6 +126,8 @@ const BaseType *CppInst::out_bt_hint( int nout ) const {
     #include "../Ir/Decl_Operations.h"
     #undef DECL_IR_TOK
         return *reinterpret_cast<const BaseType **>( additionnal_data );
+    case CppInst::Id_Syscall:
+        return nout ? ip->bt_ST : bt_Void;
     case CppInst::Id_Conv:
          return reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ];
     default:
@@ -191,6 +193,10 @@ void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, 
     }
 }
 
+static bool declable( CppExpr expr ) {
+    return expr.inst->out[ expr.nout ].bt_hint and expr.inst->out[ expr.nout ].bt_hint != bt_Void;
+}
+
 void CppInst::write_code( CppCompiler *cc, int prec ) {
     switch ( inst_id ) {
     case CppInst::Id_Cst:
@@ -232,7 +238,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
 
     case CppInst::Id_If: {
         for( int i = 0; i < out.size(); ++i )
-            cc->on << decl( cc, i, false );
+            if ( declable( ext[ 0 ]->inp[ i ] ) )
+                cc->on << decl( cc, i, false );
 
         Vec<CppInst *> va[ 2 ];
         for( int n = 0; n < 2; ++n )
@@ -254,7 +261,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_IfOut: {
         CppInst *ii = ext_parent;
         for( int nout = 0; nout < ii->out.size(); ++nout )
-            cc->on << ii->inst( cc, nout ) << " = " << disp( cc, inp[ 0 ] ) << ";";
+            if ( declable( inp[ nout ] ) )
+                cc->on << ii->inst( cc, nout ) << " = " << disp( cc, inp[ nout ] ) << ";";
         break;
     }
 
