@@ -156,3 +156,5 @@ src/Stela/Met/TypeChar.h.py
 tests/test_Expr.cpp
 tests/test.met
 src/Stela/Inst/DeclInst.h
+src/Stela/Inst/While.h
+src/Stela/Inst/While.cpp

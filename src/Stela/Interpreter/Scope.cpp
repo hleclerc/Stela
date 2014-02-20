@@ -401,6 +401,9 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         for( auto it : nsv )
             PRINT( it.second );
 
+        // replace each modified variable to
+
+
         break;
     }
     return Var();
