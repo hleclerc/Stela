@@ -9,18 +9,19 @@ Nevertheless, staying with the later example, the syntax for template meta-progr
 
 Therefore, Stela is (currently an experimental) language with
 * the same base behavior than C++ (memory model, ...)
-* with an heavy help from the compiler (e.g. to avoid redundancy)
+* a compiler that is requested to do more (in order to let the user write less)
+* a server that permits to reduce the compilation time (which would become huge due to the previous point)
 * tools to (dramatically) ease metaprogramming
 * a coffeescript/python like syntax
-* modern constructs (mixins, ...)
-* specific optimization tools
+* modern constructs (mixins, lambda, ...)
+* and specific optimization tools
 
-Currently, Stela is a work in progress. Do not expect any example to work properly...
+Currently, Stela is a work in progress. Do not expect any code to work properly...
 
 An example
 ==========
 
-```[python]
+```python
 class MyClass[ value ]
     def for block
         block value
@@ -57,7 +58,7 @@ If you want Stela to execute code during the compilation, you can pass either
 * or use the `as_a_known_value` function (which basically returns a reference on a `::=` variable)
 
 Example:
-```[python]
+```python
 l := Vec[ FP64 ]()
 for c in combinatorial_selection( 2, 5 )
     l << sin sum c
@@ -77,7 +78,7 @@ Pertinence and When
 The rules to decide if a surdefinition is better than an other can be simply overriden by using the keywords `when` and `pertinence`
 
 Example
-```[python]
+```python
 def pow( a, b ) # default pertinence = 0
     return exp b * log( a )
 def pow( a, b ) when a.is_diagonalizable # default pertinence = 1 (1 condition)
@@ -89,7 +90,7 @@ def pow( a, b ) when always( b == floor( b ) ) and b < 10 pertinence 2 # explici
 ```
 
 It is also possible to add constraint on class/traits names, as in
-```[python]
+```python
 def pow( a : Mat, b )
     ...
 def pow( a, b : [PI32,PI16] )
@@ -101,7 +102,7 @@ For loop surdefinition
 ----------------------
 
 A class can have a method `for`, which takes a block as a parameter.
-```[python]
+```python
 class A
     def for( block )
         block 10
@@ -128,7 +129,7 @@ In a C code, it is possible to do this manually with `malloc`s or `alloca`s of s
 
 Here is an example of how to create a class which size is known during the compilation.
 
-```[python]
+```python
 class MyVec
     def init( size ) : _size( size )
         ...
@@ -142,7 +143,7 @@ Dynamic polymorphism (TODO)
 ---------------------------
 
 Works basically as with C++
-```[python]
+```python
 class A
     virtual def foo( a )
         ...
@@ -159,7 +160,7 @@ Auto-tuning (TODO)
 ------------------
 
 Example
-```[python]
+```python
 def my_test
     exec_time f 0 .. 10000 # representative parameter(s)
 def f( range )
@@ -182,7 +183,7 @@ Nevertheless, for the stack(s), there is a garbage collector. But it's managed s
 Actually, for standard cases, it allows for obtaining exactly the same behavior than the C++ (the stacks are managed the same way). The point here is that Stela encourages the use of references from the stack (to avoid wastefull copies, transient wrapper classes, ...), which leads to break the simple LIFO rules for variables in the stack. (work in progress)
 
 In this example
-```[python]
+```python
 def f
     a := ...
     return a
@@ -191,7 +192,7 @@ b := ref f()
 `b` will be a reference on the variable `a` normally created in the stack of `f` during the call to `f` (if not inlined of course). Actually, in the caller function, `f()` will ask for the compiler to create a free slot to store `a` such as `a` will be stored in the parent stack (an implicit pointer containing the free slot adress is send to `f`).
 
 It is possible to have class that store managed references of the stack, as in
-```[python]
+```python
 class MyWrapper
     c ~= Ref[ Orig ]
 def f
