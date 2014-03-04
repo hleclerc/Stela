@@ -63,7 +63,9 @@ Var Scope::copy( const Var &var, const Var *sf, int off ) {
 }
 
 Var Scope::parse_DEF( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
-Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_CLASS( const Var *sf, int off, BinStreamReader bin ) {
+    TODO; return Var();
+}
 Var Scope::parse_RETURN( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_APPLY( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_SELECT( const Var *sf, int off, BinStreamReader bin ) { TODO; return Var(); }

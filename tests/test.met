@@ -1,10 +1,16 @@
-# variables
 # classes et fonctions.
 # if
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
-a := 10l
-___syscall 60l, a
+
+# proposition pour les classes:
+# on stocke un pointeur sur les donnees de la classe
+class Toto
+    r := 10
+    
+
+# a := 10l
+# ___syscall 60l, a
 
 # if ___rand()
     # ___syscall 60l, 10l
