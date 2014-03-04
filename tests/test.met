@@ -2,6 +2,7 @@
 # if
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
+<<<<<<< HEAD
 
 # proposition pour les classes:
 # on stocke un pointeur sur les donnees de la classe
@@ -11,6 +12,114 @@ class Toto
 
 # a := 10l
 # ___syscall 60l, a
+=======
+# 
+# Proposition pour les classes: on stocke une r√©f√©rence sur le code
+# -> les variables contiennent des pointeurs vers les donn√©es
+# -> on retrouve les infos √  l'aide de tables de correspondance
+# -> ClassInfo contient la liste de variable de types avec les param√®tres (redondant, mais permettant de manipuler les types pas d√©finis)
+    
+# MUST be defined first
+class Class
+    pass
+    
+class Def
+    pass
+    
+# MUST be defined before any find_var
+class Callable[ surdef_list, self_type, parm_type ]
+    pass
 
-# if ___rand()
-    # ___syscall 60l, 10l
+class SurdefList
+    pass
+    
+class Void
+    def init
+        0
+    def write_to_stream os
+        os << "void"
+
+class Type
+    pass
+    
+class SI32
+    ___set_base_size_and_alig 32, 32
+    
+    def init
+    
+    def init val : [ SI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+    def reassign val : SI32
+        ___reassign_rec val
+    
+class SI64
+    ___set_base_size_and_alig 64, 32
+    
+    def init val : [ SI32, PI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+    def reassign val : [ SI32, PI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+class PI64
+    ___set_base_size_and_alig 64, 32
+    
+    def init val : PI64
+        ___reassign_rec val
+    
+    def reassign val : PI64
+        ___reassign_rec val
+
+class Bool
+    ___set_base_size_and_alig 1, 1
+
+    def init val : [ Bool, SI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+    
+void := Void()
+        
+# default init, that does nothing
+def init self
+    
+
+class Toto
+    a := 10
+    def init : a( 50 ) # and b( 10 )
+        r := 10
+
+def add( a, b )
+    ___add a, b
+    
+def mul( a, b )
+    ___mul a, b
+    
+def mod( a, b )
+    ___mod a, b
+
+def not( a )
+    ___not a
+    
+def not_boolean( a )
+    ___not Bool a
+    
+# r := ___rand()
+# a := 10 + r
+# if 10 + ___rand()
+    # ___syscall 100l
+    # a = 20 + r
+    
+# -> 
+a := 4l
+while 10 # ___rand()
+    a = 30
+___syscall a
+    
+# faut-il faire un autre graphe pour la gÈnÈration de code ?
+# -> permet de skipper le const, de doubler les expressions (indispensable), ...
+# -> complique les simplifications
+
+
+>>>>>>> db90a08808449b61449c2baed3300b731f2d0d05
+

@@ -1,16 +1,16 @@
 #include "RefExpr.h"
 
-RefExpr::RefExpr( const Expr &expr ) : expr( expr ) {
+RefExpr::RefExpr( const Expr &data ) : data( data ) {
 }
 
-Expr RefExpr::get() const {
-    return expr;
+Expr RefExpr::expr() const {
+    return data;
 }
 
 void RefExpr::set( Expr expr ) {
-    this->expr = expr;
+    data = expr;
 }
 
 void RefExpr::write_to_stream( Stream &os ) const {
-    os << expr;
+    os << data;
 }

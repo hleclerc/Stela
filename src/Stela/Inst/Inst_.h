@@ -11,9 +11,11 @@ public:
 
     virtual ~Inst_() {
         for( int num = 0; num < inp.size(); ++num )
-            inp[ num ].parents().remove_first_unordered( Out::Item{ this, num } );
+            if ( inp[ num ] )
+                inp[ num ].parents().remove_first_unordered( Out::Parent{ this, num } );
         for( int num = 0; num < ext.size(); ++num )
-            ext[ num ]->ext_parent = 0;
+            if ( ext[ num ] )
+                ext[ num ]->ext_parent = 0;
     }
 
     // inp
@@ -33,8 +35,8 @@ public:
 
     virtual void inp_repl( int num, Expr var ) {
         if ( inp[ num ] )
-            inp[ num ].parents().remove_first_unordered( Out::Item{ this, num } );
-        var.inst->out_expr( var.nout ).parents << Out::Item({ this, num });
+            inp[ num ].parents().remove_first_unordered( Out::Parent{ this, num } );
+        var.inst->out_expr( var.nout ).parents << Out::Parent({ this, num });
         inp[ num ] = var;
     }
 
@@ -45,6 +47,10 @@ public:
     }
 
     virtual const Expr &inp_expr( int num_inp ) const {
+        return inp[ num_inp ];
+    }
+
+    virtual Expr &inp_expr( int num_inp ) {
         return inp[ num_inp ];
     }
 

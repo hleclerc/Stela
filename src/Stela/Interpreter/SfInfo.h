@@ -6,7 +6,8 @@
 /**
 */
 struct SfInfo {
-    Vec<int>   nstr_cor;
-    const PI8 *tok_data;
+    const char *filename;
+    Vec<int>    nstr_cor;
+    const PI8  *tok_data;
 };
 #endif // SFINFO_H

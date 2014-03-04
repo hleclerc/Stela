@@ -74,6 +74,18 @@ void get_children_of_type( const Lexem *t, int type, TL &res ) {
     res.push_back( t );
 }
 
+///
+template<class TL>
+void get_leaves( TL &ch, const Lexem *l ) {
+    if ( not l )
+        return;
+    if ( l->children[ 0 ] or l->children[ 1 ] ) {
+        get_leaves( ch, l->children[ 0 ] );
+        get_leaves( ch, l->children[ 1 ] );
+    } else
+        ch << l;
+}
+
 // a,b,c -> 3
 inline unsigned nb_children_of_type( const Lexem *t, int type ) {
     if ( not t )

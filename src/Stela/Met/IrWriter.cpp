@@ -480,7 +480,6 @@ void IrWriter::parse_while( const Lexem *l ) {
         push_delayed_parse( child_if_block( l->children[ 0 ] ) ); // ok
         push_delayed_parse(                  0                 ); // ko
     }
-
 }
 
 void IrWriter::parse_return( const Lexem *l ) {
@@ -511,6 +510,15 @@ void IrWriter::parse_const( const Lexem *l ) {
 }
 
 void IrWriter::parse_call_op( const Lexem *l ) {
+    // hum, bad particular case due to Lexer badness
+    if ( l->type == STRING_break_NUM ) {
+        data << IR_TOK_BREAK;
+        push_offset( l );
+        data << 1; // nb of loop to break
+        return;
+    }
+
+
     // operation( a, b )
     data << IR_TOK_APPLY;
     push_offset( l );
@@ -767,8 +775,8 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         Argument &arg = arguments[ i ];
         if ( arg.name->eq( "self" ) )
             add_error( "'self' as non first argument name of a def is weird.", arg.name );
-        if ( arg.type_constraint and arg.type_constraint->type != Lexem::VARIABLE )
-            add_error( "type constraints must be simple variables (no composition).", arg.type_constraint );
+        //if ( arg.type_constraint and arg.type_constraint->type != Lexem::VARIABLE )
+        //    add_error( "type constraints must be simple variables (no composition).", arg.type_constraint );
     }
 
     // abstract
@@ -811,6 +819,26 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
             push_nstring( arguments[ i ].name );
         else
             TODO;
+
+        // nb_constraints + constraints
+        if ( arguments[ i ].type_constraint ) {
+            if ( arguments[ i ].type_constraint->type == Lexem::VARIABLE ) {
+                data << 1;
+                push_nstring( arguments[ i ].type_constraint );
+            } else if ( arguments[ i ].type_constraint->type == Lexem::PAREN ) {
+                SplittedVec<const Lexem *,8> ch;
+                get_leaves( ch, arguments[ i ].type_constraint );
+                data << ch.size();
+                for( int j = 0; j < ch.size(); ++j ) {
+                    if ( ch[ j ]->type == Lexem::VARIABLE )
+                        push_nstring( ch[ j ] );
+                    else
+                        return add_error( "constraints must be simple variables", ch[ j ] );
+                }
+            } else
+                TODO;
+        } else
+            data << 0;
     }
     for( int i = 0; i < arguments.size(); ++i )
         if ( arguments[ i ].default_value )
@@ -825,8 +853,49 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
 
     if ( token_type == IR_TOK_DEF ) {
         // return type
-        if ( return_type )
-            push_delayed_parse( return_type, true );
+        if ( return_type ) {
+            if ( name->eq( "init" ) ) {
+                SplittedVec<const Lexem *,16> cha;
+                get_children_of_type( return_type, STRING_and_boolean_NUM, cha );
+                data << cha.size();
+
+                for( int i = 0; i < cha.size(); ++i ) {
+                    SplittedVec<const Lexem *,16> ch;
+                    int nb_unnamed_children = 0;
+                    int nb_named_children = 0;
+                    const Lexem *l = cha[ i ];
+
+                    if ( l->children[ 1 ] ) {
+                        get_children_of_type( next_if_CR( l->children[ 1 ] ), STRING_comma_NUM, ch );
+                        for( ; nb_unnamed_children < ch.size() and ch[ nb_unnamed_children ]->type != STRING_reassign_NUM; ++nb_unnamed_children )
+                            ;
+                        for( int i = nb_unnamed_children; i < ch.size(); ++i, ++nb_named_children )
+                            if ( ch[ i ]->type != STRING_reassign_NUM )
+                                return add_error( "after a named argument, all arguments must be named", ch[ i ] );
+                    }
+
+                    const Lexem *f = l->children[ 0 ] ? l->children[ 0 ] : l;
+
+                    // argument
+                    if ( f->type != Lexem::VARIABLE )
+                        return add_error( "expecting attribute name", ch[ i ] );
+                    push_nstring( f );
+
+                    // unnamed arguments
+                    data << nb_unnamed_children;
+                    for( int i = 0; i < nb_unnamed_children; ++i )
+                        push_delayed_parse( ch[ i ] );
+
+                    // named arguments
+                    data << nb_named_children;
+                    for( int i = 0; i < nb_named_children; ++i ) {
+                        push_nstring( ch[ nb_unnamed_children + i ]->children[ 0 ] );
+                        push_delayed_parse( ch[ nb_unnamed_children + i ]->children[ 1 ] );
+                    }
+                }
+            } else
+                push_delayed_parse( return_type );
+        }
         // get set sop
         if ( get_len ) push_nstring( nstring( get_beg, get_beg + get_len ) );
         if ( set_len ) push_nstring( nstring( set_beg, set_beg + set_len ) );

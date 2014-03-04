@@ -1,10 +1,12 @@
-#include "CppInstCompiler.h"
+#include "../Interpreter/Interpreter.h"
+#include "../Inst/BaseType.h"
 #include "CppCompiler.h"
+#include "PhiToIf.h"
 #include <fstream>
 
-#define INFO( inst ) reinterpret_cast<CppCompiler::Info *>( inst.op_mp )
-
 CppCompiler::CppCompiler() : on( os ) {
+    disp_inst_graph_wo_phi = false;
+    disp_inst_graph = false;
     cpp_filename = "out.cpp";
     nb_regs = 0;
     on.nsp = 4;
@@ -15,18 +17,19 @@ CppCompiler &CppCompiler::operator<<( ConstPtr<Inst> inst ) {
     return *this;
 }
 
-static bool all_children_are_done( PI64 op_id, const Inst *inst ) {
-    for( int i = 0; i < inst->inp_size(); ++i )
-        if ( inst->inp_expr( i ).inst->op_id < op_id )
+static bool all_children_are_done( PI64 op_id, const CppInst *inst ) {
+    for( int i = 0; i < inst->inp.size(); ++i )
+        if ( inst->inp[ i ].inst and inst->inp[ i ].inst->op_id < op_id )
             return false;
     return true;
 }
 
 void CppCompiler::exec() {
+    // fill os
     compile();
 
+    // headers
     std::ofstream fc( cpp_filename.c_str() );
-
     for( auto f : includes )
         fc << "#include <" << f << ">\n";
 
@@ -36,72 +39,82 @@ void CppCompiler::exec() {
 }
 
 void CppCompiler::compile() {
-    // get the leaves
-    Vec<const Inst *> front;
+    if ( disp_inst_graph )
+        Inst::display_graph( outputs );
+
+    // make an alternative graph
     ++Inst::cur_op_id;
+    Vec<CppInst *> tmp( Rese(), outputs.size() );
     for( int i = 0; i < outputs.size(); ++i )
-        get_front_rec( front, outputs[ i ].ptr() );
+        tmp << make_cpp_graph( outputs[ i ].ptr() );
+
+    Vec<CppInst *> res = phi_to_if( tmp, this );
+    if ( disp_inst_graph_wo_phi )
+        CppInst::display_graph( res );
+
+    output_code_for( res );
+}
+
+void CppCompiler::output_code_for( Vec<CppInst *> &res ) {
+    // get the leaves
+    Vec<CppInst *> front;
+    ++CppInst::cur_op_id;
+    for( int i = 0; i < res.size(); ++i )
+        get_front_rec( front, res[ i ] );
 
     // sweep the tree, starting from the leaves
-    PI64 op_id = ++Inst::cur_op_id;
-    CppInstCompiler cic( this );
+    PI64 op_id = ++CppInst::cur_op_id;
     while ( front.size() ) {
-        const Inst *inst = front.pop_back();
+        CppInst *inst = front.pop_back();
+        inst->update_bt_hints();
         inst->op_id = op_id;
 
-        inst->apply( cic );
+        inst->write_code( this );
 
-        for( int nout = 0; nout < inst->out_size(); ++nout )
-            for( const auto &p : inst->out_expr( nout ).parents )
+        for( int nout = 0; nout < inst->out.size(); ++nout )
+            for( CppInst::Out::Parent &p : inst->out[ nout ].parents )
                 if ( all_children_are_done( op_id, p.inst ) )
                     front.push_back_unique( p.inst );
     }
 }
 
-void CppCompiler::get_front_rec( Vec<const Inst *> &front, const Inst *inst ) {
-    if ( inst->op_id == Inst::cur_op_id )
-        return;
+CppInst *CppCompiler::make_cpp_graph( const Inst *inst, bool force_clone ) {
+    if ( inst->op_id == Inst::cur_op_id and force_clone == false )
+        return reinterpret_cast<CppInst *>( inst->op_mp );
     inst->op_id = Inst::cur_op_id;
-    inst->op_mp = info_it.push_back( inst );
 
-    if ( int nch = inst->inp_size() ) {
-        for( int i = 0; i < nch; ++i )
-            get_front_rec( front, inst->inp_expr( i ).inst.ptr() );
-    } else
-        front << inst;
+    CppInst *res = inst_list.push_back( inst->inst_id(), inst->out_size() );
+    inst->op_mp = res;
 
+    res->additionnal_data = addd_list.get_room_for( inst->sizeof_additionnal_data() );
+    inst->copy_additionnal_data_to( res->additionnal_data );
+
+    for( int i = 0; i < inst->inp_size(); ++i ) {
+        const Expr &ch = inst->inp_expr( i );
+        res->add_child( CppExpr( make_cpp_graph( ch.inst.ptr(), ch.inst->inst_id() == Inst::Id_Cst ), ch.nout ) );
+    }
+    for( int i = 0; i < inst->ext_size(); ++i )
+        res->add_child( make_cpp_graph( inst->ext_inst( i ) ) );
+
+    return res;
 }
 
-struct CppInstTypeHint : InstVisitor {
-    virtual void operator()( const Inst &inst ) { hint = 0; }
-    virtual void operator()( const Syscall &inst ) { hint = bt_SI64; }
-    const BaseType *hint;
-    int ninp;
-};
+void CppCompiler::get_front_rec( Vec<CppInst *> &front, CppInst *inst ) {
+    if ( inst->op_id == CppInst::cur_op_id )
+        return;
+    inst->op_id = CppInst::cur_op_id;
 
-CppCompiler::Reg CppCompiler::get_reg_for( const Inst &inst, int nout ) {
-    CppCompiler::Reg res;
-    res.num  = nb_regs++;
-
-    // find an hint to choose the type
-    int bs = 0;
-    for( const auto &p : inst.out_expr( nout ).parents ) {
-        CppInstTypeHint ch; ch.ninp = p.ninp;
-        p.inst->apply( ch );
-        if ( ch.hint and bs < ch.hint->size_in_bytes() ) {
-            bs = ch.hint->size_in_bytes();
-            res.type = ch.hint;
-            break;
-        }
-    }
-    ASSERT( bs <= inst.size_in_bytes( nout ), "not enable to fill the bytes" );
-    ASSERT( res.type, "..." );
-
-    // register
-    INFO( inst )->set_out_reg( nout, res );
-    return res;
+    if ( int nch = inst->inp.size() ) {
+        for( int i = 0; i < nch; ++i )
+            get_front_rec( front, inst->inp[ i ].inst );
+    } else
+        front << inst;
 }
 
 void CppCompiler::add_include( String name ) {
     includes.insert( name );
+}
+
+int CppCompiler::get_free_reg( const BaseType *bt ) {
+    return nb_regs++;
 }

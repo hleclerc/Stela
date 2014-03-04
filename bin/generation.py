@@ -398,29 +398,29 @@ def make_primitive_inc():
 operators = Operators()
 
 unary_operations = string.split( """
-    Not
-    Log
-    Ceil
-    Conv
+    not
+    log
+    ceil
 """ )
+# conv
 
 binary_operations = string.split( """
-    Or
-    And
+    or
+    and
 
-    Add
-    Sub
-    Mul
-    Div
-    Pow
-    Mod
+    add
+    sub
+    mul
+    div
+    pow
+    mod
 
-    Equ
-    Neq
-    Sup
-    Inf
-    SupEq
-    InfEq
+    equ
+    neq
+    dup
+    inf
+    sup_eq
+    inf_eq
 """ )
 
 operations = unary_operations + binary_operations
@@ -450,7 +450,7 @@ base_primitives = string.split( """
 
 std_strings = string.split( """
     break continue abstract
-    Callable Class Def ClassInst DefInst SurdefList
+    SourceFile Callable Class Def ClassInst DefInst SurdefList
     GetSetSopDef GetSetSopInst Ptr Block getr_ptr self_ptr
     Bool Void Error FreeSlot self this
     SI8 SI16 SI32 SI64 PI8 PI16 PI32 PI64 FP32 FP64 FP80
@@ -468,6 +468,8 @@ std_strings = string.split( """
     Type
     apply
     super
+    super_0 super_1 super_2 super_3
+    super_4 super_5 super_6 super_7
     destroy
     LambdaFunc
     get_size
