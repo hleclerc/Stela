@@ -36,21 +36,22 @@ print map m, x => x + 7 # should give '22 17 b7'
 
 A compilation server
 ====================
+(work in progress)
 
-To reduce the compilation time, Stela runs as a server with a (permanent) database containing the code for each class or method specialization. (work in progress)
+To reduce the compilation time, Stela runs as a server with a (permanent) database containing the code for each class or method specialization. 
 
-It dramatically reduces the compilation time, permitting to rely heavily on the compile-time passes to help the user.
+It dramatically reduces the compilation time, giving the opportunity to rely heavily on the compile-time passes to help the user.
 
-For example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the C++ one (with templates, each modification implies recompiling everything), it would be impossible to generalize that.
+To take an example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the C++ one, it would be impossible to generalize that (with C++ templates, each modification implies recompiling everything).
 
-More generally, it allows to use template everywhere. Actually, every function or method is template. Classes can of course easilly be templated. Of course, meta-programming is still in the game.
+More generally, it allows for using *template everywhere*. Actually, every function or method is template. Classes can of course easilly be templated. Of course, meta-programming is still in the game.
 
 Some details on the meta-programming model
 ==========================================
 
 Meta-programs are programs that are executed during the compilation. It basically helps to develop flexible stuff at no cost. Advanced uses include active libraries (as defined by Veldhuizen in [Active Libraries: Rethinking the roles of compilers and libraries|http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.40.8031])
 
-Within Stela, meta-program can work as with C++, with template (const) parameters and specialization, but meta-program can actually be any code that does not depend on something known only at run time (e.g. random values, user input...).
+Within Stela, meta-program can work as with C++, with template (const) parameters and specialization, but *meta-program can actually be any code that does not depend on something known only at run time* (e.g. random values, user input...).
 
 If you want Stela to execute code during the compilation, you can pass either
 * declare variables with `::=`
