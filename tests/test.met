@@ -2,17 +2,6 @@
 # if
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
-<<<<<<< HEAD
-
-# proposition pour les classes:
-# on stocke un pointeur sur les donnees de la classe
-class Toto
-    r := 10
-    
-
-# a := 10l
-# ___syscall 60l, a
-=======
 # 
 # Proposition pour les classes: on stocke une rÃ©fÃ©rence sur le code
 # -> les variables contiennent des pointeurs vers les donnÃ©es
@@ -119,7 +108,4 @@ ___syscall a
 # faut-il faire un autre graphe pour la génération de code ?
 # -> permet de skipper le const, de doubler les expressions (indispensable), ...
 # -> complique les simplifications
-
-
->>>>>>> db90a08808449b61449c2baed3300b731f2d0d05
 

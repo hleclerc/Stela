@@ -1,22 +1,25 @@
 What is Stela ?
 ===============
 
-Stela is a general purpose programming language dedicated to performance.
+Stela is a general purpose programming language, designed for performance, or to be more accurate, designed to simplify the design of flexible and performant programs.
 
-Of course, assembly language is the ultimate choice to obtain absolute performance... but not for pratical cases. And of course, C++ is very close to a no compromise approach, with contents that permits to generate very efficient machine code (thanks to the incredible work on compilers), and with constructs like e.g. templates, permitting to obtain genericity, flexibility, ... at no cost at all (in terms of execution speed).
+Of course, C++ is currently a great match for these goals, thanks to the incredible work on compilers and constructs like e.g. templates, permitting to obtain genericity, flexibility at no cost at all (at least in terms of execution speed).
 
-Nevertheless, staying with the later example, the syntax for template meta-programming en C++ is a bit awkward. At least, one can say that if meta-programming is possible with templates, templates are not designed for meta-programming.
 
-Therefore, Stela is (currently an experimental) language with
-* the same base behavior than C++ (memory model, ...)
-* a compiler that is requested to do more (in order to let the user write less)
-* a server that permits to reduce the compilation time (which would become huge due to the previous point)
-* tools to (dramatically) ease metaprogramming
+Nevertheless, staying with the later example, the syntax for C++ template meta-programming is not really convenient. At least, one can say that if meta-programming is possible with templates, templates do not really seem to be designed for meta-programming.
+
+Stela is an experimental language with the following goals
+* steal all the things that make C++(11) such a great language (memory model, templates, ...)
 * a coffeescript/python like syntax
-* modern constructs (mixins, lambda, ...)
+* a compilation working at a function level, with a server, to dramatically reduce compilation time, in order _let the user specify only the things the compiler cannot guess_
+    - return types, type of declared variables,
+    - constexpr functions or not, pure or not, ...
+    - ...
+* tools to ease metaprogramming
+* modern constructs (mixins, ...)
 * and specific optimization tools
 
-Currently, Stela is a work in progress. Do not expect any code to work properly...
+Currently, Stela is a work in progress.
 
 An example
 ==========
@@ -38,24 +41,25 @@ A compilation server
 ====================
 (work in progress)
 
-To reduce the compilation time, Stela runs as a server with a (permanent) database containing the code for each class or method specialization. 
+To reduce the compilation time, Stela runs as a server with a permanent database containing the code for each class or method specialization. 
 
 It dramatically reduces the compilation time, giving the opportunity to rely heavily on the compile-time passes to help the user.
 
-To take an example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the C++ one, it would be impossible to generalize that (with C++ templates, each modification implies recompiling everything).
+To take an example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation time (with C++ templates, each modification implies that everything has to be recompiled).
 
-More generally, it allows for using *template everywhere*. Actually, every function or method is template. Classes can of course easilly be templated. Of course, meta-programming is still in the game.
+More generally, it allows to use *template everywhere*. Actually, every function or method is template. Classes can of course easilly be templated.
+
 
 Some details on the meta-programming model
 ==========================================
 
-Meta-programs are programs that are executed during the compilation. It basically helps to develop flexible stuff at no cost. Advanced uses include active libraries (as defined by Veldhuizen in [Active Libraries: Rethinking the roles of compilers and libraries|http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.40.8031])
+Meta-programs are programs that are executed during the compilation. It basically helps to develop flexible stuff at no cost. Advanced uses include active libraries (as defined by Veldhuizen in [Active Libraries: Rethinking the roles of compilers and libraries](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.40.8031))
 
-Within Stela, meta-program can work as with C++, with template (const) parameters and specialization, but *meta-program can actually be any code that does not depend on something known only at run time* (e.g. random values, user input...).
+Within Stela, meta-program can work as with C++, with template (const) parameters and specialization, but *meta-program can actually be any code provided that does not depend on something known only at run time* (e.g. random values, user input...).
 
-If you want Stela to execute code during the compilation, you can pass either
-* declare variables with `::=`
-* send results to template parameters
+If you want Stela to execute code during the compilation, you can either
+* declare variables with `::=` (`a ::= b` means that `a` will be equal to `b`, and the type *and* the value will be known at compile time)
+* send results to template class parameters (e.g. MyClass[ expr ])
 * or use the `as_a_known_value` function (which basically returns a reference on a `::=` variable)
 
 Example:
@@ -63,9 +67,9 @@ Example:
 l := Vec[ FP64 ]()
 for c in combinatorial_selection( 2, 5 )
     l << sin sum c
-# l will be computed during compilation in the three following cases
+# l will be computed during compilation in the three following cases:
 t ::= l
-A[ l ]( ...)
+A[ l ]( ... )
 print as_a_known_value l
 ```
 
@@ -76,13 +80,13 @@ Tools to simplify the everyday life
 Pertinence and When
 -------------------
 
-The rules to decide if a surdefinition is better than an other can be simply overriden by using the keywords `when` and `pertinence`
+The generic rules to decide if a surdefinition is better than an other can be simply overriden by using the keywords `when` and `pertinence`
 
 Example
 ```python
-def pow( a, b ) # default pertinence = 0
+def pow( a, b ) # -> default pertinence = 0
     return exp b * log( a )
-def pow( a, b ) when a.is_diagonalizable # default pertinence = 1 (1 condition)
+def pow( a, b ) when a.is_diagonalizable # default pertinence = 1 (because there is 1 condition)
     ev := eig a
     return ev.P' * pow( ev.D, b ) * ev.P
 def pow( a, b ) when always( b == floor( b ) ) and b < 10 pertinence 2 # explicit pertinence
