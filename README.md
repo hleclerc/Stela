@@ -45,15 +45,15 @@ To reduce the compilation time, Stela runs as a server with a permanent database
 
 It dramatically reduces the compilation time, giving the opportunity to rely heavily on the compile-time passes to help the user.
 
-To take an example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation time (with C++ templates, each modification implies that everything has to be recompiled).
+To take an example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation passes (with C++ templates, each modification implies that everything has to be recompiled).
 
-More generally, it allows to use *template everywhere*. Actually, every function or method is template. Classes can of course easilly be templated.
+More generally, *it allows to use template everywhere*. Actually, every function or method is template. Classes can of course easilly be templated.
 
 
 Some details on the meta-programming model
 ==========================================
 
-Meta-programs are programs that are executed during the compilation. It basically helps to develop flexible stuff at no cost. Advanced uses include active libraries (as defined by Veldhuizen in [Active Libraries: Rethinking the roles of compilers and libraries](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.40.8031))
+Meta-programs are programs that are executed during the compilation. It basically helps to develop flexible stuff at no cost. Advanced uses include for example active libraries (as defined by Veldhuizen in [Active Libraries: Rethinking the roles of compilers and libraries](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.40.8031)) which provide impressive tools to bind speed, flexibility and expressiveness.
 
 Within Stela, meta-program can work as with C++, with template (const) parameters and specialization, but *meta-program can actually be any code provided that does not depend on something known only at run time* (e.g. random values, user input...).
 
@@ -94,7 +94,7 @@ def pow( a, b ) when always( b == floor( b ) ) and b < 10 pertinence 2 # explici
     return ev.P' * pow( ev.Vn b ) * ev.P
 ```
 
-It is also possible to add constraint on class/traits names, as in
+It is also possible to add constraints on class/traits names, as in
 ```python
 def pow( a : Mat, b )
     ...
