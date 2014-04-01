@@ -94,7 +94,8 @@ CppInst *CppCompiler::make_cpp_graph( const Inst *inst, bool force_clone ) {
         res->add_child( CppExpr( make_cpp_graph( ch.inst.ptr(), ch.inst->inst_id() == Inst::Id_Cst ), ch.nout ) );
     }
     for( int i = 0; i < inst->ext_size(); ++i )
-        res->add_child( make_cpp_graph( inst->ext_inst( i ) ) );
+        res->add_ext( make_cpp_graph( inst->ext_inst( i ) ) );
+    res->ext_ds = inst->ext_size_disp();
 
     return res;
 }

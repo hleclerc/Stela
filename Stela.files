@@ -159,3 +159,5 @@ src/Stela/Inst/DeclInst.h
 src/Stela/Inst/While.h
 src/Stela/Inst/While.cpp
 tests/test_Lexer.cpp
+src/Stela/Inst/Unknown.h
+src/Stela/Inst/Unknown.cpp

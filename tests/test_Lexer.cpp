@@ -1,94 +1,71 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <string>
 #include <map>
 #include <set>
 #ifdef METIL_COMP_DIRECTIVE
 #pragma cpp_flag -std=c++11
 #endif
 using namespace std;
-typedef vector<int> V;
-const int GMAX = 30000;
+#define PRINT( A ) \
+    std::cout << "  " << #A << " -> " << (A) << std::endl
 
-ostream &operator<<( ostream &os, const V &v ) {
-    for( unsigned i = 0; i < v.size(); ++i )
+template<class T>
+std::ostream &operator<<( std::ostream &os, const vector<T> &v ) {
+    for( int i = 0; i < v.size(); ++i )
         os << v[ i ] << " ";
     return os;
 }
 
-int fact( int k ) {
-    return k > 1 ? fact( k - 1 ) * k : 1;
-}
 
-int c( int n, int k ) {
-    return fact( k ) / ( fact( n ) * fact( k - n ) );
-}
+void getScan( string s, char c, vector<int> &S0, vector<int> &S1 ) {
+    int n = s.size();
+    S0.resize( 2 * n + 1 );
+    S1.resize( 2 * n + 1 );
+    for( int i = 0, t = 0, a = 0; ; ++i ) {
+        S0[ i ] = t;
+        S1[ i ] = a;
+        if ( i == 2 * n - 1 )
+            break;
 
-void make_poss( int poss[][ GMAX ], V vals ) {
-    for( int x = 0; x < GMAX; ++x )
-        poss[ 0 ][ x ] = x == 0;
-    for( unsigned i = 0; i < vals.size(); ++i ) {
-        for( int x = 0; x < GMAX; ++x )
-            poss[ i + 1 ][ x ] = 0;
-        for( unsigned j = 0; j <= i; ++j )
-            for( int x = vals[ i ]; x < GMAX; ++x )
-                poss[ i + 1 ][ x ] += poss[ j ][ x - vals[ i ] ];
+        if ( s[ i % n ] == c )
+            ++t;
+        else
+            a += t;
     }
 }
 
-struct Toto {
-    void f() {
-        V vals = { 7,7,8,9,10,11,1,2,2,3,4,5,6 };
-
-        std::sort( vals.begin(), vals.end() );
-        std::cout << vals << std::endl;
-        make_poss( poss_a, vals );
-
-        for( unsigned i = 0; i <= vals.size(); ++i ) {
-            std::cout << ( i ? vals[ i - 1 ] : 0 ) << " -> ";
-            for( int x = 0; x < 10; ++x )
-                std::cout << poss_a[ i ][ x ] << " ";
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-
-        reverse( vals.begin(), vals.end() );
-        std::cout << vals << std::endl;
-        make_poss( poss_b, vals );
-
-        for( unsigned i = 0; i <= vals.size(); ++i ) {
-            std::cout << ( i ? vals[ i - 1 ] : 0 ) << " -> ";
-            for( int x = 0; x < 10; ++x )
-                std::cout << poss_b[ i ][ x ] << " ";
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-
-        long int res = 0;
-        reverse( vals.begin(), vals.end() );
-        for( unsigned a = 0; a < vals.size(); ++a ) {
-            for( unsigned b = 0; b < vals.size() - a - 1; ++b ) {
-                int n = 0;
-                for( int i = 0; i <= a; ++i )
-                    n += vals[ i ] == vals[ a ];
-                int k = n;
-                for( int i = 0; i <= b; ++i )
-                    k += vals[ vals.size() - 1 - i ] == vals[ a ];
-                for( int s = 1; s < GMAX; ++s )
-                    res += poss_a[ a + 1 ][ s ] * poss_b[ b + 1 ][ s ] * c( n, k );
-            }
-        }
-
-        std::cout << vals << "\n";
-        std::cout << res << "\n";
-    }
-    int poss_a[ 30 ][ GMAX ];
-    int poss_b[ 30 ][ GMAX ];
+int costToLeft( const vector<int> &S0, const vector<int> &S1, int beg, int end ) {
+    return S1[ end ] - S1[ beg ] - ( end - beg - S0[ end ] + S0[ beg ] ) * S0[ beg ];
 };
 
+int cost( string s ) {
+    int n = s.size();
+    vector<int> S0, S1, U0, U1;
+    getScan( s, 'R', S0, S1 );
+    getScan( s, 'L', U0, U1 );
+    PRINT( S0 );
+    PRINT( S1 );
+
+    // exploring all the possibilities for the middle point
+    int best = 1e8;
+    string sc = s + s;
+    for( int m = 0; m < n; ++m ) {
+        int beg = m, end = m + n;
+        for( int mid : { m + n / 2, m + n / 2 + 1 } ) {
+            int cost = costToLeft( S0, S1, beg, mid ) + costToLeft( U0, U1, mid, end );
+            cout << string( sc.begin() + beg, sc.begin() + mid ) << " "
+                 << string( sc.begin() + mid, sc.begin() + end ) << " " << cost << endl;
+            best = min( best, cost );
+        }
+    }
+
+    return best;
+}
+
 int main() {
-    Toto *t = new Toto;
-    t->f();
+    PRINT( cost( "LRLRLRLR" ) );
 }
 
 

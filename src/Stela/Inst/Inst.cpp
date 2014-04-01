@@ -29,6 +29,16 @@ void Inst::write_to_stream( Stream &os ) const {
     os << ")";
 }
 
+void Inst::mark_children() const {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+    for( int i = 0; i < inp_size(); ++i )
+        inp_expr( i ).inst->mark_children();
+    for( int i = 0; i < ext_size(); ++i )
+        ext_inst( i )->mark_children();
+}
+
 const PI8 *Inst::cst_data( int nout, int beg, int end ) const {
     return 0;
 }
@@ -39,6 +49,10 @@ const PI8 *Inst::vat_data( int nout, int beg, int end ) const {
 
 const BaseType *Inst::out_bt( int n ) const {
     return 0;
+}
+
+int Inst::ext_size_disp() const {
+    return ext_size();
 }
 
 bool Inst::equal( const Inst *b ) const {

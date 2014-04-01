@@ -14,3 +14,8 @@ DECL_INST( Phi )
 DECL_INST( If )
 DECL_INST( IfOut )
 DECL_INST( IfInp )
+
+DECL_INST( Unknown )
+DECL_INST( WhileInp )
+DECL_INST( WhileOut )
+DECL_INST( WhileInst )

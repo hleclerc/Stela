@@ -1,5 +1,7 @@
 #include "Var.h"
 
+PI64 PRef::cur_date = 0;
+
 struct VRF {
     Var var;
     int off; ///< offset in bits

@@ -19,6 +19,9 @@ struct InstVisitor {
     virtual void concat    ( const Inst &inst ) { def( inst ); }
     virtual void syscall   ( const Inst &inst ) { def( inst ); }
     virtual void pointer_on( const Inst &inst ) { def( inst ); }
+    virtual void while_inp ( const Inst &inst ) { def( inst ); }
+    virtual void while_out ( const Inst &inst ) { def( inst ); }
+    virtual void while_inst( const Inst &inst ) { def( inst ); }
     virtual void rand      ( const Inst &inst, int size ) { def( inst ); }
     virtual void val_at    ( const Inst &inst, int beg, int end ) { def( inst ); }
     virtual void slice     ( const Inst &inst, int beg, int end ) { def( inst ); }

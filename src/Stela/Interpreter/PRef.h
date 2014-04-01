@@ -14,8 +14,8 @@ struct PRef : ObjectWithCptUse {
         CONST = 1 ///< this variable cannot be changed (and it's definitive)
     };
 
-    PRef( Ref *ref ) : ptr( ref ), refs( 0 ), flags( 0 ) {}
-    PRef() : refs( 0 ), flags( 0 ) {}
+    PRef( Ref *ref ) : ptr( ref ), refs( 0 ), date( cur_date ), flags( 0 ) {}
+    PRef() : refs( 0 ), date( cur_date ), flags( 0 ) {}
     ~PRef();
 
     void write_to_stream( Stream &os ) const { os << ptr; }
@@ -27,9 +27,13 @@ struct PRef : ObjectWithCptUse {
 
     bool is_const() const { return flags & CONST; }
 
+
     Ptr<Ref>     ptr;
     Vec<VRF>    *refs; ///< holded references
+    PI64         date; ///< creation date
     int          flags;
+
+    static PI64  cur_date;
 };
 
 #endif // PREF_H

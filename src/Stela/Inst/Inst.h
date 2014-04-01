@@ -16,7 +16,7 @@ class Inst : public ObjectWithCptUse {
 public:
     // types
     typedef Expr      Inp;
-    typedef Ptr<Inst> Ext;
+    typedef ConstPtr<Inst> Ext;
 
     struct Out {
         struct Parent {
@@ -41,6 +41,7 @@ public:
     virtual int size_in_bytes( int nout ) const;
     virtual void write_dot( Stream &os ) const = 0;
     virtual void write_to_stream( Stream &os ) const;
+    void mark_children() const;
 
     virtual const PI8 *cst_data( int nout, int beg, int end ) const;
     virtual const PI8 *vat_data( int nout, int beg, int end ) const;
@@ -63,14 +64,14 @@ public:
 
     // ext
     virtual int ext_size() const = 0;
-    virtual void ext_repl( int num, Inst *inst ) = 0;
+    virtual void ext_repl( int num, const Inst *inst ) = 0;
     virtual const Inst *ext_inst( int num_ext ) const = 0;
-    virtual Inst *ext_inst( int num_ext ) = 0;
+    virtual int ext_size_disp() const;
 
     //
     virtual void apply( InstVisitor &visitor ) const = 0;
     virtual bool equal( const Inst *b ) const;
-    virtual int  inst_id() const = 0; ///< unique id for each inst. bad...
+    virtual int  inst_id() const = 0; ///< unique id for each inst. very bad...
     virtual int  sizeof_additionnal_data() const; ///< to make clones. very bad
     virtual void copy_additionnal_data_to( PI8 *dst ) const; ///< to make clones. very bad
 
@@ -88,7 +89,7 @@ public:
     virtual Expr _smp_pointer_on( int nout );
 
     // attributes
-    Inst         *ext_parent;
+    mutable const Inst *ext_parent;
     static  PI64  cur_op_id; ///<
     mutable PI64  op_id_vis; ///<
     mutable PI64  op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).

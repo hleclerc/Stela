@@ -3,6 +3,8 @@
 
 #include "Inst.h"
 
-const Inst *while_inst(  );
+Inst *while_inst( const Vec<Expr> &inp_exprs, const Inst *winp, const Inst *wout );
+Inst *while_inp( const Vec<int> &sizes_in_bits );
+Inst *while_out( const Vec<Expr> &out_exprs );
 
 #endif // WHILE_H

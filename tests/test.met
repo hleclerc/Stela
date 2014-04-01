@@ -66,12 +66,15 @@ class Bool
     def init val : [ Bool, SI32, SI64, PI64 ]
         ___reassign_rec val
     
-    
+def self_add a, b
+    a = a + b
+
+
 void := Void()
         
 # default init, that does nothing
 def init self
-    
+    # nothing :)
 
 class Toto
     a := 10
@@ -102,10 +105,6 @@ def not_boolean( a )
 # -> 
 a := 4l
 while 10 # ___rand()
-    a = 30
+    a += 30
 ___syscall a
     
-# faut-il faire un autre graphe pour la génération de code ?
-# -> permet de skipper le const, de doubler les expressions (indispensable), ...
-# -> complique les simplifications
-

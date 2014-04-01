@@ -68,22 +68,22 @@ public:
         return out[ n ];
     }
 
+    void out_set_size( int n ) {
+        out.resize( n );
+    }
+
     // ext
     virtual int ext_size() const {
         return ext.size();
     }
 
-    virtual void ext_repl( int num, Inst *inst ) {
+    virtual void ext_repl( int num, const Inst *inst ) {
         ASSERT( inst->ext_parent == 0, "..." );
         inst->ext_parent = this;
         ext[ num ] = inst;
     }
 
     virtual const Inst *ext_inst( int num_ext ) const {
-        return ext[ num_ext ].ptr();
-    }
-
-    virtual Inst *ext_inst( int num_ext ) {
         return ext[ num_ext ].ptr();
     }
 
