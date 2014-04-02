@@ -392,7 +392,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
     // a place to store modified values
     std::map<Ptr<PRef>,Expr> nsv;
-    ++PRef::cur_date;
+    ++PRef::cur_date; // we don't want cont_var to be considered as an ext var
 
     // stop condition
     Var cont_var( &ip->type_Bool, cst( true ) );
@@ -401,12 +401,12 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     std::map<Ptr<PRef>,Expr> unknowns;
     for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.size(), ++cpt ) {
         if ( cpt == 100 )
-            return disp_error( "infinite loop while", sf, off );
+            return disp_error( "infinite loop during while parse", sf, off );
 
         Scope wh_scope( this );
         wh_scope.cont = cont_var;
         wh_scope.sv_map = &nsv;
-        wh_scope.sv_date = PRef::cur_date;
+        wh_scope.sv_date = ++PRef::cur_date;
         wh_scope.parse( sf, tok );
 
         // if no new modified variables
@@ -438,23 +438,27 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
             corr << -1;
     }
 
-    // make a while inp and relaunch
+    // make a while inp
     Inst *winp = while_inp( inp_sizes );
 
+    // relaunch the while inst
     cpt = 0;
     for( auto &it : nsv ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
-        if ( unknowns[ it.first ].inst->op_id == Inst::cur_op_id )
-            pref->ptr->set( Expr( winp, cpt++ ) );
+        int num_inp = corr[ cpt++ ];
+        if ( num_inp >= 0 )
+            pref->ptr->set( Expr( winp, num_inp ) );
         else
             pref->ptr->set( it.second );
     }
 
     Scope wh_scope( this );
     wh_scope.cont = cont_var;
+    //wh_scope.sv_map = &nsv;
+    //wh_scope.sv_date = ++PRef::cur_date;
     wh_scope.parse( sf, tok );
 
-    //
+    // make the while instruction
     Vec<Expr> out_exprs;
     for( auto it : nsv )
         out_exprs << it.first->ptr->expr();
@@ -468,6 +472,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
             inp_exprs << it.second;
     Inst *wins = while_inst( inp_exprs, winp, wout, corr );
 
+    // replace changed variable by while_inst outputs
     cpt = 0;
     for( auto it : nsv ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
@@ -803,13 +808,9 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
                 src_expr = phi( s->cond, src_expr, dst_expr );
 
         // variable to be saved ?
-        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
-            if ( s->sv_map ) {
-                if ( dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
-                    s->sv_map->operator[]( dst.data ) = dst.expr();
-                break;
-            }
-        }
+        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
+            if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
+                s->sv_map->operator[]( dst.data ) = dst.expr();
 
         //
         dst.data->ptr->set( src_expr );

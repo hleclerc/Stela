@@ -57,10 +57,10 @@ void CppCompiler::compile() {
     for( int i = 0; i < res.size(); ++i )
         res[ i ]->get_insts_rec( while_insts, Inst::Id_WhileInst );
 
-    for( int i = 0; i < while_insts.size(); ++i )
+    for( int i = while_insts.size() - 1; i >= 0; --i )
         while_precomputations( while_insts[ i ] );
 
-    // dusplay
+    // dysplay
     if ( disp_inst_graph_wo_phi )
         CppInst::display_graph( res );
 

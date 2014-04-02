@@ -339,7 +339,7 @@ void CppInst::write_graph_rec( Stream &os, void *omd ) const {
         }
         os << ls[ i ];
     }
-    os << '(' << ( op_mp != 0 ) << ')';
+    // os << '(' << ( op_mp != 0 ) << ')';
     for( int i = 0; i < out.size(); ++i ) {
         os << "|<f" << i << ">";
         if ( out[ i ].bt_hint )

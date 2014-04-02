@@ -101,7 +101,8 @@ def not_boolean( a )
 # -> 
 a := 4l
 b := ___rand()
-while 10 # ___rand()
-    a += b
+while 20
+    while 10 # ___rand()
+        a += b
 ___syscall a, b
     
