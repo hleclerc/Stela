@@ -67,6 +67,9 @@ public:
     void write_to_stream( Stream &os ) const;
     void write_code( CppCompiler *cc, int prec = -1 );
 
+    void mark_children_wo_ext();
+    void get_insts_rec( Vec<CppInst *> &res, int id ); ///< get sub inst with a given id
+
     static int display_graph( const Vec<CppInst *> &res, const char *filename = ".res" );
     void write_graph_rec( Stream &os, void *omd = 0 ) const;
     int ext_disp_size() const;

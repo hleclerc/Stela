@@ -48,10 +48,23 @@ void CppCompiler::compile() {
     for( int i = 0; i < outputs.size(); ++i )
         tmp << make_cpp_graph( outputs[ i ].ptr() );
 
+    // phi -> if
     Vec<CppInst *> res = phi_to_if( tmp, this );
+
+    // while precomputations
+    ++CppInst::cur_op_id;
+    Vec<CppInst *> while_insts;
+    for( int i = 0; i < res.size(); ++i )
+        res[ i ]->get_insts_rec( while_insts, Inst::Id_WhileInst );
+
+    for( int i = 0; i < while_insts.size(); ++i )
+        while_precomputations( while_insts[ i ] );
+
+    // dusplay
     if ( disp_inst_graph_wo_phi )
         CppInst::display_graph( res );
 
+    //
     output_code_for( res );
 }
 
@@ -98,6 +111,66 @@ CppInst *CppCompiler::make_cpp_graph( const Inst *inst, bool force_clone ) {
     res->ext_ds = inst->ext_size_disp();
 
     return res;
+}
+
+void CppCompiler::while_precomputations( CppInst *while_inst ) {
+    CppInst *wout = while_inst->ext[ 0 ];
+    CppInst *winp = while_inst->ext[ 1 ];
+
+    ++CppInst::cur_op_id;
+    while_precomputations_mark_rec( wout, winp, while_inst );
+    ++CppInst::cur_op_id;
+    while_precomputations_fact_rec( wout, winp, while_inst );
+}
+
+void CppCompiler::while_precomputations_mark_rec( CppInst *inst, CppInst *winp, CppInst *while_inst ) {
+    if ( inst->op_id == CppInst::cur_op_id )
+        return;
+    inst->op_id = CppInst::cur_op_id;
+
+    if ( inst == winp ) {
+        inst->op_mp = inst;
+        return;
+    }
+
+    int nch = inst->inp.size();
+    bool depends_on_winp = false;
+    for( int i = 0; i < nch; ++i ) {
+        CppInst *ch = inst->inp[ i ].inst;
+        while_precomputations_mark_rec( ch, winp, while_inst );
+        depends_on_winp = depends_on_winp or ch->op_mp;
+    }
+
+    inst->op_mp = depends_on_winp ? inst : 0;
+}
+
+void CppCompiler::while_precomputations_fact_rec( CppInst *inst, CppInst *winp, CppInst *while_inst ) {
+    if ( inst->op_id == CppInst::cur_op_id )
+        return;
+    inst->op_id = CppInst::cur_op_id;
+
+    for( int i = 0, nch = inst->inp.size(); i < nch; ++i ) {
+        CppInst *ch = inst->inp[ i ].inst;
+        if ( ch->op_mp or ch->inst_id == Inst::Id_Cst ) {
+            while_precomputations_fact_rec( ch, winp, while_inst );
+        } else {
+            for( int n = 0; ; ++n ) {
+                // need to create a new entry in if_inst (leading to a new output in ifinp) ?
+                if ( n == while_inst->inp.size() ) {
+                    while_inst->add_child( inst->inp[ i ] );
+                    winp->check_out_size( n + 1 );
+                    inst->set_child( i, CppExpr( winp, n ) );
+                    break;
+                }
+                // already in input of if_inst ?
+                if ( while_inst->inp[ n ] == inst->inp[ i ] ) {
+                    winp->check_out_size( n + 1 );
+                    inst->set_child( i, CppExpr( winp, n ) );
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void CppCompiler::get_front_rec( Vec<CppInst *> &front, CppInst *inst ) {

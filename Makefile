@@ -29,7 +29,10 @@ gra: ext/PrepArg
 	${MC} src/stela.cpp --disp-inst-g-wo-phi ${SRC}
 
 gravg: ext/PrepArg
-	${MC} --valgrind src/stela.cpp --disp-inst-g ${SRC}
+	${MC} --valgrind src/stela.cpp --disp-inst-g-wo-phi ${SRC}
+
+grag: ext/PrepArg
+	${MC} --gdb src/stela.cpp --disp-inst-g-wo-phi ${SRC}
 
 
 test_%:

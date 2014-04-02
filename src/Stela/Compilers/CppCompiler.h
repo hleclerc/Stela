@@ -28,6 +28,9 @@ protected:
     void output_code_for( Vec<CppInst *> &res );
 
     CppInst *make_cpp_graph( const Inst *inst, bool force_clone = false );
+    void while_precomputations( CppInst *while_inst );
+    void while_precomputations_mark_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
+    void while_precomputations_fact_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
     void get_front_rec( Vec<CppInst *> &front, CppInst *inst );
     void write_inst( CppInst *inst );
 

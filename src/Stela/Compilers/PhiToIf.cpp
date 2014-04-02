@@ -21,8 +21,7 @@ struct PhiToIf {
     }
 
     void exec() {
-        while ( iter() )
-            ;
+        while ( iter() );
     }
 
     bool iter() {

@@ -3,10 +3,6 @@
 # fonctions -> avec scope statique, surdefs, ...
 # boucles
 # 
-# Proposition pour les classes: on stocke une référence sur le code
-# -> les variables contiennent des pointeurs vers les données
-# -> on retrouve les infos �  l'aide de tables de correspondance
-# -> ClassInfo contient la liste de variable de types avec les paramètres (redondant, mais permettant de manipuler les types pas définis)
     
 # MUST be defined first
 class Class
@@ -104,7 +100,8 @@ def not_boolean( a )
     
 # -> 
 a := 4l
+b := ___rand()
 while 10 # ___rand()
-    a += 30
-___syscall a
+    a += b
+___syscall a, b
     

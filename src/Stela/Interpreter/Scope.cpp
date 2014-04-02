@@ -360,7 +360,6 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     // known value
     bool cond_val;
     if ( expr.get_val( cond_val ) ) {
-        PRINT( cond_val );
         if ( cond_val ) {
             Scope if_scope( this );
             return if_scope.parse( sf, ok );
@@ -418,7 +417,6 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         // (to avoid simplifications during the next round)
         for( auto &it : nsv ) {
             PRef *pref = const_cast<PRef *>( it.first.ptr() );
-            // if ( pref->expr().inst->inst_id() != Inst::Id_Unknown ) {
             Expr unk = unknown_inst( pref->expr().size_in_bits() );
             unknowns[ it.first ] = unk;
             pref->ptr->set( unk );
@@ -429,22 +427,27 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     ++Inst::cur_op_id;
     for( auto it : nsv )
         it.first->ptr->expr().inst->mark_children();
-    PRINT( Inst::cur_op_id );
-    for( auto it : nsv )
-        PRINT( unknowns[ it.first ].inst->op_id );
-
-    // Vec<int> ;
+    int cpt = 0;
+    Vec<int> corr;
+    Vec<int> inp_sizes;
+    for( auto it : nsv ) {
+        if ( unknowns[ it.first ].inst->op_id == Inst::cur_op_id ) {
+            corr << cpt++;
+            inp_sizes << it.second.size_in_bits();
+        } else
+            corr << -1;
+    }
 
     // make a while inp and relaunch
-    Vec<int> inp_sizes;
-    for( auto it : nsv )
-        inp_sizes << it.second.size_in_bits();
     Inst *winp = while_inp( inp_sizes );
 
-    int cpt = 0;
+    cpt = 0;
     for( auto &it : nsv ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
-        pref->ptr->set( Expr( winp, cpt++ ) );
+        if ( unknowns[ it.first ].inst->op_id == Inst::cur_op_id )
+            pref->ptr->set( Expr( winp, cpt++ ) );
+        else
+            pref->ptr->set( it.second );
     }
 
     Scope wh_scope( this );
@@ -458,10 +461,12 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     out_exprs << cont_var.expr();
     Inst *wout = while_out( out_exprs );
 
+    cpt = 0;
     Vec<Expr> inp_exprs;
     for( auto it : nsv )
-        inp_exprs << it.second;
-    Inst *wins = while_inst( inp_exprs, winp, wout );
+        if ( corr[ cpt++ ] >= 0 )
+            inp_exprs << it.second;
+    Inst *wins = while_inst( inp_exprs, winp, wout, corr );
 
     cpt = 0;
     for( auto it : nsv ) {

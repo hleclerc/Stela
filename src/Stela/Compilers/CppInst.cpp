@@ -281,6 +281,29 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     }
 }
 
+void CppInst::mark_children_wo_ext() {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+
+    for( int i = 0, nch = inp.size(); i < nch; ++i )
+        inp[ i ].inst->mark_children_wo_ext();
+}
+
+void CppInst::get_insts_rec( Vec<CppInst *> &res, int id ) {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+
+    if ( inst_id == id )
+        res << this;
+
+    for( int i = 0, nch = inp.size(); i < nch; ++i )
+        inp[ i ].inst->get_insts_rec( res, id );
+    for( int i = 0; i < ext_ds; ++i )
+        ext[ i ]->get_insts_rec( res, id );
+}
+
 int CppInst::display_graph( const Vec<CppInst *> &res, const char *filename ) {
     ++cur_op_id;
 
@@ -316,6 +339,7 @@ void CppInst::write_graph_rec( Stream &os, void *omd ) const {
         }
         os << ls[ i ];
     }
+    os << '(' << ( op_mp != 0 ) << ')';
     for( int i = 0; i < out.size(); ++i ) {
         os << "|<f" << i << ">";
         if ( out[ i ].bt_hint )
