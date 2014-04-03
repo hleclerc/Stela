@@ -32,6 +32,8 @@ protected:
     void while_precomputations_mark_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
     void while_precomputations_fact_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
     void get_front_rec( Vec<CppInst *> &front, CppInst *inst );
+    void get_sub_insts( Vec<CppInst *> &res, CppInst *inst );
+    void update_bt_hint( Vec<CppInst *> &res );
     void write_inst( CppInst *inst );
 
     int get_free_reg( const BaseType *bt );

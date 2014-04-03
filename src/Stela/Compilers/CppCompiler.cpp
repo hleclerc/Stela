@@ -60,12 +60,38 @@ void CppCompiler::compile() {
     for( int i = while_insts.size() - 1; i >= 0; --i )
         while_precomputations( while_insts[ i ] );
 
-    // dysplay
+    //
+    update_bt_hint( res );
+
+    // display
     if ( disp_inst_graph_wo_phi )
         CppInst::display_graph( res );
 
     //
     output_code_for( res );
+}
+
+void CppCompiler::update_bt_hint( Vec<CppInst *> &res ) {
+    Vec<CppInst *> lst;
+    ++CppInst::cur_op_id;
+    for( int i = 0; i < res.size(); ++i )
+        get_sub_insts( lst, res[ i ] );
+
+    for( int i = 0; i < lst.size(); ++i )
+        lst[ i ]->set_out_bt_hint();
+
+}
+
+void CppCompiler::get_sub_insts( Vec<CppInst *> &res, CppInst *inst ) {
+    if ( inst->op_id == CppInst::cur_op_id )
+        return;
+    inst->op_id = CppInst::cur_op_id;
+    res << inst;
+
+    for( int i = 0; i < inst->inp.size(); ++i )
+        get_sub_insts( res, inst->inp[ i ].inst );
+    for( int i = 0; i < inst->ext_ds; ++i )
+        get_sub_insts( res, inst->ext[ i ] );
 }
 
 void CppCompiler::output_code_for( Vec<CppInst *> &res ) {
@@ -79,7 +105,6 @@ void CppCompiler::output_code_for( Vec<CppInst *> &res ) {
     PI64 op_id = ++CppInst::cur_op_id;
     while ( front.size() ) {
         CppInst *inst = front.pop_back();
-        inst->update_bt_hints();
         inst->op_id = op_id;
 
         inst->write_code( this );

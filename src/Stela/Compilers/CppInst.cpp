@@ -97,64 +97,69 @@ void CppInst::add_ext( CppInst *inst ) {
     ext << inst;
 }
 
-const BaseType *CppInst::inp_bt_hint( int ninp ) const {
-    switch ( inst_id ) {
-        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
-        #include "../Ir/Decl_Operations.h"
-        #undef DECL_IR_TOK
-            return *reinterpret_cast<const BaseType **>( additionnal_data );
-    case CppInst::Id_Conv:
-        return reinterpret_cast<const BaseType **>( additionnal_data )[ 1 ];
-    case CppInst::Id_Syscall:
-        return ninp ? ip->bt_ST : bt_Void;
-    case CppInst::Id_Phi:
-        for( const CppInst::Out::Parent &p : out[ 0 ].parents )
-            if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
-                return res;
-    }
-    return 0;
-}
+//const BaseType *CppInst::inp_bt_hint( int ninp ) const {
+//    switch ( inst_id ) {
+//        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
+//        #include "../Ir/Decl_Operations.h"
+//        #undef DECL_IR_TOK
+//            return *reinterpret_cast<const BaseType **>( additionnal_data );
+//    case CppInst::Id_Conv:
+//        return reinterpret_cast<const BaseType **>( additionnal_data )[ 1 ];
+//    case CppInst::Id_WhileInst:
+//        return ext[ 1 ]->out_bt_hint( ninp );
+//    case CppInst::Id_Syscall:
+//        return ninp ? ip->bt_ST : bt_Void;
+//    case CppInst::Id_WhileOut:
+//        if ( ninp == inp.size() - 1 )
+//            return bt_Bool;
+//        break;
+//    case CppInst::Id_Phi:
+//        for( const CppInst::Out::Parent &p : out[ 0 ].parents )
+//            if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
+//                return res;
+//    }
+//    return 0;
+//}
 
-const BaseType *CppInst::out_bt_hint( int nout ) const {
-    // already done ?
-    if ( const BaseType *res = out[ nout ].bt_hint )
-        return res;
-
-    // instruction dependant
+void CppInst::set_out_bt_hint() const {
     switch ( inst_id ) {
     #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
     #include "../Ir/Decl_Operations.h"
     #undef DECL_IR_TOK
-        return *reinterpret_cast<const BaseType **>( additionnal_data );
+        out[ 0 ].bt_hint = *reinterpret_cast<const BaseType **>( additionnal_data );
+        break;
     case CppInst::Id_Syscall:
-        return nout ? ip->bt_ST : bt_Void;
+        out[ 0 ].bt_hint = bt_Void;
+        out[ 1 ].bt_hint = ip->bt_ST;
+        break;
     case CppInst::Id_Conv:
-         return reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ];
-    default:
-        return 0;
+        out[ 0 ].bt_hint = reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ];
+        break;
+    //case CppInst::Id_WhileInp:
+    //    return ext_parent->inp_bt_hint( nout );
+    //case CppInst::Id_WhileInst:
+    //    return ext[ 0 ]->inp_bt_hint( ninp );
     }
 }
 
-const BaseType *CppInst::get_bt_hint_for_nout( int nout ) const {
-    // local hint ?
-    if ( const BaseType *res = out_bt_hint( nout ) )
-         return res;
-    // else, look in parent inputs
-    for( const CppInst::Out::Parent &p : out[ nout ].parents )
-        if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
-            return res;
-    return 0;
-}
+//const BaseType *CppInst::get_bt_hint_for_nout( int nout ) const {
+//    // local hint ?
+//    if ( const BaseType *res = out_bt_hint( nout ) )
+//         return res;
+//    // else, look in parent inputs
+//    for( const CppInst::Out::Parent &p : out[ nout ].parents )
+//        if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
+//            return res;
+//    return 0;
+//}
 
-void CppInst::update_bt_hints() const {
-    for( int i = 0; i < out.size(); ++i )
-        if ( not out[ i ].bt_hint )
-            out[ i ].bt_hint = get_bt_hint_for_nout( i );
-}
+//void CppInst::update_bt_hints() const {
+//    for( int i = 0; i < out.size(); ++i )
+//        if ( not out[ i ].bt_hint )
+//            out[ i ].bt_hint = get_bt_hint_for_nout( i );
+//}
 
 void CppInst::write_to_stream( Stream &os ) const {
-    update_bt_hints();
-
     // particular cases
     if ( inst_id == CppInst::Id_Cst ) {
         if ( out[ 0 ].bt_hint )
@@ -183,18 +188,24 @@ void CppInst::write_to_stream( Stream &os ) const {
     }
 }
 
+static bool inlinable( const CppInst::Out &out ) {
+    return out.parents.size() == 1 and
+           out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst;
+}
+
+static bool declable( CppExpr expr ) {
+    return expr.inst->out[ expr.nout ].bt_hint and expr.inst->out[ expr.nout ].bt_hint != bt_Void;
+}
+
+/// binary operation
 void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op ) {
-    if ( prec >= 0 or out[ 0 ].parents.size() > 1 ) {
+    if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
         if ( prec < 0 ) cc->on.write_beg() << decl( cc, 0 );
         if ( prec > prec_op ) cc->os << "( ";
         cc->os << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout, prec_op ) << op_str << inp[ 1 ].inst->inst( cc, inp[ 1 ].nout, prec_op );
         if ( prec > prec_op ) cc->os << " )";
         if ( prec < 0 ) cc->on.write_end( ";" );
     }
-}
-
-static bool declable( CppExpr expr ) {
-    return expr.inst->out[ expr.nout ].bt_hint and expr.inst->out[ expr.nout ].bt_hint != bt_Void;
 }
 
 void CppInst::write_code( CppCompiler *cc, int prec ) {
@@ -209,11 +220,11 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_Conv:
         if ( prec >= 0 )
             cc->os << *out[ 0 ].bt_hint << "( " << disp( cc, inp[ 0 ] ) << " )";
-        else if ( out[ 0 ].parents.size() > 1 )
+        else if ( not inlinable( out[ 0 ] ) )
             cc->on << decl( cc, 0 ) << disp( cc, inp[ 0 ] ) << ";";
         break;
     case CppInst::Id_Phi:
-        if ( prec >= 0 or out[ 0 ].parents.size() > 1 ) {
+        if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
             if ( prec < 0 )
                 cc->on.write_beg() << decl( cc, 0 );
             cc->os << disp( cc, inp[ 0 ], PREC_phi ) << " ? "
@@ -267,6 +278,22 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     }
 
     case CppInst::Id_IfInp: {
+        break;
+    }
+
+    case CppInst::Id_WhileInst: {
+        PRINT( this );
+        PRINT( out.size() );
+        PRINT( ext[ 0 ]->inp[ 0 ] );
+        for( int i = 0; i < out.size(); ++i )
+            if ( declable( ext[ 0 ]->inp[ i ] ) )
+                cc->on << decl( cc, i, false );
+
+        cc->on << "while ( true ) {";
+        cc->on.nsp += 4;
+        // cc->output_code_for( va[ 0 ] );
+        cc->on.nsp -= 4;
+        cc->on << "}";
         break;
     }
 

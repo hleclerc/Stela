@@ -54,11 +54,11 @@ public:
     int  add_out();
     void check_out_size( int n );
     void add_ext( CppInst *inst );
-    void update_bt_hints() const;
+
+    void set_out_bt_hint() const;
 
     const BaseType *get_bt_hint_for_nout( int nout ) const; ///< helper for update_bt_hints()
     const BaseType *inp_bt_hint( int ninp ) const;
-    const BaseType *out_bt_hint( int nout ) const;
 
     DeclWriter decl( CppCompiler *cc, int nout, bool equ_sgn = true );
     InstWriter inst( CppCompiler *cc, int nout, int precedance = 0 );

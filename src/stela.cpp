@@ -13,6 +13,7 @@
 #define PREPARG_FILE <args.h>
 #include <PrepArg/usage.h>
 
+
 int main( int argc, char **argv ) {
     // args
     #include <PrepArg/declarations.h>

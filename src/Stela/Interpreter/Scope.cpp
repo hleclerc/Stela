@@ -406,7 +406,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         Scope wh_scope( this );
         wh_scope.cont = cont_var;
         wh_scope.sv_map = &nsv;
-        wh_scope.sv_date = ++PRef::cur_date;
+        wh_scope.sv_date = PRef::cur_date;
         wh_scope.parse( sf, tok );
 
         // if no new modified variables
@@ -454,8 +454,6 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
     Scope wh_scope( this );
     wh_scope.cont = cont_var;
-    //wh_scope.sv_map = &nsv;
-    //wh_scope.sv_date = ++PRef::cur_date;
     wh_scope.parse( sf, tok );
 
     // make the while instruction
