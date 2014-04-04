@@ -78,8 +78,7 @@ void CppCompiler::update_bt_hint( Vec<CppInst *> &res ) {
         get_sub_insts( lst, res[ i ] );
 
     for( int i = 0; i < lst.size(); ++i )
-        lst[ i ]->set_out_bt_hint();
-
+        lst[ i ]->bt_hint_propagation();
 }
 
 void CppCompiler::get_sub_insts( Vec<CppInst *> &res, CppInst *inst ) {

@@ -97,6 +97,62 @@ void CppInst::add_ext( CppInst *inst ) {
     ext << inst;
 }
 
+void CppInst::set_out_bt_hint( int nout, const BaseType *bt ) {
+    if ( out[ nout ].bt_hint )
+        return;
+    out[ nout ].bt_hint = bt;
+
+    // parent propagation
+    for( const CppInst::Out::Parent &p : out[ nout ].parents )
+        p.inst->set_inp_bt_hint( p.ninp, bt );
+
+    // downward propagation
+    switch ( inst_id ) {
+    case CppInst::Id_WhileInp: {
+        CppExpr ch = ext_parent->inp[ nout ];
+        ch.inst->set_out_bt_hint( ch.nout, bt );
+        break;
+    }
+    }
+}
+
+void CppInst::set_inp_bt_hint( int ninp, const BaseType *bt ) {
+    switch ( inst_id ) {
+    case CppInst::Id_WhileOut:
+        if ( ninp < inp.size() - 1 )
+            ext_parent->set_out_bt_hint( ninp, bt );
+        break;
+    }
+}
+
+void CppInst::bt_hint_propagation() {
+    switch ( inst_id ) {
+    // case Op_...:
+        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
+        #include "../Ir/Decl_Operations.h"
+        #undef DECL_IR_TOK
+        set_out_bt_hint( 0, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
+        for( int i = 0; i < inp.size(); ++i )
+            inp[ i ].inst->set_out_bt_hint( inp[ i ].nout, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
+        break;
+    case CppInst::Id_Syscall:
+        set_out_bt_hint( 0, bt_Void );
+        set_out_bt_hint( 1, ip->bt_ST );
+        inp[ 0 ].inst->set_out_bt_hint( inp[ 0 ].nout, bt_Void );
+        for( int i = 1; i < inp.size(); ++i )
+            inp[ i ].inst->set_out_bt_hint( inp[ i ].nout, ip->bt_ST );
+        break;
+    case CppInst::Id_Conv:
+        set_out_bt_hint( 0, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
+        break;
+    case CppInst::Id_WhileOut: {
+        CppExpr ch = inp.back();
+        ch.inst->set_out_bt_hint( ch.nout, bt_Bool );
+        break;
+    }
+    }
+}
+
 //const BaseType *CppInst::inp_bt_hint( int ninp ) const {
 //    switch ( inst_id ) {
 //        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
@@ -121,7 +177,7 @@ void CppInst::add_ext( CppInst *inst ) {
 //    return 0;
 //}
 
-void CppInst::set_out_bt_hint() const {
+/*void CppInst::set_out_bt_hint() const {
     switch ( inst_id ) {
     #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
     #include "../Ir/Decl_Operations.h"
@@ -141,6 +197,7 @@ void CppInst::set_out_bt_hint() const {
     //    return ext[ 0 ]->inp_bt_hint( ninp );
     }
 }
+*/
 
 //const BaseType *CppInst::get_bt_hint_for_nout( int nout ) const {
 //    // local hint ?
