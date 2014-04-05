@@ -56,7 +56,7 @@ public:
     void add_ext( CppInst *inst );
 
     void bt_hint_propagation();
-    void set_out_bt_hint( int nout, const BaseType *bt );
+    void set_out_bt_hint(int nout, const BaseType *bt, bool force = true );
     void set_inp_bt_hint( int ninp, const BaseType *bt );
 
     //const BaseType *get_bt_hint_for_nout( int nout ) const; ///< helper for update_bt_hints()

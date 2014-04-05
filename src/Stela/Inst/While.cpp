@@ -9,6 +9,12 @@ public:
     virtual void apply( InstVisitor &visitor ) const { visitor.while_inst( *this ); }
     virtual int inst_id() const { return Inst::Id_WhileInst; }
     virtual int ext_size_disp() const { return 1; }
+    virtual int sizeof_additionnal_data() const {
+        return corr_inp.size() * sizeof( int );
+    }
+    virtual void copy_additionnal_data_to( PI8 *dsp ) const {
+        memcpy( dsp, corr_inp.ptr(), corr_inp.size() * sizeof( int ) );
+    }
 
     Vec<int> corr_inp;
 };

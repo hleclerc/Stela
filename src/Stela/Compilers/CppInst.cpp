@@ -1,5 +1,6 @@
 #include "../Interpreter/Interpreter.h"
 #include "../Inst/BaseType.h"
+#include "../System/rcast.h"
 #include "CppCompiler.h"
 #include "CppInst.h"
 #include <fstream>
@@ -97,8 +98,8 @@ void CppInst::add_ext( CppInst *inst ) {
     ext << inst;
 }
 
-void CppInst::set_out_bt_hint( int nout, const BaseType *bt ) {
-    if ( out[ nout ].bt_hint )
+void CppInst::set_out_bt_hint( int nout, const BaseType *bt, bool force ) {
+    if ( force ? out[ nout ].bt_hint == bt : out[ nout ].bt_hint != 0 )
         return;
     out[ nout ].bt_hint = bt;
 
@@ -145,6 +146,9 @@ void CppInst::bt_hint_propagation() {
     case CppInst::Id_Conv:
         set_out_bt_hint( 0, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
         break;
+    case CppInst::Id_Rand:
+        set_out_bt_hint( 0, bt_PI64, true );
+        break;
     case CppInst::Id_WhileOut: {
         CppExpr ch = inp.back();
         ch.inst->set_out_bt_hint( ch.nout, bt_Bool );
@@ -153,68 +157,6 @@ void CppInst::bt_hint_propagation() {
     }
 }
 
-//const BaseType *CppInst::inp_bt_hint( int ninp ) const {
-//    switch ( inst_id ) {
-//        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
-//        #include "../Ir/Decl_Operations.h"
-//        #undef DECL_IR_TOK
-//            return *reinterpret_cast<const BaseType **>( additionnal_data );
-//    case CppInst::Id_Conv:
-//        return reinterpret_cast<const BaseType **>( additionnal_data )[ 1 ];
-//    case CppInst::Id_WhileInst:
-//        return ext[ 1 ]->out_bt_hint( ninp );
-//    case CppInst::Id_Syscall:
-//        return ninp ? ip->bt_ST : bt_Void;
-//    case CppInst::Id_WhileOut:
-//        if ( ninp == inp.size() - 1 )
-//            return bt_Bool;
-//        break;
-//    case CppInst::Id_Phi:
-//        for( const CppInst::Out::Parent &p : out[ 0 ].parents )
-//            if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
-//                return res;
-//    }
-//    return 0;
-//}
-
-/*void CppInst::set_out_bt_hint() const {
-    switch ( inst_id ) {
-    #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
-    #include "../Ir/Decl_Operations.h"
-    #undef DECL_IR_TOK
-        out[ 0 ].bt_hint = *reinterpret_cast<const BaseType **>( additionnal_data );
-        break;
-    case CppInst::Id_Syscall:
-        out[ 0 ].bt_hint = bt_Void;
-        out[ 1 ].bt_hint = ip->bt_ST;
-        break;
-    case CppInst::Id_Conv:
-        out[ 0 ].bt_hint = reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ];
-        break;
-    //case CppInst::Id_WhileInp:
-    //    return ext_parent->inp_bt_hint( nout );
-    //case CppInst::Id_WhileInst:
-    //    return ext[ 0 ]->inp_bt_hint( ninp );
-    }
-}
-*/
-
-//const BaseType *CppInst::get_bt_hint_for_nout( int nout ) const {
-//    // local hint ?
-//    if ( const BaseType *res = out_bt_hint( nout ) )
-//         return res;
-//    // else, look in parent inputs
-//    for( const CppInst::Out::Parent &p : out[ nout ].parents )
-//        if ( const BaseType *res = p.inst->inp_bt_hint( p.ninp ) )
-//            return res;
-//    return 0;
-//}
-
-//void CppInst::update_bt_hints() const {
-//    for( int i = 0; i < out.size(); ++i )
-//        if ( not out[ i ].bt_hint )
-//            out[ i ].bt_hint = get_bt_hint_for_nout( i );
-//}
 
 void CppInst::write_to_stream( Stream &os ) const {
     // particular cases
@@ -246,8 +188,7 @@ void CppInst::write_to_stream( Stream &os ) const {
 }
 
 static bool inlinable( const CppInst::Out &out ) {
-    return out.parents.size() == 1 and
-           out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst;
+    return out.parents.size() == 1 and out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst;
 }
 
 static bool declable( CppExpr expr ) {
@@ -270,6 +211,11 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_Cst:
         if ( prec >= 0 )
             out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
+        else if ( not inlinable( out[ 0 ] ) ) {
+            cc->on.write_beg() << decl( cc, 0 );
+            out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
+            cc->on.write_end( ";" );
+        }
         break;
     case CppInst::Id_Rand:
         cc->on << decl( cc, 0 ) << "rand();";
@@ -339,18 +285,51 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     }
 
     case CppInst::Id_WhileInst: {
-        PRINT( this );
-        PRINT( out.size() );
-        PRINT( ext[ 0 ]->inp[ 0 ] );
-        for( int i = 0; i < out.size(); ++i )
-            if ( declable( ext[ 0 ]->inp[ i ] ) )
-                cc->on << decl( cc, i, false );
+        const int *corr_inp = rcast( additionnal_data );
+        for( int i = 0; i < out.size(); ++i ) {
+            if ( declable( ext[ 0 ]->inp[ i ] ) ) {
+                if ( corr_inp[ i ] >= 0 )
+                    cc->on << decl( cc, i ) << disp( cc, inp[ corr_inp[ i ] ] ) << ";";
+                else
+                    cc->on << decl( cc, i, false ) << ";";
+            }
+        }
 
         cc->on << "while ( true ) {";
         cc->on.nsp += 4;
-        // cc->output_code_for( va[ 0 ] );
+
+        Vec<CppInst *> out;
+        for( const CppExpr &ch : ext[ 0 ]->inp )
+            out << ch.inst;
+        cc->output_code_for( out );
         cc->on.nsp -= 4;
         cc->on << "}";
+        break;
+    }
+
+    case CppInst::Id_WhileInp: {
+        const int *corr_inp = rcast( ext_parent->additionnal_data );
+        for( int i = 0; i < out.size(); ++i ) {
+            for( int j = 0; ; ++j ) {
+                if ( j == ext_parent->out.size() ) {
+                    // variable not modified during the loop
+                    CppExpr ch = ext_parent->inp[ i ];
+                    out[ i ].num = ch.inst->out[ ch.nout ].num;
+                    break;
+                }
+                if ( corr_inp[ j ] == i ) {
+                    out[ i ].num = ext_parent->out[ j ].num;
+                    break;
+                }
+            }
+        }
+        break;
+    }
+
+    case CppInst::Id_WhileOut: {
+        for( int i = 0; i < inp.size() - 1; ++i )
+            cc->on << "R" << ext_parent->out[ i ].num << " = "
+                   << disp( cc, inp[ i ], 0 ) << ";";
         break;
     }
 
