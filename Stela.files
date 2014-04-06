@@ -161,3 +161,4 @@ src/Stela/Inst/While.cpp
 tests/test_Lexer.cpp
 src/Stela/Inst/Unknown.h
 src/Stela/Inst/Unknown.cpp
+src/Stela/Ir/Decl_UnaryBoolOperations.h

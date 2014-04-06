@@ -47,9 +47,9 @@ const PI8 *Inst::vat_data( int nout, int beg, int end ) const {
     return 0;
 }
 
-const BaseType *Inst::out_bt( int n ) const {
-    return 0;
-}
+//const BaseType *Inst::out_bt( int n ) const {
+//    return 0;
+//}
 
 int Inst::ext_size_disp() const {
     return ext_size();
@@ -121,15 +121,15 @@ void Inst::write_graph_rec( Stream &os ) const {
     }
 
     // ext
-    // for( int i = 0, n = ext_disp_size(); i < n; ++i ) {
-    //        const Inst *ch = ext_disp_inst( i );
-    //        os << "    node" << this << " -> node" << ch << " [color=\"green\"];\n";
-    //        if ( ch ) {
-    //            os << "    subgraph cluster_" << ch <<" {\ncolor=yellow;\nstyle=dotted;\n";
-    //            ch->write_graph_rec( os, omd );
-    //            os << "    }\n";
-    //        }
-    //    }
+    for( int i = 0, n = ext_size_disp(); i < n; ++i ) {
+        const Inst *ch = ext_inst( i );
+        os << "    node" << this << " -> node" << ch << " [color=\"green\"];\n";
+        if ( ch ) {
+            os << "    subgraph cluster_" << ch <<" {\ncolor=yellow;\nstyle=dotted;\n";
+            ch->write_graph_rec( os );
+            os << "    }\n";
+        }
+    }
 
     // parents
     //    for( int nout = 0; nout < out_size(); ++nout ) {

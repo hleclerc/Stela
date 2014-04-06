@@ -25,8 +25,8 @@ protected:
     #include "../Ir/Decl.h"
     #undef DECL_IR_TOK
 
-    template<class Op> Var parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op );
-    template<class Op> Var parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op );
+    template<class Op,int boolean> Var parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op, N<boolean> );
+    template<class Op,int boolean> Var parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op, N<boolean> );
 
     Var parse_CALLABLE( const Expr &sf, int off, BinStreamReader bin, Var *type, bool def );
 
@@ -64,7 +64,7 @@ protected:
     Var            self;
     Var            cont; ///< continue variable
     TypeInfo      *class_scope;
-    Expr           cond;
+    Var            cond;
 
     std::map<Ptr<PRef>,Expr> *sv_map;
     PI64                      sv_date; ///< PRef creation date must be < sv_date to be saved in sv_map

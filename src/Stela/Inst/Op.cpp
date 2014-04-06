@@ -17,9 +17,9 @@ public:
     virtual bool equal( const Inst *b ) const {
         return Inst::equal( b ) and bt == static_cast<const Op *>( b )->bt;
     }
-    virtual const BaseType *out_bt( int n ) const {
-        return bt;
-    }
+    //virtual const BaseType *out_bt( int n ) const {
+    //    return bt;
+    //}
     virtual int sizeof_additionnal_data() const {
         return sizeof( const BaseType * );
     }
@@ -95,16 +95,46 @@ public:
 #include "../Ir/Decl_UnaryOperations.h"
 #undef DECL_IR_TOK
 
+// simplify by op
+template<class TOP>
+static Expr _simplify_bop( TOP op, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
+    return Expr();
+}
+static Expr _simplify_bop( Op_and, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
+    if ( bt == bt_Bool ) {
+        if ( da )
+            return *da ? b : a;
+        if ( db )
+            return *db ? a : b;
+    }
+    return Expr();
+}
+
 
 template<class TOP>
-static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, const PI8 *db ) {
+static Expr _simplify_bop( TOP op, const BaseType *bt, const PI8 *da, Expr a ) {
+    return Expr();
+}
+static Expr _simplify_bop( Op_not, const BaseType *bt, const PI8 *da, Expr a ) {
+    if ( a.inst->inst_id() == Inst::Id_Op_not )
+        return a.inst->inp_expr( 0 );
+    return Expr();
+}
+
+// generic simplify
+template<class TOP>
+static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
+    if ( Expr res = _simplify_bop( op, bt, da, db, a, b ) )
+        return res;
     if ( Expr res = _simplify_cst( op, bt, da, db ) )
         return res;
     return Expr();
 }
 
 template<class TOP>
-static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da ) {
+static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, Expr a ) {
+    if ( Expr res = _simplify_bop( op, bt, da, a ) )
+        return res;
     if ( Expr res = _simplify_cst( op, bt, da ) )
         return res;
     return Expr();
@@ -119,7 +149,7 @@ static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
     // known values ?
     const PI8 *da = a.cst_data();
     const PI8 *db = b.cst_data();
-    if ( Expr res = _simplify( top, bt, da, db ) )
+    if ( Expr res = _simplify( top, bt, da, db, a, b ) )
         return res;
 
     // else, create a new inst
@@ -136,7 +166,7 @@ static Expr _op( TOP top, const BaseType *bt, Expr a ) {
 
     // known values ?
     const PI8 *da = a.cst_data();
-    if ( Expr res = _simplify( top, bt, da ) ) {
+    if ( Expr res = _simplify( top, bt, da, a ) ) {
         return res;
     }
 

@@ -130,7 +130,17 @@ void CppInst::bt_hint_propagation() {
     switch ( inst_id ) {
     // case Op_...:
         #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
-        #include "../Ir/Decl_Operations.h"
+        #include "../Ir/Decl_BinaryBoolOperations.h"
+        #include "../Ir/Decl_UnaryBoolOperations.h"
+        #undef DECL_IR_TOK
+        set_out_bt_hint( 0, bt_Bool );
+        for( int i = 0; i < inp.size(); ++i )
+            inp[ i ].inst->set_out_bt_hint( inp[ i ].nout, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
+        break;
+    // case Op_...:
+        #define DECL_IR_TOK( INST ) case CppInst::Id_Op_##INST:
+        #include "../Ir/Decl_BinaryHomoOperations.h"
+        #include "../Ir/Decl_UnaryHomoOperations.h"
         #undef DECL_IR_TOK
         set_out_bt_hint( 0, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
         for( int i = 0; i < inp.size(); ++i )

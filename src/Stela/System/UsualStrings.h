@@ -131,7 +131,7 @@ int num_operator_op( const char *beg, int len );
 #define STRING____and_NUM 117
 #define STRING____equ_NUM 118
 #define STRING____neq_NUM 119
-#define STRING____dup_NUM 120
+#define STRING____sup_NUM 120
 #define STRING____inf_NUM 121
 #define STRING____sup_eq_NUM 122
 #define STRING____inf_eq_NUM 123

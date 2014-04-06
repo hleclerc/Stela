@@ -88,10 +88,13 @@ def mod( a, b )
 
 def not( a )
     ___not a
-    
-def not_boolean( a )
+
+def not_boolean a
     ___not Bool a
-    
+
+def inferior a, b
+    ___inf a, b
+
 # r := ___rand()
 # a := 10 + r
 # if 10 + ___rand()
@@ -99,10 +102,9 @@ def not_boolean( a )
     # a = 20 + r
     
 # -> 
-a := 4l
-b := ___rand()
-while 20
+a := SI64 ___rand()
+while a < 20
     #while 10 # ___rand()
-    a += b
-___syscall a, b
+    a += 2
+___syscall a
     

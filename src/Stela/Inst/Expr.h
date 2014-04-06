@@ -23,7 +23,7 @@ public:
 
     void write_to_stream( Stream &os ) const;
     operator bool() const { return inst; }
-    const BaseType *out_bt() const;
+    //const BaseType *out_bt() const;
     int size_in_bytes() const;
     int size_in_bits() const;
 

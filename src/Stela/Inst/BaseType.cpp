@@ -13,7 +13,7 @@ template<class T> static T _mod   ( const T &a, const T &b ) { return a % b; }
 template<class T> static T _pow   ( const T &a, const T &b ) { return pow( a, b ); }
 template<class T> static T _equ   ( const T &a, const T &b ) { return a == b; }
 template<class T> static T _neq   ( const T &a, const T &b ) { return a != b; }
-template<class T> static T _dup   ( const T &a, const T &b ) { return a >  b; }
+template<class T> static T _sup   ( const T &a, const T &b ) { return a >  b; }
 template<class T> static T _inf   ( const T &a, const T &b ) { return a <  b; }
 template<class T> static T _inf_eq( const T &a, const T &b ) { return a <= b; }
 template<class T> static T _sup_eq( const T &a, const T &b ) { return a >= b; }

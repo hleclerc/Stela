@@ -375,14 +375,14 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     Var res;
     if ( ok ) {
         Scope if_scope( this );
-        if_scope.cond = expr;
+        if_scope.cond = Var( &ip->type_Bool, expr );
         set( res, if_scope.parse( sf, ok ), sf, off, expr );
     }
     if ( ko ) {
         expr = op_not( bt_Bool, expr );
 
         Scope if_scope( this );
-        if_scope.cond = expr;
+        if_scope.cond = Var( &ip->type_Bool, expr );
         set( res, if_scope.parse( sf, ko ), sf, off, expr );
     }
     return res;
@@ -392,7 +392,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
     // a place to store modified values
     std::map<Ptr<PRef>,Expr> nsv;
-    ++PRef::cur_date; // we don't want cont_var to be considered as an ext var
+    PI64 nsv_date = ++PRef::cur_date;
 
     // stop condition
     Var cont_var( &ip->type_Bool, cst( true ) );
@@ -406,7 +406,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         Scope wh_scope( this );
         wh_scope.cont = cont_var;
         wh_scope.sv_map = &nsv;
-        wh_scope.sv_date = PRef::cur_date;
+        wh_scope.sv_date = nsv_date;
         wh_scope.parse( sf, tok );
 
         // if no new modified variables
@@ -479,9 +479,20 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
     return ip->error_var;
 }
+
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
-    TODO; return Var();
+    for( Scope *s = this; s; s = s->parent ? s->parent : s->caller ) {
+        if ( s->cont ) {
+            set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
+            //set( s->cond, Var( &ip->type_Bool, cst( false ) ), sf, off );
+            //s->cond = Var( &ip->type_Bool, op_not( bt_Bool, c ) );
+            //PRINT( s->cond );
+            break;
+        }
+    }
+    return ip->error_var;
 }
+
 Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_FALSE( const Expr &sf, int off, BinStreamReader bin ) { return make_var( false ); }
 Var Scope::parse_TRUE( const Expr &sf, int off, BinStreamReader bin ) { return make_var( true ); }
@@ -803,7 +814,7 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
             src_expr = phi( ext_cond, src_expr, dst_expr );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
             if ( s->cond )
-                src_expr = phi( s->cond, src_expr, dst_expr );
+                src_expr = phi( s->cond.expr(), src_expr, dst_expr );
 
         // variable to be saved ?
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
@@ -1240,8 +1251,8 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
     return Var();
 }
 
-template<class Op>
-Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op_n ) {
+template<class Op,int boolean>
+Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op_n, N<boolean> ) {
     CHECK_PRIM_ARGS( 1 );
     Var va = parse( sf, bin.read_offset() );
     Expr a = simplified_expr( va, sf, off );
@@ -1249,8 +1260,8 @@ Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op_n )
     return Var( va.type, op( ta, a, op_n ) );
 }
 
-template<class Op>
-Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n ) {
+template<class Op,int boolean>
+Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n, N<boolean> ) {
     CHECK_PRIM_ARGS( 2 );
     Var va = parse( sf, bin.read_offset() );
     Var vb = parse( sf, bin.read_offset() );
@@ -1262,17 +1273,27 @@ Var Scope::parse_bin_op( const Expr &sf, int off, BinStreamReader bin, Op op_n )
         if ( ta == 0 or tb == 0 )
             return disp_error( "Assuming basing types", sf, off );
         const BaseType *tr = type_promote( ta, tb );
-        Var *vt = ip->type_for( tr );
+        Var *vt = boolean ? &ip->type_Bool : ip->type_for( tr );
         return Var( vt, op( tr, conv( tr, ta, a ), conv( tr, tb, b ), op_n ) );
     }
+
+    if ( boolean )
+        return Var( &ip->type_Bool, op( ta, a, b, op_n ) );
     return Var( va.type, op( ta, a, b, op_n ) );
 }
 
-#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { return parse_una_op( sf, off, bin, Op_##N() ); }
-#include "../Ir/Decl_UnaryOperations.h"
+#define DECL_IR_TOK( NN ) Var Scope::parse_##NN( const Expr &sf, int off, BinStreamReader bin ) { return parse_una_op( sf, off, bin, Op_##NN(), N<true>() ); }
+#include "../Ir/Decl_UnaryBoolOperations.h"
+#undef DECL_IR_TOK
+#define DECL_IR_TOK( NN ) Var Scope::parse_##NN( const Expr &sf, int off, BinStreamReader bin ) { return parse_una_op( sf, off, bin, Op_##NN(), N<false>() ); }
+#include "../Ir/Decl_UnaryHomoOperations.h"
 #undef DECL_IR_TOK
 
-#define DECL_IR_TOK( N ) Var Scope::parse_##N( const Expr &sf, int off, BinStreamReader bin ) { return parse_bin_op( sf, off, bin, Op_##N() ); }
-#include "../Ir/Decl_BinaryOperations.h"
+#define DECL_IR_TOK( NN ) Var Scope::parse_##NN( const Expr &sf, int off, BinStreamReader bin ) { return parse_bin_op( sf, off, bin, Op_##NN(), N<false>() ); }
+#include "../Ir/Decl_BinaryHomoOperations.h"
+#undef DECL_IR_TOK
+
+#define DECL_IR_TOK( NN ) Var Scope::parse_##NN( const Expr &sf, int off, BinStreamReader bin ) { return parse_bin_op( sf, off, bin, Op_##NN(), N<true>() ); }
+#include "../Ir/Decl_BinaryBoolOperations.h"
 #undef DECL_IR_TOK
 

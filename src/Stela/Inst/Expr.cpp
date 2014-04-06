@@ -36,7 +36,7 @@ int Expr::size_in_bytes() const {
     return inst->size_in_bytes( nout );
 }
 
-const BaseType *Expr::out_bt() const {
-    return inst->out_bt( nout );
-}
+//const BaseType *Expr::out_bt() const {
+//    return inst->out_bt( nout );
+//}
 

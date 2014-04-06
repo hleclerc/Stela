@@ -60,7 +60,7 @@ public:
     virtual Out &out_expr( int n ) = 0;
     virtual const Out &out_expr( int n ) const = 0;
 
-    virtual const BaseType *out_bt( int n ) const;
+    // virtual const BaseType *out_bt( int n ) const;
 
     // ext
     virtual int ext_size() const = 0;
