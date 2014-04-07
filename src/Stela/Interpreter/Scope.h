@@ -64,7 +64,7 @@ protected:
     Var            self;
     Var            cont; ///< continue variable
     TypeInfo      *class_scope;
-    Var            cond;
+    Expr           cond;
 
     std::map<Ptr<PRef>,Expr> *sv_map;
     PI64                      sv_date; ///< PRef creation date must be < sv_date to be saved in sv_map

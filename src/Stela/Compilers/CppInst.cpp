@@ -14,8 +14,11 @@ enum {
     PREC_inf    = 10,
     PREC_sup_eq = 10,
     PREC_inf_eq = 10,
+
     PREC_or     = 15,
     PREC_and    = 15,
+
+    PREC_not    = 17,
 
     PREC_add    = 20,
     PREC_mul    = 30
@@ -27,6 +30,8 @@ PI64 CppInst::cur_op_id = 0;
 CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(), nb_outputs ), op_id( 0 ), op_id_vis( 0 ) {
     ext_parent = 0;
     ext_ds = -1;
+
+    write_break = false;
 }
 
 void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
@@ -125,6 +130,23 @@ void CppInst::set_out_bt_hint( int nout, const BaseType *bt, bool force ) {
         ch.inst->set_out_bt_hint( ch.nout, bt );
         break;
     }
+    case CppInst::Id_IfInp: {
+        CppExpr ch = ext_parent->inp[ nout ];
+        ch.inst->set_out_bt_hint( ch.nout, bt );
+        break;
+    }
+    case CppInst::Id_WhileInst: {
+        CppExpr ch = ext[ 0 ]->inp[ nout ];
+        ch.inst->set_out_bt_hint( ch.nout, bt );
+        break;
+    }
+    case CppInst::Id_If: {
+        for( int next = 0; next < 2; ++next ) {
+            CppExpr ch = ext[ next ]->inp[ nout ];
+            ch.inst->set_out_bt_hint( ch.nout, bt );
+        }
+        break;
+    }
     }
 }
 
@@ -133,6 +155,16 @@ void CppInst::set_inp_bt_hint( int ninp, const BaseType *bt ) {
     case CppInst::Id_WhileOut:
         if ( ninp < inp.size() - 1 )
             ext_parent->set_out_bt_hint( ninp, bt );
+        break;
+    case CppInst::Id_IfOut:
+        ext_parent->set_out_bt_hint( ninp, bt );
+        break;
+    case CppInst::Id_WhileInst:
+        ext[ 1 ]->set_out_bt_hint( ninp, bt );
+        break;
+    case CppInst::Id_If:
+        for( int nch = 2; nch < 4; ++nch )
+            ext[ nch ]->set_out_bt_hint( ninp, bt );
         break;
     }
 }
@@ -173,6 +205,10 @@ void CppInst::bt_hint_propagation() {
     case CppInst::Id_WhileOut: {
         CppExpr ch = inp.back();
         ch.inst->set_out_bt_hint( ch.nout, bt_Bool );
+        break;
+    }
+    case CppInst::Id_IfInp: {
+        set_out_bt_hint( 0, bt_Bool );
         break;
     }
     }
@@ -274,7 +310,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_If: {
         for( int i = 0; i < out.size(); ++i )
             if ( declable( ext[ 0 ]->inp[ i ] ) )
-                cc->on << decl( cc, i, false );
+                cc->on << decl( cc, i, false ) << ";";
 
         Vec<CppInst *> va[ 2 ];
         for( int n = 0; n < 2; ++n )
@@ -295,9 +331,11 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
 
     case CppInst::Id_IfOut: {
         CppInst *ii = ext_parent;
-        for( int nout = 0; nout < ii->out.size(); ++nout )
-            if ( declable( inp[ nout ] ) )
-                cc->on << ii->inst( cc, nout ) << " = " << disp( cc, inp[ nout ] ) << ";";
+        for( int ninp = 0; ninp < inp.size(); ++ninp )
+            if ( declable( inp[ ninp ] ) )
+                cc->on << ii->inst( cc, ninp ) << " = " << disp( cc, inp[ ninp ] ) << ";";
+        if ( write_break )
+            cc->on << "break;";
         break;
     }
 
@@ -316,6 +354,31 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             }
         }
 
+        // while ( true ) { if ( cond ) break; ... }
+        //        if ( while_has_only_if_with_cond_as_inp() ) {
+        //            cc->on << "while ( true ) { // yop";
+        //            cc->on.nsp += 4;
+
+        //            // output the condition (to continue)
+        //            Vec<CppInst *> out;
+        //            out << ext[ 0 ]->inp.back().inst;
+        //            cc->output_code_for( out );
+
+        //            //
+        //            out.resize( 0 );
+        //            for( int i = 0; i < inp.size(); ++i ) {
+        //                out << ext[ 0 ]->inp[ i ].inst;
+        //                PRINT( *ext[ 0 ]->inp[ i ].inst->ext[ 1 ] );
+        //                ext[ 0 ]->inp[ i ].inst->ext[ 1 ]->write_break = true;
+        //            }
+        //            cc->output_code_for( out );
+
+        //            cc->on.nsp -= 4;
+        //            cc->on << "} // yop";
+        //            break;
+        //        }
+
+        //
         cc->on << "while ( true ) {";
 
         cc->on.nsp += 4;
@@ -324,7 +387,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             out << ch.inst;
         cc->output_code_for( out );
 
-        cc->on << "if ( " << disp( cc, ext[ 0 ]->inp.back() ) << " )";
+        cc->on << "if ( not " << disp( cc, ext[ 0 ]->inp.back(), PREC_not ) << " )";
         cc->on.nsp += 4;
         cc->on << "break;";
         cc->on.nsp -= 8;
@@ -378,6 +441,19 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         #undef DECL_INST
         // TODO;
     }
+}
+
+bool CppInst::while_has_only_if_with_cond_as_inp() {
+    if ( inp.size() < 1 )
+        return false;
+    CppInst *wout = ext[ 0 ];
+    for( int i = 0; i < inp.size(); ++i ) {
+        if ( wout->inp[ i ].inst->inst_id != Inst::Id_If )
+            return false;
+        if ( wout->inp[ i ].inst->inp[ 0 ] != wout->inp.back() )
+            return false;
+    }
+    return true;
 }
 
 void CppInst::mark_children_wo_ext() {

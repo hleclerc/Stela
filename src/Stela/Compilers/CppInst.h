@@ -70,6 +70,7 @@ public:
     void write_code( CppCompiler *cc, int prec = -1 );
 
     void mark_children_wo_ext();
+    bool while_has_only_if_with_cond_as_inp();
     void get_insts_rec( Vec<CppInst *> &res, int id ); ///< get sub inst with a given id
 
     static int display_graph( const Vec<CppInst *> &res, const char *filename = ".res" );
@@ -86,6 +87,7 @@ public:
     Vec<CppExpr,-1,2> inp;
     Vec<CppInst    *> ext;
     CppInst          *ext_parent;
+    bool              write_break; ///< specific for IfOut
 
     mutable PI64      op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
     mutable void     *op_mp;     ///< result of current operations

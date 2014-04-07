@@ -375,14 +375,14 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
     Var res;
     if ( ok ) {
         Scope if_scope( this );
-        if_scope.cond = Var( &ip->type_Bool, expr );
+        if_scope.cond = expr;
         set( res, if_scope.parse( sf, ok ), sf, off, expr );
     }
     if ( ko ) {
         expr = op_not( bt_Bool, expr );
 
         Scope if_scope( this );
-        if_scope.cond = Var( &ip->type_Bool, expr );
+        if_scope.cond = expr;
         set( res, if_scope.parse( sf, ko ), sf, off, expr );
     }
     return res;
@@ -495,12 +495,13 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 }
 
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
+    Expr c = cst( true );
     for( Scope *s = this; s; s = s->parent ? s->parent : s->caller ) {
+        if ( s->cond )
+            c = op_and( bt_Bool, c, s->cond );
         if ( s->cont ) {
             set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
-            //set( s->cond, Var( &ip->type_Bool, cst( false ) ), sf, off );
-            //s->cond = Var( &ip->type_Bool, op_not( bt_Bool, c ) );
-            //PRINT( s->cond );
+            s->cond = op_not( bt_Bool, c );
             break;
         }
     }
@@ -828,15 +829,18 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
             src_expr = phi( ext_cond, src_expr, dst_expr );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
             if ( s->cond )
-                src_expr = phi( s->cond.expr(), src_expr, dst_expr );
+                src_expr = phi( s->cond, src_expr, dst_expr );
 
-        // variable to be saved ?
-        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
-            if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
-                s->sv_map->operator[]( dst.data ) = dst.expr();
+        if ( dst_expr != src_expr ) {
+            // variable to be saved ?
+            for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
+                if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
+                    s->sv_map->operator[]( dst.data ) = dst.expr();
 
-        //
-        dst.data->ptr->set( src_expr );
+            //
+            dst.data->ptr->set( src_expr );
+        }
+
     } else
         dst.data->ptr = new RefExpr( src_expr );
 

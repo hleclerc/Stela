@@ -33,6 +33,27 @@ void CppCompiler::exec() {
     for( auto f : includes )
         fc << "#include <" << f << ">\n";
 
+    fc << "#include <stdint.h>\n";
+
+    fc << "typedef float       FP32;\n";
+    fc << "typedef double      FP64;\n";
+    fc << "typedef long double FP80;\n";
+
+    fc << "typedef bool        Bool;\n";
+
+    fc << "typedef void        Void;\n";
+
+    fc << "typedef int8_t      SI8 ;\n";
+    fc << "typedef int16_t     SI16;\n";
+    fc << "typedef int32_t     SI32;\n";
+    fc << "typedef int64_t     SI64;\n";
+
+    fc << "typedef uint8_t     PI8 ;\n";
+    fc << "typedef uint16_t    PI16;\n";
+    fc << "typedef uint32_t    PI32;\n";
+    fc << "typedef uint64_t    PI64;\n";
+
+
     fc << "int main() {\n";
     fc << os.str();
     fc << "}\n";

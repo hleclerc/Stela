@@ -41,10 +41,10 @@ class SI32
 class SI64
     ___set_base_size_and_alig 64, 32
     
-    def init val : [ SI32, PI32, SI64, PI64 ]
+    def init val : [ SI32, PI32, SI64, PI64, Bool ]
         ___reassign_rec val
     
-    def reassign val : [ SI32, PI32, SI64, PI64 ]
+    def reassign val : [ SI32, PI32, SI64, PI64, Bool ]
         ___reassign_rec val
     
 class PI64
@@ -102,11 +102,11 @@ def inferior a, b
     # a = 20 + r
     
 # -> 
-a := SI64 ___rand()
-b := SI64 ___rand()
-while a < b
-    #while 10 # ___rand()
-    ___info a
-    a += 2
-___syscall a
+a := 666
+while a < 20
+    # b := SI64 0
+    # while b < 30
+        # b += 5l
+    a += 5
+___syscall SI64 666 < 20
     
