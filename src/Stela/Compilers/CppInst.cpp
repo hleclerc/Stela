@@ -6,9 +6,20 @@
 #include <fstream>
 
 enum {
-    PREC_phi =  1,
-    PREC_add = 10,
-    PREC_mul = 20
+    PREC_phi    =  1,
+
+    PREC_equ    = 10,
+    PREC_neq    = 10,
+    PREC_sup    = 10,
+    PREC_inf    = 10,
+    PREC_sup_eq = 10,
+    PREC_inf_eq = 10,
+    PREC_or     = 15,
+    PREC_and    = 15,
+
+    PREC_add    = 20,
+    PREC_mul    = 30
+
 };
 
 PI64 CppInst::cur_op_id = 0;
@@ -306,13 +317,18 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         }
 
         cc->on << "while ( true ) {";
-        cc->on.nsp += 4;
 
+        cc->on.nsp += 4;
         Vec<CppInst *> out;
         for( const CppExpr &ch : ext[ 0 ]->inp )
             out << ch.inst;
         cc->output_code_for( out );
-        cc->on.nsp -= 4;
+
+        cc->on << "if ( " << disp( cc, ext[ 0 ]->inp.back() ) << " )";
+        cc->on.nsp += 4;
+        cc->on << "break;";
+        cc->on.nsp -= 8;
+
         cc->on << "}";
         break;
     }
@@ -342,6 +358,16 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                    << disp( cc, inp[ i ], 0 ) << ";";
         break;
     }
+
+    // bin bool
+    case CppInst::Id_Op_or    : write_code_bin_op( cc, prec, " or " , PREC_or     ); break;
+    case CppInst::Id_Op_and   : write_code_bin_op( cc, prec, " and ", PREC_and    ); break;
+    case CppInst::Id_Op_equ   : write_code_bin_op( cc, prec, " == " , PREC_equ    ); break;
+    case CppInst::Id_Op_neq   : write_code_bin_op( cc, prec, " != " , PREC_neq    ); break;
+    case CppInst::Id_Op_sup   : write_code_bin_op( cc, prec, " > "  , PREC_sup    ); break;
+    case CppInst::Id_Op_inf   : write_code_bin_op( cc, prec, " < "  , PREC_inf    ); break;
+    case CppInst::Id_Op_sup_eq: write_code_bin_op( cc, prec, " >= " , PREC_sup_eq ); break;
+    case CppInst::Id_Op_inf_eq: write_code_bin_op( cc, prec, " <= " , PREC_inf_eq ); break;
 
     case CppInst::Id_Op_add: write_code_bin_op( cc, prec, " + ", PREC_add ); break;
     case CppInst::Id_Op_mul: write_code_bin_op( cc, prec, " * ", PREC_mul ); break;

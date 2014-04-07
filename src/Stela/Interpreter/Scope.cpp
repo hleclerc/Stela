@@ -390,12 +390,14 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
 Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     const PI8 *tok = bin.read_offset();
 
+    // stop condition
+    // created before nsv_date because we want to use set(...) to update it
+    // nevertheless, for each iteration where unknown are added, it has to start at true
+    Var cont_var( &ip->type_Bool, cst( true ) );
+
     // a place to store modified values
     std::map<Ptr<PRef>,Expr> nsv;
     PI64 nsv_date = ++PRef::cur_date;
-
-    // stop condition
-    Var cont_var( &ip->type_Bool, cst( true ) );
 
     // we repeat until there are no external modified values
     std::map<Ptr<PRef>,Expr> unknowns;
@@ -417,13 +419,21 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         // (to avoid simplifications during the next round)
         for( auto &it : nsv ) {
             PRef *pref = const_cast<PRef *>( it.first.ptr() );
-            Expr unk = unknown_inst( pref->expr().size_in_bits() );
-            unknowns[ it.first ] = unk;
-            pref->ptr->set( unk );
+            if ( pref == cont_var.data.ptr() ) {
+                pref->ptr->set( cst( true ) );
+            } else {
+                Expr unk = unknown_inst( pref->expr().size_in_bits(), cpt );
+                unknowns[ it.first ] = unk;
+                pref->ptr->set( unk );
+            }
         }
     }
 
-    // mark the children
+    // extract the cont_var from nsv (we don't want to output it twice)
+    nsv.erase( cont_var.data );
+
+    // corr table (output number -> input number)
+    // -> mark the children to find precomputed variables (i.e. that do not depend on unknown)
     ++Inst::cur_op_id;
     for( auto it : nsv )
         it.first->ptr->expr().inst->mark_children();
@@ -438,10 +448,10 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
             corr << -1;
     }
 
-    // make a while inp
+    // prepare a while inp (for initial values of variables modified in the loop)
+    // and set cont_var to true (initial condition)
     Inst *winp = while_inp( inp_sizes );
 
-    // relaunch the while inst
     cpt = 0;
     for( auto &it : nsv ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
@@ -452,6 +462,10 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
             pref->ptr->set( it.second );
     }
 
+    cont_var.data->ptr->set( cst( true ) );
+
+
+    // relaunch the while inst
     Scope wh_scope( this );
     wh_scope.cont = cont_var;
     wh_scope.parse( sf, tok );

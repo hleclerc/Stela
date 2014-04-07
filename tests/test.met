@@ -103,8 +103,10 @@ def inferior a, b
     
 # -> 
 a := SI64 ___rand()
-while a < 20
+b := SI64 ___rand()
+while a < b
     #while 10 # ___rand()
+    ___info a
     a += 2
 ___syscall a
     
