@@ -9,5 +9,7 @@ DECL_BT( Def )
 
 DECL_BT( SourceFile )
 
+DECL_BT( VarargsItemEnd )
+
 #include "../Inst/DeclArytTypes.h"
 

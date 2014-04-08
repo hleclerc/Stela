@@ -71,9 +71,12 @@ bool Var::is_surdef() const {
     return flags & SURDEF;
 }
 
-static void write_var( Stream &os, Expr type, Expr data ) {
+static void write_var( Stream &os, Expr type, Expr data, bool star = false ) {
     write_var_type( os, type );
-    os << "{" << data << "}";
+    os << "{";
+    if ( star )
+        os << "*";
+    os << data << "}";
 }
 
 static void write_var_type( Stream &os, Expr type ) {
@@ -88,8 +91,8 @@ static void write_var_type( Stream &os, Expr type ) {
                     os << ",";
                 write_var( os,
                            slice( type, ( 2 * i + 1 ) * ps, ( 2 * i + 2 ) * ps ), // type
-                           slice( type, ( 2 * i + 2 ) * ps, ( 2 * i + 3 ) * ps ) // data
-                           );
+                           slice( type, ( 2 * i + 2 ) * ps, ( 2 * i + 3 ) * ps ), // data
+                           true );
             }
             os << "]";
         }

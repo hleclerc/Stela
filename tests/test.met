@@ -11,13 +11,25 @@ class Class
 class Def
     pass
     
-# MUST be defined before any find_var
+# MUST be defined before any call to find_var
 class Callable[ surdef_list, self_type, parm_type ]
-    pass
+    def select( varargs )
+        # ___info self
+        ___select_SurdefList self, varargs
 
 class SurdefList
     pass
     
+# data_name -> ptr on a C string
+class VarargsItemBeg[ data_type, data_name, next_type ]
+    def select i
+        i
+
+class VarargsItemEnd
+    def select i
+        i
+        
+
 class Void
     def init
         0
@@ -72,11 +84,6 @@ void := Void()
 def init self
     # nothing :)
 
-class Toto
-    a := 10
-    def init : a( 50 ) # and b( 10 )
-        r := 10
-
 def add( a, b )
     ___add a, b
     
@@ -95,17 +102,9 @@ def not_boolean a
 def inferior a, b
     ___inf a, b
 
-# r := ___rand()
-# a := 10 + r
-# if 10 + ___rand()
-    # ___syscall 100l
-    # a = 20 + r
+class Toto[ t ]
+    a := t
     
-# -> 
-a := 2
-while a < 1000
-  b := 3
-  while b < 30
-      b += 2
-  a += b
-___syscall SI64 a
+# ___info Toto[ 18 ]
+Toto[ 19 ]()
+# ___syscall SI64 t.a

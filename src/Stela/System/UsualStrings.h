@@ -185,8 +185,8 @@ int num_operator_op( const char *beg, int len );
 #define STRING_BegItemSizeRefArray_NUM 171
 #define STRING_EndItemSizeRefArray_NUM 172
 #define STRING_RefArray_NUM 173
-#define STRING_BegVarargsItem_NUM 174
-#define STRING_EndVarargsItem_NUM 175
+#define STRING_VarargsItemBeg_NUM 174
+#define STRING_VarargsItemEnd_NUM 175
 #define STRING_BegSurdefsItem_NUM 176
 #define STRING_EndSurdefsItem_NUM 177
 #define STRING_Type_NUM 178

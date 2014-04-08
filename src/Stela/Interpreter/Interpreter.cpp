@@ -330,6 +330,8 @@ bool Interpreter::equal( Var a, Var b ) {
         return a.expr() == b.expr();
     if ( isa_SurdefList( a ) and isa_SurdefList( b ) )
         return a.expr() == b.expr();
+    if ( isa_SI32( a ) and isa_SI32( b ) )
+        return a.expr() == b.expr();
     if ( isa_Void( a ) )
         return isa_Void( b );
     if ( isa_Void( b ) )
@@ -347,8 +349,36 @@ Expr Interpreter::cst_ptr( SI64 val ) {
 }
 
 Var Interpreter::make_varargs_var( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name ) {
-    TODO;
-    return error_var;
+    Var *type = _make_varargs_type( uv_args, nv_args, nv_name, 0 );
+
+    Expr data = cst();
+    for( int i = 0; i < uv_args.size(); ++i )
+        data = concat( data, pointer_on( uv_args[ i ].expr() ) );
+    for( int i = 0; i < nv_args.size(); ++i )
+        data = concat( data, pointer_on( nv_args[ i ].expr() ) );
+
+    Var res( type, data );
+    for( int i = 0, off = 0; i < uv_args.size(); off += bt_ST->size_in_bits(), ++i )
+        res.add_ref( off, uv_args[ i ] );
+    for( int i = 0, off = 0; i < nv_args.size(); off += bt_ST->size_in_bits(), ++i )
+        res.add_ref( off, nv_args[ i ] );
+    return res;
+}
+
+Var *Interpreter::_make_varargs_type( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name, int off ) {
+    // class VarargsItemEnd
+    if ( off >= uv_args.size() + nv_args.size() )
+        return &type_VarargsItemEnd;
+
+    // class VarargsItemBeg[ data_type, data_name, next_type ]
+    Var data_type = type_of( off >= uv_args.size() ? nv_args[ off - uv_args.size() ] : uv_args[ off ] );
+    Var data_name( &type_SI32, cst( off >= uv_args.size() ? nv_name[ off - uv_args.size() ] : -1 ) );
+
+    Var *parms[ 3 ];
+    parms[ 0 ] = &data_type;
+    parms[ 1 ] = &data_name;
+    parms[ 2 ] = _make_varargs_type( uv_args, nv_args, nv_name, off + 1 );
+    return type_for( class_info( class_VarargsItemBeg ), parms );
 }
 
 void Interpreter::_update_base_type_from_class_expr( Var type, Expr class_expr ) {

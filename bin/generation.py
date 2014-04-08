@@ -493,8 +493,10 @@ std_strings = string.split( """
     BegItemSizeRefArray
     EndItemSizeRefArray
     RefArray
-    BegVarargsItem
-    EndVarargsItem
+
+    VarargsItemBeg
+    VarargsItemEnd
+
     BegSurdefsItem
     EndSurdefsItem
     Type
