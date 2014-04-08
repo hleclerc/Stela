@@ -77,15 +77,32 @@ int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filena
     std::ofstream f( filename );
     f << "digraph Instruction {";
     f << "  node [shape = record];";
+
+    Vec<const Inst *> ext_buf;
     for( int i = 0; i < outputs.size(); ++i )
-        outputs[ i ]->write_graph_rec( f );
+        outputs[ i ]->write_graph_rec( ext_buf, f );
+
+    for( const Inst *ch : ext_buf )
+        if ( ch )
+            ch->write_sub_graph_rec( f );
+
     f << "}";
     f.close();
 
     return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
 }
 
-void Inst::write_graph_rec( Stream &os ) const {
+void Inst::write_sub_graph_rec( Stream &os ) const {
+    os << "    node" << ext_parent << " -> node" << this << " [color=\"green\"];\n";
+    os << "    subgraph cluster_" << this <<" {\ncolor=yellow;\nstyle=dotted;\n";
+    Vec<const Inst *> ext_buf;
+    write_graph_rec( ext_buf, os );
+    for( const Inst *nch : ext_buf )
+        nch->write_sub_graph_rec( os );
+    os << "    }\n";
+}
+
+void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
     if ( op_id_vis == cur_op_id )
         return;
     op_id_vis = cur_op_id;
@@ -117,30 +134,23 @@ void Inst::write_graph_rec( Stream &os ) const {
         const Expr &ch = inp_expr( i );
         os << "    node" << this << ":f" << out_size() + i << " -> node" << ch.inst.ptr() << ":f" << ch.nout << ";\n";
         if ( ch.inst )
-            ch.inst->write_graph_rec( os );
+            ch.inst->write_graph_rec( ext_buf, os );
     }
 
     // ext
-    for( int i = 0, n = ext_size_disp(); i < n; ++i ) {
-        const Inst *ch = ext_inst( i );
-        os << "    node" << this << " -> node" << ch << " [color=\"green\"];\n";
-        if ( ch ) {
-            os << "    subgraph cluster_" << ch <<" {\ncolor=yellow;\nstyle=dotted;\n";
-            ch->write_graph_rec( os );
-            os << "    }\n";
-        }
-    }
+    for( int i = 0, n = ext_size_disp(); i < n; ++i )
+        if ( const Inst *ch = ext_inst( i ) )
+            ext_buf << ch;
 
     // parents
     //    for( int nout = 0; nout < out_size(); ++nout ) {
     //        VPar &p = parents( nout );
     //        for( int i = 0; i < p.size(); ++i ) {
     //            os << "    node" << p[ i ] << " -> node" << this << ":f" << nout << " [color=\"red\"];\n";
-    //            // parents[ i ]->write_graph_rec( os );
+    //            // parents[ i ]->write_graph_rec( ext_buf, os );
     //        }
     //    }
 }
-
 
 Inst *Inst::factorized( Inst *inst ) {
     if ( inst->inp_size() ) {

@@ -115,6 +115,8 @@ void CppInst::add_ext( CppInst *inst ) {
 }
 
 void CppInst::set_out_bt_hint( int nout, const BaseType *bt, bool force ) {
+    if ( nout >= out.size() )
+        return;
     if ( force ? out[ nout ].bt_hint == bt : out[ nout ].bt_hint != 0 )
         return;
     out[ nout ].bt_hint = bt;

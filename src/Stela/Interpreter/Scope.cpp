@@ -476,7 +476,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     Vec<Expr> out_exprs;
     for( auto it : nsv )
         out_exprs << simplified_expr( *it.first, sf, off );
-    out_exprs << cont_var.expr();
+    out_exprs << simplified_expr( cont_var.expr(), sf, off );
     Inst *wout = while_out( out_exprs );
 
     cpt = 0;
@@ -504,10 +504,10 @@ Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
         if ( s->cont ) {
             set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
             s->cond = op_not( bt_Bool, c );
-            break;
+            return ip->void_var;
         }
     }
-    return ip->void_var;
+    return disp_error( "nothing to break", sf, off );
 }
 
 Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }

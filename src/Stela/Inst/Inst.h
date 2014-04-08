@@ -77,7 +77,8 @@ public:
 
 
     static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
-    virtual void write_graph_rec( Stream &os ) const;
+    virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
+    virtual void write_sub_graph_rec( Stream &os ) const;
 
     /// return inst unless there's already the same operation somewhere
     /// if it's the case, delete inst and return the corresponding instruction

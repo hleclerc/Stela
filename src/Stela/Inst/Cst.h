@@ -13,4 +13,8 @@ Expr cst( const T &value ) {
     return cst( reinterpret_cast<const PI8 *>( &value ), 0, sizeof( value ) * 8 );
 }
 
+inline Expr cst( Bool value ) {
+    return cst( reinterpret_cast<const PI8 *>( &value ), 0, 1 );
+}
+
 #endif // EXPR_CST_H

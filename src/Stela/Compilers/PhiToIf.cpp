@@ -46,7 +46,10 @@ struct PhiToIf {
                 // ok_inp = instructions to be executed if ok
                 // ko_inp = instructions to be executed if ko
                 for( CppInst *phi : phi_nodes ) {
+                    mark_ok_rec( phi->inp[ 0 ].inst );
                     mark_ok_rec( phi->inp[ 1 ].inst );
+
+                    mark_ko_rec( phi->inp[ 0 ].inst );
                     mark_ko_rec( phi->inp[ 2 ].inst );
                 }
 
