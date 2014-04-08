@@ -35,6 +35,8 @@ protected:
     Var copy( const Var &var, const Expr &sf, int off );
     Var get_val_if_GetSetSopInst( const Var &val, const Expr &sf, int off );
     Expr simplified_expr( const Var &var, const Expr &sf, int off );
+    Expr simplified_expr( const PRef &var, const Expr &sf, int off );
+    Expr simplified_expr( const Expr &var, const Expr &sf, int off );
     Var apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Expr &sf, int off );
     Var get_attr_rec( Var self, int name );
     void get_attr_rec( Vec<Var> &res, Var self, int name );

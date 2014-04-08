@@ -372,18 +372,20 @@ Var Scope::parse_IF( const Expr &sf, int off, BinStreamReader bin ) {
         return ip->void_var;
     }
 
-    Var res;
+    Var res = ip->error_var;
     if ( ok ) {
         Scope if_scope( this );
         if_scope.cond = expr;
-        set( res, if_scope.parse( sf, ok ), sf, off, expr );
+        if_scope.parse( sf, ok );
+        //set( res, if_scope.parse( sf, ok ), sf, off, expr );
     }
     if ( ko ) {
         expr = op_not( bt_Bool, expr );
 
         Scope if_scope( this );
         if_scope.cond = expr;
-        set( res, if_scope.parse( sf, ko ), sf, off, expr );
+        if_scope.parse( sf, ko );
+        //set( res, if_scope.parse( sf, ko ), sf, off, expr );
     }
     return res;
 }
@@ -473,7 +475,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     // make the while instruction
     Vec<Expr> out_exprs;
     for( auto it : nsv )
-        out_exprs << it.first->ptr->expr();
+        out_exprs << simplified_expr( *it.first, sf, off );
     out_exprs << cont_var.expr();
     Inst *wout = while_out( out_exprs );
 
@@ -496,7 +498,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
     Expr c = cst( true );
-    for( Scope *s = this; s; s = s->parent ? s->parent : s->caller ) {
+    for( Scope *s = this; s; s = s->parent ) {
         if ( s->cond )
             c = op_and( bt_Bool, c, s->cond );
         if ( s->cont ) {
@@ -505,7 +507,7 @@ Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
             break;
         }
     }
-    return ip->error_var;
+    return ip->void_var;
 }
 
 Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -638,7 +640,26 @@ Var Scope::disp_error( String msg, const Expr &sf, int off, bool warn ) {
 
 Expr Scope::simplified_expr( const Var &var, const Expr &sf, int off ) {
     Var sop = get_val_if_GetSetSopInst( var, sf, off );
-    return sop.expr();
+    return simplified_expr( *sop.data, sf, off );
+}
+
+Expr Scope::simplified_expr( const PRef &var, const Expr &sf, int off ) {
+    return var.ptr ? simplified_expr( var.ptr->expr(), sf, off ) : Expr();
+}
+
+Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
+    if ( expr.inst->inst_id() == Inst::Id_Phi ) {
+        Expr c = expr.inst->inp_expr( 0 );
+        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+            if ( s->cond ) {
+                if ( s->cond == c )
+                    return simplified_expr( expr.inst->inp_expr( 1 ), sf, off );
+                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == c )
+                    return simplified_expr( expr.inst->inp_expr( 2 ), sf, off );
+            }
+        }
+    }
+    return expr;
 }
 
 struct CmpCallableInfobyPertinence {
@@ -1266,7 +1287,7 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
         //    std::cout << " (type=" << *v.type << ")";
         std::cout << std::endl;
     }
-    return Var();
+    return ip->void_var;
 }
 
 template<class Op,int boolean>

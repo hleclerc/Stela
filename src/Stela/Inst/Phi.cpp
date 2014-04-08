@@ -30,12 +30,14 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
 
     // phi( c, true, false ) -> c
     // phi( c, false, true ) -> not c
-    bool va, vb;
-    if ( ok.get_val( va ) and ko.get_val( vb ) ) {
-        if ( va and not vb )
-            return cond;
-        if ( vb and not va )
-            return op_not( bt_Bool, cond );
+    if ( ok.size_in_bits() == 1 and ko.size_in_bits() == 1 ) {
+        bool va, vb;
+        if ( ok.get_val( va ) and ko.get_val( vb ) ) {
+            if ( va and not vb )
+                return cond;
+            if ( vb and not va )
+                return op_not( bt_Bool, cond );
+        }
     }
 
     // cond = bool( ... )

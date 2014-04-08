@@ -143,8 +143,13 @@ static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, Expr a ) {
 // factory
 template<int i_id,class TOP>
 static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
-    ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
-    ASSERT( bt->size_in_bits() <= b.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
+    if ( bt->size_in_bits() > a.size_in_bits() or bt->size_in_bits() > b.size_in_bits() ) {
+        PRINT( *bt );
+        PRINT( a );
+        PRINT( b );
+        ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
+        ASSERT( bt->size_in_bits() <= b.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
+    }
 
     // known values ?
     const PI8 *da = a.cst_data();

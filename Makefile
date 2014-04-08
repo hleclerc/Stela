@@ -1,4 +1,4 @@
-MC = metil_comp -DDEBUG -Wall -march=native -g3 -Isrc -Iext/PrepArg/src
+MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
@@ -6,7 +6,8 @@ all: std
 # 	
 
 std: ext/PrepArg install_dir
-	${MC} -O3 src/stela.cpp ${SRC}
+	#${MC} -O3 src/stela.cpp ${SRC}
+	${MC} src/stela.cpp ${SRC}
 	cat out.cpp
 
 install:
@@ -39,7 +40,7 @@ test_%:
 	${MC} tests/$@.cpp
 
 vg:
-	${MC} --exec-using "valgrind --num-callers=24 --db-attach=yes --leak-check=full" src/stela.cpp ${SRC}
+	${MC} --exec-using "valgrind --num-callers=24 --db-attach=yes" src/stela.cpp ${SRC}
 	# 	 --leak-check=full
 
 gdb:

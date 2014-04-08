@@ -108,7 +108,7 @@ void Interpreter::import( String filename ) {
 
 Vec<ConstPtr<Inst> > Interpreter::get_outputs() {
     Vec<ConstPtr<Inst> > res;
-    if ( main_scope->sys_state )
+    if ( main_scope->sys_state and not main_scope->sys_state.cst_data() )
         res << main_scope->sys_state.expr().inst;
     return res;
 }
