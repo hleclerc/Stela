@@ -7,6 +7,7 @@
 */
 class BaseType {
 public:
+    virtual ~BaseType();
     virtual void write_to_stream( Stream &os, const PI8 *data ) const = 0;
     virtual void write_to_stream( Stream &os ) const = 0;
     virtual int size_in_bytes() const = 0;

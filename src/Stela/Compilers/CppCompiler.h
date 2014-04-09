@@ -3,10 +3,12 @@
 
 #include "../System/SplittedVec.h"
 #include "../System/StreamSep.h"
+#include "../System/AutoPtr.h"
 #include "../Inst/Expr.h"
 #include "CppInst.h"
 #include <sstream>
 #include <set>
+#include <map>
 
 /**
 */
@@ -33,6 +35,7 @@ protected:
     void while_precomputations_fact_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
     void get_front_rec( Vec<CppInst *> &front, CppInst *inst );
     void get_sub_insts( Vec<CppInst *> &res, CppInst *inst );
+    const BaseType *bt_for_size( int size );
     void update_bt_hint( Vec<CppInst *> &res );
     void write_inst( CppInst *inst );
 
@@ -40,13 +43,14 @@ protected:
     void add_include( String name );
 
     // input data
-    Vec<ConstPtr<Inst> >    outputs;
+    Vec<ConstPtr<Inst> >             outputs;
 
     // intermediate data
-    SplittedVec<CppInst,64> inst_list;
-    SplittedVec<PI8,64>     addd_list; ///< additionnal_data list
-    std::set<String>        includes;
-    int                     nb_regs;
+    SplittedVec<CppInst,64>          inst_list;
+    SplittedVec<PI8,64>              addd_list; ///< additionnal_data list
+    std::set<String>                 includes;
+    int                              nb_regs;
+    std::map<int,AutoPtr<BaseType> > bt_map;
 
     // output
     StreamSepMaker<std::ostringstream> on;

@@ -165,3 +165,9 @@ src/Stela/Met/TypeChar.h.py
 tests/test_Expr.cpp
 tests/test_Lexer.cpp
 tests/test.met
+src/Stela/Interpreter/RefSliceUnk.h
+src/Stela/Interpreter/RefSliceUnk.cpp
+src/Stela/Inst/SetVal.h
+src/Stela/Inst/SetVal.cpp
+src/Stela/Inst/BaseTypeIntN.h
+src/Stela/Inst/BaseTypeIntN.cpp

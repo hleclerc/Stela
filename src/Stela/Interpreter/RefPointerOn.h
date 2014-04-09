@@ -11,8 +11,8 @@ public:
     RefPointerOn( Var var, int ptr_size );
 
     virtual Expr expr() const;
-    virtual void set( Expr expr );
     virtual void write_to_stream( Stream &os ) const;
+    virtual void set( Expr expr, Scope *set_scope = 0 );
 
     Var var;
     int ptr_size;

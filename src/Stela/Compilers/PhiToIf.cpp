@@ -84,9 +84,9 @@ struct PhiToIf {
 
                 // replace common exprs (ok and ko) to out of ifinp
                 ++CppInst::cur_op_id;
-                replace_common_exprs( ifout_ok, if_inst, ifinp_ok );
+                replace_common_exprs( ifout_ok, if_inst, ifinp_ok, ifinp_ko );
                 ++CppInst::cur_op_id;
-                replace_common_exprs( ifout_ko, if_inst, ifinp_ko );
+                replace_common_exprs( ifout_ko, if_inst, ifinp_ko, ifinp_ok );
 
                 return true;
             }
@@ -152,7 +152,7 @@ struct PhiToIf {
             mark_ko_rec( inst->ext[ i ] );
     }
 
-    void replace_common_exprs( CppInst *inst, CppInst *if_inst, CppInst *ifinp ) {
+    void replace_common_exprs( CppInst *inst, CppInst *if_inst, CppInst *ifinp, CppInst *ifinp_alt ) {
         if ( inst->op_id == CppInst::cur_op_id )
             return;
         inst->op_id = CppInst::cur_op_id;
@@ -165,18 +165,20 @@ struct PhiToIf {
                     if ( n == if_inst->inp.size() ) {
                         if_inst->add_child( ch );
                         ifinp->check_out_size( n + 1 );
+                        ifinp_alt->check_out_size( n + 1 );
                         inst->set_child( i, CppExpr( ifinp, n ) );
                         break;
                     }
                     // already in input of if_inst ?
                     if ( if_inst->inp[ n ] == ch ) {
                         ifinp->check_out_size( n + 1 );
+                        ifinp_alt->check_out_size( n + 1 );
                         inst->set_child( i, CppExpr( ifinp, n ) );
                         break;
                     }
                 }
             } else
-                replace_common_exprs( inst->inp[ i ].inst, if_inst, ifinp );
+                replace_common_exprs( inst->inp[ i ].inst, if_inst, ifinp, ifinp_alt );
         }
     }
 

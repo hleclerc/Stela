@@ -3,6 +3,9 @@
 #include "BaseType.h"
 #include <string.h>
 
+BaseType::~BaseType() {
+}
+
 template<class T> static T _or    ( const T &a, const T &b ) { return a | b; }
 template<class T> static T _and   ( const T &a, const T &b ) { return a & b; }
 template<class T> static T _add   ( const T &a, const T &b ) { return a + b; }

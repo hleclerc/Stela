@@ -200,3 +200,7 @@ void ErrorList::write_to_stream( Stream &os ) const {
     for ( ST i = 0; i < error_list.size(); ++i )
         os << error_list[ i ];
 }
+
+int ErrorList::size() const {
+    return error_list.size();
+}

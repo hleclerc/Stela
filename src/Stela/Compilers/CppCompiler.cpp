@@ -1,5 +1,5 @@
 #include "../Interpreter/Interpreter.h"
-#include "../Inst/BaseType.h"
+#include "../Inst/BaseTypeIntN.h"
 #include "CppCompiler.h"
 #include "PhiToIf.h"
 #include <fstream>
@@ -100,6 +100,30 @@ void CppCompiler::update_bt_hint( Vec<CppInst *> &res ) {
 
     for( int i = 0; i < lst.size(); ++i )
         lst[ i ]->bt_hint_propagation();
+
+    //
+    for( int i = 0; i < lst.size(); ++i ) {
+        if ( lst[ i ]->inst_id == Inst::Id_Cst and not lst[ i ]->out[ 0 ].bt_hint ) {
+            int size = *reinterpret_cast<const int *>( lst[ i ]->additionnal_data );
+            lst[ i ]->set_out_bt_hint( 0, bt_for_size( size ) );
+        }
+    }
+}
+
+const BaseType *CppCompiler::bt_for_size( int size ) {
+    switch( size ) {
+    case  8: return bt_SI8 ;
+    case 16: return bt_SI16;
+    case 32: return bt_SI32;
+    case 64: return bt_SI64;
+    default: {
+        if ( bt_map.count( size ) )
+            return bt_map[ size ].ptr();
+        BaseTypeIntN *res = new BaseTypeIntN( size, "SI" + to_string( size ) );
+        bt_map[ size ] = res;
+        return res;
+    }
+    }
 }
 
 void CppCompiler::get_sub_insts( Vec<CppInst *> &res, CppInst *inst ) {

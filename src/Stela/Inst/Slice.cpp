@@ -31,7 +31,31 @@ public:
     int beg, end;
 };
 
+
+///
+class SliceUnk : public Inst_<1,2> {
+public:
+    virtual int size_in_bits( int nout ) const { return len; }
+    virtual void write_dot( Stream &os ) const { os << "slice[" << inp[ 0 ] << ",len=" << len << "]"; }
+    virtual void apply( InstVisitor &visitor ) const { visitor.slice( *this, len ); }
+    virtual int inst_id() const { return Inst::Id_SliceUnk; }
+    virtual bool equal( const Inst *b ) const { return Inst::equal( b ) and len == static_cast<const SliceUnk *>( b )->len; }
+    int len;
+};
+
+Expr slice( Expr expr, const Expr &beg, int len ) {
+    SliceUnk *res = new SliceUnk;
+    res->inp_repl( 0, expr );
+    res->inp_repl( 1, beg  );
+    res->len = len;
+    return Expr( Inst::factorized( res ), 0 );
+}
+
 Expr slice( Expr expr, int beg, int end ) {
+    PRINT( expr );
+    PRINT( expr.size_in_bits() );
+    PRINT( beg );
+    PRINT( end );
     ASSERT( beg >= 0 and beg <= expr.size_in_bits(), "Wrong size" );
     ASSERT( end >= 0 and end <= expr.size_in_bits(), "Wrong size" );
     ASSERT( beg <= end, "Wrong size" );

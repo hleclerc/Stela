@@ -10,7 +10,7 @@ Expr RefPointerOn::expr() const {
     return pointer_on( var.expr() );
 }
 
-void RefPointerOn::set( Expr expr ) {
+void RefPointerOn::set( Expr expr, Scope *set_scope ) {
     TODO;
 }
 

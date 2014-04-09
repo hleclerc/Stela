@@ -7,7 +7,7 @@ Expr RefExpr::expr() const {
     return data;
 }
 
-void RefExpr::set( Expr expr ) {
+void RefExpr::set( Expr expr, Scope *set_scope ) {
     data = expr;
 }
 

@@ -64,10 +64,10 @@ class SI32
 class SI64
     ___set_base_size_and_alig 64, 32
     
-    def init val : [ SI32, PI32, SI64, PI64, Bool ]
+    def init val : [ SI8, SI32, PI32, SI64, PI64, Bool ]
         ___reassign_rec val
     
-    def reassign val : [ SI32, PI32, SI64, PI64, Bool ]
+    def reassign val : [ SI8, SI32, PI32, SI64, PI64, Bool ]
         ___reassign_rec val
     
 class PI64
@@ -116,16 +116,27 @@ def inferior a, b
 class Vec[ T, static_size ]
     ___set_base_size_and_alig ___size_of( T ) * static_size, ___alig_of( T )
     
+    def init
+        i := 0
+        while i < static_size
+            select( i ).init()
+            i += 1
+    
+    def init val
+        i := 0
+        while i < static_size
+            select( i ).init val
+            i += 1
+    
     def select i
         ___get_slice self, T, ___size_of( T ) * i
     
     
-t := Vec[ SI8, 3 ]()
+t := Vec[ SI8, 3 ]( 10 )
 ___info t
-t[ 0 ] = 1
-___info t
-___info SI32 t[ 0 ]
+___info t[ 0 ]
+# ___info t[ 1 ]
 # ___info t.select 0
-# ___syscall SI64 t.a
+___syscall SI64 t[ 0 ]
 
 

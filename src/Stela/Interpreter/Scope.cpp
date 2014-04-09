@@ -22,6 +22,7 @@
 #include "../Inst/Op.h"
 
 #include "RefPointerOn.h"
+#include "RefSliceUnk.h"
 #include "RefSlice.h"
 #include "TypeInfo.h"
 #include "RefExpr.h"
@@ -359,6 +360,8 @@ Var Scope::get_attr( Var self, int name, const Expr &sf, int off ) {
 Var Scope::parse_GET_ATTR( const Expr &sf, int off, BinStreamReader bin ) {
     Var self = parse( sf, bin.read_offset() );
     int attr = read_nstring( sf, bin );
+    if ( ip->isa_Error( self ) )
+        return self;
     if ( Var res = get_attr( self, attr, sf, off ) )
         return res;
     return disp_error( "No attribute " + ip->glob_nstr_cor.str( attr ), sf, off );
@@ -432,6 +435,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     PI64 nsv_date = ++PRef::cur_date;
 
     // we repeat until there are no external modified values
+    int ne = ip->error_list.size();
     std::map<Ptr<PRef>,Expr> unknowns;
     for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.size(), ++cpt ) {
         if ( cpt == 100 )
@@ -442,6 +446,9 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         wh_scope.sv_map = &nsv;
         wh_scope.sv_date = nsv_date;
         wh_scope.parse( sf, tok );
+
+        if ( ne != ip->error_list.size() )
+            return ip->error_var;
 
         // if no new modified variables
         if ( old_nsv_size == nsv.size() )
@@ -933,7 +940,7 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
                     s->sv_map->operator[]( dst.data ) = dst.expr();
 
             //
-            dst.data->ptr->set( src_expr );
+            dst.data->ptr->set( src_expr, this );
         }
 
     } else {
@@ -1090,14 +1097,15 @@ Var Scope::parse_get_slice( const Expr &sf, int off, BinStreamReader bin ) {
     Var type = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
     Var voff = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
 
-    SI64 dec;
-    if ( not voff.expr().get_val( dec ) )
-        return disp_error( "expecting an int for size", sf, dec );
-
+    // type info
     Var pins = apply( type, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST, sf, off ); // partial_instanciation
     SI64 len = ip->type_info( pins.type_expr() )->static_size_in_bits;
 
-    return Var( pins.type, new RefSlice( self, dec, dec + len ) );
+    // known offset ?
+    SI64 dec;
+    if ( voff.expr().get_val( dec ) )
+        return Var( pins.type, new RefSlice( self, dec, dec + len ) );
+    return Var( pins.type, new RefSliceUnk( self, voff.expr(), len ) );
 }
 
 

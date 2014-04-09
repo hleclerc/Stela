@@ -43,7 +43,7 @@ public:
     Error &add( String msg, bool warn = false, bool due_to_not_ended_expr = false );
     operator bool() const { return error_list.size(); }
     void write_to_stream( Stream &os ) const;
-
+    int size() const;
 
 protected:
     SplittedVec<Error,4> error_list;
