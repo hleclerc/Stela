@@ -30,11 +30,22 @@ public:
             TODO;
         return data.ptr() + beg / 8;
     }
+    virtual Expr _smp_slice( int nout, int beg, int end ) {
+        if ( beg == 0 and end == size )
+            return Expr( this, nout );
+        if ( beg == end )
+            return cst();
+        if ( beg % 8 == 0 and end % 8 == 0 )
+            return cst( data.ptr() + beg / 8, data.ptr() + ( size + 7 ) / 8 + beg / 8, end - beg );
+        return Expr();
+    }
     virtual void write_to_stream( Stream &os ) const {
         write_dot( os );
     }
     virtual void write_dot( Stream &os ) const {
-        if ( size <= 8 )
+        if ( size == 0 )
+            os << "";
+        else if ( size <= 8 )
             os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
         else if ( size == 16 )
             os << *reinterpret_cast<const SI16 *>( data.ptr() );

@@ -41,7 +41,8 @@ Interpreter::Interpreter( ErrorList &error_list ) :
 
     main_scope = 0;
 
-    bt_ST = sizeof( ST ) == 8 ? bt_SI64 : bt_SI32;
+    bt_ST   = sizeof( ST ) == 8 ? bt_SI64    : bt_SI32;
+    type_ST = sizeof( ST ) == 8 ? &type_SI64 : &type_SI32;
 
     // constify
     error_var.data->flags = PRef::CONST;
@@ -343,7 +344,7 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
 
     // Data:
     //  - ptr to parent class
-    //  - type_ptr + ref on parameter [* nb parameters as defined in parent class]
+    //  - type_ptr + [parm type, parm ref]* nb parameters as defined in parent class
     Expr re = class_info->class_ptr;
     for( int i = 0; i < res->parameters.size(); ++i ) {
         ASSERT( parm_l[ i ]->type, "Type not defined" );

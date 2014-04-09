@@ -22,6 +22,7 @@
 #include "../Inst/Op.h"
 
 #include "RefPointerOn.h"
+#include "RefSlice.h"
 #include "TypeInfo.h"
 #include "RefExpr.h"
 
@@ -83,6 +84,12 @@ Var Scope::copy( const Var &var, const Expr &sf, int off ) {
         return Var( &ip->type_Error, cst() );
     if ( ip->isa_POD( var ) )
         return Var( var.type, var.expr() );
+    if ( ip->isa_Callable( var ) ) {
+        Var res( var.type, var.expr() );
+        res.add_ref_from( var );
+        return res;
+    }
+    PRINT( var );
     TODO;
     return var;
 }
@@ -1061,25 +1068,38 @@ Var Scope::parse_set_base_size_and_alig( const Expr &sf, int off, BinStreamReade
 
 Var Scope::parse_size_of( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-//     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
-//     Var r = apply( a, 0, 0, 0, 0, 0, true, APPLY_MODE_PARTIAL_INST, sf, bin.read_positive_integer() ); // partial_instanciation
-// 
-//     Var res( ip->type_for( S<ST>() ) );
-//     *reinterpret_cast<ST *>( res.data ) = r.type->size_in_bits;
-//     return res;
-    TODO; return ip->void_var;
+    Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var r = apply( a, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST, sf, off ); // partial_instanciation
+    SI64 s = ip->type_info( r.type_expr() )->static_size_in_bits;
+    // won't work for big endian architectures
+    return Var( ip->type_ST, cst( (PI8 *)&s, (PI8 *)0, ip->bt_ST->size_in_bits() ) );
 }
 
 Var Scope::parse_alig_of( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-//     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
-//     Var r = apply( a, 0, 0, 0, 0, 0, true, APPLY_MODE_PARTIAL_INST, sf, bin.read_positive_integer() ); // partial_instanciation
-// 
-//     Var res( ip->type_for( S<ST>() ) );
-//     *reinterpret_cast<ST *>( res.data ) = r.type->alig_in_bits;
-//     return res;
-    TODO; return ip->void_var;
+    Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var r = apply( a, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST, sf, off ); // partial_instanciation
+    SI64 s = ip->type_info( r.type_expr() )->static_alig_in_bits;
+    // won't work for big endian architectures
+    return Var( ip->type_ST, cst( (PI8 *)&s, (PI8 *)0, ip->bt_ST->size_in_bits() ) );
 }
+
+Var Scope::parse_get_slice( const Expr &sf, int off, BinStreamReader bin ) {
+    CHECK_PRIM_ARGS( 3 );
+    Var self = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var type = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var voff = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+
+    SI64 dec;
+    if ( not voff.expr().get_val( dec ) )
+        return disp_error( "expecting an int for size", sf, dec );
+
+    Var pins = apply( type, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST, sf, off ); // partial_instanciation
+    SI64 len = ip->type_info( pins.type_expr() )->static_size_in_bits;
+
+    return Var( pins.type, new RefSlice( self, dec, dec + len ) );
+}
+
 
 Var Scope::parse_select_SurdefList( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );

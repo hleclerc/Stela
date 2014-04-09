@@ -137,6 +137,7 @@ public:
     Var                          error_var;
     Var                          void_var;
 
+    Var                         *type_ST;
     const BaseType              *bt_ST;
 
     // attributes

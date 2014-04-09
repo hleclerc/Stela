@@ -14,6 +14,10 @@ Var::Var( Ptr<PRef> type, const Expr &expr ) : data( new PRef ), type( type ), f
     data->ptr = new RefExpr( expr );
 }
 
+Var::Var( Ptr<PRef> type, Ref *ref ) : data( new PRef ), type( type ), flags( 0 ) {
+    data->ptr = ref;
+}
+
 Var::Var( Var *type, const Expr &expr ) : data( new PRef ), type( type->data ), flags( 0 ) {
     data->ptr = new RefExpr( expr );
 }
@@ -92,15 +96,18 @@ static void write_var_type( Stream &os, Expr type ) {
         os << ip->glob_nstr_cor.str( ci->name );
         if ( ci->arg_names.size() ) {
             os << "[";
-            for( int i = 0; i < ci->arg_names.size(); ++i ) {
-                if ( i )
-                    os << ",";
-                write_var( os,
-                           slice( type, ( 2 * i + 1 ) * ps, ( 2 * i + 2 ) * ps ), // type
-                           slice( type, ( 2 * i + 2 ) * ps, ( 2 * i + 3 ) * ps ), // data
-                           true );
-            }
-            os << "]";
+            //            for( int i = 0; i < type.size_in_bits() / ps / 2; ++i )
+            //                //os << slice( type, ( 2 * i + 1 ) * ps, ( 2 * i + 2 ) * ps ) << ";";
+            ////            PRINT( type.size_in_bits() / ps / 2 );
+            //            for( int i = 0; i < type.size_in_bits() / ps / 2; ++i ) {
+            //                if ( i )
+            //                    os << ",";
+            //                write_var( os,
+            //                           slice( type, ( 2 * i + 1 ) * ps, ( 2 * i + 2 ) * ps ), // type
+            //                           slice( type, ( 2 * i + 2 ) * ps, ( 2 * i + 3 ) * ps ), // data
+            //                           true );
+            //            }
+            os << "...]";
         }
     } else
         os << "UndefinedType";

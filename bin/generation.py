@@ -472,6 +472,7 @@ base_primitives = string.split( """
     alig_of
     typeof
     address
+    get_slice
     pointed_value
     block_exec
     get_argc

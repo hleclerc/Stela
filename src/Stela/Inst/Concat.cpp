@@ -47,7 +47,7 @@ Expr concat( Expr a, Expr b ) {
             Vec<PI8> res( Size(), ( p_2 + 7 ) / 8, 0 );
             memcpy_bit( res.ptr(), p_0, da, 0, p_1 - p_0 );
             memcpy_bit( res.ptr(), p_1, db, 0, p_2 - p_1 );
-            return cst( res );
+            return cst( res.ptr(), 0, p_2 );
         }
     }
 

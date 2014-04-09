@@ -37,16 +37,28 @@ class Void
 
 class Type
     pass
+
+class SI8
+    ___set_base_size_and_alig 8, 8
     
+    def init
+    
+    def init val : [ SI8, SI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+    def reassign val : [ SI8, SI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+
 class SI32
     ___set_base_size_and_alig 32, 32
     
     def init
     
-    def init val : [ SI32, SI64, PI64 ]
+    def init val : [ SI8, SI32, SI64, PI64 ]
         ___reassign_rec val
     
-    def reassign val : SI32
+    def reassign val : [ SI8, SI32, SI64, PI64 ]
         ___reassign_rec val
     
 class SI64
@@ -101,12 +113,19 @@ def not_boolean a
 def inferior a, b
     ___inf a, b
 
-class Toto[ t, u ]
-    a := t
+class Vec[ T, static_size ]
+    ___set_base_size_and_alig ___size_of( T ) * static_size, ___alig_of( T )
     
-# ___info Toto[ 18 ]
-t := Toto[ 19, 20 ]()
-___info t.t
-___info t.u
-___info t.a
+    def select i
+        ___get_slice self, T, ___size_of( T ) * i
+    
+    
+t := Vec[ SI8, 3 ]()
+___info t
+t[ 0 ] = 1
+___info t
+___info SI32 t[ 0 ]
+# ___info t.select 0
 # ___syscall SI64 t.a
+
+

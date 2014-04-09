@@ -169,7 +169,7 @@ Expr Inst::_smp_slice( int nout, int beg, int end ) {
     if ( beg == 0 and end == size_in_bits( nout ) )
         return Expr( this, nout );
     if ( beg == end )
-        return cst( 0, 0, 0 );
+        return cst();
     return Expr();
 }
 
