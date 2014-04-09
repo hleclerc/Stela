@@ -45,6 +45,12 @@ Var Var::add_ref( int offset, const Var &var ) {
     return *this;
 }
 
+Var Var::add_ref_from( const Var &var ) {
+    if ( data and var and var.data )
+        data->add_ref_from( var.data.ptr() );
+    return *this;
+}
+
 Var Var::get_ref( int offset ) {
     if ( data )
         return data->get_ref( offset );

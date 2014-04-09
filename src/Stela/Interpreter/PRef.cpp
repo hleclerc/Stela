@@ -12,6 +12,12 @@ PRef::~PRef() {
     delete refs;
 }
 
+void PRef::add_ref_from( const PRef *var ) {
+    if ( var->refs )
+        for( const VRF &ref : *var->refs )
+            add_ref( ref.off, ref.var );
+}
+
 void PRef::add_ref( int offset, const Var &var ) {
     get_vrf( offset )->var = var;
 }

@@ -184,7 +184,7 @@ Var Interpreter::ext_method( const Var &var ) {
     return Var();
 }
 
-Var Interpreter::make_surdef_list( const Vec<Var> &lst, Var self ) {
+Var Interpreter::make_Callable( const Vec<Var> &lst, Var self ) {
     Expr surdef_list_data = cst( SI32( lst.size() ) );
     for( int i = 0; i < lst.size(); ++i )
         surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr() ) );
@@ -201,6 +201,32 @@ Var Interpreter::make_surdef_list( const Vec<Var> &lst, Var self ) {
 
     Var *callable_type = type_for( class_info( class_Callable ), parms );
     return Var( callable_type, self ? pointer_on( self.expr() ) : cst() ).add_ref( 0, self );
+}
+
+Var Interpreter::update_Callable( Var callable, Var varargs ) {
+    // -> new Callable[ surdef_list, self_type, parm_type ]
+    TypeInfo *type = type_info( callable.type_expr() );
+    if ( isa_Void( type->parameters[ 2 ] ) ) {
+        // -> no previously defined parms
+        Expr n_data = concat( callable.expr(), pointer_on( varargs.expr() ) );
+        Var varargs_type = type_of( varargs );
+
+
+        // -> Callable[ surdef_list, self_type, parm_type ]
+        Var *parms[ 3 ];
+        parms[ 0 ] = &type->parameters[ 0 ];
+        parms[ 1 ] = &type->parameters[ 1 ];
+        parms[ 2 ] = &varargs_type;
+
+        Var res( type_for( class_info( class_Callable ), parms ), n_data );
+        res.add_ref_from( callable );
+        res.add_ref( callable.expr().size_in_bits(), varargs );
+        return res;
+    }
+    //
+    PRINT( type->parameters[ 2 ] );
+    TODO;
+    return error_var;
 }
 
 Var Interpreter::type_of( const Var &var ) const {
@@ -288,6 +314,17 @@ Var Interpreter::_get_type_var( ClassInfo *class_info ) {
     return Var( &type_Type );
 }
 
+Var Interpreter::copied_or_constified( const Var &var ) {
+    // need to make a copy ?
+    if ( var.referenced_more_than_one_time() and not var.data->is_const() )
+        return constified( main_scope->copy( var, Expr(), 0 ) );
+    // else, add const flags
+    Var res = var;
+    res.data->flags |= PRef::CONST;
+    res.flags |= Var::WEAK_CONST;
+    return res;
+}
+
 Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
     for( TypeInfo *t = class_info->last; t; t = t->prev ) {
         // ASSERT( t->parameters.size() == parm_s, "parameter lists not of the same size" );
@@ -302,7 +339,7 @@ Var *Interpreter::type_for( ClassInfo *class_info, Var **parm_l ) {
     // -> new TypeInfo
     TypeInfo *res = new TypeInfo( class_info );
     for( int i = 0; i < class_info->arg_names.size(); ++i )
-        res->parameters << constified( *parm_l[ i ] );
+        res->parameters << copied_or_constified( *parm_l[ i ] );
 
     // Data:
     //  - ptr to parent class
@@ -423,4 +460,10 @@ Var *Interpreter::type_for( const BaseType *bt ) {
     return 0;
 }
 
+bool Interpreter::isa_POD( const Var &var ) const {
+    #define DECL_BT( T ) if ( isa_##T( var ) ) return true;
+    #include "../Inst/DeclArytTypes.h"
+    #undef DECL_BT
+    return false;
+}
 

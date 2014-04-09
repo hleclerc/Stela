@@ -68,7 +68,9 @@ public:
     Expr              cst_ptr( SI64 val );
     Var               make_varargs_var( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name );
     Var               ext_method( const Var &var ); ///< return var if var is a function with self as arg
-    Var               make_surdef_list( const Vec<Var> &lst, Var self );
+    Var               make_Callable( const Vec<Var> &lst, Var self );
+    Var               update_Callable( Var surdef_list, Var varargs );
+    Var               copied_or_constified( const Var &var );
 
     Var              *_make_varargs_type( const Vec<Var> &uv_args, const Vec<Var> &nv_args, const Vec<int> &nv_name, int off );
     void              _update_base_type_from_class_expr( Var type, Expr class_expr );
@@ -127,6 +129,9 @@ public:
         bool isa_##T( const Var &var ) const;
     #include "DeclParmClass.h"
     #undef DECL_BT
+
+    bool isa_POD( const Var &var ) const;
+
 
     // std variables
     Var                          error_var;

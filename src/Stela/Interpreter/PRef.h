@@ -21,6 +21,7 @@ struct PRef : ObjectWithCptUse {
     void write_to_stream( Stream &os ) const { os << ptr; }
     Expr expr() const { return ptr ? ptr->expr() : Expr(); }
 
+    void add_ref_from( const PRef *var );
     void add_ref( int offset, const Var &var );
     Var  get_ref( int offset );
     VRF *get_vrf( int offset );

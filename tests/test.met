@@ -14,7 +14,6 @@ class Def
 # MUST be defined before any call to find_var
 class Callable[ surdef_list, self_type, parm_type ]
     def select( varargs )
-        # ___info self
         ___select_SurdefList self, varargs
 
 class SurdefList
@@ -102,9 +101,12 @@ def not_boolean a
 def inferior a, b
     ___inf a, b
 
-class Toto[ t ]
+class Toto[ t, u ]
     a := t
     
 # ___info Toto[ 18 ]
-Toto[ 19 ]()
+t := Toto[ 19, 20 ]()
+___info t.t
+___info t.u
+___info t.a
 # ___syscall SI64 t.a

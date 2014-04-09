@@ -81,6 +81,8 @@ int Scope::read_nstring( const Expr &sf, BinStreamReader &bin ) {
 Var Scope::copy( const Var &var, const Expr &sf, int off ) {
     if ( ip->isa_Error( var ) )
         return Var( &ip->type_Error, cst() );
+    if ( ip->isa_POD( var ) )
+        return Var( var.type, var.expr() );
     TODO;
     return var;
 }
@@ -340,7 +342,7 @@ Var Scope::get_attr( Var self, int name, const Expr &sf, int off ) {
             if ( not ip->ext_method( lst[ i ] ) )
                 lst.remove_unordered( i-- );
 
-        return ip->make_surdef_list( lst, self );
+        return ip->make_Callable( lst, self );
     }
 
     return res;
@@ -711,6 +713,13 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
         //  - self ref
         //  - parm data
         // a type contains class ptr + [ parameter type, parameter refs ]*
+        // 0 * ps -> Callable
+        // 1 * ps -> surdef_list_type
+        // 2 * ps -> surdef_list_data
+        // 3 * ps -> self_type_type
+        // 4 * ps -> self_type_data
+        // 5 * ps -> parm_type_type
+        // 6 * ps -> parm_type_data
         SI32 nb_surdefs = 0, ps = arch->ptr_size;
         Expr surdef_list_ptr_data = slice( f.type->ptr->expr(), 2 * ps, 3 * ps );
         if ( not surdef_list_ptr_data.get_vat( nb_surdefs ) )
@@ -728,21 +737,38 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
         }
 
         // parm
-        int pnu = 0, pnn = 0, *pn_names = 0;
-        Var *pu_args = 0, *pn_args = 0;
+        Vec<int> pn_names;
+        Vec<Var> pu_args, pn_args;
 
-        Expr parm_tp = slice( f.type->ptr->expr(), 6 * ps, 7 * ps );
-        PRINT( parm_tp );
-        if ( TypeInfo *parm_ci = ip->type_info( parm_tp ) ) {
-            PRINT( parm_ci->orig->name );
-            // TypeInfo *t = ip->type_info()
-            //if ( parm_ci->name != STRING_Void_NUM ) {
-            //    PRINT( ip->glob_nstr_cor.str( parm_ci->name ) );
-            //    PRINT( off_ref );
-            //    PRINT( f.get_ref( off_ref ) );
-            //}
+        Expr parm_tp = slice( f.type->ptr->expr(), 5 * ps, 6 * ps );
+        if ( ClassInfo *parm_ci = ip->class_info( parm_tp, false ) ) {
+            if ( parm_ci->name == STRING_Type_NUM ) {
+                int off = 0;
+                Var varargs = f.get_ref( off_ref );
+                for( const TypeInfo *type = ip->type_info( varargs.type_expr() ); ; ) {
+                    if ( type->orig->name == STRING_VarargsItemEnd_NUM )
+                        break;
+
+                    int name;
+                    if ( not type->parameters[ 1 ].expr().get_val( name ) )
+                        return disp_error( "expecting an int as second arg...", sf, off );
+
+                    if ( name >= 0 ) {
+                        pn_names << name;
+                        pn_args  << varargs.get_ref( off );
+                    } else {
+                        pu_args  << varargs.get_ref( off );
+                    }
+
+                    off += ps;
+                    type = ip->type_info( type->parameters[ 2 ].expr() );
+                }
+            }
         }
+        int pnu = pu_args.size(), pnn = pn_args.size();
 
+
+        // tests
         CallableInfo *ci[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
             Expr surdef = val_at( surdef_list_ptr_data,
@@ -764,7 +790,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
                 break;
             }
 
-            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, l_self, sf, off, this );
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_names, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, sf, off, this );
 
             if ( trials[ i ]->ok() ) {
                 if ( not trials[ i ]->cond ) {
@@ -843,7 +869,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
                 else
                     ok_cond = cond;
 
-                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args, pnn, pn_names, pn_args, l_self, sf, off, this );
+                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, sf, off, this );
                 set( res, loc, sf, off, cond );
 
                 if ( trials[ i ]->cond )
@@ -879,11 +905,11 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
         dst.type = src.type;
 
     // data
-    if ( not dst.data )
-        dst.data = new PRef;
+    //if ( not dst.data )
+    //    dst.data = new PRef;
 
     Expr src_expr = simplified_expr( src, sf, off );
-    if ( dst.data->ptr ) {
+    if ( dst.data and dst.data->ptr ) {
         Expr dst_expr = simplified_expr( dst, sf, off );
 
         // phi( ... )
@@ -903,8 +929,10 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
             dst.data->ptr->set( src_expr );
         }
 
-    } else
-        dst.data->ptr = new RefExpr( src_expr );
+    } else {
+        ASSERT( not dst.data, "weird" );
+        dst.data = src.data;
+    }
 
     return dst;
 }
@@ -982,7 +1010,7 @@ Var Scope::find_var( int name ) {
     // surdef_list = nb_surdefs, [ surdef_expr ]*n
     Vec<Var> lst;
     find_var_clist( lst, name );
-    return ip->make_surdef_list( lst, self );
+    return ip->make_Callable( lst, self );
 }
 
 #define CHECK_PRIM_ARGS( N ) \
@@ -1055,34 +1083,15 @@ Var Scope::parse_alig_of( const Expr &sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_select_SurdefList( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
-    Var surdef_list = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
-    Var varargs     = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var callable = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var varargs  = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
 
-    if ( ip->isa_Callable( surdef_list ) ) {
-        // -> new Callable[ surdef_list, self_type, parm_type ]
-        TypeInfo *type = ip->type_info( surdef_list.type_expr() );
-        if ( ip->isa_Void( type->parameters[ 2 ] ) ) {
-            Expr n_data = concat( surdef_list.expr(), pointer_on( varargs.expr() ) );
-            Var varargs_type = ip->type_of( varargs );
+    if ( ip->isa_Callable( callable ) )
+        return ip->update_Callable( callable, varargs );
 
-            // -> Callable[ surdef_list, self_type, parm_type ]
-            Var *parms[ 3 ];
-            parms[ 0 ] = &type->parameters[ 0 ];
-            parms[ 1 ] = &type->parameters[ 1 ];
-            parms[ 2 ] = &varargs_type;
-
-            Var res( ip->type_for( ip->class_info( ip->class_Callable ), parms ), n_data );
-            res.add_ref( surdef_list.expr().size_in_bits(), varargs );
-            return res;
-        }
-        //
-        PRINT( type->parameters[ 2 ] );
-        TODO;
-    }
-
-    PRINT( surdef_list );
+    PRINT( callable );
     PRINT( varargs );
-    PRINT( ip->isa_Class( surdef_list ) );
+    PRINT( ip->isa_Class( callable ) );
     return disp_error( "no surdef list surdef", sf, off );
     /*
     if ( ip->isa_Class( surdef_list ) ) {
