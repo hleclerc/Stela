@@ -21,8 +21,13 @@ enum {
     PREC_not    = 17,
 
     PREC_add    = 20,
-    PREC_mul    = 30
+    PREC_sub    = 20,
+    PREC_mul    = 30,
+    PREC_div    = 30,
+    PREC_mod    = 30,
 
+
+    PREC_none
 };
 
 PI64 CppInst::cur_op_id = 0;
@@ -36,11 +41,15 @@ CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(
 
 void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
     const BaseType *bt = info->out[ nout ].bt_hint;
-    ASSERT( info->out[ nout ].num < 0, "weird" );
+    // ASSERT( info->out[ nout ].num < 0, "weird" );
     ASSERT( bt, "bad" );
 
-    info->out[ nout ].num = cc->get_free_reg( bt );
-    os << *bt << " R" << info->out[ nout ].num;
+    if ( info->out[ nout ].num < 0 ) {
+        info->out[ nout ].num = cc->get_free_reg( bt );
+        os << *bt << " R" << info->out[ nout ].num;
+    } else if ( equ_sgn )
+        os << "R" << info->out[ nout ].num;
+
     if ( equ_sgn )
         os << " = ";
 }
@@ -168,6 +177,10 @@ void CppInst::set_inp_bt_hint( int ninp, const BaseType *bt ) {
         for( int nch = 2; nch < 4; ++nch )
             ext[ nch ]->set_out_bt_hint( ninp, bt );
         break;
+    case CppInst::Id_SetVal:
+        if ( ninp == 0 )
+            set_out_bt_hint( 0, bt );
+        break;
     }
 }
 
@@ -200,6 +213,7 @@ void CppInst::bt_hint_propagation() {
         break;
     case CppInst::Id_Conv:
         set_out_bt_hint( 0, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
+        inp[ 0 ].inst->set_out_bt_hint( inp[ 0 ].nout, reinterpret_cast<const BaseType **>( additionnal_data )[ 1 ] );
         break;
     case CppInst::Id_Rand:
         set_out_bt_hint( 0, bt_PI64, true );
@@ -247,7 +261,11 @@ void CppInst::write_to_stream( Stream &os ) const {
 }
 
 static bool inlinable( const CppInst::Out &out ) {
-    return out.parents.size() == 1 and out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst;
+    return out.parents.size() == 1 and
+            out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst and
+            ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetVal or out.parents[ 0 ].ninp != 0 ) and
+            ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetValB or out.parents[ 0 ].ninp != 0 )
+            ;
 }
 
 static bool declable( CppExpr expr ) {
@@ -257,10 +275,18 @@ static bool declable( CppExpr expr ) {
 /// binary operation
 void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op ) {
     if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
+        //        if ( out[ 0 ].num < 0 ) {
+        //            for( int i = 0; i < 2; ++i ) {
+        //            }
+        //            PRINT( inp[ 0 ].inst->out[ inp[ 0 ].nout ].num );
+        //            PRINT( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] );
+        //            PRINT( cc->to_be_used[ inp[ 1 ].inst->out[ inp[ 1 ].nout ].num ] );
+        //        }
+
         if ( prec < 0 ) cc->on.write_beg() << decl( cc, 0 );
-        if ( prec > prec_op ) cc->os << "( ";
+        if ( prec >= prec_op ) cc->os << "( ";
         cc->os << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout, prec_op ) << op_str << inp[ 1 ].inst->inst( cc, inp[ 1 ].nout, prec_op );
-        if ( prec > prec_op ) cc->os << " )";
+        if ( prec >= prec_op ) cc->os << " )";
         if ( prec < 0 ) cc->on.write_end( ";" );
     }
 }
@@ -435,7 +461,21 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_Op_inf_eq: write_code_bin_op( cc, prec, " <= " , PREC_inf_eq ); break;
 
     case CppInst::Id_Op_add: write_code_bin_op( cc, prec, " + ", PREC_add ); break;
+    case CppInst::Id_Op_sub: write_code_bin_op( cc, prec, " - ", PREC_sub ); break;
     case CppInst::Id_Op_mul: write_code_bin_op( cc, prec, " * ", PREC_mul ); break;
+    case CppInst::Id_Op_div: write_code_bin_op( cc, prec, " / ", PREC_div ); break;
+    case CppInst::Id_Op_mod: write_code_bin_op( cc, prec, " % ", PREC_mod ); break;
+
+    case CppInst::Id_SetVal:
+        TODO;
+        break;
+
+    case CppInst::Id_SetValB:
+        cc->on << "reinterpret_cast<PI8 *>( &"
+               << disp( cc, inp[ 0 ] ) << " )[ "
+               << disp( cc, inp[ 2 ] ) << " ] = "
+               << disp( cc, inp[ 1 ] ) << ";";
+        break;
 
     default:
         #define DECL_INST( INST ) if ( inst_id == CppInst::Id_##INST ) std::cout << #INST << std::endl;

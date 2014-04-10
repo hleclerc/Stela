@@ -47,9 +47,9 @@ const PI8 *Inst::vat_data( int nout, int beg, int end ) const {
     return 0;
 }
 
-//const BaseType *Inst::out_bt( int n ) const {
-//    return 0;
-//}
+const BaseType *Inst::out_bt( int n ) const {
+    return 0;
+}
 
 int Inst::ext_size_disp() const {
     return ext_size();

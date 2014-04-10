@@ -2,6 +2,7 @@
 #define BASETYPE_H
 
 #include "../System/Stream.h"
+#include "../System/S.h"
 
 /**
 */
@@ -28,7 +29,7 @@ public:
     virtual bool conv( PI8 *res, const BaseType *ta, const PI8 *da ) const = 0;
 };
 
-#define DECL_BT( T ) extern const BaseType *bt_##T;
+#define DECL_BT( T ) extern const BaseType *bt_##T; inline const BaseType *bt_for_type( S<T> ) { return bt_##T; }
 #include "DeclArytTypes.h"
 #undef DECL_BT
 

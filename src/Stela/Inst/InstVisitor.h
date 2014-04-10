@@ -18,6 +18,7 @@ struct InstVisitor {
     virtual void phi       ( const Inst &inst ) { def( inst ); }
     virtual void concat    ( const Inst &inst ) { def( inst ); }
     virtual void setval    ( const Inst &inst ) { def( inst ); }
+    virtual void setval_b  ( const Inst &inst ) { def( inst ); }
     virtual void syscall   ( const Inst &inst ) { def( inst ); }
     virtual void pointer_on( const Inst &inst ) { def( inst ); }
     virtual void while_inp ( const Inst &inst ) { def( inst ); }

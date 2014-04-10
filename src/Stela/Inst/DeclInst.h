@@ -1,5 +1,6 @@
 DECL_INST( Concat )
 DECL_INST( SetVal )
+DECL_INST( SetValB )
 DECL_INST( Cst )
 DECL_INST( PointerOn )
 DECL_INST( Slice )

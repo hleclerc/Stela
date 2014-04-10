@@ -4,6 +4,7 @@
 #include "../System/SplittedVec.h"
 #include "../System/StreamSep.h"
 #include "../System/AutoPtr.h"
+#include "../Inst/BaseType.h"
 #include "../Inst/Expr.h"
 #include "CppInst.h"
 #include <sstream>
@@ -49,7 +50,10 @@ protected:
     SplittedVec<CppInst,64>          inst_list;
     SplittedVec<PI8,64>              addd_list; ///< additionnal_data list
     std::set<String>                 includes;
+
     int                              nb_regs;
+    std::map<int,int>                to_be_used; ///< nb of time a register have to be used
+
     std::map<int,AutoPtr<BaseType> > bt_map;
 
     // output

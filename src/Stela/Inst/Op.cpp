@@ -17,9 +17,9 @@ public:
     virtual bool equal( const Inst *b ) const {
         return Inst::equal( b ) and bt == static_cast<const Op *>( b )->bt;
     }
-    //virtual const BaseType *out_bt( int n ) const {
-    //    return bt;
-    //}
+    virtual const BaseType *out_bt( int n ) const {
+        return bt;
+    }
     virtual int sizeof_additionnal_data() const {
         return sizeof( const BaseType * );
     }
@@ -106,6 +106,16 @@ static Expr _simplify_bop( Op_and, const BaseType *bt, const PI8 *da, const PI8 
             return *da ? b : a;
         if ( db )
             return *db ? a : b;
+    }
+    return Expr();
+}
+static Expr _simplify_bop( Op_mul, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
+    if ( da ) {
+        SI64 m;
+        if ( bt_SI64->conv( (PI8 *)&m, bt, da ) ) {
+            if ( m == 1 )
+                return b;
+        }
     }
     return Expr();
 }

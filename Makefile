@@ -22,12 +22,14 @@ lex: ext/PrepArg
 
 gr: ext/PrepArg
 	${MC} src/stela.cpp --disp-inst-g ${SRC}
-	
+	cat out.cpp
+
 tok: ext/PrepArg
 	${MC} src/stela.cpp --disp-tokens ${SRC}
 	
 gra: ext/PrepArg
 	${MC} src/stela.cpp --disp-inst-g-wo-phi ${SRC}
+	cat out.cpp
 
 gravg: ext/PrepArg
 	${MC} --valgrind src/stela.cpp --disp-inst-g-wo-phi ${SRC}

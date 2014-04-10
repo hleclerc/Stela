@@ -52,10 +52,6 @@ Expr slice( Expr expr, const Expr &beg, int len ) {
 }
 
 Expr slice( Expr expr, int beg, int end ) {
-    PRINT( expr );
-    PRINT( expr.size_in_bits() );
-    PRINT( beg );
-    PRINT( end );
     ASSERT( beg >= 0 and beg <= expr.size_in_bits(), "Wrong size" );
     ASSERT( end >= 0 and end <= expr.size_in_bits(), "Wrong size" );
     ASSERT( beg <= end, "Wrong size" );

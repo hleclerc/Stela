@@ -37,6 +37,10 @@ template<> struct IsFp<FP32> { enum { res = true }; };
 template<> struct IsFp<FP64> { enum { res = true }; };
 template<> struct IsFp<FP80> { enum { res = true }; };
 
+template<class T> void _disp( Stream &os, const T &data ) { os << data; }
+void _disp( Stream &os, const PI8 &data ) { os << (int)data; }
+void _disp( Stream &os, const SI8 &data ) { os << (int)data; }
+
 /**
 */
 template<class T>
@@ -44,7 +48,7 @@ struct BaseType_ : BaseType {
     BaseType_( const char *name ) : name( name ) {
     }
     virtual void write_to_stream( Stream &os, const PI8 *data ) const {
-        os << *reinterpret_cast<const T *>( data );
+        _disp( os, *reinterpret_cast<const T *>( data ) );
     }
     virtual void write_to_stream( Stream &os ) const {
         os << name;
