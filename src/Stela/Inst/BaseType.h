@@ -9,12 +9,16 @@
 class BaseType {
 public:
     virtual ~BaseType();
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const = 0;
     virtual void write_to_stream( Stream &os, const PI8 *data ) const = 0;
     virtual void write_to_stream( Stream &os ) const = 0;
-    virtual int size_in_bytes() const = 0;
-    virtual int size_in_bits() const = 0;
-    virtual int is_signed() const = 0;
-    virtual int is_fp() const = 0;
+    virtual void write_c_decl( Stream &os ) const = 0;
+    virtual int  size_in_bytes() const = 0;
+    virtual int  size_in_bits() const = 0;
+    virtual int  is_signed() const = 0;
+    virtual bool c_type() const = 0;
+    virtual int  is_fp() const = 0;
+
 
     // operations
     #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da, const PI8 *db ) const = 0;

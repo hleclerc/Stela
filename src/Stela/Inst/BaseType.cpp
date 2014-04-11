@@ -38,8 +38,23 @@ template<> struct IsFp<FP64> { enum { res = true }; };
 template<> struct IsFp<FP80> { enum { res = true }; };
 
 template<class T> void _disp( Stream &os, const T &data ) { os << data; }
-void _disp( Stream &os, const PI8 &data ) { os << (int)data; }
-void _disp( Stream &os, const SI8 &data ) { os << (int)data; }
+static void _disp( Stream &os, const PI8 &data ) { os << (int)data; }
+static void _disp( Stream &os, const SI8 &data ) { os << (int)data; }
+
+namespace {
+const char *cpp_name( S<FP32> ) { return "float"; }
+const char *cpp_name( S<FP64> ) { return "double"; }
+const char *cpp_name( S<FP80> ) { return "long double"; }
+const char *cpp_name( S<Bool> ) { return "bool"; }
+const char *cpp_name( S<SI8 > ) { return "int8_t"; }
+const char *cpp_name( S<SI16> ) { return "int16_t"; }
+const char *cpp_name( S<SI32> ) { return "int32_t"; }
+const char *cpp_name( S<SI64> ) { return "int64_t"; }
+const char *cpp_name( S<PI8 > ) { return "uint8_t"; }
+const char *cpp_name( S<PI16> ) { return "uint16_t"; }
+const char *cpp_name( S<PI32> ) { return "uint32_t"; }
+const char *cpp_name( S<PI64> ) { return "uint64_t"; }
+}
 
 /**
 */
@@ -47,11 +62,18 @@ template<class T>
 struct BaseType_ : BaseType {
     BaseType_( const char *name ) : name( name ) {
     }
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const {
+        if ( knwn == 0 or *knwn /*TODO: test all the bits*/ )
+            _disp( os << " = ", *reinterpret_cast<const T *>( data ) );
+    }
     virtual void write_to_stream( Stream &os, const PI8 *data ) const {
         _disp( os, *reinterpret_cast<const T *>( data ) );
     }
     virtual void write_to_stream( Stream &os ) const {
         os << name;
+    }
+    virtual void write_c_decl( Stream &os ) const {
+        os << "typedef " << cpp_name( S<T>() ) << " " << name << ";\n";
     }
     virtual int size_in_bytes() const {
         return ( SizeInBits<T>::res + 7 ) / 8;
@@ -61,6 +83,9 @@ struct BaseType_ : BaseType {
     }
     virtual int is_signed() const {
         return IsSigned<T>::res;
+    }
+    virtual bool c_type() const {
+        return true;
     }
     virtual int is_fp() const {
         return IsFp<T>::res;
@@ -95,12 +120,15 @@ struct BaseType_ : BaseType {
 
 struct BaseType_Void : BaseType {
     BaseType_Void( const char *name ) : name( name ) { }
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const {}
     virtual void write_to_stream( Stream &os, const PI8 *data ) const { os << "void"; }
     virtual void write_to_stream( Stream &os ) const { os << name; }
-    virtual int size_in_bytes() const { return 0; }
-    virtual int size_in_bits() const { return 0; }
-    virtual int is_signed() const { return false; }
-    virtual int is_fp() const { return false; }
+    virtual void write_c_decl( Stream &os ) const { os << "typedef void        Void;\n"; }
+    virtual int  size_in_bytes() const { return 0; }
+    virtual int  size_in_bits() const { return 0; }
+    virtual int  is_signed() const { return false; }
+    virtual bool c_type() const { return true; }
+    virtual int  is_fp() const { return false; }
 
     #define DECL_IR_TOK( OP ) virtual void op_##OP( PI8 *res, const PI8 *da, const PI8 *db ) const  {}
     #include "../Ir/Decl_BinaryOperations.h"

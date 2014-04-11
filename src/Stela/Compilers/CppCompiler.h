@@ -54,7 +54,8 @@ protected:
     int                              nb_regs;
     std::map<int,int>                to_be_used; ///< nb of time a register have to be used
 
-    std::map<int,AutoPtr<BaseType> > bt_map;
+    std::map<int,AutoPtr<BaseType> > bt_map; ///< size vs bt
+    std::set<const BaseType *>       bt_to_decl;
 
     // output
     StreamSepMaker<std::ostringstream> on;

@@ -134,7 +134,8 @@ class Vec[ T, static_size ]
     
 t := Vec[ SI8, 3 ]()
 t[ ___rand() % 3 ] = 5
-___syscall SI64 t[ 0 ]
+t[ ___rand() % 3 ] = 15
+___syscall SI64 t[ 1 ]
 # ___info t[ 1 ]
 # ___info t.select 0
 # ___syscall SI64 t[ 0 ]

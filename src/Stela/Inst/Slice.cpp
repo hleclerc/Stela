@@ -21,6 +21,13 @@ public:
     virtual const PI8 *cst_data( int nout, int lbeg, int lend ) const {
         return inp_expr( 0 ).cst_data( beg + lbeg, beg + lend );
     }
+    virtual int sizeof_additionnal_data() const {
+        return 2 * sizeof( int );
+    }
+    virtual void copy_additionnal_data_to( PI8 *dst ) const {
+        memcpy( dst + 0 * sizeof( int ), &beg, sizeof( int ) );
+        memcpy( dst + 1 * sizeof( int ), &end, sizeof( int ) );
+    }
     virtual Expr _smp_pointer_on( int nout ) {
         if ( Expr res = Inst::_smp_pointer_on( nout ) )
             return res;

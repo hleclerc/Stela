@@ -41,8 +41,9 @@ CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(
 
 void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
     const BaseType *bt = info->out[ nout ].bt_hint;
-    // ASSERT( info->out[ nout ].num < 0, "weird" );
+    cc->bt_to_decl.insert( bt );
     ASSERT( bt, "bad" );
+
 
     if ( info->out[ nout ].num < 0 ) {
         info->out[ nout ].num = cc->get_free_reg( bt );
@@ -55,6 +56,14 @@ void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
 }
 
 void CppInst::InstWriter::write_to_stream( Stream &os ) const {
+    if ( ptr ) {
+        ASSERT( info->out[ nout ].num >= 0, "..." );
+        if ( info->out[ nout ].bt_hint->size_in_bits() != 8 )
+            os << "(char *)";
+        os << "&R" << info->out[ nout ].num;
+        return;
+    }
+
     if ( info->inst_id == CppInst::Id_IfInp ) {
         InstWriter n = *this;
         n.info = info->ext_parent->inp[ nout ].inst;
@@ -77,17 +86,18 @@ CppInst::DeclWriter CppInst::decl( CppCompiler *cc, int nout, bool equ_sgn ) {
     return res;
 }
 
-CppInst::InstWriter CppInst::inst( CppCompiler *cc, int nout, int precedance ) {
+CppInst::InstWriter CppInst::inst( CppCompiler *cc, int nout, int precedance, bool ptr ) {
     InstWriter res;
     res.precedance = precedance;
     res.info = this;
     res.nout = nout;
+    res.ptr = ptr;
     res.cc = cc;
     return res;
 }
 
-CppInst::InstWriter CppInst::disp( CppCompiler *cc, CppExpr expr, int precedance ) {
-    return expr.inst->inst( cc, expr.nout, precedance );
+CppInst::InstWriter CppInst::disp( CppCompiler *cc, CppExpr expr, int precedance, bool ptr ) {
+    return expr.inst->inst( cc, expr.nout, precedance, ptr );
 }
 
 int CppInst::add_child( CppExpr expr ) {
@@ -178,6 +188,7 @@ void CppInst::set_inp_bt_hint( int ninp, const BaseType *bt ) {
             ext[ nch ]->set_out_bt_hint( ninp, bt );
         break;
     case CppInst::Id_SetVal:
+    case CppInst::Id_SetValB:
         if ( ninp == 0 )
             set_out_bt_hint( 0, bt );
         break;
@@ -262,6 +273,7 @@ void CppInst::write_to_stream( Stream &os ) const {
 
 static bool inlinable( const CppInst::Out &out ) {
     return out.parents.size() == 1 and
+            out.parents[ 0 ].inst->inst_id != Inst::Id_Slice and
             out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst and
             ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetVal or out.parents[ 0 ].ninp != 0 ) and
             ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetValB or out.parents[ 0 ].ninp != 0 )
@@ -296,9 +308,14 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_Cst:
         if ( prec >= 0 )
             out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
-        else if ( not inlinable( out[ 0 ] ) ) {
-            cc->on.write_beg() << decl( cc, 0 );
-            out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
+        else if ( not inlinable( out[ 0 ] ) or not out[ 0 ].bt_hint->c_type() ) {
+            cc->on.write_beg() << decl( cc, 0, false );
+            int s = out[ 0 ].bt_hint->size_in_bytes();
+            out[ 0 ].bt_hint->write_c_definition(
+                        cc->os,
+                        "R" + to_string( out[ 0 ].num ),
+                        additionnal_data + sizeof( int ),
+                        additionnal_data + sizeof( int ) + s );
             cc->on.write_end( ";" );
         }
         break;
@@ -306,9 +323,10 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         cc->on << decl( cc, 0 ) << "rand();";
         break;
     case CppInst::Id_Conv:
-        if ( prec >= 0 )
+        if ( prec >= 0 ) {
+            cc->bt_to_decl.insert( out[ 0 ].bt_hint );
             cc->os << *out[ 0 ].bt_hint << "( " << disp( cc, inp[ 0 ] ) << " )";
-        else if ( not inlinable( out[ 0 ] ) )
+        } else if ( not inlinable( out[ 0 ] ) )
             cc->on << decl( cc, 0 ) << disp( cc, inp[ 0 ] ) << ";";
         break;
     case CppInst::Id_Phi:
@@ -382,30 +400,6 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             }
         }
 
-        // while ( true ) { if ( cond ) break; ... }
-        //        if ( while_has_only_if_with_cond_as_inp() ) {
-        //            cc->on << "while ( true ) { // yop";
-        //            cc->on.nsp += 4;
-
-        //            // output the condition (to continue)
-        //            Vec<CppInst *> out;
-        //            out << ext[ 0 ]->inp.back().inst;
-        //            cc->output_code_for( out );
-
-        //            //
-        //            out.resize( 0 );
-        //            for( int i = 0; i < inp.size(); ++i ) {
-        //                out << ext[ 0 ]->inp[ i ].inst;
-        //                PRINT( *ext[ 0 ]->inp[ i ].inst->ext[ 1 ] );
-        //                ext[ 0 ]->inp[ i ].inst->ext[ 1 ]->write_break = true;
-        //            }
-        //            cc->output_code_for( out );
-
-        //            cc->on.nsp -= 4;
-        //            cc->on << "} // yop";
-        //            break;
-        //        }
-
         //
         cc->on << "while ( true ) {";
 
@@ -471,11 +465,28 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         break;
 
     case CppInst::Id_SetValB:
-        cc->on << "reinterpret_cast<PI8 *>( &"
-               << disp( cc, inp[ 0 ] ) << " )[ "
-               << disp( cc, inp[ 2 ] ) << " ] = "
-               << disp( cc, inp[ 1 ] ) << ";";
+        if ( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] == 1 ) {
+            // -> we can reuse the previous reg
+            out[ 0 ].num = inp[ 0 ].inst->out[ inp[ 0 ].nout ].num;
+            cc->on << "*(" << *inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint << " *)( "
+                   << disp( cc, CppExpr( this, 0 ), 0, true ) << " + "
+                   << disp( cc, inp[ 2 ], PREC_add ) << " ) = "
+                   << disp( cc, inp[ 1 ] ) << ";";
+        } else
+            TODO;
         break;
+
+    case CppInst::Id_Slice: {
+        int beg = *(int *)( additionnal_data + 0 * sizeof( int ) );
+        int end = *(int *)( additionnal_data + 1 * sizeof( int ) );
+        if ( beg % 8 or end % 8 )
+            TODO;
+        if ( beg ) {
+            cc->on << decl( cc, 0 ) << "*(const " << *out[ 0 ].bt_hint << " *)( " << disp( cc, inp[ 0 ], 0, true ) << " + " << beg / 8 << " );";
+        } else
+            cc->on << decl( cc, 0 ) << "(const " << *out[ 0 ].bt_hint << " &)" << disp( cc, inp[ 0 ] ) << ";";
+        break;
+    }
 
     default:
         #define DECL_INST( INST ) if ( inst_id == CppInst::Id_##INST ) std::cout << #INST << std::endl;

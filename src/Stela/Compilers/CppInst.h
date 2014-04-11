@@ -38,6 +38,7 @@ public:
     struct InstWriter : GenWriter {
         void write_to_stream( Stream &os ) const;
         int precedance;
+        bool ptr;
     };
 
     enum { ///< very bad...
@@ -63,8 +64,8 @@ public:
     //const BaseType *inp_bt_hint( int ninp ) const;
 
     DeclWriter decl( CppCompiler *cc, int nout, bool equ_sgn = true );
-    InstWriter inst( CppCompiler *cc, int nout, int precedance = 0 );
-    static InstWriter disp( CppCompiler *cc, CppExpr expr, int precedance = 0 );
+    InstWriter inst( CppCompiler *cc, int nout, int precedance = 0, bool ptr = false );
+    static InstWriter disp( CppCompiler *cc, CppExpr expr, int precedance = 0, bool ptr = false );
 
     void write_to_stream( Stream &os ) const;
     void write_code( CppCompiler *cc, int prec = -1 );

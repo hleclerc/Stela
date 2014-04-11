@@ -35,24 +35,8 @@ void CppCompiler::exec() {
 
     fc << "#include <stdint.h>\n";
 
-    fc << "typedef float       FP32;\n";
-    fc << "typedef double      FP64;\n";
-    fc << "typedef long double FP80;\n";
-
-    fc << "typedef bool        Bool;\n";
-
-    fc << "typedef void        Void;\n";
-
-    fc << "typedef int8_t      SI8 ;\n";
-    fc << "typedef int16_t     SI16;\n";
-    fc << "typedef int32_t     SI32;\n";
-    fc << "typedef int64_t     SI64;\n";
-
-    fc << "typedef uint8_t     PI8 ;\n";
-    fc << "typedef uint16_t    PI16;\n";
-    fc << "typedef uint32_t    PI32;\n";
-    fc << "typedef uint64_t    PI64;\n";
-
+    for( const BaseType *bt : bt_to_decl )
+        bt->write_c_decl( fc );
 
     fc << "int main() {\n";
     fc << os.str();
@@ -111,19 +95,13 @@ void CppCompiler::update_bt_hint( Vec<CppInst *> &res ) {
 }
 
 const BaseType *CppCompiler::bt_for_size( int size ) {
-    switch( size ) {
-    case  8: return bt_SI8 ;
-    case 16: return bt_SI16;
-    case 32: return bt_SI32;
-    case 64: return bt_SI64;
-    default: {
-        if ( bt_map.count( size ) )
-            return bt_map[ size ].ptr();
-        BaseTypeIntN *res = new BaseTypeIntN( size, "SI" + to_string( size ) );
-        bt_map[ size ] = res;
-        return res;
-    }
-    }
+    if ( size == 8 ) return bt_PI8;
+    //
+    if ( bt_map.count( size ) )
+        return bt_map[ size ].ptr();
+    BaseTypeIntN *res = new BaseTypeIntN( size );
+    bt_map[ size ] = res;
+    return res;
 }
 
 void CppCompiler::get_sub_insts( Vec<CppInst *> &res, CppInst *inst ) {
