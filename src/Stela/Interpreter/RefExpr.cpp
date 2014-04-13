@@ -1,4 +1,5 @@
 #include "RefExpr.h"
+#include "Scope.h"
 
 RefExpr::RefExpr( const Expr &data ) : data( data ) {
 }
@@ -7,7 +8,7 @@ Expr RefExpr::expr() const {
     return data;
 }
 
-void RefExpr::set( Expr expr, Scope *set_scope ) {
+void RefExpr::direct_set( Expr expr ) {
     data = expr;
 }
 

@@ -13,7 +13,8 @@ public:
 
     virtual Expr expr() const = 0;
     virtual void write_to_stream( Stream &os ) const = 0;
-    virtual void set( Expr expr, Scope *set_scope = 0 ) = 0;
+    virtual bool indirect_set( Expr expr, Scope *set_scope, const Expr &sf, int off, Expr ext_cond );
+    virtual void direct_set( Expr expr );
 };
 
 #endif // REF_H

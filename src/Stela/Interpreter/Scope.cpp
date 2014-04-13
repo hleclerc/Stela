@@ -459,11 +459,11 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         for( auto &it : nsv ) {
             PRef *pref = const_cast<PRef *>( it.first.ptr() );
             if ( pref == cont_var.data.ptr() ) {
-                pref->ptr->set( cst( true ) );
+                pref->ptr->direct_set( cst( true ) );
             } else {
                 Expr unk = unknown_inst( pref->expr().size_in_bits(), cpt );
                 unknowns[ it.first ] = unk;
-                pref->ptr->set( unk );
+                pref->ptr->direct_set( unk );
             }
         }
     }
@@ -496,12 +496,12 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
         int num_inp = corr[ cpt++ ];
         if ( num_inp >= 0 )
-            pref->ptr->set( Expr( winp, num_inp ) );
+            pref->ptr->direct_set( Expr( winp, num_inp ) );
         else
-            pref->ptr->set( it.second );
+            pref->ptr->direct_set( it.second );
     }
 
-    cont_var.data->ptr->set( cst( true ) );
+    cont_var.data->ptr->direct_set( cst( true ) );
 
 
     // relaunch the while inst
@@ -527,7 +527,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     cpt = 0;
     for( auto it : nsv ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
-        pref->ptr->set( Expr( wins, cpt++ ) );
+        pref->ptr->direct_set( Expr( wins, cpt++ ) );
     }
 
     return ip->error_var;
@@ -902,31 +902,49 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
     return ip->error_var;
 }
 
-Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond ) {
-    // checkings
-    if ( dst.is_weak_const() or dst.is_full_const() )
-        return disp_error( "non const slot", sf, off );
-
-    // type equality (should be done elsewhere)
+void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond ) {
+    // type equality
     if ( dst.type ) {
         if ( dst.type != src.type ) {
             if ( const BaseType *td = ip->bt_of( dst ) )
                 if ( const BaseType *ts = ip->bt_of( src ) )
                     return set( dst, Var( dst.type, conv( td, ts, simplified_expr( src, sf, off ) ) ), sf, off, ext_cond );
-            return disp_error( "not the same types, and no known conversion func", sf, off );
+            disp_error( "not the same types, and no known conversion func", sf, off );
+            return;
         }
     } else
         dst.type = src.type;
 
-    // data
-    //if ( not dst.data )
-    //    dst.data = new PRef;
+    // checkings
+    if ( dst.is_weak_const() or dst.is_full_const() ) {
+        disp_error( "non const slot", sf, off );
+        return;
+    }
+
+    //
+    if ( dst.data and dst.data->ptr )
+        set( dst, get_val_if_GetSetSopInst( src, sf, off ).expr(), sf, off, ext_cond );
+    else {
+        ASSERT( not dst.data, "weird" );
+        dst.data = src.data;
+    }
+}
+
+void Scope::set( Var &dst, const Expr &src, const Expr &sf, int off, Expr ext_cond ) {
+    // checkings
+    if ( dst.is_weak_const() or dst.is_full_const() ) {
+        disp_error( "non const slot", sf, off );
+        return;
+    }
 
     Expr src_expr = simplified_expr( src, sf, off );
     if ( dst.data and dst.data->ptr ) {
-        Expr dst_expr = simplified_expr( dst, sf, off );
+        // dst is a view on a var (the one that will be modified) ?
+        if ( dst.data->ptr->indirect_set( src_expr, this, sf, off, ext_cond ) )
+            return;
 
         // phi( ... )
+        Expr dst_expr = simplified_expr( dst, sf, off );
         if ( ext_cond )
             src_expr = phi( ext_cond, src_expr, dst_expr );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
@@ -940,15 +958,12 @@ Var Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond
                     s->sv_map->operator[]( dst.data ) = dst.expr();
 
             //
-            dst.data->ptr->set( src_expr, this );
+            dst.data->ptr->direct_set( src_expr );
         }
-
     } else {
         ASSERT( not dst.data, "weird" );
-        dst.data = src.data;
+        dst.data = new PRef( new RefExpr( src_expr ) );
     }
-
-    return dst;
 }
 
 Var Scope::reg_var( int name, const Var &var, const Expr &sf, int off, bool stat, bool check ) {
@@ -1324,12 +1339,14 @@ Var Scope::parse_reassign_rec( const Expr &sf, int off, BinStreamReader bin ) {
         if ( not self )
             return disp_error( "with 1 argument, reassign must be called inside a method", sf, off );
         Var src = parse( sf, bin.read_offset() );
-        return set( self, src, sf, off );
+        set( self, src, sf, off );
+        return self;
     }
     if ( n == 2 ) {
         Var dst = parse( sf, bin.read_offset() );
         Var src = parse( sf, bin.read_offset() );
-        return set( dst, src, sf, off );
+        set( dst, src, sf, off );
+        return dst;
     }
     return disp_error( "Expecting 1 or 2 operands", sf, off );
 }

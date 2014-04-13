@@ -12,7 +12,7 @@ public:
     RefSlice( const Var &var, int beg, int end );
     virtual Expr expr() const;
     virtual void write_to_stream( Stream &os ) const;
-    virtual void set( Expr expr, Scope *set_scope = 0 );
+    virtual bool indirect_set( Expr expr, Scope *set_scope, const Expr &sf, int off, Expr ext_cond );
 
     Var var;
     int beg;

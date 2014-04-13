@@ -10,14 +10,12 @@ Expr RefSlice::expr() const {
     return slice( var.expr(), beg, end );
 }
 
-void RefSlice::set( Expr expr, Scope *set_scope ) {
+bool RefSlice::indirect_set( Expr expr, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
     ASSERT( expr.size_in_bits() == end - beg, "..." );
     Expr orig = var.expr();
-    Expr nexpr = concat( slice( orig, 0, beg ), expr, slice( orig, end, orig.size_in_bits() ) );
-    if ( set_scope )
-        set_scope->set( var, Var( var.type, nexpr ) );
-    else
-        var.data->ptr->set( nexpr );
+    Expr res = concat( slice( orig, 0, beg ), expr, slice( orig, end, orig.size_in_bits() ) );
+    set_scope->set( var, res, sf, off, ext_cond );
+    return true;
 }
 
 void RefSlice::write_to_stream( Stream &os ) const {

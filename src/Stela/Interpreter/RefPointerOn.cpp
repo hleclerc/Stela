@@ -10,8 +10,9 @@ Expr RefPointerOn::expr() const {
     return pointer_on( var.expr() );
 }
 
-void RefPointerOn::set( Expr expr, Scope *set_scope ) {
+bool RefPointerOn::indirect_set( Expr expr, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
     TODO;
+    return true;
 }
 
 void RefPointerOn::write_to_stream( Stream &os ) const {
