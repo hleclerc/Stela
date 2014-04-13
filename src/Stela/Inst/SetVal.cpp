@@ -22,15 +22,15 @@ public:
     virtual int inst_id() const { return Inst::Id_SetValB; }
 };
 
+
 Expr setval( Expr a, Expr b, Expr beg, bool beg_in_bits ) {
     if ( a.size_in_bits() == 0 or b.size_in_bits() == 0 )
         return a;
 
     // simplifications ?
     int off;
-    if ( beg.get_val( off ) ) {
-        TODO;
-    }
+    if ( beg.get_val( off ) )
+        return setval( a, b, beg, beg_in_bits );
 
     // else create a new inst
     if ( beg_in_bits ) {
@@ -56,3 +56,24 @@ Expr setval( Expr a, Expr b, Expr beg, bool beg_in_bits ) {
     return Expr( Inst::factorized( res ), 0 );
 }
 
+Expr setval( Expr a, Expr b, int beg, bool beg_in_bits ) {
+    if ( a.size_in_bits() == 0 or b.size_in_bits() == 0 )
+        return a;
+
+    if ( beg % 8 == 0 and beg_in_bits )
+        return setval( a, b, beg / 8, false );
+
+    // else create a new inst
+    if ( beg_in_bits ) {
+        SetVal *res = new SetVal;
+        res->inp_repl( 0, a );
+        res->inp_repl( 1, b );
+        res->inp_repl( 2, cst( beg ) );
+        return Expr( Inst::factorized( res ), 0 );
+    }
+    SetValB *res = new SetValB;
+    res->inp_repl( 0, a );
+    res->inp_repl( 1, b );
+    res->inp_repl( 2, cst( beg ) );
+    return Expr( Inst::factorized( res ), 0 );
+}

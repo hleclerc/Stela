@@ -238,6 +238,12 @@ void CppInst::bt_hint_propagation() {
         set_out_bt_hint( 0, bt_Bool );
         break;
     }
+    case CppInst::Id_SetVal:
+    case CppInst::Id_SetValB: {
+        if ( inp[ 2 ].inst->out[ inp[ 2 ].nout ].bt_hint and inp[ 2 ].inst->out[ inp[ 2 ].nout ].bt_hint->size_in_bits() == 32 )
+            inp[ 2 ].inst->set_out_bt_hint( inp[ 2 ].nout, bt_SI32 );
+        break;
+    }
     }
 }
 
@@ -438,9 +444,11 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     }
 
     case CppInst::Id_WhileOut: {
-        for( int i = 0; i < inp.size() - 1; ++i )
-            cc->on << "R" << ext_parent->out[ i ].num << " = "
-                   << disp( cc, inp[ i ], 0 ) << ";";
+        for( int i = 0; i < inp.size() - 1; ++i ) {
+            if ( ext_parent->out[ i ].num != inp[ i ].inst->out[ inp[ i ].nout ].num )
+                cc->on << "R" << ext_parent->out[ i ].num << " = "
+                       << disp( cc, inp[ i ], 0 ) << ";";
+        }
         break;
     }
 
