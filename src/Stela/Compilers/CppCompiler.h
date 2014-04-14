@@ -34,6 +34,7 @@ protected:
     void while_precomputations( CppInst *while_inst );
     void while_precomputations_mark_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
     void while_precomputations_fact_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
+    void get_pointed_values( Vec<CppExpr> &pointed_values, CppInst *inst );
     void get_front_rec( Vec<CppInst *> &front, CppInst *inst );
     void get_sub_insts( Vec<CppInst *> &res, CppInst *inst );
     const BaseType *bt_for_size( int size );

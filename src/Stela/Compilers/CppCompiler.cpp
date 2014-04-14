@@ -68,9 +68,17 @@ void CppCompiler::compile() {
     //
     update_bt_hint( res );
 
-    // display
+    // display if necessary
     if ( disp_inst_graph_wo_phi )
         CppInst::display_graph( res );
+
+    // declare values that are going to be pointed
+    ++CppInst::cur_op_id;
+    Vec<CppExpr> pointed_values;
+    for( int i = 0; i < res.size(); ++i )
+        get_pointed_values( pointed_values, res[ i ] );
+    for( CppExpr ch : pointed_values )
+        on << ch.inst->decl( this, ch.nout, false ) << ";";
 
     //
     output_code_for( res );
@@ -232,6 +240,21 @@ void CppCompiler::while_precomputations_fact_rec( CppInst *inst, CppInst *winp, 
         }
     }
 }
+
+void CppCompiler::get_pointed_values( Vec<CppExpr> &pointed_values, CppInst *inst ) {
+    if ( inst->op_id == CppInst::cur_op_id )
+        return;
+    inst->op_id = CppInst::cur_op_id;
+
+    if ( inst->inst_id == Inst::Id_PointerOn )
+        pointed_values << inst->inp[ 0 ];
+
+    for( int i = 0; i < inst->inp.size(); ++i )
+        get_pointed_values( pointed_values, inst->inp[ i ].inst );
+    for( int i = 0; i < inst->ext.size(); ++i )
+        get_pointed_values( pointed_values, inst->ext[ i ] );
+}
+
 
 void CppCompiler::get_front_rec( Vec<CppInst *> &front, CppInst *inst ) {
     if ( inst->op_id == CppInst::cur_op_id )
