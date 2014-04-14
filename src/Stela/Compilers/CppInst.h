@@ -92,6 +92,7 @@ public:
     Vec<CppInst    *> ext;
     CppInst          *ext_parent;
     bool              write_break; ///< specific for IfOut
+    bool              inlined;
 
     mutable PI64      op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
     mutable void     *op_mp;     ///< result of current operations

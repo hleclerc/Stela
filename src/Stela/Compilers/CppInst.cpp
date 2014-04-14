@@ -39,6 +39,7 @@ CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(
     ext_ds = -1;
 
     write_break = false;
+    inlined = false;
 }
 
 void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
@@ -309,7 +310,8 @@ void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, 
         cc->os << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout, prec_op ) << op_str << inp[ 1 ].inst->inst( cc, inp[ 1 ].nout, prec_op );
         if ( prec >= prec_op ) cc->os << " )";
         if ( prec < 0 ) cc->on.write_end( ";" );
-    }
+    } else
+        inlined = true;
 }
 
 void CppInst::propagate_reg_num( int nout, int num ) {
@@ -375,7 +377,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                         additionnal_data + sizeof( int ) + s,
                         cc->on.nsp
                      );
-        }
+        } else
+            inlined = true;
         break;
     case CppInst::Id_Rand:
         cc->on << decl( cc, 0 ) << "rand();";
@@ -386,6 +389,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             cc->os << *out[ 0 ].bt_hint << "( " << disp( cc, inp[ 0 ] ) << " )";
         } else if ( not inlinable( out[ 0 ] ) )
             cc->on << decl( cc, 0 ) << disp( cc, inp[ 0 ] ) << ";";
+        else
+            inlined = true;
         break;
     case CppInst::Id_Phi:
         if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
@@ -396,7 +401,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                    << disp( cc, inp[ 2 ], PREC_phi );
             if ( prec < 0 )
                 cc->on.write_end( ";" );
-        }
+        } else
+            inlined = true;
         break;
     case CppInst::Id_Syscall:
         cc->add_include( "unistd.h" );
@@ -593,7 +599,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             cc->os << disp( cc, inp[ 0 ], PREC_phi, true );
             if ( prec < 0 )
                 cc->on.write_end( ";" );
-        }
+        } else
+            inlined = true;
         break;
     }
 

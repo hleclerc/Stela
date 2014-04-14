@@ -173,13 +173,13 @@ def print val
 # ___info a
 # ___syscall SI64 a
 
-# print 150
-a := 10
-b := 20
-p := &a
-if ___rand()
-    p = &b
-___syscall p, SI64( a ), SI64( b )
+print 150
+# a := 10
+# b := 20
+# p := &a
+# if ___rand()
+    # p = &b
+# ___syscall p, SI64( a ), SI64( b )
 
 # t[ ___rand() % 3 ] = 5
 # t[ ___rand() % 3 ] = 15

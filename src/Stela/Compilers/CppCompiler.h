@@ -39,6 +39,7 @@ protected:
     void get_sub_insts( Vec<CppInst *> &res, CppInst *inst );
     const BaseType *bt_for_size( int size );
     void update_bt_hint( Vec<CppInst *> &res );
+    void dec_to_be_used_rec( CppExpr ch );
     void write_inst( CppInst *inst );
 
     int get_free_reg( const BaseType *bt );

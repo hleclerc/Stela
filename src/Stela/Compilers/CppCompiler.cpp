@@ -145,17 +145,30 @@ void CppCompiler::output_code_for( Vec<CppInst *> &res ) {
                 to_be_used[ n ] += inst->out[ i ].parents.size();
         }
 
-        for( int i = 0; i < inst->inp.size(); ++i ) {
-            CppExpr ch = inst->inp[ i ];
-            int n = ch.inst->out[ ch.nout ].num;
-            if ( n >= 0 and --to_be_used[ n ] <= 0 )
-                to_be_used.erase( n );
+        if ( not inst->inlined ) {
+            for( CppExpr ch : inst->inp ) {
+                int n = ch.inst->out[ ch.nout ].num;
+                if ( n >= 0 and --to_be_used[ n ] <= 0 )
+                    to_be_used.erase( n );
+                dec_to_be_used_rec( ch );
+            }
         }
 
         for( int nout = 0; nout < inst->out.size(); ++nout )
             for( CppInst::Out::Parent &p : inst->out[ nout ].parents )
                 if ( all_children_are_done( op_id, p.inst ) )
                     front.push_back_unique( p.inst );
+    }
+}
+
+void CppCompiler::dec_to_be_used_rec( CppExpr expr ) {
+    if ( expr.inst->inlined ) {
+        for( CppExpr ch : expr.inst->inp ) {
+            int n = ch.inst->out[ ch.nout ].num;
+            if ( n >= 0 and --to_be_used[ n ] <= 0 )
+                to_be_used.erase( n );
+            dec_to_be_used_rec( ch );
+        }
     }
 }
 
