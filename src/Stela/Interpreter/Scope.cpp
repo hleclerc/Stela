@@ -577,7 +577,7 @@ Var Scope::parse_FOR( const Expr &sf, int off, BinStreamReader bin ) {
     for( int i = 0; i < nn; ++i )
         var_names << Var( &ip->type_SI32, cst( names[ i ] ) );
     Var va_names = ip->make_varargs_var( var_names );
-    Var va_code( ip->type_ST, concat( sf, cst( code - sf.vat_data() ), cst( off ) ) );
+    Var va_code( ip->type_ST, pointer_on( concat( sf, cst( code - sf.vat_data() ), cst( off ) ) ) );
 
     //
     Var *block_par[ 2 ];
@@ -1364,25 +1364,30 @@ Var Scope::parse_set_ptr_val( const Expr &sf, int off, BinStreamReader bin ) {
 }
 
 Var Scope::parse_block_exec( const Expr &sf, int off, BinStreamReader bin ) {
-//     CHECK_PRIM_ARGS( 5 );
-//     const SourceFile *sf_ptr = rcast( to_int( parse( sf, bin.read_offset() ) ) );
-//     const PI8        *tk_ptr = rcast( to_int( parse( sf, bin.read_offset() ) ) );
-//     Scope            *sc_ptr = rcast( to_int( parse( sf, bin.read_offset() ) ) );
-//     Var v_names = parse( sf, bin.read_offset() );
-//     Var val     = parse( sf, bin.read_offset() );
-//     int off     = bin.read_positive_integer();
-// 
-//     int nn = v_names.type->size_in_bytes() / sizeof( SI32 * );
-// 
-//     Scope scope( sc_ptr, this );
-//     if ( nn != 1 )
-//         TODO;
-//     for( int i = 0; i < nn; ++i )
-//          scope.reg_var( *reinterpret_cast<SI32 **>( v_names.data )[ i ], val, false, true, sf, off );
-//     scope.parse( sf_ptr, tk_ptr );
-// 
-//     return ip->void_var;
-    TODO; return ip->void_var;
+    CHECK_PRIM_ARGS( 3 );
+    Var code  = parse( sf, bin.read_offset() );
+    Var names = parse( sf, bin.read_offset() );
+    Var val   = parse( sf, bin.read_offset() );
+    Expr code_expr = code.expr();
+
+    Vec<int> name_lst;
+    Expr name_expr = names.expr();
+    for( int i = 0, o = ip->bt_ST->size_in_bits(); i < name_expr.size_in_bits(); i += o )
+        name_lst << *(int *)slice( name_expr, i, i + o ).vat_data();
+
+    Scope scope( this );
+    if ( name_lst.size() != 1 )
+        TODO;
+    for( int i = 0; i < name_lst.size(); ++i )
+        scope.reg_var( name_lst[ i ], val, sf, off );
+
+    SI32 a = arch->ptr_size, b = a + 32, c = b + 32, src_off = 0, bin_off = 0;
+    Expr nsf = val_at( code_expr, 0, a );
+    val_at( code_expr, a, b ).get_val( bin_off );
+    val_at( code_expr, b, c ).get_val( src_off );
+
+    scope.parse( nsf, nsf.vat_data() + bin_off );
+    return ip->void_var;
 }
 
 Var Scope::parse_ptr_size( const Expr &sf, int off, BinStreamReader bin ) {

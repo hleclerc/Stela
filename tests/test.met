@@ -31,10 +31,8 @@ class VarargsItemEnd
         
 # used by for loops
 class Block[ code, arg_names ]
-    def apply a
-        ___info a
-        ___info code
-        ___info arg_names
+    def apply val
+        ___block_exec code, arg_names, val
 
 class Void
     def init
@@ -181,7 +179,7 @@ def print val
 # ___syscall SI64 a
 class Toto
     def __for__ block
-       block 10
+       block 100
 
 
 for t in Toto()
