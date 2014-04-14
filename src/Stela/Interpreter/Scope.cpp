@@ -907,10 +907,12 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
         return res;
     }
 
-    disp_error( "unmanaged callable type", sf, off );
-    PRINT( f );
-    TODO;
-    return ip->error_var;
+    // f.apply ...
+    Var applier = get_attr( f, STRING_apply_NUM, sf, off );
+    if ( ip->isa_Error( applier ) )
+        return applier;
+
+    return apply( applier, nu, u_args, nn, n_names, n_args, am, sf, off );
 }
 
 void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_cond ) {
