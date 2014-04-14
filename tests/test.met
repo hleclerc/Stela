@@ -165,7 +165,21 @@ def print val
         vcp /= 10
     sys_write 0, &tmp + nbc, sit - nbc
 
-print 150
+
+# a := 10
+# if ___rand()
+    # a = 5
+    # # a += 48
+# ___info a
+# ___syscall SI64 a
+
+# print 150
+a := 10
+b := 20
+p := &a
+if ___rand()
+    p = &b
+___syscall p, SI64( a ), SI64( b )
 
 # t[ ___rand() % 3 ] = 5
 # t[ ___rand() % 3 ] = 15

@@ -418,7 +418,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             if ( declable( ext[ 0 ]->inp[ nout ] ) ) {
                 // get a reg for the corresponding output
                 int ninp = nout + 1;
-                if ( cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout  ].num ] == 1 ) {
+                if ( ninp < inp.size() and cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout  ].num ] == 1 ) {
                     out[ nout ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
                     cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
                 } else

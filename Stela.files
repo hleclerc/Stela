@@ -172,3 +172,5 @@ src/Stela/Inst/SetVal.cpp
 src/Stela/Inst/BaseTypeIntN.h
 src/Stela/Inst/BaseTypeIntN.cpp
 src/Stela/Inst/SetValData.h
+src/Stela/Interpreter/RefPhi.h
+src/Stela/Interpreter/RefPhi.cpp

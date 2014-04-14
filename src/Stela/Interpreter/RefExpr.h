@@ -10,7 +10,6 @@ public:
     RefExpr( const Expr &data );
     virtual Expr expr() const;
     virtual void write_to_stream( Stream &os ) const;
-    virtual void direct_set( Expr expr );
 
     Expr data;
 };

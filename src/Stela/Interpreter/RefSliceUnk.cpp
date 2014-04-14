@@ -10,10 +10,12 @@ Expr RefSliceUnk::expr() const {
     return slice( var.expr(), beg, len );
 }
 
-bool RefSliceUnk::indirect_set( Expr expr, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
+bool RefSliceUnk::indirect_set( const Var &src, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
+    Expr expr = set_scope->simplified_expr( src, sf, off );
+
     ASSERT( expr.size_in_bits() == len, "..." );
     Expr res = setval( var.expr(), expr, beg );
-    set_scope->set( var, res, sf, off, ext_cond );
+    set_scope->set( var, Var( var.type, res ), sf, off, ext_cond );
     return true;
 }
 

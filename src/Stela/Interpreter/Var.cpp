@@ -61,6 +61,10 @@ Var Var::get_ref( int offset ) {
     return Var();
 }
 
+Var Var::pointed_value() const {
+    return data->ptr->pointed_value();
+}
+
 ClassInfo *Var::class_info() const {
     return ip->class_info( slice( type_expr(), 0, arch->ptr_size ) );
 }

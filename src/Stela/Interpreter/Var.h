@@ -38,6 +38,8 @@ public:
     Var add_ref( int offset, const Var &var ); ///< return *this
     Var get_ref( int offset );
 
+    Var pointed_value() const;
+
     ClassInfo *class_info() const;
     TypeInfo  *type_info() const;
 

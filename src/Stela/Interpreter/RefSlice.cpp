@@ -10,14 +10,13 @@ Expr RefSlice::expr() const {
     return slice( var.expr(), beg, end );
 }
 
-bool RefSlice::indirect_set( Expr expr, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
+bool RefSlice::indirect_set( const Var &src, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
+    Expr expr = set_scope->simplified_expr( src, sf, off );
     ASSERT( expr.size_in_bits() == end - beg, "..." );
-    Expr res = setval( var.expr(), expr, beg );
-    set_scope->set( var, res, sf, off, ext_cond );
 
-    //Expr orig = var.expr();
-    //Expr res = concat( slice( orig, 0, beg ), expr, slice( orig, end, orig.size_in_bits() ) );
-    //set_scope->set( var, res, sf, off, ext_cond );
+    Expr res = setval( var.expr(), expr, beg );
+    set_scope->set( var, Var( var.type, res ), sf, off, ext_cond );
+
     return true;
 }
 

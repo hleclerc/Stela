@@ -26,6 +26,7 @@
 #include "RefSlice.h"
 #include "TypeInfo.h"
 #include "RefExpr.h"
+#include "RefPhi.h"
 
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
@@ -431,7 +432,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     Var cont_var( &ip->type_Bool, cst( true ) );
 
     // a place to store modified values
-    std::map<Ptr<PRef>,Expr> nsv;
+    TSvMap nsv;
     PI64 nsv_date = ++PRef::cur_date;
 
     // we repeat until there are no external modified values
@@ -459,11 +460,11 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         for( auto &it : nsv ) {
             PRef *pref = const_cast<PRef *>( it.first.ptr() );
             if ( pref == cont_var.data.ptr() ) {
-                pref->ptr->direct_set( cst( true ) );
+                pref->ptr = new RefExpr( cst( true ) );
             } else {
                 Expr unk = unknown_inst( pref->expr().size_in_bits(), cpt );
                 unknowns[ it.first ] = unk;
-                pref->ptr->direct_set( unk );
+                pref->ptr = new RefExpr( unk );
             }
         }
     }
@@ -482,7 +483,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     for( auto it : nsv ) {
         if ( unknowns[ it.first ].inst->op_id == Inst::cur_op_id ) {
             corr << cpt++;
-            inp_sizes << it.second.size_in_bits();
+            inp_sizes << it.second->expr().size_in_bits();
         } else
             corr << -1;
     }
@@ -496,12 +497,12 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
         int num_inp = corr[ cpt++ ];
         if ( num_inp >= 0 )
-            pref->ptr->direct_set( Expr( winp, num_inp ) );
+            pref->ptr = new RefExpr( Expr( winp, num_inp ) );
         else
-            pref->ptr->direct_set( it.second );
+            pref->ptr = it.second;
     }
 
-    cont_var.data->ptr->direct_set( cst( true ) );
+    cont_var.data->ptr = new RefExpr( cst( true ) );
 
 
     // relaunch the while inst
@@ -520,14 +521,14 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     Vec<Expr> inp_exprs;
     for( auto it : nsv )
         if ( corr[ cpt++ ] >= 0 )
-            inp_exprs << it.second;
+            inp_exprs << simplified_expr( it.second->expr(), sf, off );
     Inst *wins = while_inst( inp_exprs, winp, wout, corr );
 
     // replace changed variable by while_inst outputs
     cpt = 0;
     for( auto it : nsv ) {
         PRef *pref = const_cast<PRef *>( it.first.ptr() );
-        pref->ptr->direct_set( Expr( wins, cpt++ ) );
+        pref->ptr = new RefExpr( Expr( wins, cpt++ ) );
     }
 
     return ip->error_var;
@@ -700,6 +701,21 @@ Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
             }
         }
     }
+    return expr;
+}
+
+Var Scope::simplified_pref( const Var &expr, const Expr &sf, int off ) {
+    //    if ( expr.inst->inst_id() == Inst::Id_Phi ) {
+    //        Expr c = expr.inst->inp_expr( 0 );
+    //        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+    //            if ( s->cond ) {
+    //                if ( s->cond == c )
+    //                    return simplified_expr( expr.inst->inp_expr( 1 ), sf, off );
+    //                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == c )
+    //                    return simplified_expr( expr.inst->inp_expr( 2 ), sf, off );
+    //            }
+    //        }
+    //    }
     return expr;
 }
 
@@ -922,47 +938,33 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
     }
 
     //
-    if ( dst.data and dst.data->ptr )
-        set( dst, get_val_if_GetSetSopInst( src, sf, off ).expr(), sf, off, ext_cond );
-    else {
-        ASSERT( not dst.data, "weird" );
-        dst.data = src.data;
-    }
-}
-
-void Scope::set( Var &dst, const Expr &src, const Expr &sf, int off, Expr ext_cond ) {
-    // checkings
-    if ( dst.is_weak_const() or dst.is_full_const() ) {
-        disp_error( "non const slot", sf, off );
-        return;
-    }
-
-    Expr src_expr = simplified_expr( src, sf, off );
     if ( dst.data and dst.data->ptr ) {
         // dst is a view on a var (the one that will be modified) ?
-        if ( dst.data->ptr->indirect_set( src_expr, this, sf, off, ext_cond ) )
+        if ( dst.data->ptr->indirect_set( src, this, sf, off, ext_cond ) )
             return;
 
+        Var src_expr = simplified_pref( src, sf, off );
+
         // phi( ... )
-        Expr dst_expr = simplified_expr( dst, sf, off );
+        Var dst_expr = simplified_pref( dst, sf, off );
         if ( ext_cond )
-            src_expr = phi( ext_cond, src_expr, dst_expr );
+            src_expr.data->ptr = new RefPhi( ext_cond, src_expr.data->ptr, dst_expr.data->ptr );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
             if ( s->cond )
-                src_expr = phi( s->cond, src_expr, dst_expr );
+                src_expr.data->ptr = new RefPhi( s->cond, src_expr.data->ptr, dst_expr.data->ptr );
 
-        if ( dst_expr != src_expr ) {
+        if ( dst_expr.data->ptr != src_expr.data->ptr ) {
             // variable to be saved ?
             for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
                 if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
-                    s->sv_map->operator[]( dst.data ) = dst.expr();
+                    s->sv_map->operator[]( dst.data ) = dst.data->ptr;
 
-            //
-            dst.data->ptr->direct_set( src_expr );
+            // copy the Ref
+            dst.data->ptr = src_expr.data->ptr;
         }
     } else {
         ASSERT( not dst.data, "weird" );
-        dst.data = new PRef( new RefExpr( src_expr ) );
+        dst.data = src.data;
     }
 }
 

@@ -16,12 +16,14 @@ public:
 
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
+    typedef std::map<Ptr<PRef>,Ptr<Ref> > TSvMap;
     friend class Interpreter;
     friend class ClassInfo;
     friend class TypeInfo;
     friend class DefInfo;
     friend class RefSliceUnk;
     friend class RefSlice;
+    friend class RefPointerOn;
 
     #define DECL_IR_TOK( N ) Var parse_##N( const Expr &sf, int off, BinStreamReader bin ); ///< parse a given IR_TOK
     #include "../Ir/Decl.h"
@@ -39,6 +41,7 @@ protected:
     Expr simplified_expr( const Var &var, const Expr &sf, int off );
     Expr simplified_expr( const PRef &var, const Expr &sf, int off );
     Expr simplified_expr( const Expr &var, const Expr &sf, int off );
+    Var  simplified_pref( const Var  &var, const Expr &sf, int off );
     Var apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args, ApplyMode am, const Expr &sf, int off );
     Var get_attr_rec( Var self, int name );
     void get_attr_rec( Vec<Var> &res, Var self, int name );
@@ -47,8 +50,6 @@ protected:
     Var disp_error( String msg, const Expr &sf = Expr(), int off = 0, bool warn = false );
 
     void set( Var &dst, const Var &src, const Expr &sf = Expr(), int off = 0, Expr ext_cond = Expr() );
-    void set( Var &dst, const Expr &src, const Expr &sf = Expr(), int off = 0, Expr ext_cond = Expr() );
-    void _set_refexpr( Var &dst, const Expr &src, const Expr &sf = Expr(), int off = 0, Expr ext_cond = Expr() );
 
     Var reg_var( int name, const Var &var, const Expr &sf, int off, bool stat = false, bool check = true );
     Var find_var( int name );
@@ -74,8 +75,8 @@ protected:
     TypeInfo      *class_scope;
     Expr           cond;
 
-    std::map<Ptr<PRef>,Expr> *sv_map;
-    PI64                      sv_date; ///< PRef creation date must be < sv_date to be saved in sv_map
+    TSvMap        *sv_map;
+    PI64           sv_date; ///< PRef creation date must be < sv_date to be saved in sv_map
 };
 
 #endif // SCOPE_H
