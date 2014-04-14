@@ -8,7 +8,7 @@ class BaseTypeIntN : public BaseType {
 public:
     BaseTypeIntN( int size );
 
-    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const;
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn, int nsp ) const;
     virtual void write_to_stream( Stream &os, const PI8 *data ) const;
     virtual void write_to_stream( Stream &os ) const;
     virtual void write_c_decl( Stream &os ) const;

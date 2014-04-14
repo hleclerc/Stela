@@ -3,10 +3,14 @@
 
 BaseTypeIntN::BaseTypeIntN( int size ) : size( size ) {}
 
-void BaseTypeIntN::write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const {
-    for( int i = 0; i < ( size + 7 ) / 8; ++i )
-        if ( knwn[ i ] )
-            os << "; " << reg << ".data[ " << i << " ] = " << (int)data[ i ];
+void BaseTypeIntN::write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn, int nsp ) const {
+    for( int i = 0; i < ( size + 7 ) / 8; ++i ) {
+        if ( knwn[ i ] ) {
+            for( int i = 0; i < nsp; ++i ) os << ' ';
+            os << reg << ".data[ " << i << " ] = " << (int)data[ i ];
+            os << ";\n";
+        }
+    }
 }
 
 void BaseTypeIntN::write_to_stream( Stream &os, const PI8 *data ) const { os << "..."; }

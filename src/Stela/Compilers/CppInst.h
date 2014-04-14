@@ -80,6 +80,7 @@ public:
 
     void write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op );
 
+    void propagate_reg_num( int nout, int num );
     bool conv( int &val, int nout ) const;
 
     // attributes

@@ -1412,6 +1412,12 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
     return ip->void_var;
 }
 
+Var Scope::parse_pointer_on( const Expr &sf, int off, BinStreamReader bin ) {
+    CHECK_PRIM_ARGS( 1 );
+    Var val = parse( sf, bin.read_offset() );
+    return Var( ip->type_ST, new RefPointerOn( val ) );
+}
+
 template<class Op,int boolean>
 Var Scope::parse_una_op( const Expr &sf, int off, BinStreamReader bin, Op op_n, N<boolean> ) {
     CHECK_PRIM_ARGS( 1 );

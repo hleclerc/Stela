@@ -131,11 +131,20 @@ class Vec[ T, static_size ]
     def select i
         ___get_slice self, T, ___size_of( T ) * i
     
-    
-t := Vec[ SI8, 3 ]()
-while true
-    t[ 0 ] = 30
-___syscall SI64 t[ 0 ]
+def sys_write fd, data, size
+    ___syscall SI64( 1 ), SI64( fd ), data, SI64( size )
+
+def pointer_on val
+    ___pointer_on val
+
+t := Vec[ SI8, 6 ]()
+t[ 5 ] = 10
+
+v := 0
+while v < 5
+    t[ v ] = 48 + v
+    v += 1
+sys_write 0, &t, 6
 
 # t[ ___rand() % 3 ] = 5
 # t[ ___rand() % 3 ] = 15

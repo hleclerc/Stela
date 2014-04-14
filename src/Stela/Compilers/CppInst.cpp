@@ -223,6 +223,9 @@ void CppInst::bt_hint_propagation() {
         for( int i = 1; i < inp.size(); ++i )
             inp[ i ].inst->set_out_bt_hint( inp[ i ].nout, ip->bt_ST );
         break;
+    case CppInst::Id_PointerOn:
+        set_out_bt_hint( 0, ip->bt_ST );
+        break;
     case CppInst::Id_Conv:
         set_out_bt_hint( 0, reinterpret_cast<const BaseType **>( additionnal_data )[ 0 ] );
         inp[ 0 ].inst->set_out_bt_hint( inp[ 0 ].nout, reinterpret_cast<const BaseType **>( additionnal_data )[ 1 ] );
@@ -281,6 +284,7 @@ static bool inlinable( const CppInst::Out &out ) {
     return out.parents.size() == 1 and
             out.parents[ 0 ].inst->inst_id != Inst::Id_Slice and
             out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst and
+            out.parents[ 0 ].inst->inst_id != Inst::Id_IfOut and
             ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetVal or out.parents[ 0 ].ninp != 0 )
             ;
 }
@@ -305,6 +309,20 @@ void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, 
         cc->os << inp[ 0 ].inst->inst( cc, inp[ 0 ].nout, prec_op ) << op_str << inp[ 1 ].inst->inst( cc, inp[ 1 ].nout, prec_op );
         if ( prec >= prec_op ) cc->os << " )";
         if ( prec < 0 ) cc->on.write_end( ";" );
+    }
+}
+
+void CppInst::propagate_reg_num( int nout, int num ) {
+    if ( out[ nout ].num >= 0 )
+        return;
+
+    switch ( inst_id ) {
+    case Inst::Id_SetVal:
+        inp[ 0 ].inst->propagate_reg_num( inp[ 0 ].nout, num );
+        break;
+    default:
+        out[ nout ].num = num;
+        break;
     }
 }
 
@@ -344,14 +362,19 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         if ( prec >= 0 )
             out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
         else if ( not inlinable( out[ 0 ] ) or not out[ 0 ].bt_hint->c_type() ) {
-            cc->on.write_beg() << decl( cc, 0, false );
+            // declaration
+            int num = out[ 0 ].num;
+            if ( num < 0 )
+                cc->on << decl( cc, 0, false ) << ";";
+            // value
             int s = out[ 0 ].bt_hint->size_in_bytes();
             out[ 0 ].bt_hint->write_c_definition(
                         cc->os,
                         "R" + to_string( out[ 0 ].num ),
                         additionnal_data + sizeof( int ),
-                        additionnal_data + sizeof( int ) + s );
-            cc->on.write_end( ";" );
+                        additionnal_data + sizeof( int ) + s,
+                        cc->on.nsp
+                     );
         }
         break;
     case CppInst::Id_Rand:
@@ -376,6 +399,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         }
         break;
     case CppInst::Id_Syscall:
+        cc->add_include( "unistd.h" );
+
         cc->on.write_beg();
         if ( out[ 1 ].parents.size() )
             cc->os << decl( cc, 1 );
@@ -389,9 +414,20 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         break;
 
     case CppInst::Id_If: {
-        for( int i = 0; i < out.size(); ++i )
-            if ( declable( ext[ 0 ]->inp[ i ] ) )
-                cc->on << decl( cc, i, false ) << ";";
+        for( int nout = 0; nout < out.size(); ++nout ) {
+            if ( declable( ext[ 0 ]->inp[ nout ] ) ) {
+                // get a reg for the corresponding output
+                int ninp = nout + 1;
+                if ( cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout  ].num ] == 1 ) {
+                    out[ nout ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
+                    cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
+                } else
+                    cc->on << decl( cc, nout, false ) << ";";
+                // try to propagate the reg
+                for( int n = 0; n < 2; ++n )
+                    ext[ n ]->inp[ nout ].inst->propagate_reg_num( ext[ n ]->inp[ nout ].nout, out[ nout ].num );
+            }
+        }
 
         Vec<CppInst *> va[ 2 ];
         for( int n = 0; n < 2; ++n )
@@ -413,7 +449,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_IfOut: {
         CppInst *ii = ext_parent;
         for( int ninp = 0; ninp < inp.size(); ++ninp )
-            if ( declable( inp[ ninp ] ) )
+            if ( declable( inp[ ninp ] ) and ii->out[ ninp ].num != inp[ ninp ].inst->out[ inp[ ninp ].nout ].num )
                 cc->on << ii->inst( cc, ninp ) << " = " << disp( cc, inp[ ninp ] ) << ";";
         if ( write_break )
             cc->on << "break;";
@@ -519,6 +555,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         // -> can wa reuse the previous reg ?
         if ( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] == 1 ) {
             out[ 0 ].num = inp[ 0 ].inst->out[ inp[ 0 ].nout ].num;
+            cc->bt_to_decl.insert( inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint );
 
             int off;
             if ( inp[ 2 ].conv( off ) and off == 0 ) {
@@ -531,8 +568,9 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                        << disp( cc, inp[ 2 ], PREC_add ) << " ) = "
                        << disp( cc, inp[ 1 ] ) << ";";
             }
-        } else
+        } else {
             TODO;
+        }
         break;
     }
 
@@ -545,6 +583,17 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             cc->on << decl( cc, 0 ) << "*(const " << *out[ 0 ].bt_hint << " *)( " << disp( cc, inp[ 0 ], 0, true ) << " + " << beg / 8 << " );";
         } else
             cc->on << decl( cc, 0 ) << "(const " << *out[ 0 ].bt_hint << " &)" << disp( cc, inp[ 0 ] ) << ";";
+        break;
+    }
+
+    case CppInst::Id_PointerOn: {
+        if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
+            if ( prec < 0 )
+                cc->on.write_beg() << decl( cc, 0 );
+            cc->os << "&" << disp( cc, inp[ 0 ], PREC_phi );
+            if ( prec < 0 )
+                cc->on.write_end( ";" );
+        }
         break;
     }
 

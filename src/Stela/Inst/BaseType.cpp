@@ -62,9 +62,12 @@ template<class T>
 struct BaseType_ : BaseType {
     BaseType_( const char *name ) : name( name ) {
     }
-    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const {
-        if ( knwn == 0 or *knwn /*TODO: test all the bits*/ )
-            _disp( os << " = ", *reinterpret_cast<const T *>( data ) );
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn, int nsp ) const {
+        if ( knwn == 0 or *knwn /*TODO: test all the bits*/ ) {
+            for( int i = 0; i < nsp; ++i ) os << ' ';
+            _disp( os << reg << " = ", *reinterpret_cast<const T *>( data ) );
+            os << ";\n";
+        }
     }
     virtual void write_to_stream( Stream &os, const PI8 *data ) const {
         _disp( os, *reinterpret_cast<const T *>( data ) );
@@ -120,7 +123,7 @@ struct BaseType_ : BaseType {
 
 struct BaseType_Void : BaseType {
     BaseType_Void( const char *name ) : name( name ) { }
-    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const {}
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn, int nsp ) const {}
     virtual void write_to_stream( Stream &os, const PI8 *data ) const { os << "void"; }
     virtual void write_to_stream( Stream &os ) const { os << name; }
     virtual void write_c_decl( Stream &os ) const { os << "typedef void        Void;\n"; }

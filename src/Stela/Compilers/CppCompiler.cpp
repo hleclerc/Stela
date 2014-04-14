@@ -140,7 +140,7 @@ void CppCompiler::output_code_for( Vec<CppInst *> &res ) {
         for( int i = 0; i < inst->inp.size(); ++i ) {
             CppExpr ch = inst->inp[ i ];
             int n = ch.inst->out[ ch.nout ].num;
-            if ( n >= 0 and --to_be_used[ n ] == 0 )
+            if ( n >= 0 and --to_be_used[ n ] <= 0 )
                 to_be_used.erase( n );
         }
 

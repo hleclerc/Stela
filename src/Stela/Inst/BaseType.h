@@ -9,7 +9,7 @@
 class BaseType {
 public:
     virtual ~BaseType();
-    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn ) const = 0;
+    virtual void write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn, int nsp ) const = 0;
     virtual void write_to_stream( Stream &os, const PI8 *data ) const = 0;
     virtual void write_to_stream( Stream &os ) const = 0;
     virtual void write_c_decl( Stream &os ) const = 0;

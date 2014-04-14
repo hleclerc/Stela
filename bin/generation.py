@@ -474,6 +474,7 @@ base_primitives = string.split( """
     address
     get_slice
     pointed_value
+    pointer_on
     block_exec
     get_argc
     get_argv
