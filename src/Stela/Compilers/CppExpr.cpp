@@ -6,3 +6,7 @@ void CppExpr::write_to_stream( Stream &os ) const {
     if ( inst->out.size() > 1 )
         os << '(' << nout << ')';
 }
+
+bool CppExpr::conv( int &val ) const {
+    return inst->conv( val, nout );
+}

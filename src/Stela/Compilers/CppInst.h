@@ -80,6 +80,8 @@ public:
 
     void write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op );
 
+    bool conv( int &val, int nout ) const;
+
     // attributes
     PI8              *additionnal_data; ///< e.g. value for Cst
     int               inst_id;

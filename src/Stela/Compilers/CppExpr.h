@@ -15,6 +15,8 @@ public:
     bool operator!=( const CppExpr &e ) const { return inst != e.inst or  nout != e.nout; }
     bool operator< ( const CppExpr &e ) const { return inst != e.inst ? inst < e.inst : nout < e.nout; }
 
+    bool conv( int &val ) const;
+
     CppInst *inst;
     int      nout;
 };

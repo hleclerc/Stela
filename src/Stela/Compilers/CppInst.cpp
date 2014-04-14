@@ -1,9 +1,11 @@
 #include "../Interpreter/Interpreter.h"
+#include "../Inst/SetValData.h"
 #include "../Inst/BaseType.h"
 #include "../System/rcast.h"
 #include "CppCompiler.h"
 #include "CppInst.h"
 #include <fstream>
+#include <limits>
 
 enum {
     PREC_phi    =  1,
@@ -188,7 +190,6 @@ void CppInst::set_inp_bt_hint( int ninp, const BaseType *bt ) {
             ext[ nch ]->set_out_bt_hint( ninp, bt );
         break;
     case CppInst::Id_SetVal:
-    case CppInst::Id_SetValB:
         if ( ninp == 0 )
             set_out_bt_hint( 0, bt );
         break;
@@ -238,10 +239,9 @@ void CppInst::bt_hint_propagation() {
         set_out_bt_hint( 0, bt_Bool );
         break;
     }
-    case CppInst::Id_SetVal:
-    case CppInst::Id_SetValB: {
-        if ( inp[ 2 ].inst->out[ inp[ 2 ].nout ].bt_hint and inp[ 2 ].inst->out[ inp[ 2 ].nout ].bt_hint->size_in_bits() == 32 )
-            inp[ 2 ].inst->set_out_bt_hint( inp[ 2 ].nout, bt_SI32 );
+    case CppInst::Id_SetVal: {
+        const SetValData *sd = rcast( additionnal_data );
+        inp[ 2 ].inst->set_out_bt_hint( inp[ 2 ].nout, get_bt( sd->off_size_in_bits, true, false ) );
         break;
     }
     }
@@ -281,8 +281,7 @@ static bool inlinable( const CppInst::Out &out ) {
     return out.parents.size() == 1 and
             out.parents[ 0 ].inst->inst_id != Inst::Id_Slice and
             out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst and
-            ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetVal or out.parents[ 0 ].ninp != 0 ) and
-            ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetValB or out.parents[ 0 ].ninp != 0 )
+            ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetVal or out.parents[ 0 ].ninp != 0 )
             ;
 }
 
@@ -308,6 +307,36 @@ void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, 
         if ( prec < 0 ) cc->on.write_end( ";" );
     }
 }
+
+bool CppInst::conv( int &val, int nout ) const {
+    if ( inst_id == Inst::Id_Cst ) {
+        int *s = rcast( additionnal_data );
+        if ( *s <= 8 ) {
+            SI8 *v = rcast( additionnal_data + 4 );
+            val = *v;
+            return true;
+        }
+        if ( *s <= 16 ) {
+            SI16 *v = rcast( additionnal_data + 4 );
+            val = *v;
+            return true;
+        }
+        if ( *s == 32 ) {
+            int *v = rcast( additionnal_data + 4 );
+            val = *v;
+            return true;
+        }
+        if ( *s == 64 ) {
+            SI64 *v = rcast( additionnal_data + 4 );
+            if ( *v <= std::numeric_limits<int>::max() ) {
+                val = *v;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 void CppInst::write_code( CppCompiler *cc, int prec ) {
     switch ( inst_id ) {
@@ -399,9 +428,14 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         const int *corr_inp = rcast( additionnal_data );
         for( int i = 0; i < out.size(); ++i ) {
             if ( declable( ext[ 0 ]->inp[ i ] ) ) {
-                if ( corr_inp[ i ] >= 0 )
-                    cc->on << decl( cc, i ) << disp( cc, inp[ corr_inp[ i ] ] ) << ";";
-                else
+                int ninp = corr_inp[ i ];
+                if ( ninp >= 0 ) {
+                    if ( cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] == 1 ) {
+                        out[ i ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
+                        cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
+                    } else
+                        cc->on << decl( cc, i ) << disp( cc, inp[ ninp ] ) << ";";
+                } else
                     cc->on << decl( cc, i, false ) << ";";
             }
         }
@@ -415,11 +449,19 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             out << ch.inst;
         cc->output_code_for( out );
 
-        cc->on << "if ( not " << disp( cc, ext[ 0 ]->inp.back(), PREC_not ) << " )";
-        cc->on.nsp += 4;
-        cc->on << "break;";
-        cc->on.nsp -= 8;
+        int cont_val;
+        CppExpr cont = ext[ 0 ]->inp.back();
+        if ( cont.conv( cont_val ) ) {
+            if ( not cont_val )
+                cc->on << "break;";
+        } else {
+            cc->on << "if ( not " << disp( cc, cont, PREC_not ) << " )";
+            cc->on.nsp += 4;
+            cc->on << "break;";
+            cc->on.nsp -= 4;
+        }
 
+        cc->on.nsp -= 4;
         cc->on << "}";
         break;
     }
@@ -468,21 +510,31 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     case CppInst::Id_Op_div: write_code_bin_op( cc, prec, " / ", PREC_div ); break;
     case CppInst::Id_Op_mod: write_code_bin_op( cc, prec, " % ", PREC_mod ); break;
 
-    case CppInst::Id_SetVal:
-        TODO;
-        break;
+    case CppInst::Id_SetVal: {
+        // size in bits ?
+        SetValData *sf = rcast( additionnal_data );
+        if ( not sf->size_is_in_bytes )
+            TODO;
 
-    case CppInst::Id_SetValB:
+        // -> can wa reuse the previous reg ?
         if ( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] == 1 ) {
-            // -> we can reuse the previous reg
             out[ 0 ].num = inp[ 0 ].inst->out[ inp[ 0 ].nout ].num;
-            cc->on << "*(" << *inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint << " *)( "
-                   << disp( cc, CppExpr( this, 0 ), 0, true ) << " + "
-                   << disp( cc, inp[ 2 ], PREC_add ) << " ) = "
-                   << disp( cc, inp[ 1 ] ) << ";";
+
+            int off;
+            if ( inp[ 2 ].conv( off ) and off == 0 ) {
+                cc->on << "(" << *inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint << " &)"
+                       << disp( cc, CppExpr( this, 0 ) ) << " = "
+                       << disp( cc, inp[ 1 ] ) << ";";
+            } else {
+                cc->on << "*(" << *inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint << " *)( "
+                       << disp( cc, CppExpr( this, 0 ), 0, true ) << " + "
+                       << disp( cc, inp[ 2 ], PREC_add ) << " ) = "
+                       << disp( cc, inp[ 1 ] ) << ";";
+            }
         } else
             TODO;
         break;
+    }
 
     case CppInst::Id_Slice: {
         int beg = *(int *)( additionnal_data + 0 * sizeof( int ) );
