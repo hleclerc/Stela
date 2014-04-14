@@ -18,7 +18,8 @@ class Callable[ surdef_list, self_type, parm_type ]
 
 class SurdefList
     pass
-    
+
+
 # data_name -> ptr on a C string
 class VarargsItemBeg[ data_type, data_name, next_type ]
     def select i
@@ -28,6 +29,12 @@ class VarargsItemEnd
     def select i
         i
         
+# used by for loops
+class Block[ code, arg_names ]
+    def apply a
+        ___info a
+        ___info code
+        ___info arg_names
 
 class Void
     def init
@@ -172,8 +179,15 @@ def print val
     # # a += 48
 # ___info a
 # ___syscall SI64 a
+class Toto
+    def __for__ block
+       block 10
 
-print 150
+
+for t in Toto()
+    ___info t
+
+# print 150
 # a := 10
 # b := 20
 # p := &a

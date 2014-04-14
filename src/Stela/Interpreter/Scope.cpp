@@ -559,41 +559,36 @@ Var Scope::parse_SELF( const Expr &sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_THIS( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
 Var Scope::parse_FOR( const Expr &sf, int off, BinStreamReader bin ) {
-    //     int nn = bin.read_positive_integer();
-    //     SI32 names[ nn ];
-    //     for( int i = 0; i < nn; ++i )
-    //         names[ i ] = read_nstring( sf, bin );
-    //     int nc = bin.read_positive_integer();
-    //     Var objects[ nc ];
-    //     for( int i = 0; i < nc; ++i ) {
-    //         objects[ i ] = parse( sf, bin.read_offset() );
-    //         if ( objects[ i ].type == ip->type_Error )
-    //             return objects[ i ];
-    //     }
-    //     const PI8 *code = bin.read_offset();
-    //     int off = bin.read_positive_integer();
+    int nn = bin.read_positive_integer();
+    SI32 names[ nn ];
+    for( int i = 0; i < nn; ++i )
+        names[ i ] = read_nstring( sf, bin );
+    int nc = bin.read_positive_integer();
+    Var objects[ nc ];
+    for( int i = 0; i < nc; ++i ) {
+        objects[ i ] = parse( sf, bin.read_offset() );
+        if ( objects[ i ].type == ip->type_Error )
+            return objects[ i ];
+    }
+    const PI8 *code = bin.read_offset();
+
+    // make a block var
+    Vec<Var> var_names;
+    for( int i = 0; i < nn; ++i )
+        var_names << Var( &ip->type_SI32, cst( names[ i ] ) );
+    Var va_names = ip->make_varargs_var( var_names );
+    Var va_code( ip->type_ST, concat( sf, cst( code - sf.vat_data() ), cst( off ) ) );
+
     //
-    //     if ( nn != 1 or nc != 1 )
-    //         TODO;
-    //
-    //     //
-    //     Vec<Var> var_names;
-    //     for( int i = 0; i < nn; ++i )
-    //         var_names << make_int_var( names[ i ] );
-    //
-    //     // make a block var
-    //     Vec<Var> block_par;
-    //     block_par << make_int_var( ST( sf ) );
-    //     block_par << make_int_var( ST( code ) );
-    //     block_par << make_varargs_var( var_names );
-    //     Type *block_type = ip->class_Block.type_for( this, block_par );
-    //     Var block( ip, block_type );
-    //     *reinterpret_cast<Scope **>( block.data ) = this;
-    //
-    //     Var f = get_attr( objects[ 0 ], STRING___for___NUM, sf, off );
-    //     apply( f, 1, &block, 0, 0, 0, false, APPLY_MODE_STD, sf, off );
-    //     return ip->void_var;
-    TODO; return ip->void_var;
+    Var *block_par[ 2 ];
+    block_par[ 0 ] = &va_code;
+    block_par[ 1 ] = &va_names;
+    Var *block_type = ip->type_for( ip->class_info( pointer_on( ip->class_Block.expr() ) ), block_par );
+    Var block( block_type, cst() );
+
+    Var f = get_attr( objects[ 0 ], STRING___for___NUM, sf, off );
+    apply( f, 1, &block, 0, 0, 0, APPLY_MODE_STD, sf, off );
+    return ip->void_var;
 }
 Var Scope::parse_IMPORT( const Expr &sf, int off, BinStreamReader bin ) {
     //     ST size = bin.read_positive_integer();
