@@ -590,7 +590,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
             if ( prec < 0 )
                 cc->on.write_beg() << decl( cc, 0 );
-            cc->os << "&" << disp( cc, inp[ 0 ], PREC_phi );
+            cc->os << disp( cc, inp[ 0 ], PREC_phi, true );
             if ( prec < 0 )
                 cc->on.write_end( ";" );
         }

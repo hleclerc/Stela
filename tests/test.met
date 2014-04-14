@@ -88,6 +88,17 @@ class Bool
 def self_add a, b
     a = a + b
 
+def self_sub a, b
+    a = a - b
+
+def self_mul a, b
+    a = a * b
+
+def self_div a, b
+    a = a / b
+
+def self_mod a, b
+    a = a % b
 
 void := Void()
         
@@ -98,9 +109,15 @@ def init self
 def add( a, b )
     ___add a, b
     
+def sub( a, b )
+    ___sub a, b
+
 def mul( a, b )
     ___mul a, b
     
+def div( a, b )
+    ___div a, b
+
 def mod( a, b )
     ___mod a, b
 
@@ -137,14 +154,18 @@ def sys_write fd, data, size
 def pointer_on val
     ___pointer_on val
 
-t := Vec[ SI8, 6 ]()
-t[ 5 ] = 10
+def print val
+    sit := 10
+    tmp := Vec[ SI8, sit ]()
+    vcp := val
+    nbc := sit - 1
+    tmp[ nbc ] = 10
+    while vcp
+        tmp[ nbc -= 1 ] = 48 + vcp % 10
+        vcp /= 10
+    sys_write 0, &tmp + nbc, sit - nbc
 
-v := 0
-while v < 5
-    t[ v ] = 48 + v
-    v += 1
-sys_write 0, &t, 6
+print 150
 
 # t[ ___rand() % 3 ] = 5
 # t[ ___rand() % 3 ] = 15
