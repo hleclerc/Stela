@@ -32,6 +32,19 @@ enum {
     PREC_none
 };
 
+static bool same_op( int prec_op ) {
+    switch ( prec_op ) {
+    case PREC_add:
+    // case PREC_sub:
+    case PREC_mul:
+    //case PREC_div:
+    //case PREC_mod:
+        return true;
+    default:
+        return false;
+    }
+}
+
 PI64 CppInst::cur_op_id = 0;
 
 CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(), nb_outputs ), op_id( 0 ), op_id_vis( 0 ) {
@@ -293,13 +306,16 @@ static bool declable( CppExpr expr ) {
 /// binary operation
 void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op ) {
     if ( prec >= 0 or not inlinable( out[ 0 ] ) ) {
-        //        if ( out[ 0 ].num < 0 ) {
-        //            for( int i = 0; i < 2; ++i ) {
-        //            }
-        //            PRINT( inp[ 0 ].inst->out[ inp[ 0 ].nout ].num );
-        //            PRINT( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] );
-        //            PRINT( cc->to_be_used[ inp[ 1 ].inst->out[ inp[ 1 ].nout ].num ] );
-        //        }
+        // can we reuse a reg ?
+        if ( same_op( prec_op ) and out[ 0 ].num < 0 ) {
+            for( int i = 0; i < 2; ++i ) {
+                int n = inp[ i ].inst->out[ inp[ i ].nout ].num;
+                if ( n >= 0 and cc->to_be_used[ n ] == 1 ) {
+                    out[ 0 ].num = n;
+                    break;
+                }
+            }
+        }
 
         if ( prec < 0 ) cc->on.write_beg() << decl( cc, 0 );
         if ( prec >= prec_op ) cc->os << "( ";
@@ -554,7 +570,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         if ( not sf->size_is_in_bytes )
             TODO;
 
-        // -> can wa reuse the previous reg ?
+        // -> can we reuse the previous reg ?
         if ( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] == 1 ) {
             out[ 0 ].num = inp[ 0 ].inst->out[ inp[ 0 ].nout ].num;
             cc->bt_to_decl.insert( inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint );
@@ -595,8 +611,9 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             cc->os << disp( cc, inp[ 0 ], PREC_phi, true );
             if ( prec < 0 )
                 cc->on.write_end( ";" );
-        } else
-            inlined = true;
+        }
+        // always true to avoid mod of the pointed variable before destruction of the pointer
+        inlined = true;
         break;
     }
 

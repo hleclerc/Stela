@@ -167,9 +167,11 @@ def print val
     vcp := val
     nbc := sit - 1
     tmp[ nbc ] = 10
-    while vcp
+    while true
         tmp[ nbc -= 1 ] = 48 + vcp % 10
         vcp /= 10
+        if not vcp
+            break
     sys_write 0, &tmp + nbc, sit - nbc
 
 
@@ -193,9 +195,9 @@ class Range[ T ]
 def range beg, end
     Range[ typeof beg ]( beg, end )
 
-# !!!! il faut utiliser les pointer_on avant de modifier les objets sous tendus
-print 100
+# TODO Type()
 #for t in 100 .. 103
+print 0
 
 # print 150
 # a := 10
