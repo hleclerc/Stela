@@ -57,6 +57,8 @@ protected:
     void parse_for               ( const Lexem *l );
     void parse_import            ( const Lexem *l );
     void parse_lambda            ( const Lexem *l );
+    void parse_and               ( const Lexem *l );
+    void parse_or                ( const Lexem *l );
 
     void push_delayed_parse      ( const Lexem *l, bool want_siblings = true );
     void int_reduction           ();

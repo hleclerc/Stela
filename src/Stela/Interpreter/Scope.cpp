@@ -659,7 +659,45 @@ Var Scope::parse_LAMBDA( const Expr &sf, int off, BinStreamReader bin ) {
     //     return res;
     TODO; return ip->void_var;
 }
-Var Scope::parse_NULL_REF( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+
+Var Scope::parse_NULL_REF( const Expr &sf, int off, BinStreamReader bin ) {
+    TODO;
+    return Var();
+}
+
+Var Scope::parse_AND( const Expr &sf, int off, BinStreamReader bin ) {
+    Var ref_a = parse( sf, bin.read_offset() );
+    Var var_a = get_val_if_GetSetSopInst( ref_a, sf, off );
+
+    // bool conversion
+    Var bol_a = var_a;
+    if ( not ip->isa_Bool( bol_a ) ) {
+        bol_a = apply( find_var( STRING_Bool_NUM ), 1, &bol_a, 0, 0, 0, APPLY_MODE_STD, sf, off );
+        if ( ip->isa_Error( bol_a ) )
+            return bol_a;
+    }
+
+    // simplified expression
+    Expr exp_a = simplified_expr( bol_a, sf, off );
+
+    // known value
+    bool cond_val;
+    if ( exp_a.get_val( cond_val ) ) {
+        if ( cond_val )
+            return parse( sf, bin.read_offset() );
+        return ref_a;
+    }
+
+    // else
+    Var res = copy( var_a, sf, off ); // TODO: return a reference
+    set( res, parse( sf, bin.read_offset() ), sf, off, exp_a );
+    return res;
+}
+
+Var Scope::parse_OR( const Expr &sf, int off, BinStreamReader bin ) {
+    TODO;
+    return Var();
+}
 
 Var Scope::get_val_if_GetSetSopInst( const Var &val, const Expr &sf, int off ) {
     return val;

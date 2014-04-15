@@ -115,9 +115,9 @@ class Operators:
 
 
             #
-            O( "or"         , "or_boolean"            , Need2args  , 14 ),
-            O( "and"        , "and_boolean"           , Need2args  , 14 ),
-            O( "xor"        , "xor_boolean"           , Need2args  , 14 ),
+            O( "or"         , "__or__"                , Need2args  , 14 ),
+            O( "and"        , "__and__"               , Need2args  , 14 ),
+            O( "xor"        , "__xor___"              , Need2args  , 14 ),
 
             #
             O( "not"        , "not_boolean"           , Needrarg   , 15 ),
@@ -554,6 +554,8 @@ base_token_types = string.split( """
     LIST
     LAMBDA
     NULL_REF
+    AND
+    OR
 """ )
 
 make_hash_string()

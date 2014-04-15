@@ -105,11 +105,13 @@ Var ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, i
         TODO; // res = undefined cst with unknown size
     }
 
-    if ( apply_mode != Scope::APPLY_MODE_STD )
+    if ( apply_mode == Scope::APPLY_MODE_NEW )
         TODO;
 
+
     // call init
-    caller->apply( caller->get_attr( ret, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
+    if ( apply_mode == Scope::APPLY_MODE_STD )
+        caller->apply( caller->get_attr( ret, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );
 
     return ret;
 }

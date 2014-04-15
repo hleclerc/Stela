@@ -125,6 +125,8 @@ void IrWriter::parse_lexem( const Lexem *l ) {
     case STRING___import___NUM      : PARSING( Import   ); return parse_import          ( l );
     case STRING___new___NUM         : PARSING( New      ); return parse_apply           ( l->children[ 0 ], IR_TOK_NEW );
     case STRING_lambda_NUM          : PARSING( New      ); return parse_lambda          ( l );
+    case STRING___and___NUM         : PARSING( New      ); return parse_and             ( l );
+    case STRING___or___NUM          : PARSING( New      ); return parse_or              ( l );
     default:
         PARSING( CallOp );
         return parse_call_op( l );
@@ -598,6 +600,21 @@ void IrWriter::parse_lambda( const Lexem *l ) {
     push_delayed_parse( l->children[ 1 ] );
 }
 
+void IrWriter::parse_and( const Lexem *l ) {
+    data << IR_TOK_AND;
+    push_offset( l );
+    push_delayed_parse( l->children[ 0 ] );
+    push_delayed_parse( l->children[ 1 ] );
+}
+
+void IrWriter::parse_or( const Lexem *l ) {
+    data << IR_TOK_OR;
+    push_offset( l );
+    push_delayed_parse( l->children[ 0 ] );
+    push_delayed_parse( l->children[ 1 ] );
+}
+
+
 /// @see parse_callable
 struct Argument {
     const Lexem *name;
@@ -607,7 +624,7 @@ struct Argument {
 
 /// != get_children_of_type because it takes left and right arguments
 static unsigned nb_child_and( const Lexem *t ) {
-    if ( t->type != STRING_and_boolean_NUM ) {
+    if ( t->type != STRING___and___NUM ) {
         if ( ( t->type == Lexem::PAREN or t->type == Lexem::BLOCK ) and t->children[ 0 ] )
             return nb_child_and( t->children[ 0 ] );
         return 1;
@@ -856,7 +873,7 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         if ( return_type ) {
             if ( name->eq( "init" ) ) {
                 SplittedVec<const Lexem *,16> cha;
-                get_children_of_type( return_type, STRING_and_boolean_NUM, cha );
+                get_children_of_type( return_type, STRING___and___NUM, cha );
                 data << cha.size();
 
                 for( int i = 0; i < cha.size(); ++i ) {

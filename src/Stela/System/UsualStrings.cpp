@@ -3,7 +3,7 @@
 #include "NstringHash.h"
 #include <string.h>
 static const char *operators_met_name[] = { ";","label","import","try","catch","transient","virtual","inline","static","property","const","class","def","extends","pertinence","when","else","while","for","if","return","return_n","throw","infon","info","?","",",","=",":=","~=","|=","^=","&=","%=","<<=",">>=","/=","*=","-=","+=","//=","+++=","=>","ref","new","<<<<","<<<","<<",">>","or","and","xor","not","inst_of","in","not_inst_of","not_in","!=","==",">=","<=",">","<","+++","..","...","+","-","","%","*",":",":.","/","//","\\","^","~","'","--","++","","","&","@","$","::","->",".",".?","->?","","" };
-static const char *operators_cpp_name[] = { "comma_dot","__label__","__import__","__try__","__catch__","__transient__","__virtual__","__inline__","__static__","__property__","__const__","__class__","__def__","__extends__","__pertinence__","__when__","__else__","__while__","__for__","__if__","__return__","__return_n__","__throw__","__infon__","__info__","__alternative__","comma_in_par","comma","reassign","assign","assign_type","self_or","self_xor","self_and","self_mod","self_shift_left","self_shift_right","self_div","self_mul","self_sub","self_add","self_div_int","self_concatenate","lambda","__ref__","__new__","shift_left_long_str","shift_left_then_endl","shift_left","shift_right","or_boolean","and_boolean","xor_boolean","not_boolean","__inst_of__","__in__","__not_inst_of__","__not_in__","not_equal","equal","superior_equal","inferior_equal","superior","inferior","concatenate","range","triple_dots","add","sub","neg","mod","mul","doubledot","doubledotdot","div","div_int","ml_div","pow","not_bitwise","trans","pre_dec","pre_inc","post_dec","post_inc","pointer_on","pointed_value","calc_name","doubledoubledot","get_attr_ptr","get_attr","get_attr_ask","get_attr_ptr_ask","__string_assembly__","tensorial_product" };
+static const char *operators_cpp_name[] = { "comma_dot","__label__","__import__","__try__","__catch__","__transient__","__virtual__","__inline__","__static__","__property__","__const__","__class__","__def__","__extends__","__pertinence__","__when__","__else__","__while__","__for__","__if__","__return__","__return_n__","__throw__","__infon__","__info__","__alternative__","comma_in_par","comma","reassign","assign","assign_type","self_or","self_xor","self_and","self_mod","self_shift_left","self_shift_right","self_div","self_mul","self_sub","self_add","self_div_int","self_concatenate","lambda","__ref__","__new__","shift_left_long_str","shift_left_then_endl","shift_left","shift_right","__or__","__and__","__xor___","not_boolean","__inst_of__","__in__","__not_inst_of__","__not_in__","not_equal","equal","superior_equal","inferior_equal","superior","inferior","concatenate","range","triple_dots","add","sub","neg","mod","mul","doubledot","doubledotdot","div","div_int","ml_div","pow","not_bitwise","trans","pre_dec","pre_inc","post_dec","post_inc","pointer_on","pointed_value","calc_name","doubledoubledot","get_attr_ptr","get_attr","get_attr_ask","get_attr_ptr_ask","__string_assembly__","tensorial_product" };
 static int         operators_behavior[] = { 0,16,2,2,16,2,2,2,2,2,2,16,16,3,3,3,3,16,16,16,2,16,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,1,3,6,2,3,3,3,3,3,3,3,3,2,1,2,2,1,1,2,2,2,3,3,3,3,3,3,3 };
 const char *get_operators_met_name( int n ) { return operators_met_name[ n ]; }
 const char *get_operators_cpp_name( int n ) { return operators_cpp_name[ n ]; }
@@ -74,9 +74,9 @@ const char *usual_strings_str[] = {
     "shift_left_then_endl",
     "shift_left",
     "shift_right",
-    "or_boolean",
-    "and_boolean",
-    "xor_boolean",
+    "__or__",
+    "__and__",
+    "__xor___",
     "not_boolean",
     "__inst_of__",
     "__in__",
@@ -275,9 +275,9 @@ int usual_strings_len[] = {
     20,
     10,
     11,
-    10,
-    11,
-    11,
+    6,
+    7,
+    8,
     11,
     11,
     6,
@@ -476,9 +476,9 @@ int usual_strings_val[] = {
     573298,
     280084,
     310051,
-    278694,
-    297900,
-    302186,
+    160667,
+    193817,
+    207960,
     301658,
     301042,
     158965,

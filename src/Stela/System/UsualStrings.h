@@ -61,9 +61,9 @@ int num_operator_op( const char *beg, int len );
 #define STRING_shift_left_then_endl_NUM 47
 #define STRING_shift_left_NUM 48
 #define STRING_shift_right_NUM 49
-#define STRING_or_boolean_NUM 50
-#define STRING_and_boolean_NUM 51
-#define STRING_xor_boolean_NUM 52
+#define STRING___or___NUM 50
+#define STRING___and___NUM 51
+#define STRING___xor____NUM 52
 #define STRING_not_boolean_NUM 53
 #define STRING___inst_of___NUM 54
 #define STRING___in___NUM 55

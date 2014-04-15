@@ -433,19 +433,28 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
 
     case CppInst::Id_If: {
         for( int nout = 0; nout < out.size(); ++nout ) {
+            //
             if ( declable( ext[ 0 ]->inp[ nout ] ) ) {
                 // get a reg for the corresponding output
-                int ninp = nout + 1;
-                if ( ninp < inp.size() and cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout  ].num ] == 1 ) {
-                    out[ nout ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
-                    cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
-                } else
-                    cc->on << decl( cc, nout, false ) << ";";
+//                int ninp = nout + 1;
+//                if ( ninp < inp.size() and cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout  ].num ] == 1 ) {
+//                    out[ nout ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
+//                    cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
+//                } else
+
+                // TODO: reuse in if
+                    cc->os << decl( cc, nout, false );
+                PRINT( out[ nout ].num );
                 // try to propagate the reg
                 for( int n = 0; n < 2; ++n )
                     ext[ n ]->inp[ nout ].inst->propagate_reg_num( ext[ n ]->inp[ nout ].nout, out[ nout ].num );
             }
         }
+
+        // num reg in IfInp
+        for( int n = 2; n < 4; ++n )
+            for( int i = 0; i < inp.size(); ++i )
+                ext[ n ]->out[ i ].num = inp[ i ].inst->out[ inp[ i ].nout ].num;
 
         Vec<CppInst *> va[ 2 ];
         for( int n = 0; n < 2; ++n )
