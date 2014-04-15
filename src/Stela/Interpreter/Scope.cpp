@@ -91,6 +91,7 @@ Var Scope::copy( const Var &var, const Expr &sf, int off ) {
         res.add_ref_from( var );
         return res;
     }
+    std::cerr << "TRYING TO COPY" << std::endl;
     PRINT( var );
     TODO;
     return var;
@@ -903,6 +904,15 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
         }
 
         return res;
+    }
+
+    //
+    if ( ip->isa_Type( f ) ) {
+        ClassInfo *ci = ip->class_info( f.expr() );
+        PRINT( f );
+        PRINT( ci );
+        PRINT( ip->glob_nstr_cor.str( ci->name ) );
+        TODO;
     }
 
     // f.apply ...

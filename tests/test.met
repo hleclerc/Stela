@@ -42,8 +42,8 @@ class Void
 
 class Type
     data := 0l
-    def apply
-         0
+    def apply varargs
+         todo()
 
 class SI8
     ___set_base_size_and_alig 8, 8
@@ -197,7 +197,10 @@ def range beg, end
 
 # TODO Type()
 #for t in 100 .. 103
-print 0
+#print 0
+t := 10
+T := typeof t
+___info T()
 
 # print 150
 # a := 10
