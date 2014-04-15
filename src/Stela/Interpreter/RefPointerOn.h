@@ -12,7 +12,7 @@ public:
 
     virtual Expr expr() const;
     virtual void write_to_stream( Stream &os ) const;
-    // virtual bool indirect_set( const Var &src, Scope *set_scope, const Expr &sf, int off, Expr ext_cond );
+    virtual bool contains_var_referenced_more_than_one_time() const;
     virtual Var pointed_value() const;
 
     Var var;

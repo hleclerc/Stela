@@ -21,6 +21,11 @@ Expr RefPointerOn::expr() const {
 //    return true;
 //}
 
+bool RefPointerOn::contains_var_referenced_more_than_one_time() const {
+    return var.referenced_more_than_one_time();
+}
+
+
 void RefPointerOn::write_to_stream( Stream &os ) const {
     os << "&" << var;
 }

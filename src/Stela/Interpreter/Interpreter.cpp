@@ -368,6 +368,8 @@ bool Interpreter::equal( Var a, Var b ) {
         return a.expr() == b.expr();
     if ( isa_SurdefList( a ) and isa_SurdefList( b ) )
         return a.expr() == b.expr();
+    if ( isa_Callable( a ) and isa_Callable( b ) )
+        return a.expr() == b.expr();
     if ( isa_SI32( a ) and isa_SI32( b ) )
         return a.expr() == b.expr();
     if ( isa_Void( a ) )

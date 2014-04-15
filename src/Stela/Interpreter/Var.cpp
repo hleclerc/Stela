@@ -40,7 +40,7 @@ const PI8 *Var::cst_data() const {
 }
 
 bool Var::referenced_more_than_one_time() const {
-    return data->cpt_use > 1;
+    return data->cpt_use > 1 or ( data->ptr and data->ptr->contains_var_referenced_more_than_one_time() );
 }
 
 Var Var::add_ref( int offset, const Var &var ) {

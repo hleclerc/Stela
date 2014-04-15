@@ -34,7 +34,7 @@ protected:
     void while_precomputations( CppInst *while_inst );
     void while_precomputations_mark_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
     void while_precomputations_fact_rec( CppInst *inst, CppInst *winp, CppInst *while_inst );
-    void get_pointed_values( Vec<CppExpr> &pointed_values, CppInst *inst );
+    // void get_pointed_values( Vec<CppExpr> &pointed_values, CppInst *inst );
     void get_front_rec( Vec<CppInst *> &front, CppInst *inst );
     void get_sub_insts( Vec<CppInst *> &res, CppInst *inst );
     const BaseType *bt_for_size( int size );
@@ -53,11 +53,11 @@ protected:
     SplittedVec<PI8,64>              addd_list; ///< additionnal_data list
     std::set<String>                 includes;
 
-    int                              nb_regs;
     std::map<int,int>                to_be_used; ///< nb of time a register have to be used
 
     std::map<int,AutoPtr<BaseType> > bt_map; ///< size vs bt
     std::set<const BaseType *>       bt_to_decl;
+    Vec<const BaseType *>            reg_types;
 
     // output
     StreamSepMaker<std::ostringstream> on;

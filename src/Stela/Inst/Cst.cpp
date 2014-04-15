@@ -39,6 +39,16 @@ public:
             return cst( data.ptr() + beg / 8, data.ptr() + ( size + 7 ) / 8 + beg / 8, end - beg );
         return Expr();
     }
+    virtual Expr _smp_setval( int nout, const Expr &b, int beg ) {
+        if ( const PI8 *b_data = b.cst_data() ) {
+            Vec<PI8> ndata = data;
+            int sb = b.size_in_bits(), o = ( size + 7 ) / 8;
+            memcpy_bit( ndata.ptr(), beg + 0 * size, b_data, 0 * sb, sb );
+            memcpy_bit( ndata.ptr(), beg + 1 * size, b_data, 1 * sb, sb );
+            return cst( ndata.ptr() + 0 * o, ndata.ptr() + 1 * o, size );
+        }
+        return Expr();
+    }
     virtual void write_to_stream( Stream &os ) const {
         write_dot( os );
     }

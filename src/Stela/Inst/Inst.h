@@ -88,6 +88,7 @@ public:
     virtual Expr _smp_slice( int nout, int beg, int end );
     virtual Expr _smp_val_at( int nout, int beg, int end );
     virtual Expr _smp_pointer_on( int nout );
+    virtual Expr _smp_setval( int nout, const Expr &b, int beg );
 
     // attributes
     mutable const Inst *ext_parent;

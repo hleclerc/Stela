@@ -226,10 +226,8 @@ Var Scope::parse_ASSIGN( const Expr &sf, int off, BinStreamReader bin ) {
     Var var = parse( sf, bin.read_offset() );
 
     //
-    if ( flags & IR_ASSIGN_TYPE ) {
-        // var = apply( var, 0, 0, 0, 0, 0, true, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD, sf, off );
-        TODO;
-    }
+    if ( flags & IR_ASSIGN_TYPE )
+        var = apply( var, 0, 0, 0, 0, 0, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD, sf, off );
 
     if ( ( flags & IR_ASSIGN_REF ) == 0 and var.referenced_more_than_one_time() )
         var = copy( var, sf, off );

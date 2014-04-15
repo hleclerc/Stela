@@ -41,7 +41,9 @@ class Void
         os << "void"
 
 class Type
-    pass
+    data := 0l
+    def apply
+         0
 
 class SI8
     ___set_base_size_and_alig 8, 8
@@ -171,19 +173,29 @@ def print val
     sys_write 0, &tmp + nbc, sit - nbc
 
 
-# a := 10
-# if ___rand()
-    # a = 5
-    # # a += 48
-# ___info a
-# ___syscall SI64 a
-class Toto
+def typeof val
+    ___typeof val
+
+class Range[ T ]
+    beg ~= T
+    end ~= T
+    inc ~= T
+    def init a, b
+        beg = a
+        end = b
+        inc = 1
     def __for__ block
-       block 100
+        cur := beg
+        while cur < end
+            block cur
+            cur += inc
 
+def range beg, end
+    Range[ typeof beg ]( beg, end )
 
-for t in Toto()
-    ___info t
+# !!!! il faut utiliser les pointer_on avant de modifier les objets sous tendus
+print 100
+#for t in 100 .. 103
 
 # print 150
 # a := 10

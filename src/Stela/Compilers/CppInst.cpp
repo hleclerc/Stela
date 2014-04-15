@@ -47,15 +47,11 @@ void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
     cc->bt_to_decl.insert( bt );
     ASSERT( bt, "bad" );
 
-
-    if ( info->out[ nout ].num < 0 ) {
+    if ( info->out[ nout ].num < 0 )
         info->out[ nout ].num = cc->get_free_reg( bt );
-        os << *bt << " R" << info->out[ nout ].num;
-    } else if ( equ_sgn )
-        os << "R" << info->out[ nout ].num;
 
     if ( equ_sgn )
-        os << " = ";
+        os << "R" << info->out[ nout ].num << " = ";
 }
 
 void CppInst::InstWriter::write_to_stream( Stream &os ) const {
@@ -366,8 +362,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         else if ( not inlinable( out[ 0 ] ) or not out[ 0 ].bt_hint->c_type() ) {
             // declaration
             int num = out[ 0 ].num;
-            if ( num < 0 )
-                cc->on << decl( cc, 0, false ) << ";";
+            if ( num < 0 and declable( CppExpr( this, 0 ) ) )
+                cc->os << decl( cc, 0, false ); // << ";";
             // value
             int s = out[ 0 ].bt_hint->size_in_bytes();
             out[ 0 ].bt_hint->write_c_definition(

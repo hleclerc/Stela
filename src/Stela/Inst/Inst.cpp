@@ -180,3 +180,9 @@ Expr Inst::_smp_val_at( int nout, int beg, int end ) {
 Expr Inst::_smp_pointer_on( int nout ) {
     return Expr();
 }
+
+Expr Inst::_smp_setval( int nout, const Expr &b, int beg ) {
+    return Expr();
+}
+
+

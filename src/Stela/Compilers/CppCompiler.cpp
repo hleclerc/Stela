@@ -8,7 +8,6 @@ CppCompiler::CppCompiler() : on( os ) {
     disp_inst_graph_wo_phi = false;
     disp_inst_graph = false;
     cpp_filename = "out.cpp";
-    nb_regs = 0;
     on.nsp = 4;
 }
 
@@ -39,6 +38,17 @@ void CppCompiler::exec() {
         bt->write_c_decl( fc );
 
     fc << "int main() {\n";
+
+    std::map<const BaseType *,Vec<int> > rt;
+    for( int i = 0; i < reg_types.size(); ++i )
+        rt[ reg_types[ i ] ] << i;
+    for( auto iter : rt ) {
+        fc << "    " << *iter.first;
+        for( int i = 0; i < iter.second.size(); ++i )
+            fc << ( i ? ", R" : " R" ) << iter.second[ i ];
+        fc << ";\n";
+    }
+
     fc << os.str();
     fc << "}\n";
 }
@@ -73,12 +83,12 @@ void CppCompiler::compile() {
         CppInst::display_graph( res );
 
     // declare values that are going to be pointed
-    ++CppInst::cur_op_id;
-    Vec<CppExpr> pointed_values;
-    for( int i = 0; i < res.size(); ++i )
-        get_pointed_values( pointed_values, res[ i ] );
-    for( CppExpr ch : pointed_values )
-        on << ch.inst->decl( this, ch.nout, false ) << ";";
+    //    ++CppInst::cur_op_id;
+    //    Vec<CppExpr> pointed_values;
+    //    for( int i = 0; i < res.size(); ++i )
+    //        get_pointed_values( pointed_values, res[ i ] );
+    //    for( CppExpr ch : pointed_values )
+    //        on << ch.inst->decl( this, ch.nout, false ) << ";";
 
     //
     output_code_for( res );
@@ -254,19 +264,19 @@ void CppCompiler::while_precomputations_fact_rec( CppInst *inst, CppInst *winp, 
     }
 }
 
-void CppCompiler::get_pointed_values( Vec<CppExpr> &pointed_values, CppInst *inst ) {
-    if ( inst->op_id == CppInst::cur_op_id )
-        return;
-    inst->op_id = CppInst::cur_op_id;
+//void CppCompiler::get_pointed_values( Vec<CppExpr> &pointed_values, CppInst *inst ) {
+//    if ( inst->op_id == CppInst::cur_op_id )
+//        return;
+//    inst->op_id = CppInst::cur_op_id;
 
-    if ( inst->inst_id == Inst::Id_PointerOn )
-        pointed_values << inst->inp[ 0 ];
+//    if ( inst->inst_id == Inst::Id_PointerOn )
+//        pointed_values << inst->inp[ 0 ];
 
-    for( int i = 0; i < inst->inp.size(); ++i )
-        get_pointed_values( pointed_values, inst->inp[ i ].inst );
-    for( int i = 0; i < inst->ext.size(); ++i )
-        get_pointed_values( pointed_values, inst->ext[ i ] );
-}
+//    for( int i = 0; i < inst->inp.size(); ++i )
+//        get_pointed_values( pointed_values, inst->inp[ i ].inst );
+//    for( int i = 0; i < inst->ext.size(); ++i )
+//        get_pointed_values( pointed_values, inst->ext[ i ] );
+//}
 
 
 void CppCompiler::get_front_rec( Vec<CppInst *> &front, CppInst *inst ) {
@@ -286,5 +296,7 @@ void CppCompiler::add_include( String name ) {
 }
 
 int CppCompiler::get_free_reg( const BaseType *bt ) {
-    return nb_regs++;
+    int res = reg_types.size();
+    reg_types << bt;
+    return res;
 }

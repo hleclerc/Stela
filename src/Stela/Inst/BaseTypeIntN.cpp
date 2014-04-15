@@ -4,14 +4,18 @@
 BaseTypeIntN::BaseTypeIntN( int size ) : size( size ) {}
 
 void BaseTypeIntN::write_c_definition( Stream &os, String reg, const PI8 *data, const PI8 *knwn, int nsp ) const {
-    if ( size == 32 and knwn[ 0 ] and knwn[ 1 ] and knwn[ 2 ] and knwn[ 3 ] ) {
-        for( int i = 0; i < nsp; ++i ) os << ' ';
-        os << "(int &)" << reg << " = " << *(int *)data;
-        os << ";\n";
-        return;
-    }
-    for( int i = 0; i < ( size + 7 ) / 8; ++i ) {
-        if ( knwn[ i ] ) {
+    for( int i = 0, s = ( size + 7 ) / 8; i < s; ++i ) {
+        if ( i + 4 <= s and knwn[ i + 0 ] and knwn[ i + 1 ] and knwn[ i + 2 ] and knwn[ i + 3 ] ) {
+            for( int i = 0; i < nsp; ++i ) os << ' ';
+
+            if ( i )
+                os << "(int &)" << reg << ".data[ " << i << " ] = " << (int &)data[ i ];
+            else
+                os << "(int &)" << reg << " = " << (int &)data[ i ];
+            os << ";\n";
+
+            i += 3;
+        } else if ( knwn[ i ] ) {
             for( int i = 0; i < nsp; ++i ) os << ' ';
             os << reg << ".data[ " << i << " ] = " << (int)data[ i ];
             os << ";\n";

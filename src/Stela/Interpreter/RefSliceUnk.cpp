@@ -10,6 +10,10 @@ Expr RefSliceUnk::expr() const {
     return slice( var.expr(), beg, len );
 }
 
+bool RefSliceUnk::contains_var_referenced_more_than_one_time() const {
+    return var.referenced_more_than_one_time();
+}
+
 bool RefSliceUnk::indirect_set( const Var &src, Scope *set_scope, const Expr &sf, int off, Expr ext_cond ) {
     Expr expr = set_scope->simplified_expr( src, sf, off );
 

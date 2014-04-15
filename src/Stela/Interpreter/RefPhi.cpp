@@ -18,6 +18,12 @@ bool RefPhi::indirect_set( const Var &src, Scope *set_scope, const Expr &sf, int
     return true;
 }
 
+bool RefPhi::contains_var_referenced_more_than_one_time() const {
+    // return var.;
+    TODO;
+    return true;
+}
+
 Expr RefPhi::expr() const {
     return phi( cond, ok->expr(), ko->expr() );
 }
