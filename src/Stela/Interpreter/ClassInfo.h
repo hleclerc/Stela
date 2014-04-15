@@ -11,7 +11,7 @@ class ClassInfo : public CallableInfo_WT {
 public:
     struct TrialClass : Trial {
         TrialClass( ClassInfo *orig ) : orig( orig ) {}
-        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller );
+        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller, int apply_mode );
         ClassInfo *orig;
         Vec<Var> args;
     };

@@ -88,7 +88,7 @@ CallableInfo::Trial *ClassInfo::test( int nu, Var *u_args, int nn, int *n_name, 
 }
 
 // -------------------------------------------------------------------------------------
-Var ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller ) {
+Var ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller, int apply_mode ) {
     // list compatible for the `type_for` procedure
     Var *arg_ptrs[ args.size() ];
     for( int i = 0; i < args.size(); ++i )
@@ -104,6 +104,9 @@ Var ClassInfo::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, i
     } else {
         TODO; // res = undefined cst with unknown size
     }
+
+    if ( apply_mode != Scope::APPLY_MODE_STD )
+        TODO;
 
     // call init
     caller->apply( caller->get_attr( ret, STRING_init_NUM, sf, off ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD, sf, off );

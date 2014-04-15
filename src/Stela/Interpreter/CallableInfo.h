@@ -16,7 +16,7 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller );
+        virtual Var call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller, int apply_mode );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 

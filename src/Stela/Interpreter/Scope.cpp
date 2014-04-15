@@ -84,7 +84,7 @@ int Scope::read_nstring( const Expr &sf, BinStreamReader &bin ) {
 Var Scope::copy( const Var &var, const Expr &sf, int off ) {
     if ( ip->isa_Error( var ) )
         return Var( &ip->type_Error, cst() );
-    if ( ip->isa_POD( var ) )
+    if ( ip->isa_POD( var ) or ip->isa_Type( var ) )
         return Var( var.type, var.expr() );
     if ( ip->isa_Callable( var ) ) {
         Var res( var.type, var.expr() );
@@ -893,7 +893,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
                 else
                     ok_cond = cond;
 
-                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, sf, off, this );
+                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, sf, off, this, am );
                 set( res, loc, sf, off, cond );
 
                 if ( trials[ i ]->cond )
@@ -908,11 +908,21 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_names, Var *n_args,
 
     //
     if ( ip->isa_Type( f ) ) {
-        ClassInfo *ci = ip->class_info( f.expr() );
-        PRINT( f );
-        PRINT( ci );
-        PRINT( ip->glob_nstr_cor.str( ci->name ) );
-        TODO;
+        TypeInfo *ti = ip->type_info( f.expr() ); ///< parse if necessary
+
+        Var ret;
+        if ( ti->static_size_in_bits >= 0 )
+            ret = Var( &ti->var, cst( 0, 0, ti->static_size_in_bits ) );
+        else
+            TODO; // res = undefined cst with unknown size
+
+        if ( am == APPLY_MODE_NEW )
+            TODO;
+
+        // call init
+        if ( am != APPLY_MODE_PARTIAL_INST )
+            apply( get_attr( ret, STRING_init_NUM, sf, off ), nu, u_args, nn, n_names, n_args, Scope::APPLY_MODE_STD, sf, off );
+        return ret;
     }
 
     // f.apply ...

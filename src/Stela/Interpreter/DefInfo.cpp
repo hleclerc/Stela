@@ -163,7 +163,10 @@ DefInfo::TrialDef::~TrialDef() {
     delete scope;
 }
 
-Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller ) {
+Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller, int apply_mode ) {
+    if ( apply_mode != Scope::APPLY_MODE_STD )
+        TODO;
+
     // particular case
     if ( orig->name == STRING_init_NUM ) {
         TypeInfo *ti = self.type_info();
