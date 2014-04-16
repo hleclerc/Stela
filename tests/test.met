@@ -217,7 +217,11 @@ def range beg, end
 #for t in 100 .. 103
 #print 0
 #print_rec 170
-___syscall ___rand() and ___rand()
+v := Vec[SI8,2]()
+v[ 0 ] = 1
+if ___rand()
+    v[ 0 ] = 10
+___syscall SI64 v[ 0 ]
 
 # print 150
 # a := 10

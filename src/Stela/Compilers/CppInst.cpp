@@ -432,34 +432,23 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         break;
 
     case CppInst::Id_If: {
-        for( int nout = 0; nout < out.size(); ++nout ) {
-            //
-            if ( declable( ext[ 0 ]->inp[ nout ] ) ) {
-                // get a reg for the corresponding output
-//                int ninp = nout + 1;
-//                if ( ninp < inp.size() and cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout  ].num ] == 1 ) {
-//                    out[ nout ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
-//                    cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
-//                } else
+        // works but pb with reuse
+        // dès qu'on a fait un IfOut, l'autre devrait suivre. Prop : propagation...
 
-                // TODO: reuse in if
-                    cc->os << decl( cc, nout, false );
-                PRINT( out[ nout ].num );
-                // try to propagate the reg
-                for( int n = 0; n < 2; ++n )
-                    ext[ n ]->inp[ nout ].inst->propagate_reg_num( ext[ n ]->inp[ nout ].nout, out[ nout ].num );
+        // num reg in IfInp
+        for( int ninp = 0; ninp < inp.size(); ++ninp ) {
+            if ( declable( inp[ ninp ] ) ) {
+                cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0;
+                for( int n = 2; n < 4; ++n )
+                    if ( ninp < ext[ n ]->out.size() )
+                        ext[ n ]->out[ ninp ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
             }
         }
 
-        // num reg in IfInp
-        for( int n = 2; n < 4; ++n )
-            for( int i = 0; i < inp.size(); ++i )
-                ext[ n ]->out[ i ].num = inp[ i ].inst->out[ inp[ i ].nout ].num;
-
+        // instructions to exec
         Vec<CppInst *> va[ 2 ];
         for( int n = 0; n < 2; ++n )
-            for( int i = 0; i < ext[ n ]->inp.size(); ++i )
-                va[ n ] << ext[ n ]->inp[ i ].inst;
+            va[ n ] << ext[ n ];
 
         cc->on << "if ( " << disp( cc, inp[ 0 ] ) << " ) {";
         cc->on.nsp += 4;
@@ -470,14 +459,26 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         cc->output_code_for( va[ 1 ] );
         cc->on.nsp -= 4;
         cc->on << "}";
+
+        for( int nout = 0; nout < out.size(); ++nout )
+            out[ nout ].num = ext[ 0 ]->inp[ nout ].inst->out[ ext[ 0 ]->inp[ nout ].nout ].num;
         break;
     }
 
     case CppInst::Id_IfOut: {
         CppInst *ii = ext_parent;
-        for( int ninp = 0; ninp < inp.size(); ++ninp )
-            if ( declable( inp[ ninp ] ) and ii->out[ ninp ].num != inp[ ninp ].inst->out[ inp[ ninp ].nout ].num )
-                cc->on << ii->inst( cc, ninp ) << " = " << disp( cc, inp[ ninp ] ) << ";";
+        for( int ninp = 0; ninp < inp.size(); ++ninp ) {
+            if ( declable( inp[ ninp ] ) ) {
+                if ( ii->out[ ninp ].num < 0 ) {
+                    int r = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
+                    ii->out[ ninp ].num = r;
+                    // propagation from the other IfOut
+                    CppExpr oc = ii->ext[ 1 ]->inp[ ninp ];
+                    oc.inst->propagate_reg_num( oc.nout, r );
+                } else if ( ii->out[ ninp ].num != inp[ ninp ].inst->out[ inp[ ninp ].nout ].num )
+                    cc->on << "R" << ii->out[ ninp ].num  << " = R" << inp[ ninp ].inst->out[ inp[ ninp ].nout ].num << ";";
+            }
+        }
         if ( write_break )
             cc->on << "break;";
         break;
