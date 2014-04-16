@@ -12,6 +12,13 @@ public:
     virtual void apply( InstVisitor &visitor ) const { visitor.phi( *this ); }
     virtual int inst_id() const { return Inst::Id_Phi; }
     //virtual const BaseType *out_bt( int n ) const { return inp_expr( 1 ).out_bt(); }
+    virtual Expr _smp_slice( int nout, int beg, int end ) {
+        Expr sok = inp[ 1 ].inst->_smp_slice( inp[ 1 ].nout, beg, end );
+        Expr sko = inp[ 2 ].inst->_smp_slice( inp[ 2 ].nout, beg, end );
+        if ( sok or sko )
+            return phi( inp[ 0 ], sok, sko );
+        return Expr();
+    }
 };
 
 Expr phi( Expr cond, Expr ok, Expr ko ) {
