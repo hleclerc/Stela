@@ -130,9 +130,9 @@ Var Scope::parse_CALLABLE( const Expr &sf, int off, BinStreamReader bin, Var *ty
 
     // callable registration
     if ( def )
-        ip->def_info  ( pointer_on( class_expr ) );
+        ip->def_info  ( pointer_on( class_expr ), true, static_named_vars.ptr() );
     else
-        ip->class_info( pointer_on( class_expr ) );
+        ip->class_info( pointer_on( class_expr ), true, static_named_vars.ptr() );
 
     // register it
     reg_var( name, res, sf, off, true, false );

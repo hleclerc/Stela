@@ -18,6 +18,8 @@ public:
     void get( Vec<Var> &res, int name );
     void reg( int name, Var var );
 
+    void write_to_stream( Stream &os ) const;
+
     SplittedVec<SV,8> lst;
     VarTable *parent; ///< used only for static var tables
 };

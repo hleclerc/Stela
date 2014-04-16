@@ -7,7 +7,7 @@
 #include "DefInfo.h"
 #include "Scope.h"
 
-DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin ) : CallableInfo_WT( sf, src_off, bin ) {
+DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin, VarTable *sn ) : CallableInfo_WT( sf, src_off, bin, sn ) {
     if ( flags & IR_HAS_RETURN_TYPE ) {
         if ( name == STRING_init_NUM ) {
             int nb_args = bin.read_positive_integer();
@@ -155,6 +155,15 @@ CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn
     return res;
 }
 
+Ptr<VarTable> DefInfo::static_named_vars_for( const Vec<TypeInfo *> &arg_types ) {
+    Ptr<VarTable> &res = static_named_vars[ arg_types ];
+    if ( sn )
+        PRINT( *sn );
+    if ( not res )
+        res = new VarTable( sn );
+    return res;
+}
+
 // -------------------------------------------------------------------------------------
 DefInfo::TrialDef::TrialDef( DefInfo *orig ) : orig( orig ), scope( 0 ) {
 }
@@ -197,6 +206,12 @@ Var DefInfo::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int p
             }
         }
     }
+
+    // static variables
+    Vec<TypeInfo *> arg_types;
+    for( int i = 0; i < orig->arg_names.size(); ++i )
+        arg_types << scope->find_var( orig->arg_names[ i ] ).type_info();
+    scope->static_named_vars = orig->static_named_vars_for( arg_types );
 
     // inline call
     return scope->parse( orig->block.sf, orig->block.tok );

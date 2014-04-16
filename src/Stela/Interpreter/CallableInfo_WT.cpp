@@ -4,7 +4,7 @@
 #include "Interpreter.h"
 #include <limits>
 
-CallableInfo_WT::CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin ) : sf( sf ), src_off( src_off ) {
+CallableInfo_WT::CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin, VarTable *sn ) : sf( sf ), src_off( src_off ), sn( sn ) {
     name  = ip->glo_nstr( sf, bin.read_positive_integer() );
     flags = bin.read_positive_integer();
     nargs = bin.read_positive_integer();

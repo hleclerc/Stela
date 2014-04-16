@@ -3,6 +3,7 @@
 
 #include "CallableInfo.h"
 class BinStreamReader;
+class VarTable;
 
 /**
 */
@@ -12,7 +13,7 @@ public:
         Vec<int> class_names;
     };
 
-    CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin );
+    CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin, VarTable *sn );
     virtual const char *filename() const;
     virtual int off() const;
 
@@ -35,6 +36,9 @@ public:
     Code        comp_pert;
     Code        condition;
     Code        block;
+
+    //
+    VarTable *sn;
 };
 
 #endif // CALLABLEINFO_WT_H

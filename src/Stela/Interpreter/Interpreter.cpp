@@ -256,7 +256,7 @@ CallableInfo *Interpreter::callable_info( const Expr &callable_ptr ) {
     return 0;
 }
 
-ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea ) {
+ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea, VarTable *sn ) {
     auto iter = class_info_map.find( class_ptr );
     if ( iter != class_info_map.end() )
         return iter->second;
@@ -269,12 +269,12 @@ ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea ) {
     val_at( class_ptr, a, b ).get_val( bin_off );
     val_at( class_ptr, b, c ).get_val( src_off );
 
-    ClassInfo *res = new ClassInfo( sf, src_off, sf.vat_data() + bin_off, class_ptr );
+    ClassInfo *res = new ClassInfo( sf, src_off, sf.vat_data() + bin_off, class_ptr, sn );
     class_info_map[ class_ptr ] = res;
     return res;
 }
 
-DefInfo *Interpreter::def_info( const Expr &def_ptr, bool crea ) {
+DefInfo *Interpreter::def_info( const Expr &def_ptr, bool crea, VarTable *sn ) {
     auto iter = def_info_map.find( def_ptr );
     if ( iter != def_info_map.end() )
         return iter->second;
@@ -287,7 +287,7 @@ DefInfo *Interpreter::def_info( const Expr &def_ptr, bool crea ) {
     val_at( def_ptr, a, b ).get_val( bin_off );
     val_at( def_ptr, b, c ).get_val( src_off );
 
-    DefInfo *res = new DefInfo( sf, src_off, sf.vat_data() + bin_off );
+    DefInfo *res = new DefInfo( sf, src_off, sf.vat_data() + bin_off, sn );
     def_info_map[ def_ptr ] = res;
     return res;
 }

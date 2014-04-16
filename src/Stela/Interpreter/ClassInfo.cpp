@@ -11,7 +11,7 @@
 
 #include <limits>
 
-ClassInfo::ClassInfo( const Expr &sf, int src_off, BinStreamReader bin, Expr class_ptr ) : CallableInfo_WT( sf, src_off, bin ), class_ptr( class_ptr ), last( 0 ) {
+ClassInfo::ClassInfo( const Expr &sf, int src_off, BinStreamReader bin, Expr class_ptr, VarTable *sn ) : CallableInfo_WT( sf, src_off, bin, sn ), class_ptr( class_ptr ), last( 0 ) {
     for( int i = 0, nb_anc = bin.read_positive_integer(); i < nb_anc; ++i )
         ancestors << Code( sf, bin.read_offset() );
 }

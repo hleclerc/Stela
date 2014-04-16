@@ -212,17 +212,9 @@ def range beg, end
     Range[ typeof beg ]( beg, end )
 
 # TODO find avec les variables statiques
-# TODO simplifications avec les SetVal inclus dans des phi
 #for t in 100 .. 103
-#print 0
-#print_rec 170
+print_rec 170
 
-#
-v := Vec[SI8,2]()
-v[ 1 ] = 1
-if ___rand()
-    v[ 1 ] = 10
-___syscall SI64 v[ 1 ]
 
 # print 150
 # a := 10

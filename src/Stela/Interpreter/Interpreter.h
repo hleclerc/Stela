@@ -15,6 +15,7 @@
 #include "Var.h"
 
 class CallableInfo;
+class VarName;
 class BaseType;
 class Scope;
 class ToDel;
@@ -56,8 +57,8 @@ public:
 
     /// callable
     CallableInfo     *callable_info( const Expr &callable_ptr );
-    ClassInfo        *class_info( const Expr &class_ptr, bool crea = true );
-    DefInfo          *def_info( const Expr &def_ptr, bool crea = true );
+    ClassInfo        *class_info( const Expr &class_ptr, bool crea = true, VarTable *sn = 0 );
+    DefInfo          *def_info( const Expr &def_ptr, bool crea = true, VarTable *sn = 0 );
 
     ClassInfo        *class_info( const Var &class_var ); ///< helper
 
