@@ -13,7 +13,7 @@ public:
         Var var;
     };
 
-    VarTable( VarTable *parent = 0 );
+    VarTable( Ptr<VarTable> parent = 0 );
     Var get( int name );
     void get( Vec<Var> &res, int name );
     void reg( int name, Var var );
@@ -21,7 +21,7 @@ public:
     void write_to_stream( Stream &os ) const;
 
     SplittedVec<SV,8> lst;
-    VarTable *parent; ///< used only for static var tables
+    Ptr<VarTable> parent; ///< used only for static var tables
 };
 
 #endif // VARTABLE_H

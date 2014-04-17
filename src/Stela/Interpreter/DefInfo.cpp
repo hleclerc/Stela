@@ -7,7 +7,7 @@
 #include "DefInfo.h"
 #include "Scope.h"
 
-DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin, VarTable *sn ) : CallableInfo_WT( sf, src_off, bin, sn ) {
+DefInfo::DefInfo( const Expr &sf, int src_off, BinStreamReader bin, Ptr<VarTable> sn ) : CallableInfo_WT( sf, src_off, bin, sn ) {
     if ( flags & IR_HAS_RETURN_TYPE ) {
         if ( name == STRING_init_NUM ) {
             int nb_args = bin.read_positive_integer();
@@ -157,8 +157,6 @@ CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn
 
 Ptr<VarTable> DefInfo::static_named_vars_for( const Vec<TypeInfo *> &arg_types ) {
     Ptr<VarTable> &res = static_named_vars[ arg_types ];
-    if ( sn )
-        PRINT( *sn );
     if ( not res )
         res = new VarTable( sn );
     return res;

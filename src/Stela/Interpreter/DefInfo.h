@@ -23,7 +23,7 @@ public:
         Vec<SI32> names; ///< named arguments
     };
 
-    DefInfo( const Expr &sf, int src_off, BinStreamReader bin, VarTable *sn );
+    DefInfo( const Expr &sf, int src_off, BinStreamReader bin, Ptr<VarTable> sn );
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller );
 
     Ptr<VarTable> static_named_vars_for( const Vec<TypeInfo *> &arg_types );

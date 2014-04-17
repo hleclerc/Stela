@@ -10,7 +10,7 @@
 */
 class Scope {
 public:
-    Scope( Scope *parent, Scope *caller = 0, Ptr<VarTable> snv = 0 );
+    Scope( Scope *parent, Scope *caller = 0 );
 
     Var parse( const Expr &sf, const PI8 *tok );
 

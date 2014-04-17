@@ -16,7 +16,7 @@ public:
         Vec<Var> args;
     };
 
-    ClassInfo( const Expr &sf, int src_off, BinStreamReader bin, Expr class_ptr, VarTable *sn );
+    ClassInfo( const Expr &sf, int src_off, BinStreamReader bin, Expr class_ptr, Ptr<VarTable> sn );
     virtual ~ClassInfo();
 
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self, const Expr &sf, int off, Scope *caller );

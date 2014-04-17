@@ -31,10 +31,10 @@
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
 
-Scope::Scope( Scope *parent, Scope *caller, Ptr<VarTable> snv ) :
+Scope::Scope( Scope *parent, Scope *caller ) :
     parent( parent ), caller( caller ) {
 
-    static_named_vars = snv ? snv : new VarTable;
+    static_named_vars = new VarTable( parent ? parent->static_named_vars : Ptr<VarTable>( 0 ) );
 
     do_not_execute_anything = false;
     base_size = 0;
@@ -130,9 +130,9 @@ Var Scope::parse_CALLABLE( const Expr &sf, int off, BinStreamReader bin, Var *ty
 
     // callable registration
     if ( def )
-        ip->def_info  ( pointer_on( class_expr ), true, static_named_vars.ptr() );
+        ip->def_info  ( pointer_on( class_expr ), true, static_named_vars );
     else
-        ip->class_info( pointer_on( class_expr ), true, static_named_vars.ptr() );
+        ip->class_info( pointer_on( class_expr ), true, static_named_vars );
 
     // register it
     reg_var( name, res, sf, off, true, false );
@@ -1030,14 +1030,14 @@ Var Scope::reg_var( int name, const Var &var, const Expr &sf, int off, bool stat
 }
 
 Var Scope::find_var_first( int name ) {
-    for( Scope *s = this; ; s = s->parent ) {
+    for( Scope *s = this; ; ) {
         if ( Var res = s->named_vars.get( name ) )
             return res;
         if ( Var res = s->static_named_vars->get( name ) )
             return res;
         //
         if ( Scope *p = s->parent ) {
-            if ( not p->parent ) { // -> there is a parent, but the parent is the main scope
+            if ( not p->parent ) { // p is the main scope
                 // self
                 if ( s->self ) {
                     TypeInfo *ti =  s->self.type_info();
@@ -1045,7 +1045,7 @@ Var Scope::find_var_first( int name ) {
                         return ti->make_attr( s->self, attr );
                 }
                 // static variables
-                for( VarTable *vt = p->static_named_vars.ptr(); vt; vt = vt->parent )
+                for( VarTable *vt = s->static_named_vars->parent.ptr(); vt; vt = vt->parent.ptr() )
                     if ( Var res = vt->get( name ) )
                         return res;
                 // non static vars of main scope
@@ -1053,6 +1053,7 @@ Var Scope::find_var_first( int name ) {
                     return res;
                 return Var();
             }
+            s = p;
         } else
             break;
     }
@@ -1065,7 +1066,7 @@ void Scope::find_var_clist( Vec<Var> &lst, int name ) {
         s->static_named_vars->get( lst, name );
         //
         if ( Scope *p = s->parent ) {
-            if ( not p->parent ) { // -> there is a parent, but the parent is the main scope
+            if ( not p->parent ) { // p is the main scope
                 // self
                 if ( s->self ) {
                     TypeInfo *ti =  s->self.type_info();
@@ -1075,7 +1076,7 @@ void Scope::find_var_clist( Vec<Var> &lst, int name ) {
                         lst << ti->make_attr( s->self, attrs[ i ] );
                 }
                 // static variables
-                for( VarTable *vt = p->static_named_vars.ptr(); vt; vt = vt->parent )
+                for( VarTable *vt = s->static_named_vars->parent.ptr(); vt; vt = vt->parent.ptr() )
                     vt->get( lst, name );
                 // non static vars of main scope
                 p->named_vars.get( lst, name );

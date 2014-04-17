@@ -185,7 +185,14 @@ Var Interpreter::ext_method( const Var &var ) {
     return Var();
 }
 
-Var Interpreter::make_Callable( const Vec<Var> &lst, Var self ) {
+Var Interpreter::make_Callable( Vec<Var> lst, Var self ) {
+    // remove doubles
+    for( int i = 0; i < lst.size(); ++i )
+        for( int j = i + 1; j < lst.size(); ++j )
+            if ( lst[ i ].expr() == lst[ j ].expr() )
+                lst.remove_unordered( j-- );
+
+    //
     Expr surdef_list_data = cst( SI32( lst.size() ) );
     for( int i = 0; i < lst.size(); ++i )
         surdef_list_data = concat( surdef_list_data, pointer_on( lst[ i ].expr() ) );
@@ -256,7 +263,7 @@ CallableInfo *Interpreter::callable_info( const Expr &callable_ptr ) {
     return 0;
 }
 
-ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea, VarTable *sn ) {
+ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea, Ptr<VarTable> sn ) {
     auto iter = class_info_map.find( class_ptr );
     if ( iter != class_info_map.end() )
         return iter->second;
@@ -274,7 +281,7 @@ ClassInfo *Interpreter::class_info( const Expr &class_ptr, bool crea, VarTable *
     return res;
 }
 
-DefInfo *Interpreter::def_info( const Expr &def_ptr, bool crea, VarTable *sn ) {
+DefInfo *Interpreter::def_info( const Expr &def_ptr, bool crea, Ptr<VarTable> sn ) {
     auto iter = def_info_map.find( def_ptr );
     if ( iter != def_info_map.end() )
         return iter->second;

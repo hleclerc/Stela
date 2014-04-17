@@ -1,7 +1,7 @@
 #include "Interpreter.h"
 #include "VarTable.h"
 
-VarTable::VarTable( VarTable *parent ) : parent( parent ) {
+VarTable::VarTable( Ptr<VarTable> parent ) : parent( parent ) {
 }
 
 Var VarTable::get( int name ) {

@@ -57,8 +57,8 @@ public:
 
     /// callable
     CallableInfo     *callable_info( const Expr &callable_ptr );
-    ClassInfo        *class_info( const Expr &class_ptr, bool crea = true, VarTable *sn = 0 );
-    DefInfo          *def_info( const Expr &def_ptr, bool crea = true, VarTable *sn = 0 );
+    ClassInfo        *class_info( const Expr &class_ptr, bool crea = true, Ptr<VarTable> sn = 0 );
+    DefInfo          *def_info( const Expr &def_ptr, bool crea = true, Ptr<VarTable> sn = 0 );
 
     ClassInfo        *class_info( const Var &class_var ); ///< helper
 
@@ -69,7 +69,7 @@ public:
     Expr              cst_ptr( SI64 val );
     Var               make_varargs_var( const Vec<Var> &uv_args, const Vec<Var> &nv_args = Vec<Var>(), const Vec<int> &nv_name = Vec<int>() );
     Var               ext_method( const Var &var ); ///< return var if var is a function with self as arg
-    Var               make_Callable( const Vec<Var> &lst, Var self );
+    Var               make_Callable( Vec<Var> lst, Var self );
     Var               update_Callable( Var surdef_list, Var varargs );
     Var               copied_or_constified( const Var &var );
 

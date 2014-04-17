@@ -177,15 +177,15 @@ def print val
 def print_rec val
     sit := 10
     tmp := Vec[ SI8, sit ]()
-    vcp := val
     nbc := sit - 1
     tmp[ nbc ] = 10
 
-    def print_int tmp, nbc, vcp
-        tmp[ nbc - 1 ] = 48 + vcp % 10
-        if vcp and nbc
-            print_int tmp, nbc / 10, vcp - 1
-    print_int tmp, nbc, vcp
+    def print_int tmp, nbc, val
+        ___info val
+        tmp[ nbc -= 1 ] = 48 + val % 10
+        if val / 10 and nbc
+            print_int tmp, nbc, val / 10
+    print_int tmp, nbc, val
 
     sys_write 0, &tmp + nbc, sit - nbc
 

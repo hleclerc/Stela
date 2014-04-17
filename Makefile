@@ -3,6 +3,9 @@ SRC = tests/test.met
 INSTALL = `pwd`
 
 all: std
+
+exe: std
+	metil_comp out.cpp
 # 	
 
 std: ext/PrepArg install_dir

@@ -13,7 +13,7 @@ public:
         Vec<int> class_names;
     };
 
-    CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin, VarTable *sn );
+    CallableInfo_WT( const Expr &sf, int src_off, BinStreamReader &bin, Ptr<VarTable> sn );
     virtual const char *filename() const;
     virtual int off() const;
 
@@ -38,7 +38,7 @@ public:
     Code        block;
 
     //
-    VarTable *sn;
+    Ptr<VarTable> sn;
 };
 
 #endif // CALLABLEINFO_WT_H
