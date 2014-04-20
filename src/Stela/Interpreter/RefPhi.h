@@ -8,15 +8,14 @@
 */
 class RefPhi : public Ref {
 public:
-    RefPhi( const Expr &cond, Ptr<Ref> ok, Ptr<Ref> ko );
+    RefPhi( const Expr &cond, const Var &ok, const Var &ko );
     virtual void write_to_stream( Stream &os ) const;
     virtual bool contains_var_referenced_more_than_one_time() const;
-    virtual bool indirect_set( const Var &src, Scope *set_scope, const Expr &sf, int off, Expr ext_cond );
     virtual Expr expr() const;
 
-    Expr     cond;
-    Ptr<Ref> ok;
-    Ptr<Ref> ko;
+    Expr cond;
+    Var  ok;
+    Var  ko;
 };
 
 #endif // REFPHI_H

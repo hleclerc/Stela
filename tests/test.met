@@ -174,21 +174,6 @@ def print val
             break
     sys_write 0, &tmp + nbc, sit - nbc
 
-def print_rec val
-    sit := 10
-    tmp := Vec[ SI8, sit ]()
-    nbc := sit - 1
-    tmp[ nbc ] = 10
-
-    def print_int tmp, nbc, val
-        ___info val
-        tmp[ nbc -= 1 ] = 48 + val % 10
-        if val / 10 and nbc
-            print_int tmp, nbc, val / 10
-    print_int tmp, nbc, val
-
-    sys_write 0, &tmp + nbc, sit - nbc
-
 
 
 def typeof val
@@ -211,9 +196,31 @@ class Range[ T ]
 def range beg, end
     Range[ typeof beg ]( beg, end )
 
-# TODO find avec les variables statiques
-#for t in 100 .. 103
-print_rec 170
+def print_rec val
+    sit := 3
+    tmp := Vec[ SI8, sit ]()
+    nbc := sit - 1
+    tmp[ nbc ] = 10
+
+    def print_int tmp, nbc, val
+        tmp[ nbc -= 1 ] = 48 + val % 10
+        if val / 10 and nbc
+            #___info Bool val / 10 and nbc
+            #___info nbc + 0
+            print_int tmp, nbc, val / 10
+
+    print_int tmp, nbc, val
+    sys_write 0, &tmp + nbc, sit - nbc
+
+# r := rand_64()
+# sub(
+    # phi( r / 10, 3, r / 10 ),
+    # 1
+# )
+
+# Bool{phi(phi(div(conv[SI32,PI64](rand_64()),10),3,div(conv[SI32,PI64](rand_64()),10)),phi(conv[Bool,SI32](div(conv[SI32,PI64](rand_64()),10)),3,div(conv[SI32,PI64](rand_64()),10)),0)}
+
+print_rec SI32 ___rand() * 0 + 47
 
 
 # print 150

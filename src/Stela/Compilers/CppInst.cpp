@@ -393,6 +393,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             inlined = true;
         break;
     case CppInst::Id_Rand:
+        cc->add_include( "stdlib.h" );
         cc->on << decl( cc, 0 ) << "rand();";
         break;
     case CppInst::Id_Conv:

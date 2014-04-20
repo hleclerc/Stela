@@ -40,6 +40,19 @@ Expr conv( const BaseType *dst, const BaseType *src, Expr a ) {
             return cst( tmp, 0, dst->size_in_bits() );
     }
 
+    // bool( phi( bool( c ), b, c ) ) -> c and b
+    if ( dst == bt_Bool and a.inst->inst_id() == Inst::Id_Phi ) {
+        if ( a.inst->inp_expr( 0 ) == a.inst->inp_expr( 2 ) or ( a.inst->inp_expr( 0 ).inst->inst_id() == Inst::Id_Conv and a.inst->inp_expr( 0 ).inst->inp_expr( 0 ) == a.inst->inp_expr( 2 ) ) ) {
+            Expr cb = conv( dst, src, a.inst->inp_expr( 1 ) );
+            Bool rb;
+            if ( cb.get_val( rb )  ) {
+                if ( rb )
+                    return conv( dst, src, a.inst->inp_expr( 2 ) );
+                return cst( false );
+            }
+        }
+    }
+
     // else, create a new inst
     Conv *res = new Conv;
     res->inp_repl( 0, a );

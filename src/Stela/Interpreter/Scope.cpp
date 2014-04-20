@@ -186,7 +186,10 @@ Var Scope::parse_SELECT( const Expr &sf, int off, BinStreamReader bin ) {
     return apply( get_attr( f, STRING_select_NUM, sf, off ), nu, u_args, nn, n_name, n_args, APPLY_MODE_STD, sf, off );
 }
 
-Var Scope::parse_CHBEBA( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_CHBEBA( const Expr &sf, int off, BinStreamReader bin ) {
+    TODO;
+    return Var();
+}
 Var Scope::parse_SI32( const Expr &sf, int off, BinStreamReader bin ) {
     return make_var( SI32( bin.read_positive_integer() ) );
 }
@@ -690,7 +693,8 @@ Var Scope::parse_AND( const Expr &sf, int off, BinStreamReader bin ) {
 
     // else
     Var res = copy( var_a, sf, off ); // TODO: return a reference
-    set( res, parse( sf, bin.read_offset() ), sf, off, exp_a );
+    Var b = parse( sf, bin.read_offset() );
+    set( res, b, sf, off, exp_a );
     return res;
 }
 
@@ -718,10 +722,26 @@ Expr Scope::simplified_expr( const Var &var, const Expr &sf, int off ) {
 }
 
 Expr Scope::simplified_expr( const PRef &var, const Expr &sf, int off ) {
-    return var.ptr ? simplified_expr( var.ptr->expr(), sf, off ) : Expr();
+    if ( not var.ptr )
+        return Expr();
+
+    // RefPhi
+    if ( const RefPhi *r = dcast( var.ptr.ptr() )  ) {
+        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+            if ( s->cond ) {
+                if ( s->cond == r->cond )
+                    return simplified_expr( r->ok, sf, off );
+                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == r->cond )
+                    return simplified_expr( r->ko, sf, off );
+            }
+        }
+    }
+
+    return simplified_expr( var.ptr->expr(), sf, off );
 }
 
 Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
+    // Phi
     if ( expr.inst->inst_id() == Inst::Id_Phi ) {
         Expr c = expr.inst->inp_expr( 0 );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
@@ -736,19 +756,20 @@ Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
     return expr;
 }
 
-Var Scope::simplified_pref( const Var &expr, const Expr &sf, int off ) {
-    //    if ( expr.inst->inst_id() == Inst::Id_Phi ) {
-    //        Expr c = expr.inst->inp_expr( 0 );
-    //        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
-    //            if ( s->cond ) {
-    //                if ( s->cond == c )
-    //                    return simplified_expr( expr.inst->inp_expr( 1 ), sf, off );
-    //                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == c )
-    //                    return simplified_expr( expr.inst->inp_expr( 2 ), sf, off );
-    //            }
-    //        }
-    //    }
-    return expr;
+Ptr<Ref> Scope::simplified_pref( const Var &var, const Expr &sf, int off ) {
+    // RefPhi
+    if ( const RefPhi *r = dcast( var.data->ptr.ptr() )  ) {
+        for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+            if ( s->cond ) {
+                if ( s->cond == r->cond )
+                    return simplified_pref( r->ok, sf, off );
+                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == r->cond )
+                    return simplified_pref( r->ko, sf, off );
+            }
+        }
+    }
+
+    return var.data->ptr;
 }
 
 struct CmpCallableInfobyPertinence {
@@ -996,24 +1017,24 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
         if ( dst.data->ptr->indirect_set( src, this, sf, off, ext_cond ) )
             return;
 
-        Var src_expr = simplified_pref( src, sf, off );
+        Ptr<Ref> src_expr = simplified_pref( src, sf, off );
 
         // phi( ... )
-        Var dst_expr = simplified_pref( dst, sf, off );
+        Ptr<Ref> dst_expr = simplified_pref( dst, sf, off );
         if ( ext_cond )
-            src_expr.data->ptr = new RefPhi( ext_cond, src_expr.data->ptr, dst_expr.data->ptr );
+            src_expr = new RefPhi( ext_cond, Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
             if ( s->cond )
-                src_expr.data->ptr = new RefPhi( s->cond, src_expr.data->ptr, dst_expr.data->ptr );
+                src_expr = new RefPhi( s->cond, Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
 
-        if ( dst_expr.data->ptr != src_expr.data->ptr ) {
+        if ( dst_expr != src_expr ) {
             // variable to be saved ?
             for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
                 if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
                     s->sv_map->operator[]( dst.data ) = dst.data->ptr;
 
             // copy the Ref
-            dst.data->ptr = src_expr.data->ptr;
+            dst.data->ptr = src_expr;
         }
     } else {
         ASSERT( not dst.data, "weird" );

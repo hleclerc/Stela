@@ -19,9 +19,9 @@ public:
 
     // Où stocker ip ??
     Var( Ptr<PRef> type, const Expr &expr );
-    Var( Ptr<PRef> type, Ref *ref );
+    Var( Ptr<PRef> type, Ptr<Ref> ref );
     Var( Var *type, const Expr &expr );
-    Var( Var *type, Ref *ref );
+    Var( Var *type, Ptr<Ref> ref );
     Var( Var *type );
     Var();
 

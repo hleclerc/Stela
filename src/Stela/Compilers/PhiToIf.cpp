@@ -25,11 +25,17 @@ struct PhiToIf {
     }
 
     bool iter() {
+        ++CppInst::cur_op_id;
+        for( int i = 0; i < res.size(); ++i )
+            update_info_rec( res[ i ] );
+
         // get conditions
         ++CppInst::cur_op_id;
         cond_list.resize( 0 );
         for( int i = 0; i < res.size(); ++i )
             get_conditions_rec( res[ i ] );
+
+        PRINT( cond_list.size() );
 
         // make a substitution for the first encoutered condition without phi nodes
         // (to be optimized)
@@ -106,6 +112,24 @@ struct PhiToIf {
             res += make_info_rec( inst->inp[ i ].inst );
         for( int i = 0; i < inst->ext.size(); ++i )
             res += make_info_rec( inst->ext[ i ] );
+
+        //INFO( inst )->substitution_inp = subs_inp_it.get_room_for( inst->inp_size() );
+        //INFO( inst )->substitution_ext = subs_ext_it.get_room_for( inst->ext_size() );
+        INFO( inst )->nb_phi_children = res;
+        return res;
+    }
+
+    /// returns nb child phi node
+    int update_info_rec( const CppInst *inst ) {
+        if ( inst->op_id == CppInst::cur_op_id )
+            return INFO( inst )->nb_phi_children;
+        inst->op_id = CppInst::cur_op_id;
+
+        int res = inst->inst_id == CppInst::Id_Phi;
+        for( int i = 0; i < inst->inp.size(); ++i )
+            res += update_info_rec( inst->inp[ i ].inst );
+        for( int i = 0; i < inst->ext.size(); ++i )
+            res += update_info_rec( inst->ext[ i ] );
 
         //INFO( inst )->substitution_inp = subs_inp_it.get_room_for( inst->inp_size() );
         //INFO( inst )->substitution_ext = subs_ext_it.get_room_for( inst->ext_size() );
