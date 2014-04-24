@@ -47,6 +47,10 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
         }
     }
 
+    // phi( cond, ok, phi( cond, a, b ) ) -> phi( cond, ok, b )
+    if ( ko.inst->inst_id() == Inst::Id_Phi and ko.inst->inp_expr( 0 ) == cond )
+        return phi( cond, ok, ko.inst->inp_expr( 2 ) );
+
     // cond = bool( ... )
     //if ( cond.inst->inst_id() == Inst::Id_Conv and cond.inst->out_bt( 0 ) == bt_Bool )
     //    cond = cond.inst->inp_expr( 0 );

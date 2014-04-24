@@ -4,11 +4,27 @@
 #include "PhiToIf.h"
 #include <fstream>
 
-CppCompiler::CppCompiler() : on( os ) {
+CppCompiler::CppCompiler() {
     disp_inst_graph_wo_phi = false;
     disp_inst_graph = false;
     cpp_filename = "out.cpp";
     on.nsp = 4;
+
+    on.stream = &oss;
+    os.stream = &oss;
+}
+
+void CppCompiler::push_stream( std::ostringstream *stream ) {
+    stream_stack << on.stream;
+    on.stream = stream;
+    os.stream = stream;
+}
+
+void CppCompiler::pop_stream() {
+    std::ostringstream *old = stream_stack.back();
+    stream_stack.pop_back();
+    on.stream = old;
+    os.stream = old;
 }
 
 CppCompiler &CppCompiler::operator<<( ConstPtr<Inst> inst ) {
@@ -49,7 +65,7 @@ void CppCompiler::exec() {
         fc << ";\n";
     }
 
-    fc << os.str();
+    fc << os.stream->str();
     fc << "}\n";
 }
 

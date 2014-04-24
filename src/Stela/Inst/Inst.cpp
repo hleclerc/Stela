@@ -2,6 +2,8 @@
 #include "Cst.h"
 
 PI64 Inst::cur_op_id = 0;
+static bool full_dot = true;
+
 
 Inst::Inst() {
     ext_parent = 0;
@@ -76,7 +78,10 @@ int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filena
 
     std::ofstream f( filename );
     f << "digraph Instruction {";
-    f << "  node [shape = record];";
+    if ( full_dot )
+        f << "  node [shape = record];";
+    else
+        f << "  node [shape = none];";
 
     Vec<const Inst *> ext_buf;
     for( int i = 0; i < outputs.size(); ++i )
@@ -123,16 +128,22 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
         }
         os << ls[ i ];
     }
-    for( int i = 0; i < out_size(); ++i )
-        os << "|<f" << i << ">o";
-    for( int i = 0; i < inp_size(); ++i )
-        os << "|<f" << out_size() + i << ">i";
+    if ( full_dot ) {
+        for( int i = 0; i < out_size(); ++i )
+            os << "|<f" << i << ">o";
+        for( int i = 0; i < inp_size(); ++i )
+            os << "|<f" << out_size() + i << ">i";
+    }
     os << "\"];\n";
 
     // children
     for( int i = 0, n = inp_size(); i < n; ++i ) {
         const Expr &ch = inp_expr( i );
-        os << "    node" << this << ":f" << out_size() + i << " -> node" << ch.inst.ptr() << ":f" << ch.nout << ";\n";
+        if ( full_dot )
+            os << "    node" << this << ":f" << out_size() + i << " -> node" << ch.inst.ptr() << ":f" << ch.nout << ";\n";
+        else
+            os << "    node" << this << " -> node" << ch.inst.ptr() << ";\n";
+
         if ( ch.inst )
             ch.inst->write_graph_rec( ext_buf, os );
     }

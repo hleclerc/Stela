@@ -60,8 +60,22 @@ protected:
     Vec<const BaseType *>            reg_types;
 
     // output
+    void push_stream( std::ostringstream *stream );
+    void pop_stream();
+
+    struct MyStream {
+        template<class T>
+        MyStream &operator<<( const T &val ) {
+            *stream << val;
+            return *this;
+        }
+        std::ostringstream *stream;
+    };
     StreamSepMaker<std::ostringstream> on;
-    std::ostringstream os;
+    std::ostringstream oss;
+    MyStream os;
+
+    Vec<std::ostringstream *> stream_stack;
 };
 
 #endif // CPPCOMPILER_H

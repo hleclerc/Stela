@@ -31,7 +31,7 @@ public:
 template<class TS>
 class StreamSepMaker {
 public:
-    StreamSepMaker( TS &stream, const char *sep = 0, const char *end = "\n" ) : stream( &stream ), sep( sep ), end( end ), beg( 0 ), first_beg( 0 ) {
+    StreamSepMaker( TS *stream = 0, const char *sep = 0, const char *end = "\n" ) : stream( stream ), sep( sep ), end( end ), beg( 0 ), first_beg( 0 ) {
         nsp = 0;
     }
 

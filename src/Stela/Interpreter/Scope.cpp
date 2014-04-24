@@ -1020,12 +1020,26 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
         Ptr<Ref> src_expr = simplified_pref( src, sf, off );
 
         // phi( ... )
-        Ptr<Ref> dst_expr = simplified_pref( dst, sf, off );
-        if ( ext_cond )
-            src_expr = new RefPhi( ext_cond, Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
+        //  a = select( c0, u, v )
+        //  if c0 and c1
+        //     a = w
+        //  -> a = select( c0 and c1, w, select( c0, u, v ) )
+
+        // C0 and C1 ? A : B
+        // select( C0, select( C1, A, B ), B )
+
+        Ptr<Ref> dst_expr = dst.data->ptr;
+
+        Vec<Expr> conds;
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
             if ( s->cond )
-                src_expr = new RefPhi( s->cond, Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
+                conds << s->cond;
+
+        for( int i = conds.size() - 1; i >= 0; --i )
+            src_expr = new RefPhi( conds[ i ], Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
+
+        if ( ext_cond )
+            src_expr = new RefPhi( ext_cond, Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
 
         if ( dst_expr != src_expr ) {
             // variable to be saved ?

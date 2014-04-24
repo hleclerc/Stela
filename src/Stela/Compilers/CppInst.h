@@ -41,6 +41,10 @@ public:
         bool ptr;
     };
 
+    struct DotDisp {
+        virtual void disp( Stream &os, const CppInst *inst ) = 0;
+    };
+
     enum { ///< very bad...
         #define DECL_INST( INST ) Id_##INST,
         #include "../Inst/DeclInst.h"
@@ -74,8 +78,8 @@ public:
     bool while_has_only_if_with_cond_as_inp();
     void get_insts_rec( Vec<CppInst *> &res, int id ); ///< get sub inst with a given id
 
-    static int display_graph( const Vec<CppInst *> &res, const char *filename = ".res" );
-    void write_graph_rec( Stream &os, void *omd = 0 ) const;
+    static int display_graph( const Vec<CppInst *> &res, DotDisp *omd = 0, const char *filename = ".res" );
+    void write_graph_rec( Stream &os, DotDisp *omd = 0 ) const;
     int ext_disp_size() const;
 
     void write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, int prec_op );

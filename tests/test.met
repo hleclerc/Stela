@@ -197,7 +197,7 @@ def range beg, end
     Range[ typeof beg ]( beg, end )
 
 def print_rec val
-    sit := 3
+    sit := 4
     tmp := Vec[ SI8, sit ]()
     nbc := sit - 1
     tmp[ nbc ] = 10
@@ -219,9 +219,19 @@ def print_rec val
 # )
 
 # Bool{phi(phi(div(conv[SI32,PI64](rand_64()),10),3,div(conv[SI32,PI64](rand_64()),10)),phi(conv[Bool,SI32](div(conv[SI32,PI64](rand_64()),10)),3,div(conv[SI32,PI64](rand_64()),10)),0)}
-
-print_rec SI32 ___rand() * 0 + 47
-
+a := Vec[SI8,3]()
+if ___rand() + 1
+    a[ 0 ] = 40
+    if ___rand()
+        a[ 1 ] = 20
+___syscall &a
+   
+# print_rec SI32 ___rand() * 0 + 47
+# a := 10
+# b := ___rand()
+# if ___rand()
+    # a = b
+# ___syscall SI64( a ), PI64( b )
 
 # print 150
 # a := 10

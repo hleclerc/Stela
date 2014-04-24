@@ -7,6 +7,8 @@
 #include <fstream>
 #include <limits>
 
+static bool full_dot = true;
+
 enum {
     PREC_phi    =  1,
 
@@ -58,7 +60,10 @@ CppInst::CppInst( int inst_id, int nb_outputs ) : inst_id( inst_id ), out( Size(
 void CppInst::DeclWriter::write_to_stream( Stream &os ) const {
     const BaseType *bt = info->out[ nout ].bt_hint;
     cc->bt_to_decl.insert( bt );
-    ASSERT( bt, "bad" );
+    if ( not bt ) {
+        PRINT( *info );
+        ERROR( "bad" );
+    }
 
     if ( info->out[ nout ].num < 0 )
         info->out[ nout ].num = cc->get_free_reg( bt );
@@ -295,6 +300,7 @@ static bool inlinable( const CppInst::Out &out ) {
             out.parents[ 0 ].inst->inst_id != Inst::Id_Slice and
             out.parents[ 0 ].inst->inst_id != Inst::Id_WhileInst and
             out.parents[ 0 ].inst->inst_id != Inst::Id_IfOut and
+            ( out.parents[ 0 ].inst->inst_id != Inst::Id_If or out.parents[ 0 ].ninp == 0 ) and
             ( out.parents[ 0 ].inst->inst_id != Inst::Id_SetVal or out.parents[ 0 ].ninp != 0 )
             ;
 }
@@ -374,7 +380,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
     switch ( inst_id ) {
     case CppInst::Id_Cst:
         if ( prec >= 0 )
-            out[ 0 ].bt_hint->write_to_stream( cc->os, additionnal_data + sizeof( int ) );
+            out[ 0 ].bt_hint->write_to_stream( *cc->os.stream, additionnal_data + sizeof( int ) );
         else if ( not inlinable( out[ 0 ] ) or not out[ 0 ].bt_hint->c_type() ) {
             // declaration
             int num = out[ 0 ].num;
@@ -383,7 +389,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             // value
             int s = out[ 0 ].bt_hint->size_in_bytes();
             out[ 0 ].bt_hint->write_c_definition(
-                        cc->os,
+                        *cc->os.stream,
                         "R" + to_string( out[ 0 ].num ),
                         additionnal_data + sizeof( int ),
                         additionnal_data + sizeof( int ) + s,
@@ -433,9 +439,6 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         break;
 
     case CppInst::Id_If: {
-        // works but pb with reuse
-        // dès qu'on a fait un IfOut, l'autre devrait suivre. Prop : propagation...
-
         // num reg in IfInp
         for( int ninp = 0; ninp < inp.size(); ++ninp ) {
             if ( declable( inp[ ninp ] ) ) {
@@ -451,15 +454,37 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
         for( int n = 0; n < 2; ++n )
             va[ n ] << ext[ n ];
 
-        cc->on << "if ( " << disp( cc, inp[ 0 ] ) << " ) {";
+        // ok code
+        std::ostringstream sok;
+        cc->push_stream( &sok );
         cc->on.nsp += 4;
         cc->output_code_for( va[ 0 ] );
         cc->on.nsp -= 4;
-        cc->on << "} else {";
+        cc->pop_stream();
+
+        // ko code
+        std::ostringstream sko;
+        cc->push_stream( &sko );
         cc->on.nsp += 4;
         cc->output_code_for( va[ 1 ] );
         cc->on.nsp -= 4;
-        cc->on << "}";
+        cc->pop_stream();
+
+        //
+
+        if ( sok.str().size() ) {
+            cc->on << "if ( " << disp( cc, inp[ 0 ] ) << " ) {";
+            cc->os << sok.str();
+            if ( sko.str().size() ) {
+                cc->on << "} else {";
+                cc->os << sko.str();
+            }
+            cc->on << "}";
+        } else {
+            cc->on << "if ( not " << disp( cc, inp[ 0 ], PREC_not ) << " ) {";
+            cc->os << sko.str();
+            cc->on << "}";
+        }
 
         for( int nout = 0; nout < out.size(); ++nout )
             out[ nout ].num = ext[ 0 ]->inp[ nout ].inst->out[ ext[ 0 ]->inp[ nout ].nout ].num;
@@ -598,7 +623,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                        << disp( cc, inp[ 1 ] ) << ";";
             }
         } else {
-            TODO;
+            ERROR( "TODO: setval without reuse" );
         }
         break;
     }
@@ -672,21 +697,24 @@ void CppInst::get_insts_rec( Vec<CppInst *> &res, int id ) {
         ext[ i ]->get_insts_rec( res, id );
 }
 
-int CppInst::display_graph( const Vec<CppInst *> &res, const char *filename ) {
+int CppInst::display_graph( const Vec<CppInst *> &res, DotDisp *omd, const char *filename ) {
     ++cur_op_id;
 
     std::ofstream f( filename );
     f << "digraph Instruction {";
-    f << "  node [shape = record];";
+    if ( full_dot )
+        f << "  node [shape = record];";
+    else
+        f << "  node [shape = none];";
     for( int i = 0; i < res.size(); ++i )
-        res[ i ]->write_graph_rec( f );
+        res[ i ]->write_graph_rec( f, omd );
     f << "}";
     f.close();
 
     return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
 }
 
-void CppInst::write_graph_rec( Stream &os, void *omd ) const {
+void CppInst::write_graph_rec( Stream &os, DotDisp *omd ) const {
     if ( op_id_vis == cur_op_id )
         return;
     op_id_vis = cur_op_id;
@@ -707,22 +735,29 @@ void CppInst::write_graph_rec( Stream &os, void *omd ) const {
         }
         os << ls[ i ];
     }
+    if ( omd )
+        omd->disp( os, this );
     // os << '(' << ( op_mp != 0 ) << ')';
-    for( int i = 0; i < out.size(); ++i ) {
-        os << "|<f" << i << ">";
-        if ( out[ i ].bt_hint )
-            os << *out[ i ].bt_hint;
-        else
-            os << "o";
+    if ( full_dot ) {
+        for( int i = 0; i < out.size(); ++i ) {
+            os << "|<f" << i << ">";
+            if ( out[ i ].bt_hint )
+                os << *out[ i ].bt_hint;
+            else
+                os << "o";
+        }
+        for( int i = 0; i < inp.size(); ++i )
+            os << "|<f" << out.size() + i << ">i";
     }
-    for( int i = 0; i < inp.size(); ++i )
-        os << "|<f" << out.size() + i << ">i";
     os << "\"];\n";
 
     // children
     for( int i = 0, n = inp.size(); i < n; ++i ) {
         const CppExpr &ch = inp[ i ];
-        os << "    node" << this << ":f" << out.size() + i << " -> node" << ch.inst << ":f" << ch.nout << ";\n";
+        if ( full_dot )
+            os << "    node" << this << ":f" << out.size() + i << " -> node" << ch.inst << ":f" << ch.nout << ";\n";
+        else
+            os << "    node" << this << " -> node" << ch.inst << ";\n";
         if ( ch.inst )
             ch.inst->write_graph_rec( os, omd );
     }

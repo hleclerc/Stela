@@ -19,7 +19,7 @@ bool RefSlice::indirect_set( const Var &src, Scope *set_scope, const Expr &sf, i
     Expr expr = set_scope->simplified_expr( src, sf, off );
     ASSERT( expr.size_in_bits() == end - beg, "..." );
 
-    Expr res = setval( var.expr(), expr, beg );
+    Expr res = setval( set_scope->simplified_expr( var, sf, off ), expr, beg );
     set_scope->set( var, Var( var.type, res ), sf, off, ext_cond );
 
     return true;
