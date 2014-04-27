@@ -293,6 +293,13 @@ void CppInst::write_to_stream( Stream &os ) const {
         #undef DECL_INST
         default: ERROR( "?" );
     }
+
+    if ( inp.size() ) {
+        os << "(";
+        for( int i = 0; i < inp.size(); ++i )
+            os << ( i ? "," : "" ) << inp[ i ];
+        os << ")";
+    }
 }
 
 static bool inlinable( const CppInst::Out &out ) {
