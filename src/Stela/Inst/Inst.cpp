@@ -49,6 +49,10 @@ const PI8 *Inst::vat_data( int nout, int beg, int end ) const {
     return 0;
 }
 
+bool Inst::undefined() const {
+    return false;
+}
+
 const BaseType *Inst::out_bt( int n ) const {
     return 0;
 }
@@ -77,11 +81,11 @@ int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filena
     ++cur_op_id;
 
     std::ofstream f( filename );
-    f << "digraph Instruction {";
+    f << "digraph Instruction {\n";
     if ( full_dot )
-        f << "  node [shape = record];";
+        f << "  node [shape = record];\n";
     else
-        f << "  node [shape = none];";
+        f << "  node [shape = none];\n";
 
     Vec<const Inst *> ext_buf;
     for( int i = 0; i < outputs.size(); ++i )
@@ -129,19 +133,27 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
         os << ls[ i ];
     }
     if ( full_dot ) {
-        for( int i = 0; i < out_size(); ++i )
-            os << "|<f" << i << ">o";
-        for( int i = 0; i < inp_size(); ++i )
-            os << "|<f" << out_size() + i << ">i";
+        if ( out_size() > 1 )
+            for( int i = 0; i < out_size(); ++i )
+                os << "|<f" << i << ">o";
+        if ( inp_size() > 1 )
+            for( int i = 0; i < inp_size(); ++i )
+                os << "|<f" << out_size() + i << ">i";
     }
     os << "\"];\n";
 
     // children
     for( int i = 0, n = inp_size(); i < n; ++i ) {
         const Expr &ch = inp_expr( i );
-        if ( full_dot )
-            os << "    node" << this << ":f" << out_size() + i << " -> node" << ch.inst.ptr() << ":f" << ch.nout << ";\n";
-        else
+        if ( full_dot ) {
+            os << "    node" << this;
+            if ( inp_size() > 1 )
+                os << ":f" << out_size() + i;
+            os << " -> node" << ch.inst.ptr();
+            if ( ch.inst->out_size() > 1 )
+                os << ":f" << ch.nout;
+            os << ";\n";
+        } else
             os << "    node" << this << " -> node" << ch.inst.ptr() << ";\n";
 
         if ( ch.inst )

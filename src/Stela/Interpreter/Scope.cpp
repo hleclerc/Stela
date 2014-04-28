@@ -85,7 +85,7 @@ Var Scope::copy( const Var &var, const Expr &sf, int off ) {
     if ( ip->isa_Error( var ) )
         return Var( &ip->type_Error, cst() );
     if ( ip->isa_POD( var ) or ip->isa_Type( var ) )
-        return Var( var.type, var.expr() );
+        return Var( var.type, simplified_expr( var, sf, off ) );
     if ( ip->isa_Callable( var ) ) {
         Var res( var.type, var.expr() );
         res.add_ref_from( var );
@@ -740,25 +740,30 @@ Expr Scope::simplified_expr( const PRef &var, const Expr &sf, int off ) {
     return simplified_expr( var.ptr->expr(), sf, off );
 }
 
+
 Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
     // Phi
     if ( expr.inst->inst_id() == Inst::Id_Phi ) {
-        Expr c = expr.inst->inp_expr( 0 );
+        Expr co = simplified_expr( expr.inst->inp_expr( 0 ), sf, off );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
             if ( s->cond ) {
-                if ( s->cond == c )
+                if ( s->cond == co )
                     return simplified_expr( expr.inst->inp_expr( 1 ), sf, off );
-                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == c )
+                if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == co )
                     return simplified_expr( expr.inst->inp_expr( 2 ), sf, off );
             }
         }
+        //return phi( co,
+        //            simplified_expr( expr.inst->inp_expr( 1 ), sf, off ),
+        //            simplified_expr( expr.inst->inp_expr( 2 ), sf, off ) );
     }
+    // else, no simplifications
     return expr;
 }
 
 Ptr<Ref> Scope::simplified_pref( const Var &var, const Expr &sf, int off ) {
     // RefPhi
-    if ( const RefPhi *r = dcast( var.data->ptr.ptr() )  ) {
+    if ( const RefPhi *r = dcast( var.data->ptr.ptr() ) ) {
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
             if ( s->cond ) {
                 if ( s->cond == r->cond )
@@ -767,6 +772,12 @@ Ptr<Ref> Scope::simplified_pref( const Var &var, const Expr &sf, int off ) {
                     return simplified_pref( r->ko, sf, off );
             }
         }
+        //        if ( dynamic_cast<const RefPhi *>( r->ok.data->ptr.ptr() ) or dynamic_cast<const RefPhi *>( r->ko.data->ptr.ptr() ) )
+        //            return new RefPhi(
+        //                        r->cond,
+        //                        Var( r->ok.type, simplified_pref( r->ok, sf, off ) ),
+        //                        Var( r->ko.type, simplified_pref( r->ko, sf, off ) )
+        //                        );
     }
 
     return var.data->ptr;
@@ -1035,7 +1046,8 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
             if ( s->cond )
                 conds << s->cond;
 
-        for( int i = conds.size() - 1; i >= 0; --i )
+        //for( int i = conds.size() - 1; i >= 0; --i )
+        for( int i = 0; i < conds.size(); ++i )
             src_expr = new RefPhi( conds[ i ], Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
 
         if ( ext_cond )
@@ -1442,6 +1454,10 @@ Var Scope::parse_reassign_rec( const Expr &sf, int off, BinStreamReader bin ) {
     return disp_error( "Expecting 1 or 2 operands", sf, off );
 }
 
+Var Scope::parse_assign_rec( const Expr &sf, int off, BinStreamReader bin ) {
+    return parse_reassign_rec( sf, off, bin );
+}
+
 Var Scope::parse_set_ptr_val( const Expr &sf, int off, BinStreamReader bin ) {
 //     CHECK_PRIM_ARGS( 2 );
 //     write_error( "...", sf, bin.read_positive_integer() );
@@ -1501,10 +1517,18 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
     for( int i = 0; i < n; ++i ) {
         Var v = parse( sf, bin.read_offset() );
         std::cout << v;
-        //if ( v.type->base_type )
-        //    std::cout << " (type=" << *v.type << ")";
         std::cout << std::endl;
     }
+    return ip->void_var;
+}
+
+Var Scope::parse_disp( const Expr &sf, int off, BinStreamReader bin ) {
+    int n = bin.read_positive_integer();
+    Vec<ConstPtr<Inst> > lst;
+    for( int i = 0; i < n; ++i )
+        lst << parse( sf, bin.read_offset() ).expr().inst;
+    Inst::display_graph( lst );
+
     return ip->void_var;
 }
 

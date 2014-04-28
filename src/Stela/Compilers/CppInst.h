@@ -71,7 +71,7 @@ public:
     InstWriter inst( CppCompiler *cc, int nout, int precedance = 0, bool ptr = false );
     static InstWriter disp( CppCompiler *cc, CppExpr expr, int precedance = 0, bool ptr = false );
 
-    void write_to_stream( Stream &os ) const;
+    void write_to_stream( Stream &os, bool full = true ) const;
     void write_code( CppCompiler *cc, int prec = -1 );
 
     void mark_children_wo_ext();

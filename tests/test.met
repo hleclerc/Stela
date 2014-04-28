@@ -51,7 +51,7 @@ class SI8
     def init
     
     def init val : [ SI8, SI32, SI64, PI64 ]
-        ___reassign_rec val
+        ___assign_rec val
     
     def reassign val : [ SI8, SI32, SI64, PI64 ]
         ___reassign_rec val
@@ -63,7 +63,7 @@ class SI32
     def init
     
     def init val : [ SI8, SI32, SI64, PI64 ]
-        ___reassign_rec val
+        ___assign_rec val
     
     def reassign val : [ SI8, SI32, SI64, PI64 ]
         ___reassign_rec val
@@ -72,7 +72,7 @@ class SI64
     ___set_base_size_and_alig 64, 32
     
     def init val : [ SI8, SI32, PI32, SI64, PI64, Bool ]
-        ___reassign_rec val
+        ___assign_rec val
     
     def reassign val : [ SI8, SI32, PI32, SI64, PI64, Bool ]
         ___reassign_rec val
@@ -81,7 +81,7 @@ class PI64
     ___set_base_size_and_alig 64, 32
     
     def init val : PI64
-        ___reassign_rec val
+        ___assign_rec val
     
     def reassign val : PI64
         ___reassign_rec val
@@ -90,8 +90,12 @@ class Bool
     ___set_base_size_and_alig 1, 1
 
     def init val : [ Bool, SI32, SI64, PI64 ]
+        ___assign_rec val
+
+    def reassign val : [ Bool, SI32, SI64, PI64 ]
         ___reassign_rec val
-    
+
+
 def self_add a, b
     a = a + b
 
@@ -197,36 +201,27 @@ def range beg, end
     Range[ typeof beg ]( beg, end )
 
 def print_rec val
-    sit := 4
+    sit := 5
     tmp := Vec[ SI8, sit ]()
     nbc := sit - 1
     tmp[ nbc ] = 10
 
     def print_int tmp, nbc, val
         tmp[ nbc -= 1 ] = 48 + val % 10
-        if val / 10 and nbc
-            #___info Bool val / 10 and nbc
-            #___info nbc + 0
+        #if not Bool nbc
+        #    ___disp Bool val / 10 and nbc
+        if nbc and val / 10
             print_int tmp, nbc, val / 10
 
     print_int tmp, nbc, val
     sys_write 0, &tmp + nbc, sit - nbc
 
-# r := rand_64()
-# sub(
-    # phi( r / 10, 3, r / 10 ),
-    # 1
-# )
-
-# Bool{phi(phi(div(conv[SI32,PI64](rand_64()),10),3,div(conv[SI32,PI64](rand_64()),10)),phi(conv[Bool,SI32](div(conv[SI32,PI64](rand_64()),10)),3,div(conv[SI32,PI64](rand_64()),10)),0)}
-a := Vec[SI8,3]()
-if ___rand() + 1
-    a[ 0 ] = 40
-    if ___rand()
-        a[ 1 ] = 20
-___syscall &a
    
-# print_rec SI32 ___rand() * 0 + 47
+print_rec SI32 ___rand() * 0 + 4716
+#___syscall SI64 Bool ___rand() and ___rand() * 1
+
+
+
 # a := 10
 # b := ___rand()
 # if ___rand()

@@ -266,7 +266,7 @@ void CppInst::bt_hint_propagation() {
 }
 
 
-void CppInst::write_to_stream( Stream &os ) const {
+void CppInst::write_to_stream( Stream &os, bool full ) const {
     // particular cases
     if ( inst_id == CppInst::Id_Cst ) {
         if ( out[ 0 ].bt_hint )
@@ -294,7 +294,7 @@ void CppInst::write_to_stream( Stream &os ) const {
         default: ERROR( "?" );
     }
 
-    if ( inp.size() ) {
+    if ( inp.size() and full ) {
         os << "(";
         for( int i = 0; i < inp.size(); ++i )
             os << ( i ? "," : "" ) << inp[ i ];
@@ -728,7 +728,7 @@ void CppInst::write_graph_rec( Stream &os, DotDisp *omd ) const {
 
     // label
     std::ostringstream ss;
-    write_to_stream( ss );
+    write_to_stream( ss, false );
 
     // node
     std::string ls = ss.str();

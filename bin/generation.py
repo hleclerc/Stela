@@ -459,11 +459,13 @@ operations = unary_operations + binary_operations
 
 base_primitives = string.split( """
     info
+    disp
     rand
     syscall
     set_base_size_and_alig
     set_RawRef_dependancy
     reassign_rec
+    assign_rec
     set_ptr_val
     select_SurdefList
     ptr_size

@@ -2,6 +2,7 @@
 #include "Inst_.h"
 #include "Conv.h"
 #include "Cst.h"
+#include "Phi.h"
 
 class Conv : public Inst_<1,1> {
 public:
@@ -40,16 +41,24 @@ Expr conv( const BaseType *dst, const BaseType *src, Expr a ) {
             return cst( tmp, 0, dst->size_in_bits() );
     }
 
-    // bool( phi( bool( c ), b, c ) ) -> c and b
+    // bool( phi( ... ) ) -> c and b
     if ( dst == bt_Bool and a.inst->inst_id() == Inst::Id_Phi ) {
-        if ( a.inst->inp_expr( 0 ) == a.inst->inp_expr( 2 ) or ( a.inst->inp_expr( 0 ).inst->inst_id() == Inst::Id_Conv and a.inst->inp_expr( 0 ).inst->inp_expr( 0 ) == a.inst->inp_expr( 2 ) ) ) {
-            Expr cb = conv( dst, src, a.inst->inp_expr( 1 ) );
-            Bool rb;
-            if ( cb.get_val( rb )  ) {
-                if ( rb )
-                    return conv( dst, src, a.inst->inp_expr( 2 ) );
-                return cst( false );
-            }
+        // bool( phi( c, conv to true, conv to true ) ) -> true
+        Expr vok = conv( dst, src, a.inst->inp_expr( 1 ) );
+        Expr vko = conv( dst, src, a.inst->inp_expr( 2 ) );
+        if ( vok == vko )
+            return vok;
+
+        // bool( phi( bool( c ), b, c ) ) -> phi( bool( c ), bool( b ), false )
+        if ( a.inst->inp_expr( 0 ).inst->inst_id() == Inst::Id_Conv and a.inst->inp_expr( 0 ).inst->inp_expr( 0 ) == a.inst->inp_expr( 2 ) ) {
+            Expr bool_b = conv( dst, src, a.inst->inp_expr( 1 ) );
+            return phi( a.inst->inp_expr( 0 ), bool_b, cst( false ) );
+        }
+
+        // bool( phi( bool( c ), c, b ) ) -> phi( bool( c ), true, bool( b ) )
+        if ( a.inst->inp_expr( 0 ).inst->inst_id() == Inst::Id_Conv and a.inst->inp_expr( 0 ).inst->inp_expr( 0 ) == a.inst->inp_expr( 1 ) ) {
+            Expr bool_b = conv( dst, src, a.inst->inp_expr( 2 ) );
+            return phi( a.inst->inp_expr( 0 ), cst( true ), bool_b );
         }
     }
 

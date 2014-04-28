@@ -30,6 +30,14 @@ public:
             TODO;
         return data.ptr() + beg / 8;
     }
+    virtual bool undefined() const {
+        int s = ( size + 7 ) / 8;
+        const PI8 *k = data.ptr() + s;
+        for( int i = 0; i < s; ++i )
+            if ( k[ i ] )
+                return false;
+        return true;
+    }
     virtual Expr _smp_slice( int nout, int beg, int end ) {
         if ( beg == 0 and end == size )
             return Expr( this, nout );

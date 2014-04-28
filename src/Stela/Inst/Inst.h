@@ -45,6 +45,7 @@ public:
 
     virtual const PI8 *cst_data( int nout, int beg, int end ) const;
     virtual const PI8 *vat_data( int nout, int beg, int end ) const;
+    virtual bool undefined() const;
 
     // inp
     virtual int inp_size() const = 0;

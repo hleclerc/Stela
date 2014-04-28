@@ -74,119 +74,94 @@ struct PhiToIf {
         for( CppInst *inst : out )
             get_conditions_rec( cond_list, pti_op_id, inst );
 
-        PRINT( cond_list.size() );
         if ( not cond_list.size() )
             return false;
 
-        CppExpr best_cond;
+        // get the best condition
+        CppExpr cond;
         int max_np = -1;
-        for( CppExpr cond : cond_list ) {
+        for( CppExpr trial : cond_list ) {
             int np = 0;
-            for( int nout = 0; nout < cond.inst->out.size(); ++nout )
-                for( const CppInst::Out::Parent &p : cond.inst->out[ nout ].parents )
+            for( int nout = 0; nout < trial.inst->out.size(); ++nout )
+                for( const CppInst::Out::Parent &p : trial.inst->out[ nout ].parents )
                     np += p.inst->op_id >= pti_op_id and p.inst->inst_id == CppInst::Id_Phi and p.ninp == 0;
             if ( max_np < np ) {
                 max_np = np;
-                best_cond = cond;
+                cond = trial;
             }
+            // if ( INFO( trial.inst )->nb_phi_children == 0 ) {
         }
 
-        PRINT( cond_list );
-        PRINT( best_cond );
-        return false;
-
-        /*
-        // make a substitution for the first encoutered condition without phi nodes
-        // (to be optimized)
-        for( int ok_part = 0; ok_part < 2; ++ok_part ) {
-            for( int nc = 0; nc < cond_list.size(); ++nc ) {
-                const CppExpr &cond = cond_list[ nc ];
-                if ( INFO( cond.inst )->nb_phi_children == 0 ) {
-                    Vec<CppInst *> phi_nodes;
-                    bool partial = false;
-                    for( int nout = 0; nout < cond.inst->out.size(); ++nout ) {
-                        for( const CppInst::Out::Parent &p : cond.inst->out[ nout ].parents ) {
-                            if ( p.inst->op_id >= pti_op_id and p.inst->inst_id == CppInst::Id_Phi and p.ninp == 0 ) {
-                                if ( INFO( p.inst )->nb_phi_children == 1 )
-                                    phi_nodes << p.inst;
-                                else
-                                    partial = true;
-                            }
-                        }
-                    }
-                    PRINT( cond );
-
-                    if ( not phi_nodes.size() )
-                        continue;
-                    if ( partial and not ok_part )
-                        continue;
-                    for( CppInst *phi : phi_nodes )
-                        PRINT( INFO( phi )->nb_phi_children );
-
-                    // mark all dependant code (children 1 and 2 of phi nodes)
-                    // ok_inp = instructions to be executed if ok
-                    // ko_inp = instructions to be executed if ko
-                    ++CppInst::cur_op_id;
-                    for( int i = 0; i < res.size(); ++i )
-                        init_ok_ko_ext_rec( res[ i ] );
-
-                    for( CppInst *phi : phi_nodes ) {
-                        mark_ok_rec( phi->inp[ 0 ].inst );
-                        mark_ok_rec( phi->inp[ 1 ].inst );
-
-                        mark_ko_rec( phi->inp[ 0 ].inst );
-                        mark_ko_rec( phi->inp[ 2 ].inst );
-                    }
-
-                    for( CppInst *phi : phi_nodes )
-                        INFO( phi )->ext = true;
-                    for( int i = 0; i < res.size(); ++i )
-                        mark_ext_rec( res[ i ] );
-
-                    //DispWithOkKoExt d;
-                    //CppInst::display_graph( res, &d );
-
-                    // new expressions
-                    int nb_out = phi_nodes.size();
-                    CppInst *if_inst  = make_inst( CppInst::Id_If   , nb_out );
-                    CppInst *ifinp_ok = make_inst( CppInst::Id_IfInp );
-                    CppInst *ifinp_ko = make_inst( CppInst::Id_IfInp );
-                    CppInst *ifout_ok = make_inst( CppInst::Id_IfOut );
-                    CppInst *ifout_ko = make_inst( CppInst::Id_IfOut );
-
-                    if_inst->add_ext( ifout_ok );
-                    if_inst->add_ext( ifout_ko );
-                    if_inst->add_ext( ifinp_ok );
-                    if_inst->add_ext( ifinp_ko );
-                    if_inst->ext_ds = 2;
-
-                    if_inst->add_child( cond );
-
-                    for( int n = 0; n < phi_nodes.size(); ++n ) {
-                        // phi node outputs -> outputs of If inst
-                        res.replace( phi_nodes[ n ], if_inst );
-                        for( const CppInst::Out::Parent &p : phi_nodes[ n ]->out[ 0 ].parents )
-                            p.inst->set_child( p.ninp, CppExpr( if_inst, n ) );
-                        // input of ifout = inputs of phi nodes
-                        ifout_ok->add_child( phi_nodes[ n ]->inp[ 1 ] );
-                        ifout_ko->add_child( phi_nodes[ n ]->inp[ 2 ] );
-                        phi_nodes[ n ]->set_child( 0, CppExpr() );
-                        phi_nodes[ n ]->set_child( 1, CppExpr() );
-                        phi_nodes[ n ]->set_child( 2, CppExpr() );
-                    }
-
-                    // replace common exprs (ok and ko) to out of ifinp
-                    ++CppInst::cur_op_id;
-                    replace_common_exprs( ifout_ok, if_inst, ifinp_ok, ifinp_ko );
-                    ++CppInst::cur_op_id;
-                    replace_common_exprs( ifout_ko, if_inst, ifinp_ko, ifinp_ok );
-
-                    return true;
+        // make a substitution
+        Vec<CppInst *> phi_nodes;
+        for( int nout = 0; nout < cond.inst->out.size(); ++nout ) {
+            for( const CppInst::Out::Parent &p : cond.inst->out[ nout ].parents ) {
+                if ( p.inst->op_id >= pti_op_id and p.inst->inst_id == CppInst::Id_Phi and p.ninp == 0 ) {
+                    //if ( INFO( p.inst )->nb_phi_children == 1 )
+                    phi_nodes << p.inst;
                 }
             }
         }
-        return false;
-        */
+
+        // mark all dependant code (children 1 and 2 of phi nodes)
+        // ok_inp = instructions to be executed if ok
+        // ko_inp = instructions to be executed if ko
+        ++CppInst::cur_op_id;
+        for( int i = 0; i < res.size(); ++i )
+            init_ok_ko_ext_rec( res[ i ] );
+
+        for( CppInst *phi : phi_nodes ) {
+            mark_ok_rec( phi->inp[ 0 ].inst );
+            mark_ok_rec( phi->inp[ 1 ].inst );
+
+            mark_ko_rec( phi->inp[ 0 ].inst );
+            mark_ko_rec( phi->inp[ 2 ].inst );
+        }
+
+        for( CppInst *phi : phi_nodes )
+            INFO( phi )->ext = true;
+        for( int i = 0; i < res.size(); ++i )
+            mark_ext_rec( res[ i ] );
+
+        //DispWithOkKoExt d;
+        //CppInst::display_graph( res, &d );
+
+        // new expressions
+        int nb_out = phi_nodes.size();
+        CppInst *if_inst  = make_inst( CppInst::Id_If   , nb_out );
+        CppInst *ifinp_ok = make_inst( CppInst::Id_IfInp );
+        CppInst *ifinp_ko = make_inst( CppInst::Id_IfInp );
+        CppInst *ifout_ok = make_inst( CppInst::Id_IfOut );
+        CppInst *ifout_ko = make_inst( CppInst::Id_IfOut );
+
+        if_inst->add_ext( ifout_ok );
+        if_inst->add_ext( ifout_ko );
+        if_inst->add_ext( ifinp_ok );
+        if_inst->add_ext( ifinp_ko );
+        if_inst->ext_ds = 2;
+
+        if_inst->add_child( cond );
+
+        for( int n = 0; n < phi_nodes.size(); ++n ) {
+            // phi node outputs -> outputs of If inst
+            res.replace( phi_nodes[ n ], if_inst );
+            for( const CppInst::Out::Parent &p : phi_nodes[ n ]->out[ 0 ].parents )
+                p.inst->set_child( p.ninp, CppExpr( if_inst, n ) );
+            // input of ifout = inputs of phi nodes
+            ifout_ok->add_child( phi_nodes[ n ]->inp[ 1 ] );
+            ifout_ko->add_child( phi_nodes[ n ]->inp[ 2 ] );
+            phi_nodes[ n ]->set_child( 0, CppExpr() );
+            phi_nodes[ n ]->set_child( 1, CppExpr() );
+            phi_nodes[ n ]->set_child( 2, CppExpr() );
+        }
+
+        // replace common exprs (ok and ko) to out of ifinp
+        ++CppInst::cur_op_id;
+        replace_common_exprs( ifout_ok, if_inst, ifinp_ok, ifinp_ko );
+        ++CppInst::cur_op_id;
+        replace_common_exprs( ifout_ko, if_inst, ifinp_ko, ifinp_ok );
+
+        return true;
     }
 
     /// returns nb child phi node

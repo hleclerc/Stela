@@ -21,6 +21,22 @@ public:
     }
 };
 
+// return expr, knowing than cond == checked
+static Expr phi_with_cond( const Expr &cond, bool checked, const Expr &expr ) {
+    if ( expr.inst->inst_id() == Inst::Id_Phi ) {
+        if ( expr.inst->inp_expr( 0 ) == cond )
+            return checked ? expr.inst->inp_expr( 1 ) : expr.inst->inp_expr( 2 );
+        Expr nok = phi_with_cond( cond, checked, expr.inst->inp_expr( 1 ) );
+        Expr nko = phi_with_cond( cond, checked, expr.inst->inp_expr( 2 ) );
+        if ( nok or nko )
+            return phi( expr.inst->inp_expr( 0 ),
+                        nok ? nok : expr.inst->inp_expr( 1 ),
+                        nko ? nko : expr.inst->inp_expr( 2 )
+                        );
+    }
+    return Expr();
+}
+
 Expr phi( Expr cond, Expr ok, Expr ko ) {
     // known value ?
     bool v;
@@ -30,6 +46,13 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
     // the same value in all the cases ?
     if ( ok == ko )
         return ok;
+
+    // if ok or ko are undefined
+    if ( ok.inst->undefined() )
+        return ko;
+    if ( ko.inst->undefined() )
+        return ok;
+
 
     // phi( not c, a, b ) -> phi( c, b, a )
     if ( cond.inst->inst_id() == Inst::Id_Op_not )
@@ -47,9 +70,24 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
         }
     }
 
-    // phi( cond, ok, phi( cond, a, b ) ) -> phi( cond, ok, b )
-    if ( ko.inst->inst_id() == Inst::Id_Phi and ko.inst->inp_expr( 0 ) == cond )
-        return phi( cond, ok, ko.inst->inp_expr( 2 ) );
+    // phi( c, b, c )
+    if ( cond == ok )
+        TODO;
+
+    // phi( c, c, b )
+    if ( cond == ko )
+        TODO;
+
+
+    // if ok is a phi node tree which contain cond in the conditions
+    if ( Expr nok = phi_with_cond( cond, 1, ok ) )
+        return phi( cond, nok, ko );
+
+    // if ko is a phi node tree which contain cond in the conditions
+    if ( Expr nko = phi_with_cond( cond, 0, ko ) )
+        return phi( cond, ok, nko );
+
+    // phi( cond, a, phi( cond,  ) )
 
     // cond = bool( ... )
     //if ( cond.inst->inst_id() == Inst::Id_Conv and cond.inst->out_bt( 0 ) == bt_Bool )
