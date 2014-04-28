@@ -48,10 +48,8 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
         return ok;
 
     // if ok or ko are undefined
-    if ( ok.inst->undefined() )
-        return ko;
-    if ( ko.inst->undefined() )
-        return ok;
+    // if ( ok.inst->undefined() ) return ko;
+    // if ( ko.inst->undefined() ) return ok;
 
 
     // phi( not c, a, b ) -> phi( c, b, a )

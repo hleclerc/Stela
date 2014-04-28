@@ -47,6 +47,8 @@ public:
     virtual const PI8 *vat_data( int nout, int beg, int end ) const;
     virtual bool undefined() const;
 
+    virtual Expr clone( Expr *ch, int nout ) const;
+
     // inp
     virtual int inp_size() const = 0;
     virtual void inp_push( Expr var ) = 0;

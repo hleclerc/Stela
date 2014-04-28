@@ -53,6 +53,10 @@ bool Inst::undefined() const {
     return false;
 }
 
+Expr Inst::clone( Expr *ch, int nout ) const {
+    return Expr();
+}
+
 const BaseType *Inst::out_bt( int n ) const {
     return 0;
 }

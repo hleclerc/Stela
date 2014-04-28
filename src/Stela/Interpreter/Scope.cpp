@@ -757,6 +757,33 @@ Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
         //            simplified_expr( expr.inst->inp_expr( 1 ), sf, off ),
         //            simplified_expr( expr.inst->inp_expr( 2 ), sf, off ) );
     }
+
+    // conv( ... )
+    if ( expr.inst->inst_id() == Inst::Id_Conv ) {
+        Expr ch = expr.inst->inp_expr( 0 );
+        Expr si = simplified_expr( ch, sf, off );
+        if ( ch != si )
+            return expr.inst->clone( &si, 0 );
+    }
+
+    // (not) expr == (not) cond...
+    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+        if ( s->cond ) {
+            // cond == expr...
+            if ( s->cond == expr )
+                return cst( true );
+            // not cond == expr...
+            if ( s->cond.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == expr )
+                return cst( false );
+            // cond == not expr...
+            if ( expr.inst->inst_id() == Inst::Id_Op_not and s->cond == expr.inst->inp_expr( 0 ) )
+                return cst( false );
+            // not cond == not expr...
+            if ( s->cond.inst->inst_id() == Inst::Id_Op_not and expr.inst->inst_id() == Inst::Id_Op_not and s->cond.inst->inp_expr( 0 ) == expr.inst->inp_expr( 0 ) )
+                return cst( false );
+        }
+    }
+
     // else, no simplifications
     return expr;
 }

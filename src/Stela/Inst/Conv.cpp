@@ -15,6 +15,9 @@ public:
                dst == static_cast<const Conv *>( b )->dst and
                src == static_cast<const Conv *>( b )->src;
     }
+    virtual Expr clone( Expr *ch, int nout ) const {
+        return conv( dst, src, ch[ 0 ] );
+    }
     virtual int sizeof_additionnal_data() const {
         return 2 * sizeof( const BaseType * );
     }

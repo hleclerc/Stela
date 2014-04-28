@@ -208,9 +208,11 @@ def print_rec val
 
     def print_int tmp, nbc, val
         tmp[ nbc -= 1 ] = 48 + val % 10
-        #if not Bool nbc
-        #    ___disp Bool val / 10 and nbc
-        if nbc and val / 10
+        if not Bool nbc
+            ___disp ( val / 10 and nbc ) + 0
+        # val / 10 and nbc ne marche pas a cause du Bool( phi(...) ) qui 
+        # donne un conv[]( ... )
+        if val / 10 and nbc
             print_int tmp, nbc, val / 10
 
     print_int tmp, nbc, val
@@ -224,8 +226,9 @@ print_rec SI32 ___rand() * 0 + 4716
 
 # a := 10
 # b := ___rand()
-# if ___rand()
-    # a = b
+if ___rand()
+    ___info Bool 17
+    ___info Bool( 17 ) + 5
 # ___syscall SI64( a ), PI64( b )
 
 # print 150
