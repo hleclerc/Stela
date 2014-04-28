@@ -56,6 +56,7 @@ protected:
     Var find_var_first( int name ); ///< helper for find_var
     void find_var_clist( Vec<Var> &res, int name ); ///< helper for find_var
     Var get_attr( Var self, int attr, const Expr &sf, int off );
+    Expr _phi_simplified_expr( const Expr &expr, const Expr &sf, int off );
 
     Scope         *parent; ///< "accessible" scope, i.e. that can be read to find variables
     Scope         *caller; ///< caller scope, if this serves as the body of a function

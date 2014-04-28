@@ -740,10 +740,9 @@ Expr Scope::simplified_expr( const PRef &var, const Expr &sf, int off ) {
     return simplified_expr( var.ptr->expr(), sf, off );
 }
 
-
-Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
-    // Phi
+Expr Scope::_phi_simplified_expr( const Expr &expr, const Expr &sf, int off ) {
     if ( expr.inst->inst_id() == Inst::Id_Phi ) {
+        // condition is (un)checked ?
         Expr co = simplified_expr( expr.inst->inp_expr( 0 ), sf, off );
         for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
             if ( s->cond ) {
@@ -753,17 +752,30 @@ Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
                     return simplified_expr( expr.inst->inp_expr( 2 ), sf, off );
             }
         }
-        //return phi( co,
-        //            simplified_expr( expr.inst->inp_expr( 1 ), sf, off ),
-        //            simplified_expr( expr.inst->inp_expr( 2 ), sf, off ) );
+
+        Expr vok = simplified_expr( expr.inst->inp_expr( 1 ), sf, off );
+        Expr vko = simplified_expr( expr.inst->inp_expr( 2 ), sf, off );
+        if ( vok or vko )
+            return phi( co,
+                        vok ? vok : expr.inst->inp_expr( 1 ),
+                        vko ? vko : expr.inst->inp_expr( 2 ) );
     }
+
+    return Expr();
+}
+
+Expr Scope::simplified_expr( const Expr &expr, const Expr &sf, int off ) {
+    // Phi
+    if ( Expr res = _phi_simplified_expr( expr, sf, off ) )
+        return res;
 
     // conv( ... )
     if ( expr.inst->inst_id() == Inst::Id_Conv ) {
         Expr ch = expr.inst->inp_expr( 0 );
         Expr si = simplified_expr( ch, sf, off );
-        if ( ch != si )
+        if ( ch != si ) {
             return expr.inst->clone( &si, 0 );
+        }
     }
 
     // (not) expr == (not) cond...
