@@ -71,6 +71,8 @@ CallableInfo::Trial *DefInfo::test( int nu, Var *vu, int nn, int *names, Var *vn
     if ( pnu + pnn + nu + nn > max_nb_args() ) return res->wr( "To much arguments" );
 
     res->scope = new Scope( ip->main_scope, caller );
+    res->scope->instantiated_from_off = off;
+    res->scope->instantiated_from_sf  = sf;
     if ( self )
         res->scope->self = self;
 

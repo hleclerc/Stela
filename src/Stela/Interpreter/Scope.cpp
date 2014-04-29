@@ -1541,7 +1541,7 @@ Var Scope::parse_block_exec( const Expr &sf, int off, BinStreamReader bin ) {
 
     // new Scope
     Scope scope( orig );
-    scope.from_for_loop = this;
+    scope.from_for_loop = caller;
     if ( name_lst.size() != 1 )
         TODO;
     for( int i = 0; i < name_lst.size(); ++i )
