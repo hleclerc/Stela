@@ -57,6 +57,7 @@ protected:
     void find_var_clist( Vec<Var> &res, int name ); ///< helper for find_var
     Var get_attr( Var self, int attr, const Expr &sf, int off );
     Expr _phi_simplified_expr( const Expr &expr, const Expr &sf, int off );
+    void _save_var_rec( Var dst );
 
     Scope         *parent; ///< "accessible" scope, i.e. that can be read to find variables
     Scope         *caller; ///< caller scope, if this serves as the body of a function
@@ -75,6 +76,8 @@ protected:
     Var            cont; ///< continue variable
     TypeInfo      *class_scope;
     Expr           cond;
+
+    Scope         *from_for_loop;
 
     TSvMap        *sv_map;
     PI64           sv_date; ///< PRef creation date must be < sv_date to be saved in sv_map

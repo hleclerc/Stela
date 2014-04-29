@@ -37,12 +37,14 @@ Scope::Scope( Scope *parent, Scope *caller ) :
     static_named_vars = new VarTable( parent ? parent->static_named_vars : Ptr<VarTable>( 0 ) );
 
     do_not_execute_anything = false;
-    base_size = 0;
-    base_alig = 1;
+    base_size     = 0;
+    base_alig     = 1;
 
-    sys_state   = parent ? parent->sys_state : Var( &ip->type_Void, cst( 0, 0, 0 ) );
-    class_scope = 0;
-    sv_map      = 0;
+    sys_state     = parent ? parent->sys_state : Var( &ip->type_Void, cst( 0, 0, 0 ) );
+    class_scope   = 0;
+    sv_map        = 0;
+
+    from_for_loop = 0;
 
     if ( parent )
         self = parent->self;
@@ -538,14 +540,17 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
     Expr c = cst( true );
-    for( Scope *s = this; s; s = s->parent ) {
-        if ( s->cond )
-            c = op_and( bt_Bool, c, s->cond );
+    for( Scope *s = this; s; s = s->from_for_loop ? s->from_for_loop : s->parent ) {
         if ( s->cont ) {
             set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
-            s->cond = op_not( bt_Bool, c );
+            if ( s->cond )
+                s->cond = op_and( bt_Bool, s->cond, op_not( bt_Bool, c ) );
+            else
+                s->cond = op_not( bt_Bool, c );
             return ip->void_var;
         }
+        if ( s->cond )
+            c = op_and( bt_Bool, c, s->cond );
     }
     return disp_error( "nothing to break", sf, off );
 }
@@ -586,7 +591,7 @@ Var Scope::parse_FOR( const Expr &sf, int off, BinStreamReader bin ) {
     block_par[ 0 ] = &va_code;
     block_par[ 1 ] = &va_names;
     Var *block_type = ip->type_for( ip->class_info( pointer_on( ip->class_Block.expr() ) ), block_par );
-    Var block( block_type, cst() );
+    Var block( block_type, cst( ST( this ) ) );
 
     Var f = get_attr( objects[ 0 ], STRING___for___NUM, sf, off );
     apply( f, 1, &block, 0, 0, 0, APPLY_MODE_STD, sf, off );
@@ -1094,9 +1099,7 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
 
         if ( dst_expr != src_expr ) {
             // variable to be saved ?
-            for( Scope *s = this; s; s = s->caller ? s->caller : s->parent )
-                if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
-                    s->sv_map->operator[]( dst.data ) = dst.data->ptr;
+            _save_var_rec( dst );
 
             // copy the Ref
             dst.data->ptr = src_expr;
@@ -1104,6 +1107,15 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
     } else {
         ASSERT( not dst.data, "weird" );
         dst.data = src.data;
+    }
+}
+
+void Scope::_save_var_rec( Var dst ) {
+    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+        if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
+            s->sv_map->operator[]( dst.data ) = dst.data->ptr;
+        if ( s->from_for_loop )
+            s->from_for_loop->_save_var_rec( dst );
     }
 }
 
@@ -1511,18 +1523,25 @@ Var Scope::parse_set_ptr_val( const Expr &sf, int off, BinStreamReader bin ) {
 }
 
 Var Scope::parse_block_exec( const Expr &sf, int off, BinStreamReader bin ) {
-    CHECK_PRIM_ARGS( 3 );
+    CHECK_PRIM_ARGS( 4 );
     Var code  = parse( sf, bin.read_offset() );
     Var names = parse( sf, bin.read_offset() );
     Var val   = parse( sf, bin.read_offset() );
+    Var scptr = parse( sf, bin.read_offset() );
     Expr code_expr = code.expr();
+
+    Scope *orig;
+    if ( not scptr.expr().get_val( reinterpret_cast<ST &>( orig ) ) )
+        return disp_error( "scptr...", sf, off );
 
     Vec<int> name_lst;
     Expr name_expr = names.expr();
     for( int i = 0, o = ip->bt_ST->size_in_bits(); i < name_expr.size_in_bits(); i += o )
         name_lst << *(int *)slice( name_expr, i, i + o ).vat_data();
 
-    Scope scope( this );
+    // new Scope
+    Scope scope( orig );
+    scope.from_for_loop = this;
     if ( name_lst.size() != 1 )
         TODO;
     for( int i = 0; i < name_lst.size(); ++i )

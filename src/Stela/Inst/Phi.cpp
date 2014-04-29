@@ -69,12 +69,12 @@ Expr phi( Expr cond, Expr ok, Expr ko ) {
     }
 
     // phi( c, b, c )
-    if ( cond == ok )
-        TODO;
+    if ( cond == ko )
+        return phi( cond, ok, cst( false ) );
 
     // phi( c, c, b )
-    if ( cond == ko )
-        TODO;
+    if ( cond == ok )
+        return phi( cond, cst( true ), ko );
 
 
     // if ok is a phi node tree which contain cond in the conditions

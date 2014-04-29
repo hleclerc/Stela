@@ -31,8 +31,9 @@ class VarargsItemEnd
         
 # used by for loops
 class Block[ code, arg_names ]
+    scope_ptr := 0l
     def apply val
-        ___block_exec code, arg_names, val
+        ___block_exec code, arg_names, val, scope_ptr
 
 class Void
     def init
@@ -226,8 +227,17 @@ def print_rec val
    
 # print_rec SI32 ___rand() * 0 + 4716
 #___syscall SI64 Bool ___rand() and ___rand() * 1
-for i in 0 .. 3
-    ___syscall SI64 i
+def foo
+    a := 10l
+    for i in 0 .. 3
+        ___syscall i + a
+        # break
+# foo()
+cur := 0l
+while cur < 3
+    ___syscall cur
+    break
+    cur += 1
 
 # a := 10
 # b := ___rand()
