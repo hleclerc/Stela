@@ -1,6 +1,7 @@
 #include "../Inst/SetVal.h"
 #include "../Inst/Slice.h"
 #include "RefSlice.h"
+#include "RefExpr.h"
 #include "Scope.h"
 
 RefSlice::RefSlice( const Var &var, int beg, int end ) : var( var ), beg( beg ), end( end ) {
@@ -9,6 +10,11 @@ RefSlice::RefSlice( const Var &var, int beg, int end ) : var( var ), beg( beg ),
 Expr RefSlice::expr() const {
     return slice( var.expr(), beg, end );
 }
+
+Ptr<Ref> RefSlice::copy() {
+    return new RefExpr( expr() );
+}
+
 
 bool RefSlice::contains_var_referenced_more_than_one_time() const {
     return var.referenced_more_than_one_time();

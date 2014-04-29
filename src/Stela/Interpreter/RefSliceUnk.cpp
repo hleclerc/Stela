@@ -1,6 +1,7 @@
 #include "../Inst/SetVal.h"
 #include "../Inst/Slice.h"
 #include "RefSliceUnk.h"
+#include "RefExpr.h"
 #include "Scope.h"
 
 RefSliceUnk::RefSliceUnk( const Var &var, const Expr &beg, int len ) : var( var ), beg( beg ), len( len ) {
@@ -8,6 +9,10 @@ RefSliceUnk::RefSliceUnk( const Var &var, const Expr &beg, int len ) : var( var 
 
 Expr RefSliceUnk::expr() const {
     return slice( var.expr(), beg, len );
+}
+
+Ptr<Ref> RefSliceUnk::copy() {
+    return new RefExpr( expr() );
 }
 
 bool RefSliceUnk::contains_var_referenced_more_than_one_time() const {

@@ -1067,7 +1067,7 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
         if ( dst.data->ptr->indirect_set( src, this, sf, off, ext_cond ) )
             return;
 
-        Ptr<Ref> src_expr = simplified_pref( src, sf, off );
+        Ptr<Ref> src_expr = simplified_pref( src, sf, off )->copy();
 
         // phi( ... )
         //  a = select( c0, u, v )

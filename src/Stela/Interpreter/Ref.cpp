@@ -15,3 +15,7 @@ Var Ref::pointed_value() const {
     TODO;
     return Var();
 }
+
+Ptr<Ref> Ref::copy() {
+    return this;
+}

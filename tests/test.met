@@ -196,6 +196,10 @@ class Range[ T ]
         while cur < end
             block cur
             cur += inc
+        cur = beg
+        while cur < end
+            block cur
+            cur += inc
 
 def range beg, end
     Range[ typeof beg ]( beg, end )
@@ -220,9 +224,10 @@ def print_rec val
     sys_write 0, &tmp + nbc, sit - nbc
 
    
-print_rec SI32 ___rand() * 0 + 4716
+# print_rec SI32 ___rand() * 0 + 4716
 #___syscall SI64 Bool ___rand() and ___rand() * 1
-
+for i in 0 .. 3
+    ___syscall SI64 i
 
 # a := 10
 # b := ___rand()
