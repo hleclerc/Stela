@@ -33,6 +33,7 @@ class VarargsItemEnd
 class Block[ code, arg_names ]
     scope_ptr := 0l
     def apply val
+        a_def_bk := 0
         ___block_exec code, arg_names, val, scope_ptr
 
 class Void
@@ -213,14 +214,16 @@ class Range[ T ]
         end = b
         inc = 1
     def __for__ block
-        cur := beg
-        while cur < end
-            block cur
-            cur += inc
-        cur = beg
-        while cur < end
-            block cur
-            cur += inc
+        # cur := beg
+        # while cur < end
+            # block cur # la cond du while n'est pas prise en compte dans le block
+            # cur += inc
+        # cur = beg
+        # while cur < end
+            # block cur
+            # cur += inc
+        block 10l
+        block 20l
 
 def range beg, end
     Range[ typeof beg ]( beg, end )
@@ -231,6 +234,13 @@ def foo
     a := 10l
     for i in 0 .. 3
         ___syscall i + a
-        break
-foo()
-
+        # break
+# foo()
+# for i in 0 .. 3
+    # ___syscall SI64 i
+for i in 0l .. 3l
+    ___syscall i
+    break
+    # ___syscall i + 10l
+    
+    

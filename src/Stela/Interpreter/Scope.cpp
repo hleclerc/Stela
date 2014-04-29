@@ -44,7 +44,8 @@ Scope::Scope( Scope *parent, Scope *caller ) :
     class_scope   = 0;
     sv_map        = 0;
 
-    from_for_loop = 0;
+    from_for_def = 0;
+    for_block     = false;
 
     if ( parent )
         self = parent->self;
@@ -540,7 +541,7 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
     Expr c = cst( true );
-    for( Scope *s = this; s; s = s->from_for_loop ? s->from_for_loop : s->parent ) {
+    for( Scope *s = this; s; s = s->parent ) {
         if ( s->cont ) {
             set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
             if ( s->cond )
@@ -551,6 +552,27 @@ Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
         }
         if ( s->cond )
             c = op_and( bt_Bool, c, s->cond );
+
+        // if we are breaking from a for block
+        if ( Scope *fd = s->from_for_def ) {
+            // set false in the cond of the scope with for_block
+            for( Scope *s = fd; s; s = s->caller ? s->caller : s->parent ) {
+                // -> break all the whiles
+                if ( s->cont )
+                    set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
+
+                if ( s->for_block ) {
+                    if ( s->cond )
+                        s->cond = op_and( bt_Bool, s->cond, op_not( bt_Bool, c ) );
+                    else
+                        s->cond = op_not( bt_Bool, c );
+                    return ip->void_var;
+                }
+                if ( s->cond )
+                    c = op_and( bt_Bool, c, s->cond );
+            }
+            return disp_error( "nothing to break", sf, off );
+        }
     }
     return disp_error( "nothing to break", sf, off );
 }
@@ -587,14 +609,18 @@ Var Scope::parse_FOR( const Expr &sf, int off, BinStreamReader bin ) {
     Var va_code( ip->type_ST, pointer_on( concat( sf, cst( code - sf.vat_data() ), cst( off ) ) ) );
 
     //
+    Scope orig( this );
+    orig.for_block = true;
+
+    //
     Var *block_par[ 2 ];
     block_par[ 0 ] = &va_code;
     block_par[ 1 ] = &va_names;
     Var *block_type = ip->type_for( ip->class_info( pointer_on( ip->class_Block.expr() ) ), block_par );
-    Var block( block_type, cst( ST( this ) ) );
+    Var block( block_type, cst( ST( &orig ) ) );
 
-    Var f = get_attr( objects[ 0 ], STRING___for___NUM, sf, off );
-    apply( f, 1, &block, 0, 0, 0, APPLY_MODE_STD, sf, off );
+    Var f = orig.get_attr( objects[ 0 ], STRING___for___NUM, sf, off );
+    orig.apply( f, 1, &block, 0, 0, 0, APPLY_MODE_STD, sf, off );
     return ip->void_var;
 }
 Var Scope::parse_IMPORT( const Expr &sf, int off, BinStreamReader bin ) {
@@ -1114,8 +1140,8 @@ void Scope::_save_var_rec( Var dst ) {
     for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
         if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
             s->sv_map->operator[]( dst.data ) = dst.data->ptr;
-        if ( s->from_for_loop )
-            s->from_for_loop->_save_var_rec( dst );
+        if ( s->from_for_def )
+            s->from_for_def->_save_var_rec( dst );
     }
 }
 
@@ -1540,8 +1566,8 @@ Var Scope::parse_block_exec( const Expr &sf, int off, BinStreamReader bin ) {
         name_lst << *(int *)slice( name_expr, i, i + o ).vat_data();
 
     // new Scope
-    Scope scope( orig );
-    scope.from_for_loop = caller;
+    Scope scope( orig, this );
+    scope.from_for_def = caller;
     if ( name_lst.size() != 1 )
         TODO;
     for( int i = 0; i < name_lst.size(); ++i )

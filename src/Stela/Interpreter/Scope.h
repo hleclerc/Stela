@@ -77,7 +77,8 @@ protected:
     TypeInfo      *class_scope;
     Expr           cond;
 
-    Scope         *from_for_loop;
+    Scope         *from_for_def;
+    bool           for_block;
 
     TSvMap        *sv_map;
     PI64           sv_date; ///< PRef creation date must be < sv_date to be saved in sv_map
