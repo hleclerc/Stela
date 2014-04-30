@@ -22,6 +22,9 @@ Var::Var( Var *type, const Expr &expr ) : data( new PRef ), type( type->data ), 
     data->ptr = new RefExpr( expr );
 }
 
+Var::Var( Var *type, Ptr<PRef> ref ) : data( ref ), type( type->data ), flags( 0 ) {
+}
+
 Var::Var( Var *type, Ptr<Ref> ref ) : data( new PRef ), type( type->data ), flags( 0 ) {
     data->ptr = ref;
 }

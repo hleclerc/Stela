@@ -1,5 +1,12 @@
-
-
+Important pour la suite:
+- layers de variables
+  -> Expr/Inst pour du SSA pur (pointer_on renvoie le pointeur d'une variable dans un Ètat donnÈ)
+  -> Ref pour des variables non typÈes
+      avec gestion des conditions (static cond := Vec[Expr]) ?
+      des snapshots (pour les while, les fonctions outline) ?
+  -> Var pour des variables typÈes
+      Rq: quand on fait break, la couche Ref invalide les instructions suivantes, les destructeurs sont appelÈs ensuite dans la couche Var
+-
 
 
 Ce qui est mieux que Rust:
@@ -58,56 +65,6 @@ Faut-il crÈer de nouveaux types ‡ chaque fois qu'on crÈe une fonction ? Si non :
         
     Autre remarque: les defs sont forcÈment dans des scopes statiques (parce qu'elles peuvent elles-mÍmes contenir des scopes statiques).
 
-Contreparties de faire un type diffÈrent pour chaque callable et combinaisons :
-- ‡ chaque fois qu'on demande une fonction, il faut faire un nouveau type de surdef_list
 
-class BegVarargsItem[ T0, TN ]
-    item ~= T0
-    next ~= TN
-class EndVarargsItem
-    ...
-
-class SurdefList[ varargs ] varargs contient dans les T0, les pointeurs vers les callables
-
-
-
-Class Type[ data_ptr ] -> 
-
-Question : dans quel scope lancer les opÈrations sur les paramËtres templates ? Prop : on laisse ‡ l'utilisateur la responsabilitÈ de laisser  un equal disponible au niveau suffisant.
-
-PoblËme : comment faire de l'allocation dynamique sur la pile ?
-- prop : primitive stack_alloc, ‡ appeler avec des inlines. Par ex: v := 
-    
-Avec IR rÈcursive
-- si un bloc ne contient qu'une instruction, c'est celle que l'on prend
-- sinon, une instruction IR_TOK_BLOCK permet de gÈrer les sÈquences (-> liste d'offsets terminÈe par 0)
-- 
-- Comment connaitre la taille des codes IR ? Rq: on n'est intÈressÈ par cette donnÈe que pour les Callables. On peut faire un DelayedParse uniquement pour avoir un offset de fin dans les paramËtres de callable
-- 
-- ProblËme : faut-il envoyer nstring relocation quand on envoie un code sous forme IR ?
-
-
-
-¿ quoi servent les pointeurs sur des Expr ?
-  - ex: si on fait ptr( slice( a, 32, 64 ) ), est-ce que Áa devrait donner la mÍme chose que ptr( a ) + 32 ?
-      -> a priori oui
-      -> Áa veut dire qu'il faut garder le slice 
-
-
-      
-Pb: cst_data( 5, 17 ) -> devrait renvoyer un pointeur sur les donnÈes dÈcalÈes en mÈmoire...
-  -> c'est possible si on fait les version dÈcalÈes des Cst::data pour les 8 cas possibles (‡ la demande)
-      
-
-Les classes et les type dÈmarrent avec les bons types
-
-Rq: on pourrait stocker les types avec des Expr mais il faudrait avoir la bonne valeur dËs le dÈbut
-On pourrait utiliser un Expr *
-
-    
-Toto[ ... ] -> comment sauver les ... ?
-    -> avec constity si possible (sinon on fait une copie et on constity)
-    
-Ref[] -> proposition: un utilise un null_ref et un map<ST,Vec<Var> > c√¥t√© interpr√©teur
 
 

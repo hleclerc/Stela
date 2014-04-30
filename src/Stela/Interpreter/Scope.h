@@ -25,6 +25,11 @@ protected:
     friend class RefSlice;
     friend class RefPointerOn;
 
+    struct RemBreak {
+        int count;
+        Expr cond;
+    };
+
     #define DECL_IR_TOK( N ) Var parse_##N( const Expr &sf, int off, BinStreamReader bin ); ///< parse a given IR_TOK
     #include "../Ir/Decl.h"
     #undef DECL_IR_TOK
@@ -57,7 +62,8 @@ protected:
     void find_var_clist( Vec<Var> &res, int name ); ///< helper for find_var
     Var get_attr( Var self, int attr, const Expr &sf, int off );
     Expr _phi_simplified_expr( const Expr &expr, const Expr &sf, int off );
-    void _save_var_rec( Var dst );
+    void BREAK( int n, const Expr &sf, int off, Expr ext_cond = Expr() );
+    void _save_var_rec( Ptr<PRef> dst );
 
     Scope         *parent; ///< "accessible" scope, i.e. that can be read to find variables
     Scope         *caller; ///< caller scope, if this serves as the body of a function
@@ -73,10 +79,11 @@ protected:
 
     Var            sys_state;
     Var            self;
-    Var            cont; ///< continue variable
     TypeInfo      *class_scope;
     Expr           cond;
 
+    Var            cont; ///< continue variable
+    Vec<RemBreak>  rem_breaks;
     Scope         *from_for_def;
     bool           for_block;
 

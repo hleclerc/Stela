@@ -238,9 +238,13 @@ def foo
 # foo()
 # for i in 0 .. 3
     # ___syscall SI64 i
-for i in 0l .. 3l
-    ___syscall i
-    break
-    # ___syscall i + 10l
+a := 1l
+while a < 10l
+    b := 1l
+    while b < 10l
+        ___syscall a + b
+        break 2
+        b += 1
+    a += 1
     
     

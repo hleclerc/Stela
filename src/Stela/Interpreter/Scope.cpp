@@ -532,49 +532,43 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
     // replace changed variable by while_inst outputs
     cpt = 0;
     for( auto it : nsv ) {
-        PRef *pref = const_cast<PRef *>( it.first.ptr() );
-        pref->ptr = new RefExpr( Expr( wins, cpt++ ) );
+        Ptr<PRef> pref = it.first;
+        Var dst( &ip->type_Void, pref );
+        set( dst, Var( &ip->type_Void, Expr( wins, cpt++ ) ), sf, off );
+        // pref->ptr = new RefExpr( Expr( wins, cpt++ ) );
     }
+
+    // break(s) to transmit ?
+    for( RemBreak rb : wh_scope.rem_breaks )
+        BREAK( rb.count, sf, off, rb.cond );
 
     return ip->error_var;
 }
 
-Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
-    Expr c = cst( true );
+void Scope::BREAK( int n, const Expr &sf, int off, Expr ext_cond ) {
+    Expr c = ext_cond ? ext_cond : cst( true );
     for( Scope *s = this; s; s = s->parent ) {
         if ( s->cont ) {
-            set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
+            set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off, ext_cond );
+            if ( n > 1 )
+                s->rem_breaks << RemBreak{ n - 1, c };
             if ( s->cond )
                 s->cond = op_and( bt_Bool, s->cond, op_not( bt_Bool, c ) );
             else
                 s->cond = op_not( bt_Bool, c );
-            return ip->void_var;
+            return;
         }
         if ( s->cond )
             c = op_and( bt_Bool, c, s->cond );
-
-        // if we are breaking from a for block
-        if ( Scope *fd = s->from_for_def ) {
-            // set false in the cond of the scope with for_block
-            for( Scope *s = fd; s; s = s->caller ? s->caller : s->parent ) {
-                // -> break all the whiles
-                if ( s->cont )
-                    set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off );
-
-                if ( s->for_block ) {
-                    if ( s->cond )
-                        s->cond = op_and( bt_Bool, s->cond, op_not( bt_Bool, c ) );
-                    else
-                        s->cond = op_not( bt_Bool, c );
-                    return ip->void_var;
-                }
-                if ( s->cond )
-                    c = op_and( bt_Bool, c, s->cond );
-            }
-            return disp_error( "nothing to break", sf, off );
-        }
     }
-    return disp_error( "nothing to break", sf, off );
+    disp_error( "nothing to break", sf, off );
+    return;
+}
+
+Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
+    int n = bin.read_positive_integer();
+    BREAK( n, sf, off );
+    return ip->void_var;
 }
 
 Var Scope::parse_CONTINUE( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
@@ -1099,16 +1093,6 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
             return;
 
         Ptr<Ref> src_expr = simplified_pref( src, sf, off )->copy();
-
-        // phi( ... )
-        //  a = select( c0, u, v )
-        //  if c0 and c1
-        //     a = w
-        //  -> a = select( c0 and c1, w, select( c0, u, v ) )
-
-        // C0 and C1 ? A : B
-        // select( C0, select( C1, A, B ), B )
-
         Ptr<Ref> dst_expr = dst.data->ptr;
 
         Vec<Expr> conds;
@@ -1125,7 +1109,7 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
 
         if ( dst_expr != src_expr ) {
             // variable to be saved ?
-            _save_var_rec( dst );
+            _save_var_rec( dst.data );
 
             // copy the Ref
             dst.data->ptr = src_expr;
@@ -1136,10 +1120,10 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
     }
 }
 
-void Scope::_save_var_rec( Var dst ) {
+void Scope::_save_var_rec( Ptr<PRef> dst ) {
     for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
-        if ( s->sv_map and dst.data->date < s->sv_date and not s->sv_map->count( dst.data ) )
-            s->sv_map->operator[]( dst.data ) = dst.data->ptr;
+        if ( s->sv_map and dst->date < s->sv_date and not s->sv_map->count( dst ) )
+            s->sv_map->operator[]( dst.data ) = dst->ptr;
         if ( s->from_for_def )
             s->from_for_def->_save_var_rec( dst );
     }

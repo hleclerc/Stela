@@ -242,6 +242,21 @@ void IrWriter::parse_apply( const Lexem *l, PI8 tok ) {
          //        return;
      }
 
+     // break n
+     if ( tok == IR_TOK_APPLY and f->eq( "break" ) ) {
+         if ( ch.size() > 1 )
+             return add_error( "break accept at most 1 parameter", f );
+         data << IR_TOK_BREAK;
+         push_offset( f );
+         int n = 1;
+         if ( ch.size() == 1 ) {
+             if ( not ch[ 0 ]->is_an_int() )
+                 return add_error( "break expects a known integer value", f );
+             n = ch[ 0 ]->to_int();
+         }
+         data << n; // nb of loop to break
+     }
+
      // primitive ?
      int np = tok == IR_TOK_APPLY ? num_primitive( f ) : -1;
      if ( np >= 0 ) {
