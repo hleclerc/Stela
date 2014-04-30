@@ -547,9 +547,14 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
 void Scope::BREAK( int n, const Expr &sf, int off, Expr ext_cond ) {
     Expr c = ext_cond ? ext_cond : cst( true );
+    bool found_a_from_def = false;
     for( Scope *s = this; s; s = s->parent ) {
-        if ( s->cont ) {
-            set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off, ext_cond );
+        // found a for or a while ?
+        // (for_block = true for surrounding scope)
+        // (from_for_def != 0 from ___bloc_exec call)
+        if ( s->cont or s->for_block ) {
+            if ( s->cont )
+                set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off, ext_cond );
             if ( n > 1 )
                 s->rem_breaks << RemBreak{ n - 1, c };
             if ( s->cond )
@@ -557,6 +562,25 @@ void Scope::BREAK( int n, const Expr &sf, int off, Expr ext_cond ) {
             else
                 s->cond = op_not( bt_Bool, c );
             return;
+        }
+        // breaking from a for ?
+        if ( Scope *f = s->from_for_def ) {
+            s = f; // go the place where block(...) has been called
+            // -> update the real number of breaks
+//            if ( not found_a_from_def ) {
+//                found_a_from_def = true;
+//                while ( true ) {
+//                    s = s->caller ? s->caller : s->parent;
+//                    if ( s == f )
+//                        break;
+//                    if ( not s ) {
+//                        disp_error( "Impossible to find the surrounding for scope", sf, off );
+//                        return;
+//                    }
+//                    n += s->cont or s->for_block;
+//                }
+//                PRINT( n );
+//            }
         }
         if ( s->cond )
             c = op_and( bt_Bool, c, s->cond );

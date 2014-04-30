@@ -230,21 +230,9 @@ def range beg, end
    
 # print_rec SI32 ___rand() * 0 + 4716
 #___syscall SI64 Bool ___rand() and ___rand() * 1
-def foo
-    a := 10l
-    for i in 0 .. 3
-        ___syscall i + a
-        # break
 # foo()
-# for i in 0 .. 3
-    # ___syscall SI64 i
-a := 1l
-while a < 10l
-    b := 1l
-    while b < 10l
-        ___syscall a + b
-        break 2
-        b += 1
-    a += 1
+for i in 0 .. 3
+    ___syscall SI64 i
+    break
     
     
