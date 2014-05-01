@@ -379,6 +379,12 @@ bool Interpreter::equal( Var a, Var b ) {
         return a.expr() == b.expr();
     if ( isa_SI32( a ) and isa_SI32( b ) )
         return a.expr() == b.expr();
+    if ( isa_PI32( a ) and isa_PI32( b ) )
+        return a.expr() == b.expr();
+    if ( isa_SI64( a ) and isa_SI64( b ) )
+        return a.expr() == b.expr();
+    if ( isa_PI64( a ) and isa_PI64( b ) )
+        return a.expr() == b.expr();
     if ( isa_Void( a ) )
         return isa_Void( b );
     if ( isa_Void( b ) )

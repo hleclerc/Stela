@@ -160,6 +160,14 @@ class Vec[ T, static_size ]
     
     def select i
         ___get_slice self, T, ___size_of( T ) * i
+        
+    def __for__ block
+        _for_rec block, 0
+        
+    def _for_rec block, i
+        if i < static_size
+            block select i
+            _for_rec block, i + 1
     
 def sys_write fd, data, size
     ___syscall SI64( 1 ), SI64( fd ), data, SI64( size )
@@ -230,8 +238,12 @@ def range beg, end
 # print_rec SI32 ___rand() * 0 + 4716
 #___syscall SI64 Bool ___rand() and ___rand() * 1
 # foo()
-for i in SI64( ___rand() ) .. 3l
-    ___syscall i
-    # break
+# print 123
+v := Vec[SI8,4]( 20 )
+for i in v
+    i = 1
+___syscall &v
     
+    
+
     

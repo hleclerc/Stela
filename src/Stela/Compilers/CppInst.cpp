@@ -614,7 +614,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             TODO;
 
         // -> can we reuse the previous reg ?
-        if ( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] == 1 ) {
+        if ( cc->to_be_used[ inp[ 0 ].inst->out[ inp[ 0 ].nout ].num ] <= 1 ) {
             out[ 0 ].num = inp[ 0 ].inst->out[ inp[ 0 ].nout ].num;
             cc->bt_to_decl.insert( inp[ 1 ].inst->out[ inp[ 1 ].nout ].bt_hint );
 
@@ -630,6 +630,8 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
                        << disp( cc, inp[ 1 ] ) << ";";
             }
         } else {
+            PRINT( inp[ 0 ] );
+            PRINT( cc->os.stream->str() );
             ERROR( "TODO: setval without reuse" );
         }
         break;
