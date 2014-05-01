@@ -172,9 +172,6 @@ class Vec[ T, static_size ]
 def sys_write fd, data, size
     ___syscall SI64( 1 ), SI64( fd ), data, SI64( size )
 
-def pointer_on val
-    ___pointer_on val
-
 def print val
     sit := 10
     tmp := Vec[ SI8, sit ]()
@@ -226,24 +223,43 @@ class Range[ T ]
         while cur < end
             block cur
             cur += inc
-        cur = beg
-        while cur < end
-            block cur
-            cur += inc
-        block 20l
 
 def range beg, end
     Range[ typeof beg ]( beg, end )
    
+            
 # print_rec SI32 ___rand() * 0 + 4716
 #___syscall SI64 Bool ___rand() and ___rand() * 1
-# foo()
-# print 123
-v := Vec[SI8,4]( 20 )
-for i in v
-    i = 1
-___syscall &v
-    
-    
+class SpObject
+    _offt := 0
+    _type := 0
+    _data ~= PI64
 
-    
+class Val extends SpObject
+    def init v : SI32
+        _type = 0
+        
+class Ptr[ T ]
+    adress ~= SI64
+    def init ptr : SI64
+        adress = ptr
+    def pointed_value
+        0
+        
+def pointed_value obj
+    obj.pointed_value()
+
+def pointer_on val
+    Ptr[ typeof val ]( ___pointer_on val )
+        
+a := 0l
+
+# @Ptr[ SI32 ]( &a ) = 10
+___info( ( &a ).T )
+___disp &a
+        
+        
+        
+        
+
+

@@ -323,7 +323,7 @@ void CppInst::write_code_bin_op( CppCompiler *cc, int prec, const char *op_str, 
         if ( same_op( prec_op ) and out[ 0 ].num < 0 ) {
             for( int i = 0; i < 2; ++i ) {
                 int n = inp[ i ].inst->out[ inp[ i ].nout ].num;
-                if ( n >= 0 and cc->to_be_used[ n ] == 1 ) {
+                if ( n >= 0 and cc->to_be_used[ n ] <= 1 ) {
                     out[ 0 ].num = n;
                     break;
                 }
@@ -527,7 +527,7 @@ void CppInst::write_code( CppCompiler *cc, int prec ) {
             if ( declable( ext[ 0 ]->inp[ i ] ) ) {
                 int ninp = corr_inp[ i ];
                 if ( ninp >= 0 ) {
-                    if ( cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] == 1 ) {
+                    if ( cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] <= 1 ) {
                         out[ i ].num = inp[ ninp ].inst->out[ inp[ ninp ].nout ].num;
                         cc->to_be_used[ inp[ ninp ].inst->out[ inp[ ninp ].nout ].num ] = 0; // because we will use it DURING the while
                     } else

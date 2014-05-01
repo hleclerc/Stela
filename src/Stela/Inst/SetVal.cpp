@@ -68,6 +68,11 @@ Expr setval( Expr a, Expr b, int beg, bool beg_in_bits ) {
     if ( a.size_in_bits() == 0 or b.size_in_bits() == 0 )
         return a;
 
+    if ( a.size_in_bits() == b.size_in_bits() ) {
+        ASSERT( beg == 0, "weird" );
+        return b;
+    }
+
     if ( Expr res = a.inst->_smp_setval( a.nout, b, beg * ( beg_in_bits ? 1 : 8 ) ) )
         return res;
 

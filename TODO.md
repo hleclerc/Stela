@@ -1,3 +1,10 @@
+TODO
+- fonctions outline
+- MO, pointeurs de fonction
+- élimination des sources inutiles quand des set_val couvrent tout l'espace
+
+
+
 Important pour la suite:
 - layers de variables
   -> Expr/Inst pour du SSA pur (pointer_on renvoie le pointeur d'une variable dans un état donné)
@@ -7,6 +14,7 @@ Important pour la suite:
   -> Var pour des variables typées
       Rq: quand on fait break, la couche Ref invalide les instructions suivantes, les destructeurs sont appelés ensuite dans la couche Var
 -
+
 
 
 Ce qui est mieux que Rust:
