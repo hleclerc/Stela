@@ -214,15 +214,14 @@ class Range[ T ]
         end = b
         inc = 1
     def __for__ block
-        # cur := beg
-        # while cur < end
-            # block cur # la cond du while n'est pas prise en compte dans le block
-            # cur += inc
-        # cur = beg
-        # while cur < end
-            # block cur
-            # cur += inc
-        block 10l
+        cur := beg
+        while cur < end
+            block cur
+            cur += inc
+        cur = beg
+        while cur < end
+            block cur
+            cur += inc
         block 20l
 
 def range beg, end
@@ -231,8 +230,8 @@ def range beg, end
 # print_rec SI32 ___rand() * 0 + 4716
 #___syscall SI64 Bool ___rand() and ___rand() * 1
 # foo()
-for i in 0 .. 3
-    ___syscall SI64 i
-    break
+for i in SI64( ___rand() ) .. 3l
+    ___syscall i
+    # break
     
     

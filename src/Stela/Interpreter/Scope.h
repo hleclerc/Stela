@@ -84,7 +84,8 @@ protected:
 
     Var            cont; ///< continue variable
     Vec<RemBreak>  rem_breaks;
-    Scope         *from_for_def;
+    Scope         *for_def_scope;
+    Scope         *for_surrounding_scope; // for_def_scope->for_surrounding_scope points to scope `orig` created during the parse_for
     bool           for_block;
 
     TSvMap        *sv_map;

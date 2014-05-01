@@ -44,7 +44,8 @@ Scope::Scope( Scope *parent, Scope *caller ) :
     class_scope   = 0;
     sv_map        = 0;
 
-    from_for_def = 0;
+    for_surrounding_scope = 0;
+    for_def_scope = 0;
     for_block     = false;
 
     if ( parent )
@@ -547,11 +548,10 @@ Var Scope::parse_WHILE( const Expr &sf, int off, BinStreamReader bin ) {
 
 void Scope::BREAK( int n, const Expr &sf, int off, Expr ext_cond ) {
     Expr c = ext_cond ? ext_cond : cst( true );
-    bool found_a_from_def = false;
-    for( Scope *s = this; s; s = s->parent ) {
+    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
         // found a for or a while ?
         // (for_block = true for surrounding scope)
-        // (from_for_def != 0 from ___bloc_exec call)
+        // (for_def_scope != 0 from ___bloc_exec call)
         if ( s->cont or s->for_block ) {
             if ( s->cont )
                 set( s->cont, Var( &ip->type_Bool, cst( false ) ), sf, off, ext_cond );
@@ -563,25 +563,6 @@ void Scope::BREAK( int n, const Expr &sf, int off, Expr ext_cond ) {
                 s->cond = op_not( bt_Bool, c );
             return;
         }
-        // breaking from a for ?
-        if ( Scope *f = s->from_for_def ) {
-            s = f; // go the place where block(...) has been called
-            // -> update the real number of breaks
-//            if ( not found_a_from_def ) {
-//                found_a_from_def = true;
-//                while ( true ) {
-//                    s = s->caller ? s->caller : s->parent;
-//                    if ( s == f )
-//                        break;
-//                    if ( not s ) {
-//                        disp_error( "Impossible to find the surrounding for scope", sf, off );
-//                        return;
-//                    }
-//                    n += s->cont or s->for_block;
-//                }
-//                PRINT( n );
-//            }
-        }
         if ( s->cond )
             c = op_and( bt_Bool, c, s->cond );
     }
@@ -591,6 +572,27 @@ void Scope::BREAK( int n, const Expr &sf, int off, Expr ext_cond ) {
 
 Var Scope::parse_BREAK( const Expr &sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();
+    if ( not n )
+        n = 1;
+
+    // if we are breaking from a for, update n accordingly
+    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+        // -> parsing from a while
+        if ( s->cont )
+            break;
+        // -> parsing from a for
+        if ( Scope *f = s->for_def_scope ) {
+            f = f->for_surrounding_scope; // f points to the surrounding for scope
+            for( Scope *s = this; s != f; s = s->caller ? s->caller : s->parent ) {
+                if ( not s )
+                    return disp_error( "Impossible to find the surrounding for scope", sf, off );
+                n += s->cont or s->for_block;
+            }
+            break;
+        }
+    }
+
+    //
     BREAK( n, sf, off );
     return ip->void_var;
 }
@@ -604,7 +606,11 @@ Var Scope::parse_SELF( const Expr &sf, int off, BinStreamReader bin ) {
     return self ? self : disp_error( "no self var in current context", sf, off );
 }
 
-Var Scope::parse_THIS( const Expr &sf, int off, BinStreamReader bin ) { TODO; return Var(); }
+Var Scope::parse_THIS( const Expr &sf, int off, BinStreamReader bin ) {
+    TODO;
+    return Var();
+}
+
 Var Scope::parse_FOR( const Expr &sf, int off, BinStreamReader bin ) {
     int nn = bin.read_positive_integer();
     SI32 names[ nn ];
@@ -1131,7 +1137,7 @@ void Scope::set( Var &dst, const Var &src, const Expr &sf, int off, Expr ext_con
         if ( ext_cond )
             src_expr = new RefPhi( ext_cond, Var( src.type, src_expr ), Var( dst.type, dst_expr ) );
 
-        if ( dst_expr != src_expr ) {
+        if ( dst_expr->expr() != src_expr->expr() ) {
             // variable to be saved ?
             _save_var_rec( dst.data );
 
@@ -1148,8 +1154,8 @@ void Scope::_save_var_rec( Ptr<PRef> dst ) {
     for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
         if ( s->sv_map and dst->date < s->sv_date and not s->sv_map->count( dst ) )
             s->sv_map->operator[]( dst.data ) = dst->ptr;
-        if ( s->from_for_def )
-            s->from_for_def->_save_var_rec( dst );
+        if ( s->for_def_scope )
+            s->for_def_scope->_save_var_rec( dst );
     }
 }
 
@@ -1575,7 +1581,8 @@ Var Scope::parse_block_exec( const Expr &sf, int off, BinStreamReader bin ) {
 
     // new Scope
     Scope scope( orig, this );
-    scope.from_for_def = caller;
+    scope.for_def_scope = caller; // where block is called
+    scope.for_def_scope->for_surrounding_scope = orig;
     if ( name_lst.size() != 1 )
         TODO;
     for( int i = 0; i < name_lst.size(); ++i )
@@ -1617,8 +1624,11 @@ Var Scope::parse_info( const Expr &sf, int off, BinStreamReader bin ) {
 Var Scope::parse_disp( const Expr &sf, int off, BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     Vec<ConstPtr<Inst> > lst;
-    for( int i = 0; i < n; ++i )
-        lst << parse( sf, bin.read_offset() ).expr().inst;
+    if ( n )
+        for( int i = 0; i < n; ++i )
+            lst << parse( sf, bin.read_offset() ).expr().inst;
+    else
+        lst << sys_state.expr().inst;
     Inst::display_graph( lst );
 
     return ip->void_var;

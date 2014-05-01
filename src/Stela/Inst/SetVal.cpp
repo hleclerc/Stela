@@ -5,7 +5,7 @@
 #include "Cst.h"
 #include "Op.h"
 
-///
+/// mem[ off, off + sizeof( val ) ] = val
 class SetVal : public Inst_<1,3> {
 public:
     virtual int size_in_bits( int nout ) const { return inp_expr( 0 ).size_in_bits(); }
@@ -14,6 +14,23 @@ public:
     virtual int inst_id() const { return Inst::Id_SetVal; }
     virtual int sizeof_additionnal_data() const { return sizeof( data ); }
     virtual void copy_additionnal_data_to( PI8 *dst ) const { memcpy( dst, &data, sizeof( data ) ); }
+    virtual Expr _smp_slice( int nout, int beg, int end ) {
+        int vbeg;
+        if ( inp[ 2 ].get_val( vbeg ) ) {
+            if ( data.size_is_in_bytes )
+                vbeg *= 8;
+            int vend = vbeg + inp[ 1 ].size_in_bits();
+            // extracting something from val ?
+            if ( beg >= vbeg and end <= vend )
+                return inp[ 1 ].inst->_smp_slice( inp[ 1 ].nout, beg - vbeg, end - vbeg );
+            // extracting something from mem ?
+            if ( end <= vbeg )
+                return inp[ 0 ].inst->_smp_slice( inp[ 0 ].nout, beg, end );
+            if ( beg >= vend )
+                return inp[ 0 ].inst->_smp_slice( inp[ 0 ].nout, beg - vend, end - vend );
+        }
+        return Expr();
+    }
     SetValData data;
 };
 
