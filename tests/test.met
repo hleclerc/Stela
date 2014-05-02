@@ -242,9 +242,9 @@ class Val extends SpObject
 class Ptr[ T ]
     adress ~= SI64
     def init ptr : SI64
-        adress = ptr
+        adress = ptr # la copie passe en expr() 
     def pointed_value
-        0
+        ___pointed_value T, adress
         
 def pointed_value obj
     obj.pointed_value()
@@ -252,12 +252,10 @@ def pointed_value obj
 def pointer_on val
     Ptr[ typeof val ]( ___pointer_on val )
         
-a := 0l
+a := 7l
 
-# @Ptr[ SI32 ]( &a ) = 10
-___info( ( &a ).T )
-___disp &a
-        
+@Ptr[ SI32 ]( ( &a ).adress ) = 10
+___info a
         
         
         

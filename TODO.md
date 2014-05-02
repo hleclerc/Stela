@@ -13,7 +13,7 @@ Important pour la suite:
       des snapshots (pour les while, les fonctions outline) ?
   -> Var pour des variables typées
       Rq: quand on fait break, la couche Ref invalide les instructions suivantes, les destructeurs sont appelés ensuite dans la couche Var
--
+- Pointeron->copy
 
 
 

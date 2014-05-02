@@ -14,10 +14,12 @@ class Var {
 public:
     enum {
         WEAK_CONST = 1, ///< this variable should be changed, but nothing can guarantee that it won't be changed elsewhere
-        SURDEF     = 2
+        SURDEF     = 2,
+        IS_A_REF   = 4 ///< no destruction
     };
 
     // Où stocker ip ??
+    Var( Ptr<PRef> type, Ptr<PRef> data, int flags );
     Var( Ptr<PRef> type, const Expr &expr );
     Var( Ptr<PRef> type, Ptr<Ref> ref );
     Var( Var *type, const Expr &expr );

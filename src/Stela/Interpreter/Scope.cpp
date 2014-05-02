@@ -1443,9 +1443,14 @@ Var Scope::parse_inst_of( const Expr &sf, int off, BinStreamReader bin ) {
 
 Var Scope::parse_pointed_value( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
-//     Var t = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
-//     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ) );
-//     int off = bin.read_positive_integer();
+    Var t = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
+    PRINT( a.data->ptr );
+
+    Var o = apply( t, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST, sf, off );
+    Var d = a.data->ptr->pointed_value();
+
+    return Var( o.type, d.data, Var::IS_A_REF );
 // 
 //     if ( a.type == ip->type_RawRef ) {
 //         Var res = ip->get_ref( *reinterpret_cast<PI8 **>( a.data ) );
@@ -1457,7 +1462,7 @@ Var Scope::parse_pointed_value( const Expr &sf, int off, BinStreamReader bin ) {
 // 
 //     Var res( type_of_type_var( t ) );
 //     res.data  = *reinterpret_cast<PI8 **>( a.data );
-//     res.flags = Var::IS_A_REF;
+//     res.flags = ;
 //     return res;
     TODO; return ip->void_var;
 }

@@ -389,6 +389,12 @@ bool Interpreter::equal( Var a, Var b ) {
         return isa_Void( b );
     if ( isa_Void( b ) )
         return isa_Void( a );
+    //
+    if ( isa_Type( a ) and isa_Callable( b ) ) {
+        Var t = main_scope->apply( b, 0, 0, 0, 0, 0, Scope::APPLY_MODE_PARTIAL_INST, Expr(), 0 );
+        return a.expr() == t.type_expr();
+    }
+
     PRINT( a );
     PRINT( b );
     TODO;
