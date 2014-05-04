@@ -1445,10 +1445,11 @@ Var Scope::parse_pointed_value( const Expr &sf, int off, BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
     Var t = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
     Var a = get_val_if_GetSetSopInst( parse( sf, bin.read_offset() ), sf, off );
-    PRINT( a.data->ptr );
 
     Var o = apply( t, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST, sf, off );
+    PRINT( a );
     Var d = a.data->ptr->pointed_value();
+    PRINT( d );
 
     return Var( o.type, d.data, Var::IS_A_REF );
 // 

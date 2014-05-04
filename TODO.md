@@ -3,6 +3,18 @@ TODO
 - MO, pointeurs de fonction
 - élimination des sources inutiles quand des set_val couvrent tout l'espace
 
+Problème de la gestion des pointeurs
+- syscall &a -> copie profonde des expressions
+- r := &a + 5 -> r[ -5 ] -> permet de modifier la variable a
+  -> r doit être un RefAdd( RefPtr( a ), 5 ). L'addition demande un snapshot superficiel, un syscall demande un snapshot profond.
+- class T { a := 10; b := Ptr[]() }, t.b = &v
+  -> t doit revenir un RefSetVal
+  
+!!! Expr ne peut pas devenir une Val : deux Ref différentes peuvent pointer sur la même Expr !!
+
+Couche 1: Expr
+Couche 2: Ref 
+
 
 
 Important pour la suite:
