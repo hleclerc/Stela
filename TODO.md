@@ -9,10 +9,15 @@ Problème de la gestion des pointeurs
   -> r doit être un RefAdd( RefPtr( a ), 5 ). L'addition demande un snapshot superficiel, un syscall demande un snapshot profond.
 - class T { a := 10; b := Ptr[]() }, t.b = &v
   -> t doit revenir un RefSetVal
+- a.b + 10 -> RefAdd( RefSlice(RefSetVal(...)), 10 ) -> 
   
-!!! Expr ne peut pas devenir une Val : deux Ref différentes peuvent pointer sur la même Expr !!
+!!! Expr ne peut pas devenir une Val : deux Ref différentes peuvent pointer sur la même Expr !!!
 
-Couche 1: Expr
+a := &10
+b := &10
+@a = 30 -> ne doit pas modifier b
+
+Couche 1: Expr -> 
 Couche 2: Ref 
 
 
