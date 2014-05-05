@@ -12,7 +12,23 @@
   Use NEW( ... ) to allocate objects
 */
 struct ObjectWithCptUse {
+    enum { need_garbage_collection = 0 };
     ObjectWithCptUse() : cpt_use( 0 ) {}
+
+    mutable int cpt_use;
+};
+
+/**
+  @brief for objects with reference counting
+
+  Objects pointed by Ptr<...> should inherit from ObjectWithCptUse.
+
+  Use NEW( ... ) to allocate objects
+*/
+struct GarbageCollectedObject {
+    enum { need_garbage_collection = 1 };
+    GarbageCollectedObject() : cpt_use( 0 ) {}
+    virtual ~GarbageCollectedObject() {}
 
     mutable int cpt_use;
 };
@@ -21,7 +37,7 @@ template<class T>
 struct ConstPtr;
 
 /**
-  @brief Pointer on an ObjectWithCptUse
+  @brief Pointer on an ObjectWithCptUse or GarbageCollectedObject
 
   Can be used for reference couting.
 

@@ -2,7 +2,7 @@ MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: std
+all: test_Var
 
 exe: std
 	metil_comp out.cpp

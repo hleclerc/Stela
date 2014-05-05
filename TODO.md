@@ -10,18 +10,23 @@ Problème de la gestion des pointeurs
 - class T { a := 10; b := Ptr[]() }, t.b = &v
   -> t doit revenir un RefSetVal
 - a.b + 10 -> RefAdd( RefSlice(RefSetVal(...)), 10 ) -> 
-  
-!!! Expr ne peut pas devenir une Val : deux Ref différentes peuvent pointer sur la même Expr !!!
+
+ATTENTION: Expr ne peut pas devenir une Val : deux Ref différentes peuvent pointer sur la même Expr !!!
+  -> On ne peut pas faire des Expr qui pointent sur des Ref
 
 a := &10
 b := &10
 @a = 30 -> ne doit pas modifier b
 
-Couche 1: Expr -> 
+Couche 1: Expr
+  -> non modifiable
 Couche 2: Ref 
+  -> égalité: peut passer par les Expr
+  -> 
 
-
-
+Sujets non explorés
+  - garbage collector pour la pile
+  
 Important pour la suite:
 - layers de variables
   -> Expr/Inst pour du SSA pur (pointer_on renvoie le pointeur d'une variable dans un état donné)

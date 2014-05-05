@@ -174,3 +174,16 @@ src/Stela/Inst/BaseTypeIntN.cpp
 src/Stela/Inst/SetValData.h
 src/Stela/Interpreter/RefPhi.h
 src/Stela/Interpreter/RefPhi.cpp
+src/Stela/Ref/Ref.h
+src/Stela/Ref/Ref.cpp
+src/Stela/Ref/RefItem.h
+src/Stela/Ref/RefItem.cpp
+src/Stela/Ref/Type.h
+src/Stela/Ref/Type.cpp
+src/Stela/Ref/Var.h
+src/Stela/Ref/Var.cpp
+tests/test_Var.cpp
+src/Stela/Ref/Ip.h
+src/Stela/Ref/Ip.cpp
+src/Stela/Ref/RefItem_Expr.h
+src/Stela/Ref/RefItem_Expr.cpp
