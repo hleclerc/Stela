@@ -11,7 +11,7 @@ Nevertheless, staying with the later example, the syntax for C++ template meta-p
 Stela is an experimental language with the following goals
 * steal all the things that make C++(11) such a great language (memory model, templates, ...)
 * a coffeescript/python like syntax
-* a compilation working at a function level, with a server, to dramatically reduce compilation time, in order _let the user specify only the things the compiler cannot guess_
+* a compilation working at a function level, with a server, to dramatically reduce compilation time, in order to let the user specify only the things the compiler cannot guess_
     - return types, type of declared variables,
     - constexpr functions or not, pure or not, ...
     - ...
