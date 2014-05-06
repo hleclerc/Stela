@@ -6,7 +6,7 @@ NstrCor::NstrCor() {
 }
 
 String NstrCor::str( int num ) const {
-    return num_to_str[ num ];
+    return num >= 0 ? num_to_str[ num ] : "Undefined nstring";
 }
 
 int NstrCor::num( String str ) {

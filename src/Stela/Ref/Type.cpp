@@ -1,16 +1,33 @@
-#include "Type.h"
+#include "Ip.h"
 
-Type::Type() {
+Type::Type( int name ) : bt( 0 ), name( name ) {
+    _size = -1;
 }
 
 void Type::write_to_stream( Stream &os ) const {
-    os << "type";
+    os << ip->str_cor.str( name );
 }
 
-int Type::size_in_bits() const {
-    return 0;
+int Type::size() {
+    if ( _size < 0 )
+        parse();
+    return _size;
 }
 
-int Type::size_in_bytes() const {
-    return ( size_in_bits() + 7 ) / 8;
+bool Type::pod() const {
+    return true;
+}
+
+void Type::parse() {
+    TODO;
+}
+
+void Type::add_room( int size ) {
+    if ( _size < 0 )
+        _size = 0;
+    _size += size;
+}
+
+void Type::add_field( int name, Var data ) {
+    TODO;
 }

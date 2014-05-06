@@ -3,7 +3,7 @@
 
 #include "../System/Ptr.h"
 #include "RefItem.h"
-#include "Type.h"
+class Type;
 
 /**
    Var pour pointer sur Ref...
@@ -16,15 +16,17 @@
 class Ref : public GarbageCollectedObject {
 public:
     enum {
-        CONST = 1
+        FULL_CONST = 1
     };
 
     Ref( Type *type, RefItem *ref_item );
     virtual ~Ref();
 
     void write_to_stream( Stream &os ) const;
+    void reassign( const Ref &src );
+    Expr expr() const;
 
-protected:
+    // attributes
     Type    *type;
     RefItem *ref_item; ///<
     int      flags;

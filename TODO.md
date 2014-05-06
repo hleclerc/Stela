@@ -3,6 +3,55 @@ TODO
 - MO, pointeurs de fonction
 - élimination des sources inutiles quand des set_val couvrent tout l'espace
 
+RefItem
+- operations avec pointeurs
+   -> ptr + cst, ptr - cst
+   -> ptr - ptr => demande une stabilité des pointeurs... peut être imposé lors de la génération de code
+
+Intérêt des variables de taille non connue à la compilation ?
+- permet d'allouer sur la pile (exemple: des petits vecteurs comme en C++)
+- permet d'éviter des indirections (meilleur pour le cache, peut-être pour la vitesse d'exécution)
+-> on peut s'en passer pour démarrer
+
+Pb avec les pointeurs:
+  a := 10
+  b := 10
+  print &a == &b -> va renvoyer vrai !!
+  Donc (&a).expr() devrait donner la zone mémoire à la base de a
+  &(&a) n'existe pas, il faut passer par la création d'une variable
+    -> on pourrait faire démarrer chaque expr par un id de zone mémoire mais ce n'est pas la vocation des Expr
+    -> pointer_on(expr) devrait être associé à un id de zone mémoire
+    -> du coup, la récupération d'un pointeur
+    -> pb: @{a:10,b:&c}.b = 15 devrait donner {a:10,b:&10}
+    
+    -> Prop: les Expr contiennent des Inst, nout et id de zone mémoire
+        si on modifie une zone mémoire on fait un subs de toutes les Expr référencée... hum
+    -> Autre prop: Expr avec id de zone mémoire + snapshot.
+         -> pointer_on( expr ) stocke l'id de pointeur (qui ne bouge pas)
+         -> si on demande un snapshot (ex pour syscall), on fait un subs avec pointer_on_data
+         -> slice( expr, beg, end ) pourrait
+            -> ne pas exister côté Expr, mais dans une couche supplémentaire
+            -> ou être géré avec pointer_on( expr ) + beg
+         -> @expr 
+         
+L'idée, c'est de gérer des id de pointeur dans les Expr (les id sont effectivement immutables)
+
+class Ref
+    Ptr<Expr> expr;
+    Expr      off;
+-> &a renvoie pointer_on avec la ref
+-> @a doit renvoyer une Ref (a+b renvoie un expr)
+-> a[ 16:20 ] crée une Ref
+-> a[ 16:20 ] = 25 modifie la Ref avec un set_val
+-> @( 0x... ) renvoie Ref avec expr = main_mem
+-> @phi( c_0, p_0, p_1 ) renvoie 
+    -> un Ref avec expr = main_mem (dommage)
+    -> ou un RefPhi signifiant que Ref pointe sur un 
+--> Rq: a := 10; a += b -> normalement, le pointeur sur `a` a toujours la même valeur. Signifie que a est stockée comme une ref
+    -> a + b renvoie une nouvelle Ref, avec expr = *a.expr + *b.expr
+    -> syscall( a ) peut utiliser directement l'expr dans la mesure où le pointeur ne bouge pas. Signifie que le syscall doit ajouter des dépendances
+
+
 Problème de la gestion des pointeurs
 - syscall &a -> copie profonde des expressions
 - r := &a + 5 -> r[ -5 ] -> permet de modifier la variable a
