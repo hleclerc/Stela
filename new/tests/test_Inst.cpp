@@ -5,7 +5,7 @@
 int main() {
     Var a( &ip->type_SI32 );
     Var b( 10 );
-    Var p( b.ptr() );
+    Var p( Ref(), b.ptr() );
 
     PRINT( a );
     PRINT( b );
@@ -14,5 +14,7 @@ int main() {
     PRINT( b );
     PRINT( p );
     PRINT( p.ptd() );
+    p.ptd() = 150;
+    PRINT( p );
     PRINT( simplified( p.ptd().inst ) );
 }

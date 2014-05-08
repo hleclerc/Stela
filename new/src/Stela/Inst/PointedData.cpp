@@ -1,4 +1,5 @@
 #include "PointedData.h"
+#include "Ip.h"
 
 /**
 */
@@ -14,6 +15,11 @@ public:
     }
     virtual int size() const {
         return len;
+    }
+    virtual void set( Ptr<Inst> val ) {
+        if ( Ptr<Inst> ptr = inp[ 0 ]->_pointer_on( 0, len ) )
+            return ptr->set( val );
+        IP_ERROR( "inp[ 0 ] is not a pointer data" );
     }
     virtual Ptr<Inst> _simplified() {
         if ( Ptr<Inst> ptr = inp[ 0 ]->_pointer_on( 0, len ) )

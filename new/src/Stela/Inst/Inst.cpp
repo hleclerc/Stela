@@ -14,10 +14,12 @@ void Inst::write_to_stream( Stream &os ) const {
 }
 
 void Inst::add_var_ptr( Var *var ) {
+    write_dot( std::cerr );
     IP_ERROR( "not an Inst based on a Room instance" );
 }
 
 void Inst::set( Ptr<Inst> val ) {
+    write_dot( std::cerr );
     IP_ERROR( "not an Inst based on a Room instance" );
 }
 

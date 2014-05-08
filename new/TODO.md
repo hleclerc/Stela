@@ -1,3 +1,14 @@
+À faire
+* destruction des objets
+* slice
+* simplification de ptr - ptr
+* +, -, ...
+* types de base (SI32, ...)
+* reassign, copy, ... avec les types
+* Phi
+  ->
+
+
 a := Ptr[Item]( 0 )
 while ...
    a = Item( a, 123 )

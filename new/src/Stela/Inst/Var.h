@@ -32,6 +32,9 @@ public:
     Ptr<Inst> inst;
     Type     *type;
     int       flags;
+
+private:
+    Var( const Var &var );
 };
 
 #endif // VAR_H

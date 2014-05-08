@@ -27,6 +27,10 @@ Var::Var( Type *type ) : type( type ), flags( 0 ) {
 Var::Var( SI32 val ) : Var( &ip->type_SI32, cst( val ) ) {
 }
 
+Var::Var( const Var &var ) {
+    IP_ERROR( "Weird" );
+}
+
 Var &Var::operator=( const Var &var ) {
     // reassign
     inst->set( simplified( var.inst ) );
