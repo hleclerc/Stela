@@ -7,7 +7,7 @@ static Vec<class Cst *> cst_set;
 */
 class Cst : public Inst {
 public:
-    Cst( int size_in_bits, const PI8 *value, const PI8 *known ) : data( Size(), 2 * ( ( size_in_bits + 7 ) / 8 ) ), size( size_in_bits ) {
+    Cst( int size_in_bits, const PI8 *value, const PI8 *known ) : data( Size(), 2 * ( ( size_in_bits + 7 ) / 8 ) ), len( size_in_bits ) {
         int sb = ( size_in_bits + 7 ) / 8;
         memcpy_bit( data.ptr() + 0 * sb, 0, value, 0, size_in_bits );
         if ( known )
@@ -24,33 +24,36 @@ public:
         write_dot( os );
     }
     virtual void write_dot( Stream &os ) const {
-        if ( size == 0 )
+        if ( len == 0 )
             os << "";
-        else if ( size <= 8 )
+        else if ( len <= 8 )
             os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
-        else if ( size == 16 )
+        else if ( len == 16 )
             os << *reinterpret_cast<const SI16 *>( data.ptr() );
-        else if ( size == 32 )
+        else if ( len == 32 )
             os << *reinterpret_cast<const SI32 *>( data.ptr() );
-        else if ( size == 64 )
+        else if ( len == 64 )
             os << *reinterpret_cast<const SI64 *>( data.ptr() );
         else {
             const char *c = "0123456789ABCDEF";
-            for( int i = 0; i < std::min( size / 8, 4 ); ++i ) {
+            for( int i = 0; i < std::min( len / 8, 4 ); ++i ) {
                 if ( i )
                     os << ' ';
                 os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
             }
-            if ( size / 8 > 4 )
+            if ( len / 8 > 4 )
                 os << "...";
         }
     }
+    virtual int size() const {
+        return len;
+    }
     Vec<PI8> data; ///< data and knwn
-    int size;
+    int len; ///< in bits
 };
 
 static bool equal_cst( const Cst *cst, int size_in_bits, const PI8 *ptr, const PI8 *kno ) {
-    if ( cst->size != size_in_bits )
+    if ( cst->len != size_in_bits )
         return false;
     int sb = ( size_in_bits + 7 ) / 8;
     for( int i = 0; i < sb; ++i )
@@ -69,7 +72,6 @@ static bool equal_cst( const Cst *cst, int size_in_bits, const PI8 *ptr, const P
 }
 
 Ptr<Inst> cst( int size, const void *data, const void *knwn ) {
-    PRINT( size );
     if ( size and not data ) {
         ASSERT( knwn == 0, "weird" );
         // -> make a knwn full of 0

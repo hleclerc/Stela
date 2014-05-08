@@ -67,3 +67,7 @@ src/Stela/Inst/Ip.h
 src/Stela/Inst/Ip.cpp
 src/Stela/Inst/SetVal.h
 src/Stela/Inst/SetVal.cpp
+src/Stela/Inst/PointerOn.h
+src/Stela/Inst/PointerOn.cpp
+src/Stela/Inst/PointedData.h
+src/Stela/Inst/PointedData.cpp

@@ -17,7 +17,7 @@ ErrorList::Provenance::Provenance( const char *src, int off, std::string msg ) :
     }
 }
 
-ErrorList::Provenance::Provenance( String provenance, int line ) : provenance( provenance ), line( line ) {
+ErrorList::Provenance::Provenance( int line, String provenance ) : provenance( provenance ), line( line ) {
     col = -1;
 }
 
@@ -118,8 +118,12 @@ void ErrorList::Error::write_to_stream( Stream &os ) const {
         const ErrorList::Provenance &po = caller_stack[ 0 ];
         if ( po.provenance.size() )
             os << po.provenance << ":";
-        if ( po.line )
-            os << po.line << ":" << po.col << ": ";
+        if ( po.line ) {
+            os << po.line;
+            if ( po.col > 0 )
+                os << ":" << po.col;
+            os << ": ";
+        }
         os << "error: " << msg << ( display_col ? "\n" : " in '" );
         if ( po.complete_line.size() )
             display_line( os, po.complete_line.c_str(), po.complete_line.size(), po.col, display_col );

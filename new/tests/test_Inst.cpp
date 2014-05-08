@@ -5,10 +5,14 @@
 int main() {
     Var a( &ip->type_SI32 );
     Var b( 10 );
+    Var p( b.ptr() );
 
     PRINT( a );
     PRINT( b );
-    // pb: si on ne stocke qu'un pointeur dans une Var,
-    //  l'état de la Var est perdu :(
-    //  (sauf si le pointeur stocke une Var)
+    PRINT( p );
+    b = 20;
+    PRINT( b );
+    PRINT( p );
+    PRINT( p.ptd() );
+    PRINT( simplified( p.ptd().inst ) );
 }

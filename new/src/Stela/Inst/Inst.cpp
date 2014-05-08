@@ -26,6 +26,16 @@ void Inst::add_inp( Ptr<Inst> val ) {
     inp << val;
 }
 
+Ptr<Inst> Inst::_simplified() {
+    return 0;
+}
+
+Ptr<Inst> Inst::_pointer_on( int beg, int len ) {
+    return 0;
+}
+
 Ptr<Inst> simplified( Ptr<Inst> val ) {
+    if ( Ptr<Inst> res = val->_simplified() )
+        return res;
     return val;
 }

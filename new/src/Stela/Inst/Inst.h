@@ -18,13 +18,16 @@ public:
     virtual ~Inst();
     virtual void write_to_stream( Stream &os ) const;
     virtual void write_dot( Stream &os ) const = 0;
+    virtual int size() const = 0;
 
 
     virtual void set( Ptr<Inst> val );
-
     virtual void add_var_ptr( Var *var );
 
     void add_inp( Ptr<Inst> val );
+
+    virtual Ptr<Inst> _simplified();
+    virtual Ptr<Inst> _pointer_on( int beg, int len );
 
     Vec<Ptr<Inst> > inp;
     Vec<Ptr<Inst> > ext;

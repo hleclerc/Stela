@@ -2,6 +2,7 @@
 #include "Room.h"
 #include "Type.h"
 #include "Var.h"
+#include "Ip.h"
 
 /**
 */
@@ -19,9 +20,15 @@ public:
         var_list.remove_first_unordered( var );
     }
     virtual void set( Ptr<Inst> val ) {
-        Ptr<Inst> res = set_val( this, simplified( val ), 0 );
+        if ( not var_list.size() )
+            return IP_ERROR( "weird" );
+        Ptr<Inst> old = var_list[ 0 ]->inst;
+        Ptr<Inst> res = set_val( old, simplified( val ), 0 );
         for( Var *v : var_list )
             v->inst = res;
+    }
+    virtual int size() const {
+        return type->size();
     }
 
     Type *type; ///< creation type

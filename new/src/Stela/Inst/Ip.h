@@ -17,6 +17,7 @@ public:
 
     // base type
     Type type_SI32;
+    Type type_RawPtr;
 
     // attributes
     ErrorList error_list;

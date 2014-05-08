@@ -12,7 +12,7 @@ public:
     struct Provenance {
         Provenance( const char *beg, const char *pos, std::string provenance, std::string msg = "" );
         Provenance( const char *src, int off, std::string msg = "" );
-        Provenance( String provenance, int line );
+        Provenance( int line, String provenance );
 
         void _init( const char *beg, const char *pos );
 
