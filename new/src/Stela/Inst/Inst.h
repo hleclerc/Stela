@@ -26,8 +26,11 @@ public:
 
     void add_inp( Ptr<Inst> val );
 
+    virtual void clone( Vec<Ptr<Inst> > &created ) const; ///< output in op_mp
+    virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const = 0;
+
     // graphviz
-    static int display_graph( const Vec<Ptr<Inst> > &outputs, const char *filename = ".res" );
+    static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
     virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
     virtual void write_sub_graph_rec( Stream &os ) const;
 

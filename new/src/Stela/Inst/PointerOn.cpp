@@ -21,6 +21,10 @@ public:
             return var.inst;
         return 0;
     }
+    virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
+        var.inst->clone( created );
+        return new PointerOn( Var( Ref(), var.type, reinterpret_cast<Inst *>( var.inst->op_mp ) ) );
+    }
 
     Var var;
 };

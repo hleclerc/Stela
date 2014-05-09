@@ -26,6 +26,9 @@ public:
             return simplified( ptr );
         return 0;
     }
+    virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
+        return new PointedData( len );
+    }
 
     int len;
 };

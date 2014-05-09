@@ -4,6 +4,8 @@
 */
 class SetVal : public Inst {
 public:
+    SetVal( int offset ) : offset( offset ) {
+    }
     virtual void write_dot( Stream &os ) const {
         os << "set_val";
         if ( offset )
@@ -37,13 +39,15 @@ public:
     virtual int size() const {
         return inp[ 0 ]->size();
     }
+    virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
+        return new SetVal( offset );
+    }
 
     int offset;
 };
 
 Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, Vec<Ptr<Inst> > conds, int offset ) {
-    SetVal *res = new SetVal;
-    res->offset = offset;
+    SetVal *res = new SetVal( offset );
     res->add_inp( src );
     res->add_inp( val );
     for( Ptr<Inst> c : conds )

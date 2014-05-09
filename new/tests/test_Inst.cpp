@@ -1,3 +1,4 @@
+#include "Stela/CodeGen/CodeGen_C.h"
 #include "Stela/Inst/Type.h"
 #include "Stela/Inst/Var.h"
 #include "Stela/Inst/Ip.h"
@@ -23,7 +24,7 @@ int main() {
     b = 15;
     PRINT( b );
 
-    Vec<Ptr<Inst> > out;
-    out << b.inst;
-    Inst::display_graph( out );
+    CodeGen_C cg;
+    cg << b.inst;
+    cg.write_to( std::cout );
 }

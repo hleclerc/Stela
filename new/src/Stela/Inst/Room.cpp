@@ -30,6 +30,9 @@ public:
     virtual int size() const {
         return type->size();
     }
+    virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
+        return new Room( type );
+    }
 
     Type *type; ///< creation type
     Vec<Var *> var_list;

@@ -36,7 +36,32 @@ void Inst::add_inp( Ptr<Inst> val ) {
     inp << val;
 }
 
-int Inst::display_graph( const Vec<Ptr<Inst> > &outputs, const char *filename ) {
+void Inst::clone( Vec<Ptr<Inst> > &created ) const {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+
+    // clone the children
+    for( Ptr<Inst> i : inp )
+        i->clone( created );
+
+    // basic clone
+    Ptr<Inst> res = forced_clone( created );
+
+    // add cloned children
+    for( Ptr<Inst> i : inp ) {
+        i->clone( created );
+        res->add_inp( reinterpret_cast<Inst *>( i->op_mp ) );
+    }
+    if( ext.size() )
+        TODO;
+
+    // register
+    op_mp = res.ptr();
+    created << res;
+}
+
+int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename ) {
     ++cur_op_id;
 
     std::ofstream f( filename );

@@ -48,6 +48,11 @@ public:
     virtual int size() const {
         return len;
     }
+    virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
+        int sb = ( len + 7 ) / 8;
+        return new Cst( len, data.ptr() + 0 * sb, data.ptr() + 1 * sb );
+    }
+
     Vec<PI8> data; ///< data and knwn
     int len; ///< in bits
 };
