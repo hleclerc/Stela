@@ -26,6 +26,17 @@ ErrorList::Error &Ip::error_msg( String msg, bool warn, const char *file, int li
     return res;
 }
 
+void Ip::add_cond( const Var &cond ) {
+    add_cond( cond.inst );
+}
+
+void Ip::add_cond( Ptr<Inst> cond ) {
+    conds << simplified( cond );
+}
+
+void Ip::pop_cond() {
+    conds.pop_back();
+}
 
 static Ip ip_inst;
 Ip *ip = &ip_inst;

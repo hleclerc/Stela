@@ -2,12 +2,10 @@
 #include "Stela/Inst/Var.h"
 #include "Stela/Inst/Ip.h"
 
-int main() {
-    Var a( &ip->type_SI32 );
+void test_ptr() {
     Var b( 10 );
     Var p( Ref(), b.ptr() );
 
-    PRINT( a );
     PRINT( b );
     PRINT( p );
     b = 20;
@@ -17,4 +15,15 @@ int main() {
     p.ptd() = 150;
     PRINT( p );
     PRINT( simplified( p.ptd().inst ) );
+}
+
+int main() {
+    Var b( 10 );
+    ip->add_cond( 25 );
+    b = 15;
+    PRINT( b );
+
+    Vec<Ptr<Inst> > out;
+    out << b.inst;
+    Inst::display_graph( out );
 }

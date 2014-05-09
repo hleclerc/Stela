@@ -29,6 +29,8 @@ public:
     void write_to_stream( Stream &os ) const;
     int size() const;
 
+
+    // attributes
     Ptr<Inst> inst;
     Type     *type;
     int       flags;

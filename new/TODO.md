@@ -1,13 +1,16 @@
 À faire
 * destruction des objets
+* garbage collection
 * slice
 * simplification de ptr - ptr
 * +, -, ...
 * types de base (SI32, ...)
 * reassign, copy, ... avec les types
-* Phi
-  ->
+* factorisation des opérations similaires
+* Phi avec des références
 
+* affichage de graph
+* génération de code
 
 a := Ptr[Item]( 0 )
 while ...

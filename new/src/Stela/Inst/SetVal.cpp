@@ -9,6 +9,16 @@ public:
         if ( offset )
             os << "[off=" << offset << "]";
     }
+    virtual void write_to_stream( Stream &os ) const {
+        write_dot( os );
+        if ( inp.size() > 2 ) {
+            os << "{" << inp[ 2 ];
+            for( int i = 3; i < inp.size(); ++i )
+                os << "," << inp[ i ];
+            os << "}";
+        }
+        os << "(" << inp[ 0 ] << "," << inp[ 1 ] << ")";
+    }
     virtual void set( Ptr<Inst> val ) {
         inp[ 0 ]->set( val );
     }
@@ -31,10 +41,12 @@ public:
     int offset;
 };
 
-Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, int offset ) {
+Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, Vec<Ptr<Inst> > conds, int offset ) {
     SetVal *res = new SetVal;
     res->offset = offset;
     res->add_inp( src );
     res->add_inp( val );
+    for( Ptr<Inst> c : conds )
+        res->add_inp( c );
     return res;
 }
