@@ -4,12 +4,24 @@
 
 PI64 Inst::cur_op_id = 0;
 
-Inst::~Inst() {
+Inst::Inst() {
     ext_par   = 0;
 
     op_id_vis = 0;
     op_id     = 0;
     op_mp     = 0;
+}
+
+Inst::~Inst() {
+    for( int num = 0; num < inp.size(); ++num )
+        if ( inp[ num ] )
+            inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
+    for( int num = 0; num < dep.size(); ++num )
+        if ( dep[ num ] )
+            dep[ num ]->par.remove_first_unordered( Parent{ this, -1 } );
+    for( int num = 0; num < ext.size(); ++num )
+        if ( ext[ num ] )
+            ext[ num ]->ext_par = 0;
 }
 
 void Inst::write_to_stream( Stream &os ) const {
@@ -36,6 +48,11 @@ void Inst::add_inp( Ptr<Inst> val ) {
     inp << val;
 }
 
+void Inst::add_dep( Ptr<Inst> val ) {
+    val->par << Parent{ this, -1 };
+    dep << val;
+}
+
 void Inst::clone( Vec<Ptr<Inst> > &created ) const {
     if ( op_id == cur_op_id )
         return;
@@ -44,21 +61,27 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
     // clone the children
     for( Ptr<Inst> i : inp )
         i->clone( created );
+    for( Ptr<Inst> i : dep )
+        i->clone( created );
 
     // basic clone
     Ptr<Inst> res = forced_clone( created );
 
     // add cloned children
-    for( Ptr<Inst> i : inp ) {
-        i->clone( created );
+    for( Ptr<Inst> i : inp )
         res->add_inp( reinterpret_cast<Inst *>( i->op_mp ) );
-    }
+    for( Ptr<Inst> i : dep )
+        res->add_dep( reinterpret_cast<Inst *>( i->op_mp ) );
     if( ext.size() )
         TODO;
 
     // register
     op_mp = res.ptr();
     created << res;
+}
+
+Ptr<Inst> Inst::snapshot() {
+    return simplified( this );
 }
 
 int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename ) {
@@ -127,6 +150,13 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
 
         if ( inp[ i ] )
             inp[ i ]->write_graph_rec( ext_buf, os );
+    }
+
+    // dependencies
+    for( int i = 0; i < dep.size(); ++i ) {
+        os << "    node" << this << " -> node" << dep[ i ].ptr() << " [style=dotted];\n";
+        if ( dep[ i ] )
+            dep[ i ]->write_graph_rec( ext_buf, os );
     }
 
     // ext

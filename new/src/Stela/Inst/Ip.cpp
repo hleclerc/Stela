@@ -1,12 +1,22 @@
 #include "Stela/System/UsualStrings.h"
+#include "Cst.h"
 #include "Ip.h"
+
+static SI64 shrump = 0;
 
 Ip::Ip() :
     type_SI32  ( STRING_SI32_NUM   ),
-    type_RawPtr( STRING_RawPtr_NUM ) {
+    type_SI64  ( STRING_SI64_NUM   ),
+    type_Void  ( STRING_Void_NUM   ),
+    type_RawPtr( STRING_RawPtr_NUM ),
+    type_ST    ( sizeof( void * ) == 8 ? &type_SI64 : &type_SI32 ),
+    sys_state( type_ST, cst( type_ST->size(), &shrump ) ) {
 
     type_SI32  ._size = 32;
+    type_SI64  ._size = 64;
+    type_Void  ._size = 0;
     type_RawPtr._size = 8 * sizeof( void * );
+
 }
 
 void Ip::disp_error( String msg, bool warn, const char *file, int line ) {

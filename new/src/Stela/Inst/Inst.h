@@ -11,10 +11,12 @@ class Var;
 class Inst : public ObjectWithCptUse {
 public:
     struct Parent {
+        bool operator==( const Parent &p ) { return inst == p.inst and ninp == p.ninp; }
         Inst *inst;
         int   ninp; ///< input number
     };
 
+    Inst();
     virtual ~Inst();
     virtual void write_to_stream( Stream &os ) const;
     virtual void write_dot( Stream &os ) const = 0;
@@ -25,9 +27,12 @@ public:
     virtual void add_var_ptr( Var *var );
 
     void add_inp( Ptr<Inst> val );
+    void add_dep( Ptr<Inst> val );
 
     virtual void clone( Vec<Ptr<Inst> > &created ) const; ///< output in op_mp
     virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const = 0;
+
+    virtual Ptr<Inst> snapshot();
 
     // graphviz
     static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
@@ -39,10 +44,11 @@ public:
     virtual Ptr<Inst> _pointer_on( int beg, int len );
 
     // parameters
-    Vec<Ptr<Inst> > inp;
-    Vec<Ptr<Inst> > ext;
-    Vec<Ptr<Inst> > exi; ///< for WhileInp
-    Vec<Parent>     par;
+    Vec<Ptr<Inst> > inp; ///< inputs
+    Vec<Ptr<Inst> > dep; ///< dependencies
+    Vec<Ptr<Inst> > ext; ///< for WhileOut, ...
+    Vec<Ptr<Inst> > exi; ///< for WhileInp, ...
+    Vec<Parent>     par; ///> parents
     Inst           *ext_par;
 
     //

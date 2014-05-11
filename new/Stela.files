@@ -75,3 +75,5 @@ src/Stela/CodeGen/CodeGen.h
 src/Stela/CodeGen/CodeGen.cpp
 src/Stela/CodeGen/CodeGen_C.h
 src/Stela/CodeGen/CodeGen_C.cpp
+src/Stela/Inst/Syscall.h
+src/Stela/Inst/Syscall.cpp

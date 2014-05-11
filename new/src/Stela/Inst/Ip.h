@@ -20,11 +20,15 @@ public:
     void pop_cond();
 
     // base type
-    Type type_SI32;
-    Type type_RawPtr;
+    Type  type_SI32;
+    Type  type_SI64;
+    Type  type_Void;
+    Type  type_RawPtr;
+    Type *type_ST;
 
     // context
     Vec<Ptr<Inst> > conds; ///< current conditions (use add_cond)
+    Var             sys_state;
 
     //
     ErrorList error_list;

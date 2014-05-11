@@ -14,14 +14,12 @@ public:
     };
 
     Var( Ref, Type *type, const Ptr<Inst> val ); ///<
-    Var( Type *type, const Ptr<Inst> val ); ///<
+    Var( Type *type, const Ptr<Inst> val ); ///< make a new room and set to val
     Var( Type *type =  0 ); ///< uninialized variable
-
-    Var( Ref, const Var &var ); ///< reference
 
     Var( SI32 val );
 
-    Var &operator=( const Var &var );
+    Var &reassign( const Var &var );
 
     Var ptr(); ///< pointer on this
     Var ptd(); ///< pointed data
@@ -34,9 +32,8 @@ public:
     Ptr<Inst> inst;
     Type     *type;
     int       flags;
-
-private:
-    Var( const Var &var );
 };
+
+Var syscall( Vec<Var> &inp );
 
 #endif // VAR_H

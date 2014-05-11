@@ -5,7 +5,7 @@
 */
 class PointerOn : public Inst {
 public:
-    PointerOn( const Var &var ) : var( Ref(), var ) {
+    PointerOn( const Var &var ) : var( var ) {
     }
     virtual void write_dot( Stream &os ) const {
         os << "&";
