@@ -19,14 +19,26 @@ void test_ptr() {
 }
 
 int main() {
+    static Ip ip_inst;
+    ip = &ip_inst;
+
     //    Var b( 10 );
-    //    ip->add_cond( 25 );
+    //
     //    b = 15;
     //    PRINT( b );
-    Vec<Var> inp;
-    inp << 16;
+    Vec<Var> inp( Size(), 1 );
+    inp[ 0 ] = 16l;
     syscall( inp );
 
+    ip->add_cond( 25 );
+    inp[ 0 ] = 17l;
+    syscall( inp );
+    ip->pop_cond();
+
+    ip->add_cond( 26 );
+    inp[ 0 ] = 18l;
+    syscall( inp );
+    ip->pop_cond();
 
     CodeGen_C cg;
     cg << simplified( ip->sys_state.inst );

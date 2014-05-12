@@ -77,3 +77,11 @@ src/Stela/CodeGen/CodeGen_C.h
 src/Stela/CodeGen/CodeGen_C.cpp
 src/Stela/Inst/Syscall.h
 src/Stela/Inst/Syscall.cpp
+src/Stela/Inst/SysState.h
+src/Stela/Inst/SysState.cpp
+src/Stela/CodeGen/InstInfo_C.h
+src/Stela/CodeGen/InstInfo_C.cpp
+src/Stela/Inst/Op.h
+src/Stela/Inst/Op.cpp
+src/Stela/Inst/Conv.h
+src/Stela/Inst/Conv.cpp

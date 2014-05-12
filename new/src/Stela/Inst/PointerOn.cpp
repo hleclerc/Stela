@@ -25,6 +25,9 @@ public:
         var.inst->clone( created );
         return new PointerOn( Var( Ref(), var.type, reinterpret_cast<Inst *>( var.inst->op_mp ) ) );
     }
+    virtual void write_1l_to( CodeGen_C *cc ) const {
+        TODO;
+    }
 
     Var var;
 };

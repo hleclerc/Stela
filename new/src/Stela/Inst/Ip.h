@@ -1,6 +1,7 @@
 #ifndef IP_H
 #define IP_H
 
+#include "../System/SplittedVec.h"
 #include "../System/ErrorList.h"
 #include "../System/NstrCor.h"
 #include "Type.h"
@@ -9,6 +10,8 @@
 */
 class Ip {
 public:
+    typedef SplittedVec<Vec<Ptr<Inst> >,16> OldCondSet;
+
     Ip();
 
     // errors
@@ -28,6 +31,7 @@ public:
 
     // context
     Vec<Ptr<Inst> > conds; ///< current conditions (use add_cond)
+    OldCondSet      old_conds;
     Var             sys_state;
 
     //

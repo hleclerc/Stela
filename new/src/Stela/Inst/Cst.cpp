@@ -1,5 +1,7 @@
+#include "../CodeGen/CodeGen_C.h"
 #include "../System/Memcpy.h"
 #include "Cst.h"
+#include "Ip.h"
 
 static Vec<class Cst *> cst_set;
 
@@ -49,8 +51,21 @@ public:
         return len;
     }
     virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
-        int sb = ( len + 7 ) / 8;
-        return new Cst( len, data.ptr() + 0 * sb, data.ptr() + 1 * sb );
+        return new Cst( len, data.ptr(), data.ptr() + ( len + 7 ) / 8 );
+    }
+    virtual void write_1l_to( CodeGen_C *cc ) const {
+        Type *type = out_type_proposition( cc );
+        if ( all_known() ) {
+            if ( type == &ip->type_SI32 ) { *cc->os << *reinterpret_cast<const SI32 *>( data.ptr() ); return; }
+            if ( type == &ip->type_SI64 ) { *cc->os << *reinterpret_cast<const SI64 *>( data.ptr() ) << "ll"; return; }
+        }
+        *cc->os << "pouet";
+    }
+    bool all_known() const {
+        for( int sb = ( len + 7 ) / 8, i = 1 * sb; i < 2 * sb; ++i )
+            if ( data[ i ] != 0xFF )
+                return false;
+        return true;
     }
 
     Vec<PI8> data; ///< data and knwn

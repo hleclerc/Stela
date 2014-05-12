@@ -29,6 +29,9 @@ public:
     virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
         return new PointedData( len );
     }
+    virtual void write_1l_to( CodeGen_C *cc ) const {
+        TODO;
+    }
 
     int len;
 };

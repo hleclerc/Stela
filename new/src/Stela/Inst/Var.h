@@ -18,6 +18,7 @@ public:
     Var( Type *type =  0 ); ///< uninialized variable
 
     Var( SI32 val );
+    Var( SI64 val );
 
     Var &reassign( const Var &var );
 
@@ -35,5 +36,7 @@ public:
 };
 
 Var syscall( Vec<Var> &inp );
+Var add( const Var &a, const Var &b );
+Var conv( Type *tr, const Var a );
 
 #endif // VAR_H

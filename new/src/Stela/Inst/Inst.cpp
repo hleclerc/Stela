@@ -1,3 +1,4 @@
+#include "../CodeGen/InstInfo_C.h"
 #include <fstream>
 #include "Inst.h"
 #include "Ip.h"
@@ -49,8 +50,13 @@ void Inst::add_inp( Ptr<Inst> val ) {
 }
 
 void Inst::add_dep( Ptr<Inst> val ) {
-    val->par << Parent{ this, -1 };
+    val->par << Parent{ this, NINP_DEP };
     dep << val;
+}
+
+void Inst::add_cnd( Ptr<Inst> val ) {
+    val->par << Parent{ this, NINP_CND };
+    cnd << val;
 }
 
 void Inst::clone( Vec<Ptr<Inst> > &created ) const {
@@ -63,6 +69,8 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
         i->clone( created );
     for( Ptr<Inst> i : dep )
         i->clone( created );
+    for( Ptr<Inst> i : cnd )
+        i->clone( created );
 
     // basic clone
     Ptr<Inst> res = forced_clone( created );
@@ -72,6 +80,9 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
         res->add_inp( reinterpret_cast<Inst *>( i->op_mp ) );
     for( Ptr<Inst> i : dep )
         res->add_dep( reinterpret_cast<Inst *>( i->op_mp ) );
+    for( Ptr<Inst> i : cnd )
+        res->add_cnd( reinterpret_cast<Inst *>( i->op_mp ) );
+
     if( ext.size() )
         TODO;
 
@@ -82,6 +93,24 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
 
 Ptr<Inst> Inst::snapshot() {
     return simplified( this );
+}
+
+void Inst::write_to( CodeGen_C *cc ) const {
+    cc->decl_if_nec( this );
+    write_1l_to( cc );
+    cc->on.write_end( ";" );
+}
+
+Type *Inst::out_type_proposition( CodeGen_C *cc ) const {
+    for( const Parent &p : par )
+        if ( p.ninp >= 0 )
+            if ( Type *res = p.inst->inp_type_proposition( cc, p.ninp ) )
+                return res;
+    return 0;
+}
+
+Type *Inst::inp_type_proposition( CodeGen_C *cc, int ninp ) const {
+    return 0;
 }
 
 int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename ) {
@@ -157,6 +186,13 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
         os << "    node" << this << " -> node" << dep[ i ].ptr() << " [style=dotted];\n";
         if ( dep[ i ] )
             dep[ i ]->write_graph_rec( ext_buf, os );
+    }
+
+    // conditions
+    for( int i = 0; i < cnd.size(); ++i ) {
+        os << "    node" << this << " -> node" << cnd[ i ].ptr() << " [color=blue];\n";
+        if ( cnd[ i ] )
+            cnd[ i ]->write_graph_rec( ext_buf, os );
     }
 
     // ext

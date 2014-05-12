@@ -42,15 +42,18 @@ public:
     virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
         return new SetVal( offset );
     }
+    virtual void write_1l_to( CodeGen_C *cc ) const {
+        TODO;
+    }
 
     int offset;
 };
 
-Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, Vec<Ptr<Inst> > conds, int offset ) {
+Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, const Vec<Ptr<Inst> > &cnd, int offset ) {
     SetVal *res = new SetVal( offset );
     res->add_inp( src );
     res->add_inp( val );
-    for( Ptr<Inst> c : conds )
-        res->add_inp( c );
+    for( Ptr<Inst> c : cnd )
+        res->add_cnd( c );
     return res;
 }

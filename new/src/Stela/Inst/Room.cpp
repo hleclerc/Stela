@@ -33,6 +33,9 @@ public:
     virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const {
         return new Room( type );
     }
+    virtual void write_1l_to( CodeGen_C *cc ) const {
+        TODO;
+    }
 
     Type *type; ///< creation type
     Vec<Var *> var_list;

@@ -1,8 +1,7 @@
 #include "Stela/System/UsualStrings.h"
+#include "SysState.h"
 #include "Cst.h"
 #include "Ip.h"
-
-static SI64 shrump = 0;
 
 Ip::Ip() :
     type_SI32  ( STRING_SI32_NUM   ),
@@ -10,7 +9,7 @@ Ip::Ip() :
     type_Void  ( STRING_Void_NUM   ),
     type_RawPtr( STRING_RawPtr_NUM ),
     type_ST    ( sizeof( void * ) == 8 ? &type_SI64 : &type_SI32 ),
-    sys_state( type_ST, cst( type_ST->size(), &shrump ) ) {
+    sys_state( Ref(), &type_Void, ::sys_state() ) {
 
     type_SI32  ._size = 32;
     type_SI64  ._size = 64;
@@ -41,12 +40,12 @@ void Ip::add_cond( const Var &cond ) {
 }
 
 void Ip::add_cond( Ptr<Inst> cond ) {
+    old_conds << conds;
     conds << simplified( cond );
 }
 
 void Ip::pop_cond() {
-    conds.pop_back();
+    conds = old_conds.pop_back_val();
 }
 
-static Ip ip_inst;
-Ip *ip = &ip_inst;
+Ip *ip = 0;
