@@ -3,6 +3,6 @@
 
 #include "Inst.h"
 
-Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, const Vec<Ptr<Inst> > &cnd, int offset );
+Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, int offset, const Ptr<Inst> &cnd );
 
 #endif // SETVAL_H

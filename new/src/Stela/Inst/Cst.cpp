@@ -58,8 +58,16 @@ public:
         if ( all_known() ) {
             if ( type == &ip->type_SI32 ) { *cc->os << *reinterpret_cast<const SI32 *>( data.ptr() ); return; }
             if ( type == &ip->type_SI64 ) { *cc->os << *reinterpret_cast<const SI64 *>( data.ptr() ) << "ll"; return; }
+            if ( type == &ip->type_Bool ) { *cc->os << ( *reinterpret_cast<const Bool *>( data.ptr() ) & 1 ? "true" : "false" ); return; }
         }
         *cc->os << "pouet";
+    }
+    virtual const PI8 *data_ptr( int offset ) const {
+        if ( offset % 8 ) {
+            IP_ERROR( "todo" );
+            return 0;
+        }
+        return data.ptr() + offset / 8;
     }
     bool all_known() const {
         for( int sb = ( len + 7 ) / 8, i = 1 * sb; i < 2 * sb; ++i )

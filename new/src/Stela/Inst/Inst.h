@@ -4,6 +4,7 @@
 #include "../System/Stream.h"
 #include "../System/Ptr.h"
 #include "../System/Vec.h"
+#include <string.h>
 class CodeGen_C;
 class Type;
 class Var;
@@ -12,11 +13,13 @@ class Var;
 */
 class Inst : public ObjectWithCptUse {
 public:
-    enum { NINP_DEP = -1, NINP_CND = -2 };
     struct Parent {
         bool operator==( const Parent &p ) { return inst == p.inst and ninp == p.ninp; }
         Inst *inst;
         int   ninp; ///< input number
+    };
+    struct Visitor {
+        virtual void operator()( Inst *inst ) = 0;
     };
 
     Inst();
@@ -25,22 +28,42 @@ public:
     virtual void write_dot( Stream &os ) const = 0;
     virtual int size() const = 0;
 
+    bool true_if( const ConstPtr<Inst> &cond ) const; ///< return true if this will be true if cond is checked
+    bool rtrue_if( const ConstPtr<Inst> &val ) const; ///< commuted true if (this is the cond)
 
     virtual void set( Ptr<Inst> val );
     virtual void add_var_ptr( Var *var );
 
     void add_inp( Ptr<Inst> val );
     void add_dep( Ptr<Inst> val );
-    void add_cnd( Ptr<Inst> val );
 
     virtual void clone( Vec<Ptr<Inst> > &created ) const; ///< output in op_mp
     virtual Ptr<Inst> forced_clone( Vec<Ptr<Inst> > &created ) const = 0;
+
+    void rec_visit( Visitor &visitor, bool want_ext = false ); ///< ++Inst::cur_op_id to be done
+
+    template<class T>
+    bool get_val( T &res ) {
+        if ( const PI8 *ptr = data_ptr() ) {
+            int sb = ( size() + 7 ) / 8;
+            if ( sizeof( res ) <= sb ) {
+                memcpy( &res, ptr, sizeof( res ) );
+                return true;
+            }
+        }
+        return false;
+    }
+
+    virtual const PI8 *data_ptr( int offset = 0 ) const;
+    virtual bool is_and() const; ///< hum
 
     virtual Ptr<Inst> snapshot();
     virtual void write_to( CodeGen_C *cc ) const;
     virtual void write_1l_to( CodeGen_C *cc ) const = 0;
     virtual Type *out_type_proposition( CodeGen_C *cc ) const;
     virtual Type *inp_type_proposition( CodeGen_C *cc, int ninp ) const;
+
+    virtual void add_when_cond( const Ptr<Inst> &cond ); ///< or cond to IIC( this )->when
 
     // graphviz
     static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
@@ -54,8 +77,7 @@ public:
     // parameters
     Vec<Ptr<Inst> > inp; ///< inputs
     Vec<Ptr<Inst> > dep; ///< dependencies
-    Vec<Ptr<Inst> > cnd; ///< conditions
-    Vec<Ptr<Inst> > ext; ///< for WhileOut, ...
+    Vec<Ptr<Inst> > ext; ///< for WhileOut, IfOut, ...
     Vec<Ptr<Inst> > exi; ///< for WhileInp, ...
     Vec<Parent>     par; ///> parents
     Inst           *ext_par;

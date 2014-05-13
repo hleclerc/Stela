@@ -23,7 +23,7 @@ public:
         if ( not var_list.size() )
             return IP_ERROR( "weird" );
         Ptr<Inst> old = var_list[ 0 ]->inst;
-        Ptr<Inst> res = set_val( old, simplified( val ), ip->conds, 0 );
+        Ptr<Inst> res = set_val( old, simplified( val ), 0, ip->cond_stack.back() );
         for( Var *v : var_list )
             v->inst = res;
     }

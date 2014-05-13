@@ -44,19 +44,22 @@ void Inst::set( Ptr<Inst> val ) {
     IP_ERROR( "not an Inst based on a Room instance" );
 }
 
+bool Inst::true_if( const ConstPtr<Inst> &cond ) const {
+    return cond->rtrue_if( this );
+}
+
+bool Inst::rtrue_if( const ConstPtr<Inst> &val ) const {
+    return val.ptr() == this;
+}
+
 void Inst::add_inp( Ptr<Inst> val ) {
     val->par << Parent{ this, int( inp.size() ) };
     inp << val;
 }
 
 void Inst::add_dep( Ptr<Inst> val ) {
-    val->par << Parent{ this, NINP_DEP };
+    val->par << Parent{ this, -1 };
     dep << val;
-}
-
-void Inst::add_cnd( Ptr<Inst> val ) {
-    val->par << Parent{ this, NINP_CND };
-    cnd << val;
 }
 
 void Inst::clone( Vec<Ptr<Inst> > &created ) const {
@@ -69,8 +72,6 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
         i->clone( created );
     for( Ptr<Inst> i : dep )
         i->clone( created );
-    for( Ptr<Inst> i : cnd )
-        i->clone( created );
 
     // basic clone
     Ptr<Inst> res = forced_clone( created );
@@ -80,8 +81,6 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
         res->add_inp( reinterpret_cast<Inst *>( i->op_mp ) );
     for( Ptr<Inst> i : dep )
         res->add_dep( reinterpret_cast<Inst *>( i->op_mp ) );
-    for( Ptr<Inst> i : cnd )
-        res->add_cnd( reinterpret_cast<Inst *>( i->op_mp ) );
 
     if( ext.size() )
         TODO;
@@ -89,6 +88,30 @@ void Inst::clone( Vec<Ptr<Inst> > &created ) const {
     // register
     op_mp = res.ptr();
     created << res;
+}
+
+void Inst::rec_visit( Visitor &visitor, bool want_ext ) {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+
+    visitor( this );
+
+    for( Ptr<Inst> i : inp )
+        i->rec_visit( visitor, want_ext );
+    for( Ptr<Inst> i : dep )
+        i->rec_visit( visitor, want_ext );
+    if ( want_ext )
+        for( Ptr<Inst> i : ext )
+            i->rec_visit( visitor, want_ext );
+}
+
+const PI8 *Inst::data_ptr( int offset ) const {
+    return 0;
+}
+
+bool Inst::is_and() const {
+    return false;
 }
 
 Ptr<Inst> Inst::snapshot() {
@@ -111,6 +134,16 @@ Type *Inst::out_type_proposition( CodeGen_C *cc ) const {
 
 Type *Inst::inp_type_proposition( CodeGen_C *cc, int ninp ) const {
     return 0;
+}
+
+void Inst::add_when_cond( const Ptr<Inst> &cond ) {
+    if ( IIC( this )->add_when_possibility( cond ) )
+        return;
+
+    for( Ptr<Inst> i : inp )
+        i->add_when_cond( cond );
+    for( Ptr<Inst> i : dep )
+        i->add_when_cond( cond );
 }
 
 int Inst::display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename ) {
@@ -186,13 +219,6 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
         os << "    node" << this << " -> node" << dep[ i ].ptr() << " [style=dotted];\n";
         if ( dep[ i ] )
             dep[ i ]->write_graph_rec( ext_buf, os );
-    }
-
-    // conditions
-    for( int i = 0; i < cnd.size(); ++i ) {
-        os << "    node" << this << " -> node" << cnd[ i ].ptr() << " [color=blue];\n";
-        if ( cnd[ i ] )
-            cnd[ i ]->write_graph_rec( ext_buf, os );
     }
 
     // ext

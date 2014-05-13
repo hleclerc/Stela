@@ -15,10 +15,12 @@ public:
 
     Var( Ref, Type *type, const Ptr<Inst> val ); ///<
     Var( Type *type, const Ptr<Inst> val ); ///< make a new room and set to val
-    Var( Type *type =  0 ); ///< uninialized variable
+    Var( Type *type, String sym ); ///< symbol
+    Var( Type *type = 0 ); ///< uninialized variable
 
-    Var( SI32 val );
-    Var( SI64 val );
+    Var( SI32 val ); ///< cst
+    Var( SI64 val ); ///< cst
+
 
     Var &reassign( const Var &var );
 

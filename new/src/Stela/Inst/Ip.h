@@ -18,20 +18,20 @@ public:
     void disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg( String msg, bool warn = false, const char *file = 0, int line = -1 );
 
-    void add_cond( const Var &cond );
-    void add_cond( Ptr<Inst> cond );
+    void set_cond( const Var &cond );
+    void set_cond( Ptr<Inst> cond );
     void pop_cond();
 
     // base type
     Type  type_SI32;
     Type  type_SI64;
     Type  type_Void;
+    Type  type_Bool;
     Type  type_RawPtr;
     Type *type_ST;
 
     // context
-    Vec<Ptr<Inst> > conds; ///< current conditions (use add_cond)
-    OldCondSet      old_conds;
+    Vec<Ptr<Inst> > cond_stack;
     Var             sys_state;
 
     //

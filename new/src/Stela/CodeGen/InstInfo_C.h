@@ -8,9 +8,11 @@ class Type;
 */
 class InstInfo_C {
 public:
-    InstInfo_C();
+    InstInfo_C( const Ptr<Inst> &inst_false );
+    bool add_when_possibility( const Ptr<Inst> &cond ); ///< true if already done in included in current when
 
     int num_reg;
+    Ptr<Inst> when; ///< conditions for inst to be executed
     const Inst *sched_in;
 };
 

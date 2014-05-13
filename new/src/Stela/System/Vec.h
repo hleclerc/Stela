@@ -615,6 +615,12 @@ public:
         return _data[ _size ];
     }
 
+    T pop_back_val() {
+        T res = back();
+        pop_back();
+        return res;
+    }
+
     // append val if not present and return pointer to new elem. Else, return pointer to elem which is equal to val
     template<class T2>
     T *push_back_unique( const T2 &val ) {
@@ -679,10 +685,19 @@ public:
 
     template<class T2>
     bool contains( const T2 &d ) const {
-        for(int i=0;i<_size;++i)
+        for(int i = 0; i < _size; ++i )
             if ( _data[ i ] == d )
                 return true;
         return false;
+    }
+
+    /// true if this contains all items of vec
+    template<int a,int b>
+    bool contains( const Vec<T,a,b> &vec ) const {
+        for(int i = 0; i < vec.size(); ++i )
+            if ( not contains( vec[ i ] ) )
+                return false;
+        return true;
     }
 
     template<class T2>

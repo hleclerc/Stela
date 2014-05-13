@@ -1,6 +1,7 @@
 #include "PointedData.h"
 #include "PointerOn.h"
 #include "Syscall.h"
+#include "Symbol.h"
 #include "Type.h"
 #include "Room.h"
 #include "Conv.h"
@@ -27,6 +28,9 @@ Var::Var( SI32 val ) : Var( &ip->type_SI32, cst( val ) ) {
 }
 
 Var::Var( SI64 val ) : Var( &ip->type_SI64, cst( val ) ) {
+}
+
+Var::Var( Type *type, String sym ) : Var( type, symbol( sym, type->size() ) ) {
 }
 
 Var &Var::reassign( const Var &var ) {
@@ -56,7 +60,7 @@ Var syscall( Vec<Var> &inp ) {
     Vec<Ptr<Inst> > ch;
     for( int i = 0; i < inp.size(); ++i )
         ch << inp[ i ].inst->snapshot();
-    Ptr<Inst> res = syscall( ch, ip->conds );
+    Ptr<Inst> res = syscall( ch, ip->cond_stack.back() );
     ip->sys_state.reassign( Var( Ref(), &ip->type_Void, res ) );
     return { ip->type_ST, res };
 }

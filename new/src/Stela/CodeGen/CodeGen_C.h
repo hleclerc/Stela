@@ -27,6 +27,7 @@ public:
     std::ostringstream *os;
 
 protected:
+    Ptr<Inst> get_next_inst_in_front( Vec<Ptr<Inst> > &front, Ptr<Inst> current_cond );
     void make_code();
     int nb_regs;
 };

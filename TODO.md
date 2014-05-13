@@ -1,3 +1,11 @@
+Stockage des conditions
+- on peut imaginer une expression avec plusieurs séries de conditions
+- on peut aussi dire que les conditions sont en entrée, avec des paramètres pour dire s'il y a des conditions ou pas
+- Si c'est en entrée
+  -> ou bien on stocke sous forme de and( ..., or( ... ) )
+  -> ou bien on fait en // un CondSet qui référence les entrées
+
+
 Proposition pour le suivi des pointeurs
 - on ne peut pas se baser sur les valeurs (a:=10;b:=10;&a==&b)
 - les pointeurs doivent être stables, y compris pour la génération de code.

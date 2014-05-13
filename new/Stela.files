@@ -85,3 +85,9 @@ src/Stela/Inst/Op.h
 src/Stela/Inst/Op.cpp
 src/Stela/Inst/Conv.h
 src/Stela/Inst/Conv.cpp
+src/Stela/Inst/CondSet.h
+src/Stela/Inst/CondSet.cpp
+src/Stela/Inst/DeclOp_Binary.h
+src/Stela/Inst/Symbol.h
+src/Stela/Inst/Symbol.cpp
+A_PENSER.txt

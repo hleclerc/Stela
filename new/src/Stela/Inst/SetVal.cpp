@@ -49,11 +49,10 @@ public:
     int offset;
 };
 
-Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, const Vec<Ptr<Inst> > &cnd, int offset ) {
+Ptr<Inst> set_val( Ptr<Inst> src, Ptr<Inst> val, int offset, const Ptr<Inst> &cnd ) {
     SetVal *res = new SetVal( offset );
     res->add_inp( src );
     res->add_inp( val );
-    for( Ptr<Inst> c : cnd )
-        res->add_cnd( c );
+    res->add_inp( cnd );
     return res;
 }

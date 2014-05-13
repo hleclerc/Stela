@@ -4,6 +4,6 @@
 #include "Inst.h"
 
 /// "raw" syscall
-Ptr<Inst> syscall( const Vec<Ptr<Inst> > children, const Vec<Ptr<Inst> > &cnd );
+Ptr<Inst> syscall( const Vec<Ptr<Inst> > &children, const Ptr<Inst> &cnd );
 
 #endif // SYSCALL_H

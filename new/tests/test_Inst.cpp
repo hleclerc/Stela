@@ -30,12 +30,12 @@ int main() {
     inp[ 0 ] = 16l;
     syscall( inp );
 
-    ip->add_cond( 25 );
+    ip->set_cond( Var( &ip->type_Bool, "cond_0" ) );
     inp[ 0 ] = 17l;
     syscall( inp );
     ip->pop_cond();
 
-    ip->add_cond( 26 );
+    ip->set_cond( Var( &ip->type_Bool, "cond_1" ) );
     inp[ 0 ] = 18l;
     syscall( inp );
     ip->pop_cond();
