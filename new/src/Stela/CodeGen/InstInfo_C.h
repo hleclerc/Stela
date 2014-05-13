@@ -2,6 +2,7 @@
 #define INSTINFO_C_H
 
 #include "CodeGen_C.h"
+class InstBlock;
 class Type;
 
 /**
@@ -13,6 +14,7 @@ public:
 
     int num_reg;
     Ptr<Inst> when; ///< conditions for inst to be executed
+    InstBlock *block;
     const Inst *sched_in;
 };
 

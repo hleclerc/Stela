@@ -91,6 +91,7 @@ struct MakeInstBlock : Inst::Visitor {
 struct InstBlock {
     Ptr<Inst> cond;
     Vec<Ptr<Inst> > inst;
+    Vec<InstBlock *> dep; ///< dependencies
 };
 
 void CodeGen_C::make_code() {
@@ -123,14 +124,31 @@ void CodeGen_C::make_code() {
         InstBlock *ib = inst_blocks.push_back();
         ib->cond = iter.first;
         ib->inst = iter.second;
+        for( Ptr<Inst> inst : iter.second )
+            IIC( inst )->block = ib;
+    }
+
+    // get the block dependencies
+    for( int i = 0; i < inst_blocks.size(); ++i ) {
+        InstBlock *ib = &inst_blocks[ i ];
+        for( Ptr<Inst> inst : ib->inst ) {
+            for( Ptr<Inst> ch : inst->inp )
+                if ( IIC( ch )->block != ib )
+                    ib->dep << IIC( ch )->block;
+            for( Ptr<Inst> ch : inst->dep )
+                if ( IIC( ch )->block != ib )
+                    ib->dep << IIC( ch )->block;
+        }
     }
 
     // split the blocks
     for( int i = 0; i < inst_blocks.size(); ++i ) {
+        InstBlock *ib = &inst_blocks[ i ];
+
         // leaves
         Vec<Ptr<Inst> > front;
-        Ptr<Inst> cond = inst_blocks[ i ].cond;
-        for( Ptr<Inst> inst : inst_blocks[ i ].inst ) {
+        Ptr<Inst> cond = ib->cond;
+        for( Ptr<Inst> inst : ib->inst ) {
             // nb children with same cond
             int n = 0;
             for( Ptr<Inst> ch : inst->inp )
@@ -141,7 +159,7 @@ void CodeGen_C::make_code() {
                 front << inst;
         }
 
-        // do what can be done...
+        // do what can be done without inst from block that depend on ib
     }
 
 
