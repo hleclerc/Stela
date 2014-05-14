@@ -119,7 +119,7 @@ Ptr<Inst> Inst::snapshot() {
 }
 
 void Inst::write_to( CodeGen_C *cc ) const {
-    cc->decl_if_nec( this );
+    cc->bdef_if_nec( this );
     write_1l_to( cc );
     cc->on.write_end( ";" );
 }

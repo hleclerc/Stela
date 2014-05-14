@@ -20,6 +20,7 @@ public:
     virtual void exec();
 
     Stream &decl_if_nec( const Inst *inst );
+    Stream &bdef_if_nec( const Inst *inst ); ///< beg def ("  Type Rx = ") if necessary
     C_Code code( const Ptr<Inst> &inst );
 
     StreamSepMaker<std::ostringstream> on;

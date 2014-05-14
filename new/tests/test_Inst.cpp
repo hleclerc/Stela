@@ -40,6 +40,9 @@ int main() {
     syscall( inp );
     ip->pop_cond();
 
+    inp[ 0 ] = 19l;
+    syscall( inp );
+
     CodeGen_C cg;
     cg << simplified( ip->sys_state.inst );
     cg.write_to( std::cout );

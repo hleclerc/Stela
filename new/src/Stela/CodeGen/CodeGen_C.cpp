@@ -4,6 +4,7 @@
 #include "InstInfo_C.h"
 #include "CodeGen_C.h"
 #include <limits>
+#include <deque>
 #include <map>
 
 CodeGen_C::CodeGen_C() : on( &main_os ), os( &main_os ) {
@@ -62,20 +63,6 @@ static bool ready_to_be_scheduled( Ptr<Inst> inst ) {
     return true;
 }
 
-void set_sched_in( const Inst *inst ) {
-    if ( inst->op_id == Inst::cur_op_id )
-        return;
-    inst->op_id = Inst::cur_op_id;
-
-    for( Ptr<Inst> ch : inst->inp ) {
-        if ( ch->par.size() == 1 )
-            IIC( ch )->sched_in = inst;
-        set_sched_in( ch.ptr() );
-    }
-    for( Ptr<Inst> ch : inst->dep )
-        set_sched_in( ch.ptr() );
-}
-
 static Ptr<Inst> cloned( const Ptr<Inst> &val, Vec<Ptr<Inst> > &created ) {
     val->clone( created );
     return reinterpret_cast<Inst *>( val->op_mp );
@@ -89,10 +76,62 @@ struct MakeInstBlock : Inst::Visitor {
 };
 
 struct InstBlock {
+    InstBlock() : op_id( 0 ) {
+    }
+    void update_deps() {
+        for( Ptr<Inst> i : inst ) {
+            for( Ptr<Inst> ch : i->inp )
+                if ( IIC( ch )->block != this )
+                    dep.push_back_unique( IIC( ch )->block );
+            for( Ptr<Inst> ch : i->dep )
+                if ( IIC( ch )->block != this )
+                    dep.push_back_unique( IIC( ch )->block );
+        }
+        for( InstBlock *ch : dep )
+            ch->par << this;
+    }
+    void reset_dep() {
+        dep.resize( 0 );
+        par.resize( 0 );
+    }
+    bool dep_rec_on( const InstBlock *b ) const {
+        ++cur_op_id;
+        return _dep_rec_on( b );
+    }
+    bool _dep_rec_on( const InstBlock *b ) const {
+        if ( op_id != cur_op_id ) {
+            op_id = cur_op_id;
+            for( const InstBlock *c : dep )
+                if ( c == b or c->_dep_rec_on( b ) )
+                    return true;
+        }
+        return false;
+    }
+
     Ptr<Inst> cond;
     Vec<Ptr<Inst> > inst;
     Vec<InstBlock *> dep; ///< dependencies
+    Vec<InstBlock *> par; ///< parents
+    mutable PI64 op_id;
+    static  PI64 cur_op_id;
 };
+
+PI64 InstBlock::cur_op_id = 0;
+
+static bool ready_to_be_scheduled( InstBlock *ib ) {
+    // already in the front ?
+    if ( ib->op_id >= InstBlock::cur_op_id - 1 )
+        return false;
+
+    // not computed ?
+    for( const InstBlock *ch : ib->dep )
+        if ( ch->op_id < InstBlock::cur_op_id )
+            return false;
+
+    // ok
+    return true;
+}
+
 
 void CodeGen_C::make_code() {
     // clone -> out
@@ -129,78 +168,176 @@ void CodeGen_C::make_code() {
     }
 
     // get the block dependencies
+    std::deque<InstBlock *> to_split;
     for( int i = 0; i < inst_blocks.size(); ++i ) {
-        InstBlock *ib = &inst_blocks[ i ];
-        for( Ptr<Inst> inst : ib->inst ) {
-            for( Ptr<Inst> ch : inst->inp )
-                if ( IIC( ch )->block != ib )
-                    ib->dep << IIC( ch )->block;
-            for( Ptr<Inst> ch : inst->dep )
-                if ( IIC( ch )->block != ib )
-                    ib->dep << IIC( ch )->block;
-        }
+        inst_blocks[ i ].update_deps();
+        to_split.push_back( &inst_blocks[ i ] );
     }
 
     // split the blocks
-    for( int i = 0; i < inst_blocks.size(); ++i ) {
-        InstBlock *ib = &inst_blocks[ i ];
+    while ( to_split.size() ) {
+        InstBlock *ib = to_split.front();
+        to_split.pop_front();
 
-        // leaves
+        // ib does not need to be splitted ?
+        if ( not ib->dep_rec_on( ib ) )
+            continue;
+
+        // leaves (instruction that does not depend on a block depending of ib)
         Vec<Ptr<Inst> > front;
         Ptr<Inst> cond = ib->cond;
         for( Ptr<Inst> inst : ib->inst ) {
-            // nb children with same cond
+            // nb children depending on a block depending of ib
             int n = 0;
             for( Ptr<Inst> ch : inst->inp )
-                n += IIC( ch )->when == cond;
+                n += IIC( ch )->block->dep_rec_on( ib );
             for( Ptr<Inst> ch : inst->dep )
-                n += IIC( ch )->when == cond;
+                n += IIC( ch )->block->dep_rec_on( ib );
             if ( not n )
                 front << inst;
         }
+        if ( not front.size() ) {
+            to_split.push_back( ib ); // respawn
+            continue;
+        }
 
-        // do what can be done without inst from block that depend on ib
+        // do what can be done without inst from blocks that depend on ib
+        Inst::cur_op_id += 2;
+        for( Ptr<Inst> ch : front )
+            ch->op_id = Inst::cur_op_id - 1; // ch is in the front
+        for( InstBlock *db : ib->dep )
+            if ( not db->dep_rec_on( ib ) )
+                for( const Ptr<Inst> &ch : db->inst )
+                    ch->op_id = Inst::cur_op_id; // inst on blocks that do not depend on ib are done
+        int nb_inst_in_block = 0;
+        while ( front.size() ) {
+            Ptr<Inst> inst = front.back();
+            front.pop_back();
+
+            inst->op_id = Inst::cur_op_id; // done
+            ++nb_inst_in_block;
+
+            for( Inst::Parent &p : inst->par ) {
+                if ( IIC( p.inst )->block == ib and ready_to_be_scheduled( p.inst ) ) {
+                    p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
+                    front << p.inst;
+                }
+            }
+        }
+
+
+        // make a new block with not sweeped instruction.
+        ASSERT( nb_inst_in_block != ib->inst.size(), "weird" );
+        InstBlock *nb = inst_blocks.push_back();
+        to_split.push_back( nb );
+        nb->cond = ib->cond;
+        Vec<Ptr<Inst> > old_vec = ib->inst;
+        ib->inst.resize( 0 );
+        for( Ptr<Inst> inst : old_vec ) {
+            if ( inst->op_id == Inst::cur_op_id )
+                ib->inst << inst;
+            else {
+                nb->inst << inst;
+                IIC( inst )->block = nb;
+            }
+        }
+
+        // update dep (can be optimized with block->parents)
+        for( int i = 0; i < inst_blocks.size(); ++i )
+            inst_blocks[ i ].reset_dep();
+        for( int i = 0; i < inst_blocks.size(); ++i )
+            inst_blocks[ i ].update_deps();
     }
 
+    // leaf blocks
+    ++InstBlock::cur_op_id;
+    Vec<InstBlock *> front_block;
+    for( int i = 0; i < inst_blocks.size(); ++i ) {
+        InstBlock *ib = &inst_blocks[ i ];
+        if ( not ib->dep.size() ) {
+            front_block << ib;
+            ib->op_id = InstBlock::cur_op_id;
+        }
+    }
 
-    // condensation (must be done before the leaves)
-    ++Inst::cur_op_id;
-    for( Ptr<Inst> ch : out )
-        set_sched_in( ch.ptr() );
+    PRINT( inst_blocks.size() );
 
-    // leaves
-    ++Inst::cur_op_id;
-    Vec<Ptr<Inst> > front;
-    for( Ptr<Inst> ch : out )
-        get_front_rec( ch, front );
+    // schedule the blocks
+    ++InstBlock::cur_op_id;
+    while ( front_block.size() ) {
+        InstBlock *ib = front_block.back();
+        ib->op_id = InstBlock::cur_op_id;
+        front_block.pop_back();
 
-    Vec<Ptr<Inst> > seq;
-    Inst::cur_op_id += 2;
-    Ptr<Inst> current_cond = inst_true;
-    while ( front.size() ) {
-        Ptr<Inst> inst = get_next_inst_in_front( front, current_cond );
-        current_cond = IIC( inst )->when;
+        PRINT( ib->inst );
 
-        inst->op_id = Inst::cur_op_id; // -> done
-        seq << inst;
+        // condensation
+        for( const Ptr<Inst> &inst : ib->inst )
+            for( const Ptr<Inst> &ch : inst->inp )
+                if ( ch->par.size() == 1 and ( IIC( ch )->block == ib or ch == ib->cond ) )
+                    IIC( ch )->sched_in = inst.ptr();
 
-        std::cout << *inst << " if " << IIC( inst )->when << std::endl;
+        // schedule inst in block
+        // -> inst leaves
+        Vec<Ptr<Inst> > front;
+        ++Inst::cur_op_id;
+        for( const Ptr<Inst> &inst : ib->inst ) {
+            int n = 0;
+            for( const Ptr<Inst> &ch : inst->inp )
+                n += IIC( ch )->block == ib;
+            for( const Ptr<Inst> &ch : inst->dep )
+                n += IIC( ch )->block == ib;
+            if ( not n ) {
+                inst->op_id = Inst::cur_op_id;
+                front << inst;
+            }
+        }
 
-        for( Inst::Parent &p : inst->par ) {
-            if ( ready_to_be_scheduled( p.inst ) ) {
-                p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
-                front << p.inst;
+        Vec<Ptr<Inst> > seq;
+        ++Inst::cur_op_id;
+        while ( front.size() ) {
+            Ptr<Inst> inst = front.back();
+            front.pop_back();
+
+            seq << inst;
+            inst->op_id = Inst::cur_op_id;
+
+            for( Inst::Parent &p : inst->par ) {
+                if ( IIC( p.inst )->block == ib ) {
+                    if ( ready_to_be_scheduled( p.inst ) ) {
+                        p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
+                        front << p.inst;
+                    }
+                } else if ( p.ninp >= 0 and ib->cond != inst_true )
+                    decl_if_nec( inst.ptr() );
+            }
+        }
+
+        // output
+        if ( ib->cond != inst_true ) {
+            on << "if ( " << code( ib->cond ) << " ) {";
+            on.nsp += 4;
+        }
+
+        for( Ptr<Inst> inst : seq )
+            if ( not IIC( inst )->sched_in )
+                inst->write_to( this );
+
+        if ( ib->cond != inst_true ) {
+            on.nsp -= 4;
+            on << "}";
+        }
+
+        // next blocks in front
+        for( InstBlock *p : ib->par ) {
+            if ( ready_to_be_scheduled( p ) ) {
+                p->op_id = InstBlock::cur_op_id - 1; // -> in the front
+                front_block << p;
             }
         }
     }
 
-    // output
-    for( Ptr<Inst> inst : seq )
-        if ( not IIC( inst )->sched_in )
-            inst->write_to( this );
-
-    //PRINT( seq );
-    Inst::display_graph( out );
+    // Inst::display_graph( out );
 }
 
 void get_and_lst( const Ptr<Inst> &src, Vec<Ptr<Inst> > &src_lst ) {
@@ -246,12 +383,26 @@ Ptr<Inst> CodeGen_C::get_next_inst_in_front( Vec<Ptr<Inst> > &front, Ptr<Inst> c
 
 
 Stream &CodeGen_C::decl_if_nec( const Inst *inst ) {
-    on.write_beg();
-    if ( has_ninp_parent( inst ) ) {
+    if ( IIC( inst )->num_reg < 0 ) {
         IIC( inst )->num_reg = nb_regs++;
+        on.write_beg();
         if ( Type *type = inst->out_type_proposition( this ) )
             *os << *type << ' ';
-        *os << "R" << IIC( inst )->num_reg <<  " = ";
+        *os << "R" << IIC( inst )->num_reg;
+        on.write_end( ";" );
+    }
+    return *os;
+}
+
+Stream &CodeGen_C::bdef_if_nec( const Inst *inst ) {
+    on.write_beg();
+    if ( has_ninp_parent( inst ) ) {
+        if ( IIC( inst )->num_reg < 0 ) {
+            IIC( inst )->num_reg = nb_regs++;
+            if ( Type *type = inst->out_type_proposition( this ) )
+                *os << *type << ' ';
+        }
+        *os << "R" << IIC( inst )->num_reg << " = ";
     }
     return *os;
 }
