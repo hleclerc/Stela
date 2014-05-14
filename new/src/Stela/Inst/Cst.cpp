@@ -60,7 +60,7 @@ public:
             if ( type == &ip->type_SI64 ) { *cc->os << *reinterpret_cast<const SI64 *>( data.ptr() ) << "ll"; return; }
             if ( type == &ip->type_Bool ) { *cc->os << ( *reinterpret_cast<const Bool *>( data.ptr() ) & 1 ? "true" : "false" ); return; }
         }
-        *cc->os << "pouet";
+        *cc->os << *type;
     }
     virtual const PI8 *data_ptr( int offset ) const {
         if ( offset % 8 ) {

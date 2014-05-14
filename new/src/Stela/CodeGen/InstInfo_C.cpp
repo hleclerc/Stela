@@ -2,7 +2,7 @@
 #include "../Inst/Ip.h"
 #include "InstInfo_C.h"
 
-InstInfo_C::InstInfo_C( const Ptr<Inst> &inst_false ) : when( inst_false ) {
+InstInfo_C::InstInfo_C( const Ptr<Inst> &when ) : when( when ) {
     num_reg  = -1;
     sched_in = 0;
 }

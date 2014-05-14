@@ -1,4 +1,6 @@
 #include "../System/SplittedVec.h"
+#include "../Inst/SysState.h"
+#include "../Inst/Symbol.h"
 #include "../Inst/Type.h"
 #include "../Inst/Cst.h"
 #include "InstInfo_C.h"
@@ -79,6 +81,7 @@ struct InstBlock {
     InstBlock() : op_id( 0 ) {
     }
     void update_deps() {
+        // dep
         for( Ptr<Inst> i : inst ) {
             for( Ptr<Inst> ch : i->inp )
                 if ( IIC( ch )->block != this )
@@ -87,6 +90,10 @@ struct InstBlock {
                 if ( IIC( ch )->block != this )
                     dep.push_back_unique( IIC( ch )->block );
         }
+        if ( IIC( cond )->block != this )
+            dep.push_back_unique( IIC( cond )->block );
+
+        // par
         for( InstBlock *ch : dep )
             ch->par << this;
     }
@@ -112,6 +119,7 @@ struct InstBlock {
     Vec<Ptr<Inst> > inst;
     Vec<InstBlock *> dep; ///< dependencies
     Vec<InstBlock *> par; ///< parents
+    Ptr<Inst> fake_sym;
     mutable PI64 op_id;
     static  PI64 cur_op_id;
 };
@@ -144,16 +152,16 @@ void CodeGen_C::make_code() {
     Ptr<Inst> inst_false = cloned( cst( false ), created );
     Ptr<Inst> inst_true  = cloned( cst( true  ), created );
 
-    // inst info
+    // op_mp = inst_info
     SplittedVec<InstInfo_C,16> inst_info_list;
     for( Ptr<Inst> inst : created )
         inst->op_mp = inst_info_list.push_back( inst_false );
 
-    // set IIC( inst )->when attributes
+    // set IIC( inst )->when attributes (using or)
     for( Ptr<Inst> ch : out )
         ch->add_when_cond( inst_true );
 
-    // make inst_blocks
+    // make inst_blocks using IIC( inst )->when
     MakeInstBlock mib;
     ++Inst::cur_op_id;
     for( Ptr<Inst> ch : out )
@@ -167,11 +175,30 @@ void CodeGen_C::make_code() {
             IIC( inst )->block = ib;
     }
 
+    // remove conditions in conditionnal instructions
+    for( int i = 0; i < inst_blocks.size(); ++i ) {
+        InstBlock *ib = &inst_blocks[ i ];
+        Vec<Ptr<Inst> > cr;
+        for( Ptr<Inst> inst : ib->inst )
+            inst->_remove_cond( cr );
+        // add parent to cond
+        ib->fake_sym = sys_state();
+        ib->fake_sym->add_inp( ib->cond );
+        ib->fake_sym->op_mp = inst_info_list.push_back( ib->cond );
+        IIC( ib->fake_sym )->block = ib;
+        //
+        for( Ptr<Inst> inst : cr ) {
+            inst->op_mp = inst_info_list.push_back( ib->cond );
+            IIC( inst )->block = ib;
+        }
+    }
+
     // get the block dependencies
     std::deque<InstBlock *> to_split;
     for( int i = 0; i < inst_blocks.size(); ++i ) {
-        inst_blocks[ i ].update_deps();
-        to_split.push_back( &inst_blocks[ i ] );
+        InstBlock *ib = &inst_blocks[ i ];
+        ib->update_deps();
+        to_split.push_back( ib );
     }
 
     // split the blocks
@@ -337,7 +364,7 @@ void CodeGen_C::make_code() {
         }
     }
 
-    // Inst::display_graph( out );
+//     Inst::display_graph( out );
 }
 
 void get_and_lst( const Ptr<Inst> &src, Vec<Ptr<Inst> > &src_lst ) {

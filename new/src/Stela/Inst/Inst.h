@@ -35,6 +35,7 @@ public:
     virtual void add_var_ptr( Var *var );
 
     void add_inp( Ptr<Inst> val );
+    void mod_inp( int num, Ptr<Inst> val );
     void add_dep( Ptr<Inst> val );
 
     virtual void clone( Vec<Ptr<Inst> > &created ) const; ///< output in op_mp
@@ -73,6 +74,7 @@ public:
     //
     virtual Ptr<Inst> _simplified();
     virtual Ptr<Inst> _pointer_on( int beg, int len );
+    virtual void _remove_cond( Vec<Ptr<Inst> > &cr );
 
     // parameters
     Vec<Ptr<Inst> > inp; ///< inputs

@@ -1,4 +1,5 @@
 #include "SetVal.h"
+#include "Symbol.h"
 
 /**
 */
@@ -44,6 +45,11 @@ public:
     }
     virtual void write_1l_to( CodeGen_C *cc ) const {
         TODO;
+    }
+    virtual void _remove_cond( Vec<Ptr<Inst> > &cr ) {
+        Ptr<Inst> n = symbol( "x", 1 );
+        mod_inp( inp.size() - 1, n );
+        cr << n;
     }
 
     int offset;

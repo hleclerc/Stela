@@ -57,6 +57,12 @@ void Inst::add_inp( Ptr<Inst> val ) {
     inp << val;
 }
 
+void Inst::mod_inp( int num, Ptr<Inst> val ) {
+    inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
+    val->par << Parent{ this, num };
+    inp[ num ] = val;
+}
+
 void Inst::add_dep( Ptr<Inst> val ) {
     val->par << Parent{ this, -1 };
     dep << val;
@@ -233,6 +239,9 @@ Ptr<Inst> Inst::_simplified() {
 
 Ptr<Inst> Inst::_pointer_on( int beg, int len ) {
     return 0;
+}
+
+void Inst::_remove_cond( Vec<Ptr<Inst> > &cr ) {
 }
 
 Ptr<Inst> simplified( Ptr<Inst> val ) {

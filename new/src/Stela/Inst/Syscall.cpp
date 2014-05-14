@@ -1,6 +1,7 @@
 #include "../CodeGen/InstInfo_C.h"
 #include "../CodeGen/CodeGen_C.h"
 #include "Syscall.h"
+#include "Symbol.h"
 #include "Op.h"
 #include "Ip.h"
 
@@ -50,6 +51,11 @@ public:
         //
         for( int i = 0; i < inp.size() - 1; ++i )
             inp[ i ]->add_when_cond( new_cond );
+    }
+    virtual void _remove_cond( Vec<Ptr<Inst> > &cr ) {
+        Ptr<Inst> n = symbol( "x", 1 );
+        mod_inp( inp.size() - 1, n );
+        cr << n;
     }
 };
 
