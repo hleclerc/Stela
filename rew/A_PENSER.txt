@@ -1,0 +1,1 @@
+Utiliser Expr plutot que Ptr<Inst> (notamment pour les opérateurs d'égalité)

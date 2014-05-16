@@ -1,0 +1,48 @@
+#ifndef IP_H
+#define IP_H
+
+#include "../System/ErrorList.h"
+#include "../System/NstrCor.h"
+#include "Type.h"
+#include "Var.h"
+
+/**
+*/
+class Ip {
+public:
+    typedef SplittedVec<Vec<Expr>,16> OldCondSet;
+
+    Ip();
+
+    Var ret_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
+    void disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
+    ErrorList::Error &error_msg( String msg, bool warn = false, const char *file = 0, int line = -1 );
+
+    void set_cond( const Var &cond );
+    void set_cond( Expr cond );
+    Expr cur_cond();
+    void pop_cond();
+
+    Var error_var();
+
+    // base type
+    Type  type_SI32;
+    Type  type_SI64;
+    Type  type_Void;
+    Type  type_Bool;
+    Type  type_Error;
+    Type  type_RawPtr;
+    Type *type_ST;
+
+    // context
+    Vec<Expr> cond_stack;
+    Var       sys_state;
+
+    //
+    ErrorList error_list;
+    NstrCor   str_cor;
+};
+
+extern Ip *ip;
+
+#endif // IP_H
