@@ -1,8 +1,12 @@
 À faire
+* code avec conditionnel
+  -> syscall conditionnel avec select ?
+  -> permettrait de tout passer dans les if
+  -> les dépendances passeraient aussi dans les if
+  -> select avec des dépendances ? SelectDep
 * destruction des objets
 * garbage collection
 * slice
-* simplification de ptr - ptr
 * +, -, ...
 * reassign, copy, ... avec les types
 * factorisation des opérations similaires

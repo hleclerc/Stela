@@ -27,15 +27,15 @@ public:
 
     // true if
     template<class TT>
-    Expr _val_if( Expr cond, TT ) const {
+    Expr _val_if( Expr cond, TT ) {
         return this;
     }
-    Expr _val_if( Expr cond, Op_and_boolean ) const {
+    Expr _val_if( Expr cond, Op_and_boolean ) {
         TODO;
         return inp[ 0 ];
         // return inp[ 0 ]->ok_if( cond ) and inp[ 1 ]->ok_if( cond );
     }
-    Expr _val_if( Expr cond, Op_or_boolean ) const {
+    Expr _val_if( Expr cond, Op_or_boolean ) {
         TODO;
         return inp[ 0 ];
         // return inp[ 0 ]->ok_if( cond ) or inp[ 1 ]->ok_if( cond );
@@ -43,22 +43,22 @@ public:
 
     virtual Expr val_if( Expr cond ) {
         Expr trial = Inst::val_if( cond );
-        if ( trial != this )
+        if ( trial.ptr() != this )
             return trial;
         return _val_if( cond, T() );
     }
 
     // rtrue if
     template<class TT>
-    Expr _rval_if( Expr val, TT ) const {
+    Expr _rval_if( Expr val, TT ) {
         return 0;
     }
-    Expr _rval_if( Expr val, Op_and_boolean ) const {
+    Expr _rval_if( Expr val, Op_and_boolean ) {
         TODO;
         return inp[ 0 ];
         // return val->ok_if( inp[ 0 ] ) or val->ok_if( inp[ 1 ] );
     }
-    Expr _rval_if( Expr val, Op_or_boolean ) const {
+    Expr _rval_if( Expr val, Op_or_boolean ) {
         TODO;
         return inp[ 0 ];
         // return val->ok_if( inp[ 0 ] ) and val->ok_if( inp[ 1 ] );
