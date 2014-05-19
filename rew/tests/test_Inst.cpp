@@ -5,30 +5,11 @@
 
 void test_ptr() {
     Var b( &ip->type_SI32, symbol( "b", 32 ) );
-    Var p = ptr( b );
-    Var v = at( &ip->type_SI32, p );
+    Var p = b.ptr();
+    Var v = p.at( &ip->type_SI32 );
     PRINT( b );
     PRINT( p );
     PRINT( v );
-}
-
-void test_cond() {
-    Var a( &ip->type_SI32, symbol( "a", 32 ) );
-    Var b( &ip->type_SI32, symbol( "b", 32 ) );
-    Var c( &ip->type_SI32, symbol( "c", 32 ) );
-    Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
-    Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
-    PRINT( a );
-    PRINT( b );
-
-    ip->set_cond( c0 );
-    *a = b;
-    PRINT( a );
-
-    ip->set_cond( and_boolean( c0, c1 ) );
-    // *a = c;
-    PRINT( a );
-    PRINT( *a );
 }
 
 Expr _and( Expr c0, Expr c1 ) {
@@ -46,20 +27,63 @@ void test_checked_if() {
     Expr c1 = symbol( "c1", 1 );
     PRINT( ip->cst_false->always_checked() );
     PRINT( ip->cst_true ->always_checked() );
-    PRINT( c0->bval_if( c0 ) );
-    PRINT( _not( c0 )->bval_if( c0 ) );
-    PRINT( c0->bval_if( _not( c0 ) ) );
-    PRINT( c0->bval_if( c1 ) );
-    PRINT( c0->bval_if( _and( c0, c1 ) ) );
-    PRINT( c0->bval_if( _or ( c0, c1 ) ) );
-    PRINT( _and( c0, c1 )->bval_if( _and( c0, c1 ) ) );
-    PRINT( _and( c0, c1 )->bval_if( c0 ) );
-    PRINT( _or ( c0, c1 )->bval_if( c0 ) );
+    PRINT( c0->checked_if( c0 ) );
+    PRINT( _not( c0 )->checked_if( c0 ) );
+    PRINT( c0->checked_if( _not( c0 ) ) );
+    PRINT( c0->checked_if( c1 ) );
+    PRINT( c0->checked_if( _and( c0, c1 ) ) );
+    PRINT( c0->checked_if( _or ( c0, c1 ) ) );
+    PRINT( _and( c0, c1 )->checked_if( _and( c0, c1 ) ) );
+    PRINT( _and( c0, c1 )->checked_if( c0 ) );
+    PRINT( _or ( c0, c1 )->checked_if( c0 ) );
+}
+
+void test_cond() {
+    Var a( &ip->type_SI32, symbol( "a", 32 ) );
+    Var b( &ip->type_SI32, symbol( "b", 32 ) );
+    Var c( &ip->type_SI32, symbol( "c", 32 ) );
+    Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
+    Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
+    PRINT( a );
+    PRINT( b );
+
+    ip->set_cond( c0 );
+    a.set_val( b );
+    PRINT( a );
+
+    ip->set_cond( c0.and_boolean( c1 ) );
+    // *a = c;
+    PRINT( a );
+    PRINT( a.get_val() );
+}
+
+void test_graph() {
+    Var a( &ip->type_SI32, symbol( "a", 32 ) );
+    Var b( &ip->type_SI32, symbol( "b", 32 ) );
+    Var c( &ip->type_SI32, symbol( "c", 32 ) );
+    Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
+    Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
+
+    syscall( a.ptr() );
+    a.set_val( b );
+    syscall( a.ptr() );
+    syscall( a.ptr() );
+
+    // ip->set_cond( c0 );
+    // syscall( b );
+
+    // ip->pop_cond();
+
+    Vec<Expr> out;
+    // out << *a;
+    out << ip->sys_state.get_val();
+    Inst::display_graph( out );
 }
 
 int main() {
     Ip ip_inst; ip = &ip_inst;
 
+    // test_checked_if();
     // test_cond();
-    test_checked_if();
+    test_graph();
 }

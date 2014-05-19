@@ -1,5 +1,5 @@
 #include "Stela/System/UsualStrings.h"
-// #include "SysState.h"
+#include "SysState.h"
 #include "Cst.h"
 #include "Ip.h"
 
@@ -11,7 +11,7 @@ Ip::Ip() :
     type_Error ( STRING_Error_NUM ,  0 ),
     type_RawPtr( STRING_RawPtr_NUM, sizeof( void * ) * 8 ),
     type_ST    ( sizeof( void * ) == 8 ? &type_SI64 : &type_SI32 ),
-    sys_state( &type_Void ) {
+    sys_state( Ref(), &type_Void, ::sys_state() ) {
 
     bool f = false, t = true;
     cst_false = cst( 1, (PI8 *)&f );
@@ -42,8 +42,8 @@ ErrorList::Error &Ip::error_msg( String msg, bool warn, const char *file, int li
     return res;
 }
 
-void Ip::set_cond( const Var &cond ) {
-    set_cond( *cond );
+void Ip::set_cond( Var cond ) {
+    set_cond( cond.get_val() );
 }
 
 void Ip::set_cond( Expr cond ) {

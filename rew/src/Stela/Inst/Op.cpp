@@ -30,11 +30,11 @@ public:
     // checked_if
     template<class TT>
     int _checked_if( Expr cond, TT ) {
-        return Inst::bval_if( cond );
+        return Inst::checked_if( cond );
     }
     int _checked_if( Expr cond, Op_and_boolean ) {
-        int c0 = inp[ 0 ]->bval_if( cond );
-        int c1 = inp[ 1 ]->bval_if( cond );
+        int c0 = inp[ 0 ]->checked_if( cond );
+        int c1 = inp[ 1 ]->checked_if( cond );
         if ( c0 == 1 and c1 == 1 ) // both are ok
             return 1;
         if ( c0 == -1 or c1 == -1 ) // at least one is false
@@ -42,8 +42,8 @@ public:
         return 0;
     }
     int _checked_if( Expr cond, Op_or_boolean ) {
-        int c0 = inp[ 0 ]->bval_if( cond );
-        int c1 = inp[ 1 ]->bval_if( cond );
+        int c0 = inp[ 0 ]->checked_if( cond );
+        int c1 = inp[ 1 ]->checked_if( cond );
         if ( c0 == 1 or c1 == 1 ) // at least one is ok
             return 1;
         if ( c0 == -1 and c1 == -1 ) // both are false
@@ -51,12 +51,12 @@ public:
         return 0;
     }
     int _checked_if( Expr cond, Op_not_boolean ) {
-        if ( int c0 = inp[ 0 ]->bval_if( cond ) )
+        if ( int c0 = inp[ 0 ]->checked_if( cond ) )
             return -c0;
         return 0;
     }
 
-    virtual int bval_if( Expr cond ) {
+    virtual int checked_if( Expr cond ) {
         return _checked_if( cond, T() );
     }
 
@@ -126,9 +126,9 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_bool
         return val ? b : a;
     if ( b->get_val( val ) )
         return val ? a : b;
-    if ( int res = a->bval_if( b ) )
+    if ( int res = a->checked_if( b ) )
         return res > 0 ? b : ip->cst_false; // knowing b is enough to know the result; if b ==> not a, -> false
-    if ( int res = b->bval_if( a ) )
+    if ( int res = b->checked_if( a ) )
         return res > 0 ? a : ip->cst_false; // knowing b is enough to know the result; if a ==> not v, -> false
     return 0;
 }

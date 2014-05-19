@@ -1,3 +1,5 @@
+#include "SelectDep.h"
+#include "Syscall.h"
 #include "Room.h"
 #include "Type.h"
 #include "Var.h"
@@ -17,38 +19,58 @@ void Var::write_to_stream( Stream &os ) const {
     os << "{" << *type << "}(" << inst << ')';
 }
 
-Expr Var::operator*() const {
-    return get_val();
-}
-
-Var::PVar Var::operator*() {
-    return PVar{ this };
-}
-
-Expr Var::get_val() const {
+Expr Var::get_val() {
     return simplified( inst->_get_val() );
 }
 
 void Var::set_val( Var val ) {
-    set_val( *val );
+    if ( type != val.type )
+        TODO;
+    if ( not type->pod() )
+        TODO;
+    set_val( val.get_val() );
 }
 
 void Var::set_val( Expr val ) {
     inst->_set_val( val );
 }
 
-Var ptr( const Var &val ) {
-    return Var( &ip->type_RawPtr, val.inst );
+Var Var::ptr() {
+    return Var( &ip->type_RawPtr, inst );
 }
 
-Var at( Type *type, Var ptr ) {
-    Expr res = ptr.inst->_at( type->size() );
+Var Var::at( Type *type ) {
+    Expr res = inst->_at( type->size() );
     if ( not res->is_a_pointer() )
         return ip->ret_error( "at requires a pointer var" );
     return Var( Ref(), type, res );
 }
 
-Var and_boolean( Var a, Var b ) {
-    return Var( &ip->type_Bool, op( &ip->type_Bool, a.type, a.get_val(), b.type, b.get_val(), Op_and_boolean() ) );
+Var Var::and_boolean( Var b ) {
+    return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_and_boolean() ) );
 }
 
+
+struct AddStoreDep : public Inst::Visitor {
+    virtual void operator()( Expr expr ) {
+        expr->_add_store_dep_if_necessary( res );
+    }
+    Expr res;
+};
+
+Var syscall( const Vec<Var> &inp ) {
+    Vec<Expr> inp_expr;
+    for( Var i : inp )
+        inp_expr << i.get_val();
+    Expr res = syscall( inp_expr, ip->sys_state.inst );
+
+    // each time we see a pointer on something, we have to add a store a dep
+    AddStoreDep add_store_dep;
+    add_store_dep.res = res;
+    ++Inst::cur_op_id;
+    for( Expr expr : inp_expr )
+        expr->visit( add_store_dep );
+
+    ip->sys_state.inst = select_dep( ip->cur_cond(), res, ip->sys_state.inst );
+    return Var( ip->type_ST, res );
+}

@@ -22,12 +22,17 @@ public:
         int   ninp; ///< input number (or TPAR_...)
     };
 
+    struct Visitor {
+        virtual void operator()( Expr expr ) = 0;
+    };
+
 
     Inst();
     virtual ~Inst();
 
     virtual void write_to_stream( Stream &os ) const;
     virtual void write_dot( Stream &os ) const = 0;
+
 
     void add_dep( const Expr &val );
     void set_cnd( const Expr &val );
@@ -43,7 +48,10 @@ public:
     virtual int size() const = 0;
     virtual const PI8 *data_ptr( int offset = 0 ) const;
 
-    virtual int bval_if( Expr cond ); ///< -1 = false, 0 = unknown, 1 = true
+    void visit( Visitor &v, bool pointed_data = false );
+    virtual void _visit_pointed_data( Visitor &v );
+
+    virtual int checked_if( Expr cond ); ///< -1 = false, 0 = unknown, 1 = true
     virtual int always_checked() const; ///< -1 = false, 0 = unknown, 1 = true
     virtual int allow_to_check( Expr val ); ///< -1 = false, 0 = unknown, 1 = true
 
@@ -51,8 +59,14 @@ public:
     virtual Type *out_type_proposition( CodeGen_C *cc ) const;
     virtual Type *inp_type_proposition( CodeGen_C *cc, int ninp ) const;
 
+    // graphviz
+    static int display_graph( const Vec<Expr> &outputs, const char *filename = ".res" );
+    virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
+    virtual void write_sub_graph_rec( Stream &os ) const;
+
+    virtual void _add_store_dep_if_necessary( Expr res );
     virtual Expr _simplified();
-    virtual Expr _get_val() const;
+    virtual Expr _get_val();
     virtual void _set_val( Expr val );
     virtual Expr _at( int len );
 

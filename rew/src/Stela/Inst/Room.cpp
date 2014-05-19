@@ -1,4 +1,5 @@
 #include "Select.h"
+#include "Store.h"
 #include "Room.h"
 #include "Ip.h"
 
@@ -15,6 +16,9 @@ public:
         num = nb_rooms++;
     }
     virtual void write_dot( Stream &os ) const {
+        os << "@" << num;
+    }
+    virtual void write_to_stream( Stream &os ) const {
         os << "(@" << num << ")" << val;
     }
     virtual void clone( Vec<Expr> &created ) const {
@@ -27,7 +31,7 @@ public:
         ERROR( "should not be here" );
         return 0;
     }
-    virtual Expr _get_val() const {
+    virtual Expr _get_val() {
         return val;
     }
     virtual void _set_val( Expr val ) {
@@ -42,7 +46,21 @@ public:
     virtual Expr _at( int len ) {
         return val;
     }
+    virtual void _visit_pointed_data( Visitor &v ) {
+        val->visit( v, true );
+    }
+    virtual void _add_store_dep_if_necessary( Expr res ) {
+        Expr st = store( this, val );
+        res->add_dep( st );
 
+        for( Expr d : future_dep )
+            st->add_dep( d );
+        future_dep.resize( 0 );
+
+        future_dep << res;
+    }
+
+    Vec<Expr> future_dep;
     Expr val;
     int  len;
     int  num; ///< for the display

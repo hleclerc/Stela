@@ -11,11 +11,13 @@ public:
 
     void write_to_stream( Stream &os ) const;
 
+    int pod();
     int size();
     virtual void parse();
 
     int name;
     int _len;
+    int _pod;
 };
 
 #endif // TYPE_H

@@ -18,8 +18,8 @@ public:
     void disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg( String msg, bool warn = false, const char *file = 0, int line = -1 );
 
-    void set_cond( const Var &cond );
     void set_cond( Expr cond );
+    void set_cond( Var cond );
     Expr cur_cond();
     void pop_cond();
 
