@@ -21,15 +21,11 @@ public:
     virtual void write_to_stream( Stream &os ) const {
         os << "(@" << num << ")" << val;
     }
-    virtual void clone( Vec<Expr> &created ) const {
-        TODO;
+    virtual Expr forced_clone( Vec<Expr> &created ) const {
+        return new Room( len );
     }
     virtual int size() const {
         return len;
-    }
-    virtual Expr forced_clone( Vec<Expr> &created ) const {
-        ERROR( "should not be here" );
-        return 0;
     }
     virtual Expr _get_val() {
         return val;
@@ -49,15 +45,14 @@ public:
     virtual void _visit_pointed_data( Visitor &v ) {
         val->visit( v, true );
     }
-    virtual void _add_store_dep_if_necessary( Expr res ) {
+    virtual void _add_store_dep_if_necessary( Expr res, Expr fut ) {
         Expr st = store( this, val );
         res->add_dep( st );
 
         for( Expr d : future_dep )
             st->add_dep( d );
         future_dep.resize( 0 );
-
-        future_dep << res;
+        future_dep << fut;
     }
 
     Vec<Expr> future_dep;

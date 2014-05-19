@@ -1,3 +1,4 @@
+#include "../System/SameType.h"
 #include "Type.h"
 #include "Cst.h"
 #include "Op.h"
@@ -13,10 +14,10 @@ public:
     virtual void write_dot( Stream &os ) const {
         os << T();
     }
-    virtual Type *out_type_proposition( CodeGen_C *cc ) const {
+    virtual Type *out_type_proposition( Codegen_C *cc ) const {
         return tr;
     }
-    virtual Type *inp_type_proposition( CodeGen_C *cc, int ninp ) const {
+    virtual Type *inp_type_proposition( Codegen_C *cc, int ninp ) const {
         return ninp ? tb : ta;
     }
     virtual int size() const {
@@ -97,6 +98,28 @@ public:
         return _allow_to_check( val, T() );
     }
 
+    virtual void _get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
+        if ( SameType<T,Op_or_boolean>::res ) {
+            inp[ 0 ]->_get_sub_cond_or( sc, pos );
+            inp[ 1 ]->_get_sub_cond_or( sc, pos );
+            return;
+        }
+        if ( SameType<T,Op_not_boolean>::res )
+            return inp[ 0 ]->_get_sub_cond_or( sc, not pos );
+        sc << std::make_pair( this, pos );
+    }
+
+    virtual void _get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
+        if ( SameType<T,Op_and_boolean>::res ) {
+            inp[ 0 ]->_get_sub_cond_and( sc, pos );
+            inp[ 1 ]->_get_sub_cond_and( sc, pos );
+            return;
+        }
+        if ( SameType<T,Op_not_boolean>::res )
+            return inp[ 0 ]->_get_sub_cond_and( sc, not pos );
+        sc << std::make_pair( this, pos );
+    }
+
     Type *tr;
     Type *ta;
     Type *tb;
@@ -110,18 +133,61 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, OP ) {
 }
 
 // or
+static Expr make_or( Vec<std::pair<Expr,bool> > &sc, int beg, int end ) {
+    if ( beg == end )
+        return ip->cst_true;
+    if ( beg + 1 == end )
+        return sc[ beg ].second ? sc[ beg ].first : op( &ip->type_Bool, &ip->type_Bool, sc[ beg ].first, Op_not_boolean() );
+    return op( &ip->type_Bool, &ip->type_Bool, make_or( sc, beg, ( beg + end ) / 2 ), &ip->type_Bool, make_or( sc, ( beg + end ) / 2, end ), Op_or_boolean() );
+}
+
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_or_boolean ) {
     Bool val;
+    if ( a == b )
+        return a;
     if ( a->get_val( val ) )
         return val ? a : b;
     if ( b->get_val( val ) )
         return val ? b : a;
+
+    Vec<std::pair<Expr,bool> > sc;
+    a->_get_sub_cond_or( sc, true );
+    int sa = sc.size();
+    b->_get_sub_cond_or( sc, true );
+    int sb = sc.size();
+    for( int i = 0; i < sa; ++i ) {
+        for( int j = sa; j < sc.size(); ++j ) {
+            if ( sc[ i ].first == sc[ j ].first ) {
+                if ( sc[ i ].second == sc[ j ].second )
+                    sc.remove( j-- );
+                else {
+                    sc.remove( j );
+                    sc.remove( i-- );
+                    --sa;
+                    break;
+                }
+            }
+        }
+    }
+    if ( sb != sc.size() )
+        return make_or( sc, 0, sc.size() );
+
     return 0;
 }
 
 // and
+static Expr make_and( Vec<std::pair<Expr,bool> > &sc, int beg, int end ) {
+    if ( beg == end )
+        ERROR( "weirdos");
+    if ( beg + 1 == end )
+        return sc[ beg ].second ? sc[ beg ].first : op( &ip->type_Bool, &ip->type_Bool, sc[ beg ].first, Op_not_boolean() );
+    return op( &ip->type_Bool, &ip->type_Bool, make_and( sc, beg, ( beg + end ) / 2 ), &ip->type_Bool, make_and( sc, ( beg + end ) / 2, end ), Op_and_boolean() );
+}
+
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_boolean ) {
     Bool val;
+    if ( a == b )
+        return a;
     if ( a->get_val( val ) )
         return val ? b : a;
     if ( b->get_val( val ) )
@@ -130,6 +196,26 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_bool
         return res > 0 ? b : ip->cst_false; // knowing b is enough to know the result; if b ==> not a, -> false
     if ( int res = b->checked_if( a ) )
         return res > 0 ? a : ip->cst_false; // knowing b is enough to know the result; if a ==> not v, -> false
+
+    Vec<std::pair<Expr,bool> > sc;
+    a->_get_sub_cond_and( sc, true );
+    int sa = sc.size();
+    b->_get_sub_cond_and( sc, true );
+    int sb = sc.size();
+    for( int i = 0; i < sa; ++i ) {
+        for( int j = sa; j < sc.size(); ++j ) {
+            if ( sc[ i ].first == sc[ j ].first ) {
+                if ( sc[ i ].second == sc[ j ].second )
+                    sc.remove( j-- );
+                else
+                    return ip->cst_false;
+            }
+        }
+    }
+    if ( sb != sc.size() )
+        return make_and( sc, 0, sc.size() );
+
+
     return 0;
 }
 

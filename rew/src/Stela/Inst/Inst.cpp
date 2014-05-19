@@ -1,6 +1,8 @@
+#include "InstInfo_C.h"
 #include <fstream>
 #include "Inst.h"
 #include "Cst.h"
+#include "Op.h"
 #include "Ip.h"
 
 PI64 Inst::cur_op_id = 0;
@@ -22,8 +24,6 @@ Inst::~Inst() {
     for( int num = 0; num < dep.size(); ++num )
         if ( dep[ num ] )
             dep[ num ]->par.remove_first_unordered( Parent{ this, TPAR_DEP } );
-    if ( cnd )
-        cnd->par.remove_first_unordered( Parent{ this, TPAR_CND } );
     for( int num = 0; num < ext.size(); ++num )
         if ( ext[ num ] )
             ext[ num ]->ext_par = 0;
@@ -41,13 +41,6 @@ void Inst::write_to_stream( Stream &os ) const {
 void Inst::add_dep( const Expr &val ) {
     val->par << Parent{ this, TPAR_DEP };
     dep << val;
-}
-
-void Inst::set_cnd( const Expr &val ) {
-    if ( cnd )
-        cnd->par.remove_first_unordered( Parent{ this, TPAR_CND } );
-    val->par << Parent{ this, TPAR_CND };
-    cnd = val;
 }
 
 void Inst::add_inp( const Expr &val ) {
@@ -73,7 +66,6 @@ void Inst::clone( Vec<Expr> &created ) const {
         i->clone( created );
     for( const Expr &i : dep )
         i->clone( created );
-    cnd->clone( created );
 
     // basic clone
     Expr res = forced_clone( created );
@@ -83,7 +75,6 @@ void Inst::clone( Vec<Expr> &created ) const {
         res->add_inp( reinterpret_cast<Inst *>( i->op_mp ) );
     for( const Expr &i : dep )
         res->add_dep( reinterpret_cast<Inst *>( i->op_mp ) );
-    cnd->clone( created );
 
     if( ext.size() )
         TODO;
@@ -130,11 +121,11 @@ int Inst::allow_to_check( Expr val ) {
 }
 
 
-Type *Inst::out_type_proposition( CodeGen_C *cc ) const {
+Type *Inst::out_type_proposition( Codegen_C *cc ) const {
     return 0;
 }
 
-Type *Inst::inp_type_proposition( CodeGen_C *cc, int ninp ) const {
+Type *Inst::inp_type_proposition( Codegen_C *cc, int ninp ) const {
     return 0;
 }
 
@@ -220,7 +211,7 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
             ext_buf << ch;
 }
 
-void Inst::_add_store_dep_if_necessary( Expr res ) {
+void Inst::_add_store_dep_if_necessary( Expr res, Expr fut ) {
 }
 
 Expr Inst::_simplified() {
@@ -240,4 +231,26 @@ Expr Inst::_at( int len ) {
     ip->disp_error( "at work only with pointer type expressions" );
     return cst( 0, 0 );
 }
+
+void Inst::_update_when_C( Expr cond ) {
+    Expr res = op( &ip->type_Bool, &ip->type_Bool, IIC( this )->when, &ip->type_Bool, cond, Op_or_boolean() );
+    if ( IIC( this )->when == res )
+        return;
+
+    IIC( this )->when = res;
+
+    for( Expr inst : inp )
+        inst->_update_when_C( cond );
+    for( Expr inst : dep )
+        inst->_update_when_C( cond );
+}
+
+void Inst::_get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
+    sc << std::make_pair( this, pos );
+}
+
+void Inst::_get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
+    sc << std::make_pair( this, pos );
+}
+
 

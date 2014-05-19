@@ -4,7 +4,7 @@
 #include "../System/Vec.h"
 #include <string.h>
 #include "Expr.h"
-class CodeGen_C;
+class Codegen_C;
 class Type;
 
 /**
@@ -35,7 +35,6 @@ public:
 
 
     void add_dep( const Expr &val );
-    void set_cnd( const Expr &val );
     void add_inp( const Expr &val );
     void mod_inp( const Expr &val, int num );
 
@@ -56,24 +55,26 @@ public:
     virtual int allow_to_check( Expr val ); ///< -1 = false, 0 = unknown, 1 = true
 
     virtual bool is_a_pointer() const;
-    virtual Type *out_type_proposition( CodeGen_C *cc ) const;
-    virtual Type *inp_type_proposition( CodeGen_C *cc, int ninp ) const;
+    virtual Type *out_type_proposition( Codegen_C *cc ) const;
+    virtual Type *inp_type_proposition( Codegen_C *cc, int ninp ) const;
 
     // graphviz
     static int display_graph( const Vec<Expr> &outputs, const char *filename = ".res" );
     virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
     virtual void write_sub_graph_rec( Stream &os ) const;
 
-    virtual void _add_store_dep_if_necessary( Expr res );
+    virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();
     virtual Expr _get_val();
     virtual void _set_val( Expr val );
     virtual Expr _at( int len );
+    virtual void _update_when_C( Expr cond );
+    virtual void _get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos );
+    virtual void _get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos );
 
     Vec<Expr>           inp; ///< inputs
     Vec<Expr>           dep; ///< dependencies
     Vec<Expr>           ext; ///< WhileOut, ...
-    Expr                cnd; ///< condition
     mutable Vec<Parent> par; ///< parents
 
     Inst               *ext_par;

@@ -50,12 +50,19 @@ Var Var::and_boolean( Var b ) {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_and_boolean() ) );
 }
 
+Var Var::or_boolean( Var b ) {
+    return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_or_boolean() ) );
+}
+
+Var Var::not_boolean() {
+    return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), Op_not_boolean() ) );
+}
 
 struct AddStoreDep : public Inst::Visitor {
     virtual void operator()( Expr expr ) {
-        expr->_add_store_dep_if_necessary( res );
+        expr->_add_store_dep_if_necessary( res, fut );
     }
-    Expr res;
+    Expr res, fut;
 };
 
 Var syscall( const Vec<Var> &inp ) {
@@ -63,14 +70,16 @@ Var syscall( const Vec<Var> &inp ) {
     for( Var i : inp )
         inp_expr << i.get_val();
     Expr res = syscall( inp_expr, ip->sys_state.inst );
+    Expr fut = select_dep( ip->cur_cond(), res, ip->sys_state.inst );
 
     // each time we see a pointer on something, we have to add a store a dep
     AddStoreDep add_store_dep;
     add_store_dep.res = res;
+    add_store_dep.fut = fut;
     ++Inst::cur_op_id;
     for( Expr expr : inp_expr )
         expr->visit( add_store_dep );
 
-    ip->sys_state.inst = select_dep( ip->cur_cond(), res, ip->sys_state.inst );
+    ip->sys_state.inst = fut;
     return Var( ip->type_ST, res );
 }

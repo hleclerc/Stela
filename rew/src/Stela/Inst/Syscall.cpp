@@ -6,7 +6,7 @@
 class Syscall : public Inst {
 public:
     virtual void write_dot( Stream &os ) const {
-        os << "sys_state";
+        os << "syscall";
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new Syscall;

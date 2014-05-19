@@ -16,6 +16,8 @@ public:
 
     operator bool() const { return inst; }
 
+    bool operator==( const Expr &expr ) const { return inst == expr.inst; }
+
     const Inst *ptr() const { return inst; }
     Inst *ptr() { return inst; }
 
