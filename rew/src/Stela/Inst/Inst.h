@@ -43,10 +43,9 @@ public:
     virtual int size() const = 0;
     virtual const PI8 *data_ptr( int offset = 0 ) const;
 
-    virtual bool ok_if( Expr cond );
-    virtual bool ko_if( Expr cond );
-    virtual Expr val_if( Expr cond );
-    virtual Expr rval_if( Expr val );
+    virtual int bval_if( Expr cond ); ///< -1 = false, 0 = unknown, 1 = true
+    virtual int always_checked() const; ///< -1 = false, 0 = unknown, 1 = true
+    virtual int allow_to_check( Expr val ); ///< -1 = false, 0 = unknown, 1 = true
 
     virtual bool is_a_pointer() const;
     virtual Type *out_type_proposition( CodeGen_C *cc ) const;

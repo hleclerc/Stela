@@ -64,6 +64,16 @@ public:
                 return false;
         return true;
     }
+    virtual int bval_if( Expr cond ) {
+        if ( ( k()[ 0 ] & 1 ) and cond->always_checked() != -1 )
+            return d()[ 0 ] & 1 ? 1 : -1;
+        return 0;
+    }
+    virtual int always_checked() const {
+        if ( k()[ 0 ] & 1 )
+            return d()[ 0 ] & 1 ? 1 : -1;
+        return 0;
+    }
 
     int len;
     Vec<PI8> data;

@@ -75,3 +75,4 @@ src/Stela/Inst/Select.cpp
 src/Stela/Inst/Op.h
 src/Stela/Inst/Op.cpp
 src/Stela/Inst/DeclOp_Binary.h
+src/Stela/Inst/DeclOp_Unary.h

@@ -34,6 +34,10 @@ public:
     Type  type_RawPtr;
     Type *type_ST;
 
+    // std variables
+    Expr cst_false;
+    Expr cst_true;
+
     // context
     Vec<Expr> cond_stack;
     Var       sys_state;

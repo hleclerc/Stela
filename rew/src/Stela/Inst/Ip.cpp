@@ -1,6 +1,6 @@
 #include "Stela/System/UsualStrings.h"
 // #include "SysState.h"
-// #include "Cst.h"
+#include "Cst.h"
 #include "Ip.h"
 
 Ip::Ip() :
@@ -13,7 +13,11 @@ Ip::Ip() :
     type_ST    ( sizeof( void * ) == 8 ? &type_SI64 : &type_SI32 ),
     sys_state( &type_Void ) {
 
-    // cond_stack << cst( true );
+    bool f = false, t = true;
+    cst_false = cst( 1, (PI8 *)&f );
+    cst_true  = cst( 1, (PI8 *)&t );
+
+    cond_stack << cst_true;
 }
 
 Var Ip::ret_error( String msg, bool warn, const char *file, int line ) {

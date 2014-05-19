@@ -1,12 +1,14 @@
 #include "Type.h"
+#include "Cst.h"
 #include "Op.h"
+#include "Ip.h"
 
 /**
 */
 template<class T>
 class Op : public Inst {
 public:
-    Op( Type *tr, Type *ta, Type *tb ) : tr( tr ), ta( ta ), tb( tb ) {
+    Op( Type *tr, Type *ta, Type *tb = 0 ) : tr( tr ), ta( ta ), tb( tb ) {
     }
     virtual void write_dot( Stream &os ) const {
         os << T();
@@ -25,50 +27,74 @@ public:
     }
 
 
-    // true if
+    // checked_if
     template<class TT>
-    Expr _val_if( Expr cond, TT ) {
-        return this;
+    int _checked_if( Expr cond, TT ) {
+        return Inst::bval_if( cond );
     }
-    Expr _val_if( Expr cond, Op_and_boolean ) {
-        TODO;
-        return inp[ 0 ];
-        // return inp[ 0 ]->ok_if( cond ) and inp[ 1 ]->ok_if( cond );
+    int _checked_if( Expr cond, Op_and_boolean ) {
+        int c0 = inp[ 0 ]->bval_if( cond );
+        int c1 = inp[ 1 ]->bval_if( cond );
+        if ( c0 == 1 and c1 == 1 ) // both are ok
+            return 1;
+        if ( c0 == -1 or c1 == -1 ) // at least one is false
+            return -1;
+        return 0;
     }
-    Expr _val_if( Expr cond, Op_or_boolean ) {
-        TODO;
-        return inp[ 0 ];
-        // return inp[ 0 ]->ok_if( cond ) or inp[ 1 ]->ok_if( cond );
+    int _checked_if( Expr cond, Op_or_boolean ) {
+        int c0 = inp[ 0 ]->bval_if( cond );
+        int c1 = inp[ 1 ]->bval_if( cond );
+        if ( c0 == 1 or c1 == 1 ) // at least one is ok
+            return 1;
+        if ( c0 == -1 and c1 == -1 ) // both are false
+            return -1;
+        return 0;
+    }
+    int _checked_if( Expr cond, Op_not_boolean ) {
+        if ( int c0 = inp[ 0 ]->bval_if( cond ) )
+            return -c0;
+        return 0;
     }
 
-    virtual Expr val_if( Expr cond ) {
-        Expr trial = Inst::val_if( cond );
-        if ( trial.ptr() != this )
-            return trial;
-        return _val_if( cond, T() );
+    virtual int bval_if( Expr cond ) {
+        return _checked_if( cond, T() );
     }
 
     // rtrue if
     template<class TT>
-    Expr _rval_if( Expr val, TT ) {
+    int _allow_to_check( Expr val, TT ) {
         return 0;
     }
-    Expr _rval_if( Expr val, Op_and_boolean ) {
-        TODO;
-        return inp[ 0 ];
-        // return val->ok_if( inp[ 0 ] ) or val->ok_if( inp[ 1 ] );
+    int _allow_to_check( Expr val, Op_and_boolean ) {
+        // we know that inp[ 0 ] and inp[ 1 ] are true
+        int c0 = inp[ 0 ]->allow_to_check( val );
+        int c1 = inp[ 1 ]->allow_to_check( val );
+        if ( c0 == 1 or c1 == 1 )
+            return 1;
+        if ( c0 == -1 and c1 == -1 )
+            return -1;
+        return 0;
     }
-    Expr _rval_if( Expr val, Op_or_boolean ) {
-        TODO;
-        return inp[ 0 ];
-        // return val->ok_if( inp[ 0 ] ) and val->ok_if( inp[ 1 ] );
+    int _allow_to_check( Expr val, Op_or_boolean ) {
+        // we know that inp[ 0 ] or inp[ 1 ] are true
+        int c0 = inp[ 0 ]->allow_to_check( val );
+        int c1 = inp[ 1 ]->allow_to_check( val );
+        if ( c0 == 1 and c1 == 1 )
+            return 1;
+        if ( c0 == -1 and c1 == -1 )
+            return -1;
+        return 0;
+    }
+    int _allow_to_check( Expr val, Op_not_boolean ) {
+        if ( int c0 = inp[ 0 ]->allow_to_check( val ) )
+            return -c0;
+        return 0;
     }
 
-    virtual Expr rval_if( Expr val ) {
-        Expr trial = Inst::rval_if( val );
-        if ( trial != val )
+    virtual int allow_to_check( Expr val ) {
+        if ( int trial = Inst::allow_to_check( val ) )
             return trial;
-        return _rval_if( val, T() );
+        return _allow_to_check( val, T() );
     }
 
     Type *tr;
@@ -77,7 +103,7 @@ public:
 };
 
 // ---------------------------------------------------------------------------------------
-// specialisations
+// binary specialisations
 template<class OP>
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, OP ) {
     return 0;
@@ -100,10 +126,10 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_bool
         return val ? b : a;
     if ( b->get_val( val ) )
         return val ? a : b;
-    if ( a->ok_if( b ) )
-        return b; // knowing b is enough to known the result
-    if ( b->ok_if( a ) )
-        return a; // knowing b is enough to known the result
+    if ( int res = a->bval_if( b ) )
+        return res > 0 ? b : ip->cst_false; // knowing b is enough to know the result; if b ==> not a, -> false
+    if ( int res = b->bval_if( a ) )
+        return res > 0 ? a : ip->cst_false; // knowing b is enough to know the result; if a ==> not v, -> false
     return 0;
 }
 
@@ -119,9 +145,43 @@ Expr _op( Type *tr, Type *ta, Expr a, Type *tb, Expr b, OP op ) {
     return res;
 }
 
+// ---------------------------------------------------------------------------------------
+// unary specialisations
+template<class OP>
+Expr _op_simplication( Type *tr, Type *ta, Expr a, OP ) {
+    return 0;
+}
+
+// not_boolean
+Expr _op_simplication( Type *tr, Type *ta, Expr a, Op_not_boolean ) {
+    Bool val;
+    if ( a->get_val( val ) )
+        return val ? ip->cst_false : ip->cst_true;
+    return 0;
+}
+
+//
+template<class OP>
+Expr _op( Type *tr, Type *ta, Expr a, OP op ) {
+    if ( Expr res = _op_simplication( tr, ta, a, op ) )
+        return res;
+
+    Op<OP> *res = new Op<OP>( tr, ta );
+    res->add_inp( a );
+    return res;
+}
+
+
 #define DECL_OP( NAME, GEN, OPER, BOOL ) \
     Expr op( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_##NAME o ) { \
         return _op( tr, ta, a, tb, b, o ); \
     }
 #include "DeclOp_Binary.h"
+#undef DECL_OP
+
+#define DECL_OP( NAME, GEN, OPER, BOOL ) \
+    Expr op( Type *tr, Type *ta, Expr a, Op_##NAME o ) { \
+        return _op( tr, ta, a, o ); \
+    }
+#include "DeclOp_Unary.h"
 #undef DECL_OP

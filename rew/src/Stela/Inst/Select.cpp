@@ -16,9 +16,8 @@ public:
         return inp[ 1 ]->size();
     }
     virtual Expr _simplified() {
-        Bool res;
-        if ( inp[ 0 ]->val_if( ip->cur_cond() )->get_val( res ) )
-            return res ? inp[ 1 ] : inp[ 0 ];
+        if ( int res = inp[ 0 ]->bval_if( ip->cur_cond() ) )
+            return res > 0 ? inp[ 1 ] : inp[ 2 ];
         return 0;
     }
 };

@@ -100,22 +100,16 @@ bool Inst::is_a_pointer() const {
     return false;
 }
 
-bool Inst::ok_if( Expr cond ) {
-    Bool res;
-    return val_if( cond )->get_val( res ) ? res : false;
+int Inst::bval_if( Expr cond ) {
+    return cond->allow_to_check( this );
 }
 
-bool Inst::ko_if( Expr cond ) {
-    Bool res;
-    return val_if( cond )->get_val( res ) ? not res : false;
+int Inst::always_checked() const {
+    return 0;
 }
 
-Expr Inst::val_if( Expr cond ) {
-    return cond->rval_if( this );
-}
-
-Expr Inst::rval_if( Expr val ) {
-    return val;
+int Inst::allow_to_check( Expr val ) {
+    return this == val.ptr();
 }
 
 
@@ -142,6 +136,6 @@ void Inst::_set_val( Expr val ) {
 
 Expr Inst::_at( int len ) {
     ip->disp_error( "at work only with pointer type expressions" );
-    return cst( len );
+    return cst( 0, 0 );
 }
 
