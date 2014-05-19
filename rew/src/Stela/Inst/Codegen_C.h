@@ -3,6 +3,7 @@
 
 #include "../System/StreamSep.h"
 #include "Codegen.h"
+struct CBlockAsm;
 
 /**
 */
@@ -18,6 +19,7 @@ public:
     std::ostringstream *os;
 
 protected:
+    void write( CBlockAsm &cba );
     void make_code();
     int nb_regs;
 };

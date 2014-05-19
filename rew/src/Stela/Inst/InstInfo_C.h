@@ -2,7 +2,7 @@
 #define INSTINFO_C_H
 
 #include "Inst.h"
-class InstBlock;
+class CInstBlock;
 
 /**
 */
@@ -10,7 +10,7 @@ class InstInfo_C {
 public:
     InstInfo_C( Expr when );
 
-    InstBlock *block;
+    CInstBlock *block;
     Expr when;
 };
 

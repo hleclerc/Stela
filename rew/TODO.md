@@ -1,5 +1,7 @@
 À faire
 * code avec conditionnel
+  * penser au parcourt par le haut (pour éviter de faire trop tôt certaines inst)
+
 
 * destruction des objets
 * garbage collection

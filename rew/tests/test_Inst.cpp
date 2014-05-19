@@ -88,10 +88,10 @@ void test_graph() {
     Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
     Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
 
-    syscall( a.ptr() );
+    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
     a.set_val( b );
-    syscall( a.ptr() );
-    syscall( a.ptr() );
+    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
+    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
 
     // ip->set_cond( c0 );
     // syscall( b );
@@ -111,12 +111,12 @@ void test_code() {
     Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
     Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
 
-    syscall( a.ptr() );
+    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
     a.set_val( b );
     ip->set_cond( c0 );
-    syscall( a.ptr() );
+    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
     ip->pop_cond();
-    syscall( a.ptr() );
+    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
 
     Codegen_C cc;
     cc << ip->sys_state.get_val();
@@ -129,6 +129,6 @@ int main() {
     // test_checked_if();
     // test_cond();
     // test_graph();
-    test_simp_bool();
-    // test_code();
+    // test_simp_bool();
+    test_code();
 }
