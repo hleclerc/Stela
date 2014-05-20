@@ -5,6 +5,7 @@
 #include "../System/NstrCor.h"
 #include "Type.h"
 #include "Var.h"
+#include <map>
 
 /**
 */
@@ -25,6 +26,8 @@ public:
 
     Var error_var();
 
+    Type *artificial_type_for_size( int size );
+
     // base type
     Type  type_SI32;
     Type  type_SI64;
@@ -33,6 +36,8 @@ public:
     Type  type_Error;
     Type  type_RawPtr;
     Type *type_ST;
+
+    std::map<int,Type> art_types;
 
     // std variables
     Expr cst_false;

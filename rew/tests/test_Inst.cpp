@@ -104,19 +104,37 @@ void test_graph() {
     Inst::display_graph( out );
 }
 
-void test_code() {
+void test_code_syscall() {
     Var a( &ip->type_SI32, symbol( "a", 32 ) );
     Var b( &ip->type_SI32, symbol( "b", 32 ) );
     Var c( &ip->type_SI32, symbol( "c", 32 ) );
     Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
     Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
 
-    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
+    syscall( Vec<Var>( a.ptr()/*, b.ptr()*/ ) );
     a.set_val( b );
     ip->set_cond( c0 );
-    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
+    syscall( Vec<Var>( a.ptr()/*, b.ptr()*/ ) );
     ip->pop_cond();
-    syscall( Vec<Var>( a.ptr(), b.ptr() ) );
+    syscall( Vec<Var>( a.ptr()/*, b.ptr()*/ ) );
+
+    Codegen_C cc;
+    cc << ip->sys_state.get_val();
+    cc.write_to( std::cout );
+}
+
+void test_code_select() {
+    Var a( &ip->type_SI32, symbol( "a", 32 ) );
+    Var b( &ip->type_SI32, symbol( "b", 32 ) );
+    Var c( &ip->type_SI32, symbol( "c", 32 ) );
+    Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
+    Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
+
+    ip->set_cond( c0 );
+    a.set_val( b );
+    ip->pop_cond();
+
+    syscall( a.ptr() );
 
     Codegen_C cc;
     cc << ip->sys_state.get_val();
@@ -130,5 +148,6 @@ int main() {
     // test_cond();
     // test_graph();
     // test_simp_bool();
-    test_code();
+    // test_code_syscall();
+    test_code_select();
 }

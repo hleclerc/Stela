@@ -1,6 +1,10 @@
 #include "../System/RaiiSave.h"
 #include "InstInfo_C.h"
 #include "Codegen_C.h"
+#include "SelectDep.h"
+#include "Store.h"
+#include "ValAt.h"
+#include "Room.h"
 #include "Ip.h"
 
 Codegen_C::Codegen_C() : on( &main_os ), os( &main_os ) {
@@ -19,6 +23,19 @@ void Codegen_C::write_to( Stream &out ) {
 void Codegen_C::exec() {
     TODO;
 }
+
+int Codegen_C::new_num_reg() {
+    return nb_regs++;
+}
+
+void Codegen_C::C_Code::write_to_stream( Stream &os ) const {
+    inst->write_to( cc, prec, IIC( inst )->num_reg );
+}
+
+Codegen_C::C_Code Codegen_C::code( Expr inst, int prec ) {
+    return C_Code{ this, inst, prec };
+}
+
 
 static Expr cloned( const Expr &val, Vec<Expr> &created ) {
     val->clone( created );
@@ -56,6 +73,7 @@ static bool ready_to_be_scheduled( Expr inst ) {
     // ok
     return true;
 }
+
 
 struct CInstBlock {
     CInstBlock( Expr cond ) : cond( cond ), op_id( 0 ) {}
@@ -102,16 +120,28 @@ bool ready_to_be_scheduled( const CInstBlock *b ) {
     // already in the front ?
     if ( b->op_id >= b->cur_op_id - 1 )
         return false;
-
     // not computed ?
     for( const CInstBlock *ch : b->dep )
         if ( ch->op_id < b->cur_op_id )
             return false;
-
     // ok
     return true;
 }
 
+static bool ready_to_be_scheduled( Expr inst, CInstBlock *b ) {
+    // already in the front ?
+    if ( inst->op_id >= Inst::cur_op_id - 1 )
+        return false;
+    // not computed ?
+    for( const Expr &ch : inst->inp )
+        if ( ch->op_id < Inst::cur_op_id and IIC( ch )->block == b )
+            return false;
+    for( const Expr &ch : inst->dep )
+        if ( ch->op_id < Inst::cur_op_id and IIC( ch )->block == b )
+            return false;
+    // ok
+    return true;
+}
 
 struct CBlockAsm {
     CBlockAsm( CBlockAsm *par = 0, const Vec<std::pair<Expr,bool> > &sc = Vec<std::pair<Expr,bool> >() ) : sc( sc ), par( par ) {
@@ -125,6 +155,45 @@ struct CBlockAsm {
     Vec<Item>                  items;
 };
 
+struct AddToNeeded : Inst::Visitor {
+    AddToNeeded( Vec<Expr> &needed ) : needed( needed ) {
+    }
+    virtual void operator()( Expr expr ) {
+        needed << expr;
+        if ( expr->when )
+            expr->when->visit( *this );
+    }
+    Vec<Expr> &needed;
+};
+
+static void select_to_select_dep( Expr inst ) {
+    if ( inst->op_id == inst->cur_op_id )
+        return;
+    inst->op_id = inst->cur_op_id;
+
+    if ( inst->is_a_Select() ) {
+        Expr r = room( inst->size() );
+        Expr v = val_at( r, inst->size() );
+        Expr store_ok = store( r, inst->inp[ 1 ] );
+        Expr store_ko = store( r, inst->inp[ 2 ] );
+        Expr n = select_dep( inst->inp[ 0 ], store_ok, store_ko );
+        for( Inst::Parent &p : inst->par ) {
+            if ( p.ninp >= 0 )
+                p.inst->mod_inp( v, p.ninp );
+            else
+                ERROR( "dep on a Select... weird !" );
+            p.inst->add_dep( n );
+        }
+        inst->clear_children();
+        return select_to_select_dep( n );
+    }
+
+    for( Expr ch : inst->inp )
+        select_to_select_dep( ch );
+    for( Expr ch : inst->dep )
+        select_to_select_dep( ch );
+}
+
 void Codegen_C::make_code() {
     // clone (-> out)
     ++Inst::cur_op_id;
@@ -136,14 +205,44 @@ void Codegen_C::make_code() {
     ip->cst_false = cloned( ip->cst_false, created );
     ip->cst_true  = cloned( ip->cst_true , created );
 
-    // op_mp = inst_info
-    SplittedVec<InstInfo_C,16> inst_info_list;
-    for( Expr inst : created )
-        inst->op_mp = inst_info_list.push_back( ip->cst_false );
-
-    // update IIC(  )->when
+    // select -> select_dep
+    ++Inst::cur_op_id;
     for( Expr inst : out )
-        inst->_update_when_C( ip->cst_true );
+        select_to_select_dep( inst );
+
+    // update inst->when
+    for( Expr inst : out )
+        inst->update_when( ip->cst_true );
+
+    Inst::display_graph( out );
+
+    // the place to make simplifications
+
+    // get needed expressions
+    Vec<Expr> needed;
+    ++Inst::cur_op_id;
+    AddToNeeded add_to_needed( needed );
+    for( Expr inst : out )
+        inst->visit( add_to_needed );
+    PRINT( needed );
+
+    // op_mp = inst_info on all needed expressions
+    SplittedVec<InstInfo_C,16> inst_info_list;
+    for( Expr inst : needed )
+        inst->op_mp = inst_info_list.push_back();
+
+    // update IIC(  )->out_type
+    for( Expr inst : needed )
+        inst->update_out_type();
+    for( Expr inst : needed )
+        if ( not IIC( inst )->out_type )
+            inst->out_type_proposition( ip->artificial_type_for_size( inst->size() ) );
+
+    //    for( Expr inst : needed )
+    //        if ( IIC( inst )->out_type )
+    //            std::cout << *IIC( inst )->out_type << "\t" << inst << std::endl;
+    //        else
+    //            std::cout << "???\t" << inst << std::endl;
 
     // basic scheduling to get Block data
     ++Inst::cur_op_id;
@@ -160,7 +259,7 @@ void Codegen_C::make_code() {
     while ( front.size() ) {
         Expr inst;
         for( int i = 0; i < front.size(); ++i ) {
-            if ( IIC( front[ i ] )->when == cur_block->cond ) {
+            if ( front[ i ]->when == cur_block->cond ) {
                 inst = front[ i ];
                 front.remove_unordered( i );
                 break;
@@ -172,7 +271,7 @@ void Codegen_C::make_code() {
             inst = front.back();
             front.pop_back();
 
-            cur_block = blocks.push_back( IIC( inst )->when );
+            cur_block = blocks.push_back( inst->when );
         }
 
         inst->op_id = Inst::cur_op_id; // done
@@ -249,10 +348,8 @@ void Codegen_C::make_code() {
 
     write( block_asm[ 0 ] );
     // display
-    //for( Expr inst : created )
-    //    std::cout << inst << " when " << IIC( inst )->when << "\n";
-
-    // Inst::display_graph( out );
+    // for( Expr inst : needed )
+    //     std::cout << inst << " when " << inst->when << "\n";
 }
 
 void Codegen_C::write( CBlockAsm &cba ) {
@@ -264,7 +361,7 @@ void Codegen_C::write( CBlockAsm &cba ) {
                 if ( i )
                     *os << " and ";
                 if ( not item.s->sc[ i ].second )
-                    *os << " not ";
+                    *os << "not ";
                 *os << item.s->sc[ i ].first;
             }
             on.write_end( " ) {" );
@@ -275,8 +372,40 @@ void Codegen_C::write( CBlockAsm &cba ) {
             on.nsp -= 4;
             on << "}";
         } else {
-            for( Expr inst : item.b->inst )
-                on << inst;
+            CInstBlock *b = item.b;
+
+            // front
+            Vec<Expr> front;
+            ++Inst::cur_op_id;
+            for( Expr inst : item.b->inst ) {
+                int nb_ch = 0;
+                for( Expr ch : inst->inp )
+                    nb_ch += IIC( ch )->block == b;
+                for( Expr ch : inst->dep )
+                    nb_ch += IIC( ch )->block == b;
+                if ( not nb_ch ) {
+                    inst->op_id = inst->cur_op_id;
+                    front << inst;
+                }
+            }
+
+            //
+            ++Inst::cur_op_id;
+            while ( front.size() ) {
+                Expr inst = front.back();
+                front.pop_back();
+
+                inst->write_to( this );
+                inst->op_id = inst->cur_op_id;
+
+                // parents
+                for( Inst::Parent &p : inst->par ) {
+                    if ( IIC( p.inst )->block == b and ready_to_be_scheduled( p.inst, b ) ) {
+                        p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
+                        front << p.inst;
+                    }
+                }
+            }
         }
     }
 }

@@ -1,3 +1,4 @@
+#include "InstInfo_C.h"
 #include "Select.h"
 #include "Store.h"
 #include "Room.h"
@@ -25,7 +26,7 @@ public:
         return new Room( len );
     }
     virtual int size() const {
-        return len;
+        return ip->type_ST->size();
     }
     virtual Expr _get_val() {
         return val;
@@ -42,8 +43,8 @@ public:
     virtual Expr _at( int len ) {
         return val;
     }
-    virtual void _visit_pointed_data( Visitor &v ) {
-        val->visit( v, true );
+    virtual void _visit_pointed_data( Visitor &v, bool want_dep ) {
+        val->visit( v, true, want_dep );
     }
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut ) {
         Expr st = store( this, val );
@@ -53,6 +54,19 @@ public:
             st->add_dep( d );
         future_dep.resize( 0 );
         future_dep << fut;
+    }
+    virtual void write_to( Codegen_C *cc, int prec ) {
+        if ( prec < 0 )
+            cc->on << *IIC( this )->val_type << " R" << ( IIC( this )->num_reg = cc->new_num_reg() ) << ";";
+    }
+    virtual void write_to( Codegen_C *cc, int prec, int num_reg ) {
+        *cc->os << "&R" << num_reg;
+    }
+    virtual void val_type_proposition( Type *type ) {
+        IIC( this )->val_type = type;
+    }
+    virtual bool is_a_Room() const {
+        return true;
     }
 
     Vec<Expr> future_dep;

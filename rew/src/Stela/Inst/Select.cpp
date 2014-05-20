@@ -22,23 +22,31 @@ public:
             return res > 0 ? inp[ 1 ] : inp[ 2 ];
         return 0;
     }
-    virtual void _update_when_C( Expr cond ) {
-        Expr res = op( &ip->type_Bool, &ip->type_Bool, IIC( this )->when, &ip->type_Bool, cond, Op_or_boolean() );
-        if ( IIC( this )->when == res )
-            return;
-
-        IIC( this )->when = res;
+    virtual void update_when( Expr cond ) {
+        if ( when ) {
+            Expr res = op( &ip->type_Bool, &ip->type_Bool, when, &ip->type_Bool, cond, Op_or_boolean() );
+            if ( when == res )
+                return;
+            res->update_when( cond );
+            when = res;
+        } else
+            when = cond;
 
         Expr cok = inp[ 0 ];
         Expr cko = op( &ip->type_Bool, &ip->type_Bool, cok, Op_not_boolean() );
         Expr c0 = op( &ip->type_Bool, &ip->type_Bool, cok, &ip->type_Bool, cond, Op_and_boolean() );
         Expr c1 = op( &ip->type_Bool, &ip->type_Bool, cko, &ip->type_Bool, cond, Op_and_boolean() );
-        inp[ 0 ]->_update_when_C( cond );
-        inp[ 1 ]->_update_when_C( c0 );
-        inp[ 2 ]->_update_when_C( c1 );
+        c0->update_when( cond );
+        c1->update_when( cond );
+        inp[ 0 ]->update_when( cond );
+        inp[ 1 ]->update_when( c0 );
+        inp[ 2 ]->update_when( c1 );
 
         for( Expr inst : dep )
-            inst->_update_when_C( cond );
+            inst->update_when( cond );
+    }
+    virtual bool is_a_Select() const {
+        return true;
     }
 };
 

@@ -1,4 +1,5 @@
 #include "InstInfo_C.h"
+#include "Codegen_C.h"
 #include <fstream>
 #include "Inst.h"
 #include "Cst.h"
@@ -18,15 +19,7 @@ Inst::Inst() {
 }
 
 Inst::~Inst() {
-    for( int num = 0; num < inp.size(); ++num )
-        if ( inp[ num ] )
-            inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
-    for( int num = 0; num < dep.size(); ++num )
-        if ( dep[ num ] )
-            dep[ num ]->par.remove_first_unordered( Parent{ this, TPAR_DEP } );
-    for( int num = 0; num < ext.size(); ++num )
-        if ( ext[ num ] )
-            ext[ num ]->ext_par = 0;
+    rem_ref_to_this();
 }
 
 void Inst::write_to_stream( Stream &os ) const {
@@ -54,6 +47,25 @@ void Inst::mod_inp( const Expr &val, int num ) {
     inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
     val->par << Parent{ this, num };
     inp[ num ] = val;
+}
+
+void Inst::rem_ref_to_this() {
+    for( int num = 0; num < inp.size(); ++num )
+        if ( inp[ num ] )
+            inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
+    for( int num = 0; num < dep.size(); ++num )
+        if ( dep[ num ] )
+            dep[ num ]->par.remove_first_unordered( Parent{ this, TPAR_DEP } );
+    for( int num = 0; num < ext.size(); ++num )
+        if ( ext[ num ] )
+            ext[ num ]->ext_par = 0;
+}
+
+void Inst::clear_children() {
+    rem_ref_to_this();
+    inp.resize( 0 );
+    dep.resize( 0 );
+    ext.resize( 0 );
 }
 
 void Inst::clone( Vec<Expr> &created ) const {
@@ -92,20 +104,31 @@ bool Inst::is_a_pointer() const {
     return false;
 }
 
-void Inst::visit( Visitor &v, bool pointed_data ) {
+bool Inst::is_a_Select() const {
+    return false;
+}
+
+bool Inst::is_a_Room() const {
+    return false;
+}
+
+void Inst::visit( Visitor &v, bool pointed_data, bool want_dep ) {
     if ( op_id == cur_op_id )
         return;
     op_id = cur_op_id;
 
     v( this );
     if ( pointed_data )
-        _visit_pointed_data( v );
+        _visit_pointed_data( v, want_dep );
 
     for( Expr i : inp )
-        i->visit( v, pointed_data );
+        i->visit( v, pointed_data, want_dep );
+    if ( want_dep )
+        for( Expr i : dep )
+            i->visit( v, pointed_data, want_dep );
 }
 
-void Inst::_visit_pointed_data( Visitor &v ) {
+void Inst::_visit_pointed_data( Visitor &v, bool want_dep ) {
 }
 
 int Inst::checked_if( Expr cond ) {
@@ -121,12 +144,22 @@ int Inst::allow_to_check( Expr val ) {
 }
 
 
-Type *Inst::out_type_proposition( Codegen_C *cc ) const {
-    return 0;
+void Inst::inp_type_proposition( Type *type, int ninp ) {
 }
 
-Type *Inst::inp_type_proposition( Codegen_C *cc, int ninp ) const {
-    return 0;
+void Inst::out_type_proposition( Type *type ) {
+    if ( IIC( this )->out_type != type ) {
+        IIC( this )->out_type = type;
+        for( Parent &p : par )
+            if ( p.ninp >= 0 )
+                p.inst->inp_type_proposition( type, p.ninp );
+    }
+}
+
+void Inst::val_type_proposition( Type *type ) {
+}
+
+void Inst::update_out_type() {
 }
 
 
@@ -211,6 +244,21 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
             ext_buf << ch;
 }
 
+void Inst::write_to( Codegen_C *cc, int prec ) {
+    if ( prec < 0 )
+        cc->on.write_beg() << "// ";
+    write_dot( *cc->os );
+    if ( prec < 0 )
+        cc->on.write_end();
+}
+
+void Inst::write_to( Codegen_C *cc, int prec, int num_reg ) {
+    if ( num_reg >= 0 )
+        *cc->os << "R" << num_reg;
+    else
+        write_to( cc, prec );
+}
+
 void Inst::_add_store_dep_if_necessary( Expr res, Expr fut ) {
 }
 
@@ -232,17 +280,20 @@ Expr Inst::_at( int len ) {
     return cst( 0, 0 );
 }
 
-void Inst::_update_when_C( Expr cond ) {
-    Expr res = op( &ip->type_Bool, &ip->type_Bool, IIC( this )->when, &ip->type_Bool, cond, Op_or_boolean() );
-    if ( IIC( this )->when == res )
-        return;
-
-    IIC( this )->when = res;
+void Inst::update_when( Expr cond ) {
+    if ( when ) {
+        Expr res = op( &ip->type_Bool, &ip->type_Bool, when, &ip->type_Bool, cond, Op_or_boolean() );
+        if ( when == res )
+            return;
+        res->update_when( cond );
+        when = res;
+    } else
+        when = cond;
 
     for( Expr inst : inp )
-        inst->_update_when_C( cond );
+        inst->update_when( cond );
     for( Expr inst : dep )
-        inst->_update_when_C( cond );
+        inst->update_when( cond );
 }
 
 void Inst::_get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos ) {

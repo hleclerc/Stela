@@ -1,4 +1,5 @@
 #include "../System/SameType.h"
+#include "InstInfo_C.h"
 #include "Type.h"
 #include "Cst.h"
 #include "Op.h"
@@ -14,12 +15,12 @@ public:
     virtual void write_dot( Stream &os ) const {
         os << T();
     }
-    virtual Type *out_type_proposition( Codegen_C *cc ) const {
-        return tr;
+    virtual void update_out_type() {
+        out_type_proposition( tr );
+        if ( ta ) inp[ 0 ]->out_type_proposition( ta );
+        if ( tb ) inp[ 1 ]->out_type_proposition( tb );
     }
-    virtual Type *inp_type_proposition( Codegen_C *cc, int ninp ) const {
-        return ninp ? tb : ta;
-    }
+
     virtual int size() const {
         return tr->size();
     }

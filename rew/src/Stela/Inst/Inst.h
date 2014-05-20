@@ -37,6 +37,8 @@ public:
     void add_dep( const Expr &val );
     void add_inp( const Expr &val );
     void mod_inp( const Expr &val, int num );
+    void clear_children(); ///< remove inp and dep
+    void rem_ref_to_this(); ///< remove inp and dep
 
     virtual void clone( Vec<Expr> &created ) const;
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
@@ -47,28 +49,37 @@ public:
     virtual int size() const = 0;
     virtual const PI8 *data_ptr( int offset = 0 ) const;
 
-    void visit( Visitor &v, bool pointed_data = false );
-    virtual void _visit_pointed_data( Visitor &v );
+    void visit( Visitor &v, bool pointed_data = false, bool want_dep = true );
+    virtual void _visit_pointed_data( Visitor &v, bool want_dep );
 
     virtual int checked_if( Expr cond ); ///< -1 = false, 0 = unknown, 1 = true
     virtual int always_checked() const; ///< -1 = false, 0 = unknown, 1 = true
     virtual int allow_to_check( Expr val ); ///< -1 = false, 0 = unknown, 1 = true
 
     virtual bool is_a_pointer() const;
-    virtual Type *out_type_proposition( Codegen_C *cc ) const;
-    virtual Type *inp_type_proposition( Codegen_C *cc, int ninp ) const;
+    virtual bool is_a_Select() const;
+    virtual bool is_a_Room() const;
+
+    virtual void inp_type_proposition( Type *type, int ninp ); ///< proposition comming from inp[ ninp ]
+    virtual void out_type_proposition( Type *type );
+    virtual void val_type_proposition( Type *type );
+    virtual void update_out_type();
 
     // graphviz
     static int display_graph( const Vec<Expr> &outputs, const char *filename = ".res" );
     virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
     virtual void write_sub_graph_rec( Stream &os ) const;
 
+    virtual void write_to( Codegen_C *cc, int prec = -1 ); ///< prec = -1 -> make a new line for this instruction
+    virtual void write_to( Codegen_C *cc, int prec, int num_reg );
+
+    virtual void update_when( Expr cond );
+
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();
     virtual Expr _get_val();
     virtual void _set_val( Expr val );
     virtual Expr _at( int len );
-    virtual void _update_when_C( Expr cond );
     virtual void _get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos );
     virtual void _get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos );
 
@@ -76,6 +87,7 @@ public:
     Vec<Expr>           dep; ///< dependencies
     Vec<Expr>           ext; ///< WhileOut, ...
     mutable Vec<Parent> par; ///< parents
+    Expr                when; ///< used for code generation (to know when needed)
 
     Inst               *ext_par;
 

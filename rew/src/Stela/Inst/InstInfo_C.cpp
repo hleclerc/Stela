@@ -1,4 +1,8 @@
 #include "InstInfo_C.h"
+#include "Ip.h"
 
-InstInfo_C::InstInfo_C( Expr when ) : block( 0 ), when( when ) {
+InstInfo_C::InstInfo_C() : block( 0 ) {
+    num_reg = -1;
+    out_type = 0;
+    val_type = &ip->type_Void;
 }

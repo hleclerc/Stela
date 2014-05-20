@@ -62,4 +62,16 @@ Var Ip::error_var() {
     return Var( &type_Error );
 }
 
+Type *Ip::artificial_type_for_size( int size ) {
+    if ( size == 0 ) return &type_Void;
+    if ( size == 1 ) return &type_Bool;
+    auto iter = art_types.find( size );
+    if ( iter != art_types.end() )
+        return &iter->second;
+    Type &res = art_types[ size ];
+    res.name = str_cor.num( "RF" + std::to_string( size ) );
+    res._len = size;
+    return &res;
+}
+
 Ip *ip = 0;

@@ -1,6 +1,7 @@
 #ifndef INSTINFO_C_H
 #define INSTINFO_C_H
 
+#include "Codegen_C.h"
 #include "Inst.h"
 class CInstBlock;
 
@@ -8,10 +9,13 @@ class CInstBlock;
 */
 class InstInfo_C {
 public:
-    InstInfo_C( Expr when );
+    InstInfo_C();
 
     CInstBlock *block;
-    Expr when;
+
+    int num_reg;
+    Type *out_type;
+    Type *val_type; ///< for pointers
 };
 
 #define IIC( A ) reinterpret_cast<InstInfo_C *>( ( A )->op_mp )

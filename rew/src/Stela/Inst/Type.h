@@ -7,7 +7,7 @@
 */
 class Type {
 public:
-    Type( int name, int len = -1 );
+    Type( int name = -1, int len = -1 );
 
     void write_to_stream( Stream &os ) const;
 

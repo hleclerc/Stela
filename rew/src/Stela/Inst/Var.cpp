@@ -78,7 +78,7 @@ Var syscall( const Vec<Var> &inp ) {
     add_store_dep.fut = fut;
     ++Inst::cur_op_id;
     for( Expr expr : inp_expr )
-        expr->visit( add_store_dep );
+        expr->visit( add_store_dep, true, false );
 
     ip->sys_state.inst = fut;
     return Var( ip->type_ST, res );

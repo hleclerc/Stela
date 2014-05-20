@@ -92,3 +92,6 @@ src/Stela/Inst/InstInfo_C.h
 src/Stela/Inst/InstInfo_C.cpp
 src/Stela/System/SameType.h
 src/Stela/System/RaiiSave.h
+src/Stela/Inst/ValAt.h
+src/Stela/Inst/ValAt.cpp
+src/Stela/Inst/CppOperatorPrecedence.h
