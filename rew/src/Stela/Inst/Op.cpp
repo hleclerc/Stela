@@ -106,7 +106,7 @@ public:
             return;
         }
         if ( SameType<T,Op_not_boolean>::res )
-            return inp[ 0 ]->_get_sub_cond_or( sc, not pos );
+            return inp[ 0 ]->_get_sub_cond_and( sc, not pos );
         sc << std::make_pair( this, pos );
     }
 
@@ -117,7 +117,7 @@ public:
             return;
         }
         if ( SameType<T,Op_not_boolean>::res )
-            return inp[ 0 ]->_get_sub_cond_and( sc, not pos );
+            return inp[ 0 ]->_get_sub_cond_or( sc, not pos );
         sc << std::make_pair( this, pos );
     }
 
