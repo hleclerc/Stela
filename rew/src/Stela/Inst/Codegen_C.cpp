@@ -301,14 +301,14 @@ void Codegen_C::make_code() {
     for( CInstBlock *b : front_block )
         b->op_id = b->cur_op_id;
 
-    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
-        CInstBlock *b = &blocks[ num_block ];
-        std::cout << b << std::endl;
-        std::cout << "  par=" << b->par << std::endl;
-        std::cout << "  dep=" << b->dep << std::endl;
-        std::cout << "  cond=" << b->cond << std::endl;
-        std::cout << "  inst=" << b->inst << std::endl;
-    }
+    //    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
+    //        CInstBlock *b = &blocks[ num_block ];
+    //        std::cout << b << std::endl;
+    //        std::cout << "  par=" << b->par << std::endl;
+    //        std::cout << "  dep=" << b->dep << std::endl;
+    //        std::cout << "  cond=" << b->cond << std::endl;
+    //        std::cout << "  inst=" << b->inst << std::endl;
+    //    }
 
     ++CInstBlock::cur_op_id;
     SplittedVec<CBlockAsm,8> block_asm;
@@ -352,27 +352,44 @@ void Codegen_C::make_code() {
     //     std::cout << inst << " when " << inst->when << "\n";
 }
 
+static bool same_cond_with_an_else( Vec<std::pair<Expr,bool> > &a, Vec<std::pair<Expr,bool> > &b ) {
+    return a.size() and
+           a.size() == b.size() and
+           a.slice( 0, a.size() - 1 ) == b.slice( 0, a.size() - 1 ) and
+           a.back().first == b.back().first and
+           a.back().second != b.back().second;
+}
+
 void Codegen_C::write( CBlockAsm &cba ) {
+    CBlockAsm *prev = 0;
     for( CBlockAsm::Item &item : cba.items ) {
         if ( item.s ) {
-            on.write_beg();
-            *os << "if ( ";
-            for( int i = 0; i < item.s->sc.size(); ++i ) {
-                if ( i )
-                    *os << " and ";
-                if ( not item.s->sc[ i ].second )
-                    *os << "not ";
-                *os << item.s->sc[ i ].first;
+            if ( prev and same_cond_with_an_else( prev->sc, item.s->sc ) ) {
+                on << "else {";
+            } else {
+                on.write_beg();
+                *os << "if ( ";
+                for( int i = 0; i < item.s->sc.size(); ++i ) {
+                    if ( i )
+                        *os << " and ";
+                    if ( not item.s->sc[ i ].second )
+                        *os << "not ";
+                    *os << item.s->sc[ i ].first;
+                }
+                on.write_end( " ) {" );
             }
-            on.write_end( " ) {" );
             on.nsp += 4;
 
             write( *item.s );
 
             on.nsp -= 4;
             on << "}";
+
+            //
+            prev = item.s;
         } else {
             CInstBlock *b = item.b;
+            prev = 0;
 
             // front
             Vec<Expr> front;

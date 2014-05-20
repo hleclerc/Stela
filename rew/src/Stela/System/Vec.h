@@ -514,6 +514,13 @@ public:
         return _data[ i ];
     }
 
+    Vec slice( int beg, int end ) {
+        Vec res( Size(), end - beg );
+        for( int i = beg, o = 0; i < end; ++i, ++o )
+            res[ o ] = operator[]( i );
+        return res;
+    }
+
     ST size() const { return _size; }
 
     bool empty() const { return size() == 0; }
