@@ -203,6 +203,9 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
     std::ostringstream ss;
     write_dot( ss );
 
+    if ( when )
+        when->write_to_stream( ss << "\n" );
+
     // node
     std::string ls = ss.str();
     os << "    node" << this << " [label=\"";

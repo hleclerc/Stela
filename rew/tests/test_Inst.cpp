@@ -130,10 +130,12 @@ void test_code_select() {
     Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
     Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
 
-//    ip->set_cond( c0 );
-//    a.set_val( b );
-//    ip->pop_cond();
-    ip->set_cond( c0.and_boolean( c1 ) );
+    ip->set_cond( c0 );
+    a.set_val( b );
+    ip->pop_cond();
+
+    ip->set_cond( c1 );
+    //ip->set_cond( c0.and_boolean( c1 ) );
     a.set_val( c );
     ip->pop_cond();
 
