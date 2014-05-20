@@ -133,6 +133,9 @@ void test_code_select() {
     ip->set_cond( c0 );
     a.set_val( b );
     ip->pop_cond();
+    ip->set_cond( c0.and_boolean( c1 ) );
+    a.set_val( c );
+    ip->pop_cond();
 
     syscall( a.ptr() );
 
