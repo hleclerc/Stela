@@ -42,105 +42,11 @@ public:
         if ( ta ) inp[ 0 ]->out_type_proposition( ta );
         if ( tb ) inp[ 1 ]->out_type_proposition( tb );
     }
-
     virtual int size() const {
         return tr->size();
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new Op( tr, ta, tb );
-    }
-
-
-    // checked_if
-    template<class TT>
-    int _checked_if( Expr cond, TT ) {
-        return Inst::checked_if( cond );
-    }
-    int _checked_if( Expr cond, Op_and_boolean ) {
-        int c0 = inp[ 0 ]->checked_if( cond );
-        int c1 = inp[ 1 ]->checked_if( cond );
-        if ( c0 == 1 and c1 == 1 ) // both are ok
-            return 1;
-        if ( c0 == -1 or c1 == -1 ) // at least one is false
-            return -1;
-        return 0;
-    }
-    int _checked_if( Expr cond, Op_or_boolean ) {
-        int c0 = inp[ 0 ]->checked_if( cond );
-        int c1 = inp[ 1 ]->checked_if( cond );
-        if ( c0 == 1 or c1 == 1 ) // at least one is ok
-            return 1;
-        if ( c0 == -1 and c1 == -1 ) // both are false
-            return -1;
-        return 0;
-    }
-    int _checked_if( Expr cond, Op_not_boolean ) {
-        if ( int c0 = inp[ 0 ]->checked_if( cond ) )
-            return -c0;
-        return 0;
-    }
-
-    virtual int checked_if( Expr cond ) {
-        return _checked_if( cond, T() );
-    }
-
-    // rtrue if
-    template<class TT>
-    int _allow_to_check( Expr val, TT ) {
-        return 0;
-    }
-    int _allow_to_check( Expr val, Op_and_boolean ) {
-        // we know that inp[ 0 ] and inp[ 1 ] are true
-        int c0 = inp[ 0 ]->allow_to_check( val );
-        int c1 = inp[ 1 ]->allow_to_check( val );
-        if ( c0 == 1 or c1 == 1 )
-            return 1;
-        if ( c0 == -1 and c1 == -1 )
-            return -1;
-        return 0;
-    }
-    int _allow_to_check( Expr val, Op_or_boolean ) {
-        // we know that inp[ 0 ] or inp[ 1 ] are true
-        int c0 = inp[ 0 ]->allow_to_check( val );
-        int c1 = inp[ 1 ]->allow_to_check( val );
-        if ( c0 == 1 and c1 == 1 )
-            return 1;
-        if ( c0 == -1 and c1 == -1 )
-            return -1;
-        return 0;
-    }
-    int _allow_to_check( Expr val, Op_not_boolean ) {
-        if ( int c0 = inp[ 0 ]->allow_to_check( val ) )
-            return -c0;
-        return 0;
-    }
-
-    virtual int allow_to_check( Expr val ) {
-        if ( int trial = Inst::allow_to_check( val ) )
-            return trial;
-        return _allow_to_check( val, T() );
-    }
-
-    virtual void _get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
-        if ( SameType<T,Op_or_boolean>::res ) {
-            inp[ 0 ]->_get_sub_cond_or( sc, pos );
-            inp[ 1 ]->_get_sub_cond_or( sc, pos );
-            return;
-        }
-        if ( SameType<T,Op_not_boolean>::res )
-            return inp[ 0 ]->_get_sub_cond_and( sc, not pos );
-        sc << std::make_pair( this, pos );
-    }
-
-    virtual void _get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
-        if ( SameType<T,Op_and_boolean>::res ) {
-            inp[ 0 ]->_get_sub_cond_and( sc, pos );
-            inp[ 1 ]->_get_sub_cond_and( sc, pos );
-            return;
-        }
-        if ( SameType<T,Op_not_boolean>::res )
-            return inp[ 0 ]->_get_sub_cond_or( sc, not pos );
-        sc << std::make_pair( this, pos );
     }
 
     Type *tr;
@@ -158,18 +64,12 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, OP ) {
 
 // or
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_or_boolean ) {
-    Bool val;
-    if ( a->get_val( val ) ) return val ? ip->cst_true : b;
-    if ( b->get_val( val ) ) return val ? ip->cst_true : a;
-    return inst_bool_op_seq( op_or( a->get_BoolOpSeq(), b->get_BoolOpSeq() ) );
+    return inst_bool_op_seq( a->get_BoolOpSeq() or b->get_BoolOpSeq() );
 }
 
 // and
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_boolean ) {
-    Bool val;
-    if ( a->get_val( val ) ) return val ? b : ip->cst_false;
-    if ( b->get_val( val ) ) return val ? a : ip->cst_false;
-    return inst_bool_op_seq( op_and( a->get_BoolOpSeq(), b->get_BoolOpSeq() ) );
+    return inst_bool_op_seq( a->get_BoolOpSeq() and b->get_BoolOpSeq() );
 }
 
 //
@@ -193,10 +93,7 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, OP ) {
 
 // not_boolean
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Op_not_boolean ) {
-    Bool val;
-    if ( a->get_val( val ) )
-        return val ? ip->cst_false : ip->cst_true;
-    return inst_bool_op_seq( op_not( a->get_BoolOpSeq() ) );
+    return inst_bool_op_seq( not a->get_BoolOpSeq() );
 }
 
 //

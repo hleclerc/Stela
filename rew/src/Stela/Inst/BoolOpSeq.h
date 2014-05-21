@@ -2,6 +2,7 @@
 #define BOOLOPSEQ_H
 
 #include "Inst.h"
+class Expr;
 
 /**
 and( or( c0, not c1 ), or( ... ), ... )
@@ -21,15 +22,19 @@ public:
     void write_to_stream( Stream &os ) const;
     BoolOpSeq &simplify();
 
+    bool operator==( const BoolOpSeq &b ) const {
+        return or_seq == b.or_seq and ( or_seq.size() == 0 or val_if_not_or_seq == b.val_if_not_or_seq );
+    }
+
     Vec<Vec<Item> > or_seq; // ( c0 and c1 ) or ( c2 and c3 and ... ) or ...
     bool val_if_not_or_seq;
 protected:
     bool simplify_and_seq( Vec<Item> &and_seq );
 };
 
-BoolOpSeq op_and( const BoolOpSeq &a, const BoolOpSeq &b );
-BoolOpSeq op_or ( const BoolOpSeq &a, const BoolOpSeq &b );
-BoolOpSeq op_not( const BoolOpSeq &a );
+BoolOpSeq operator&&( const BoolOpSeq &a, const BoolOpSeq &b );
+BoolOpSeq operator||( const BoolOpSeq &a, const BoolOpSeq &b );
+BoolOpSeq operator! ( const BoolOpSeq &a );
 
 
 #endif // BOOLOPSEQ_H

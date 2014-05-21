@@ -65,6 +65,7 @@ void test_simp_bool() {
     PVAL( c0 and cf );
     PVAL( c0 and ct );
     PVAL( c0 and not c0 );
+    PVAL( ( c0 and c1 ) or c0 );
     PVAL( not ( c0 and c1 ) );
 }
 

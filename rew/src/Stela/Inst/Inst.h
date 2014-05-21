@@ -74,15 +74,13 @@ public:
     virtual void write_to( Codegen_C *cc, int prec = -1 ); ///< prec = -1 -> make a new line for this instruction
     virtual void write_to( Codegen_C *cc, int prec, int num_reg );
 
-    virtual void update_when( Expr cond );
+    virtual void update_when( const BoolOpSeq &cond );
 
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();
     virtual Expr _get_val();
     virtual void _set_val( Expr val );
-    virtual Expr _at( int len );
-    virtual void _get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos );
-    virtual void _get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos );
+    virtual Expr _at( int len ); /// val at adress...
 
     virtual BoolOpSeq get_BoolOpSeq();
 
@@ -90,7 +88,7 @@ public:
     Vec<Expr>           dep; ///< dependencies
     Vec<Expr>           ext; ///< WhileOut, ...
     mutable Vec<Parent> par; ///< parents
-    Expr                when; ///< used for code generation (to know when needed)
+    BoolOpSeq          *when; ///< used for code generation (to know when needed)
 
     Inst               *ext_par;
 

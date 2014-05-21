@@ -1,4 +1,6 @@
+#include "../System/AssignIfNeq.h"
 #include "InstInfo_C.h"
+#include "BoolOpSeq.h"
 #include "Select.h"
 #include "Op.h"
 #include "Ip.h"
@@ -22,25 +24,17 @@ public:
             return res > 0 ? inp[ 1 ] : inp[ 2 ];
         return 0;
     }
-    virtual void update_when( Expr cond ) {
-        if ( when ) {
-            Expr res = op( &ip->type_Bool, &ip->type_Bool, when, &ip->type_Bool, cond, Op_or_boolean() );
-            if ( when == res )
-                return;
-            res->update_when( cond );
-            when = res;
-        } else
-            when = cond;
+    virtual void update_when( const BoolOpSeq &cond ) {
+        if ( not when )
+            when = new BoolOpSeq( cond );
+        else if ( not assign_if_neq( *when, *when or cond ) )
+            return;
 
-        Expr cok = inp[ 0 ];
-        Expr cko = op( &ip->type_Bool, &ip->type_Bool, cok, Op_not_boolean() );
-        Expr c0 = op( &ip->type_Bool, &ip->type_Bool, cok, &ip->type_Bool, cond, Op_and_boolean() );
-        Expr c1 = op( &ip->type_Bool, &ip->type_Bool, cko, &ip->type_Bool, cond, Op_and_boolean() );
-        c0->update_when( cond );
-        c1->update_when( cond );
+        BoolOpSeq binp = inp[ 0 ]->get_BoolOpSeq();
+
         inp[ 0 ]->update_when( cond );
-        inp[ 1 ]->update_when( c0 );
-        inp[ 2 ]->update_when( c1 );
+        inp[ 1 ]->update_when( cond and binp );
+        inp[ 2 ]->update_when( cond and not binp );
 
         for( Expr inst : dep )
             inst->update_when( cond );

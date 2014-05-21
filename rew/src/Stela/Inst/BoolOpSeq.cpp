@@ -60,6 +60,7 @@ BoolOpSeq &BoolOpSeq::simplify() {
                 or_seq.remove( j-- );
                 continue;
             }
+            // A and c or B and (!)c
             int index;
             if ( eq_excepted( or_seq[ i ], or_seq[ j ], index ) ) {
                 // ( ... and c0 and ... ) or ( ... and not c0 and ... )
@@ -72,6 +73,14 @@ BoolOpSeq &BoolOpSeq::simplify() {
                 val_if_not_or_seq = true;
                 or_seq.resize( 0 );
                 return *this;
+            }
+            // A and c or c -> c
+            if ( is_a_subset( or_seq[ i ], or_seq[ j ] ) ) {
+                TODO;
+            }
+            // c or A and c -> c
+            if ( is_a_subset( or_seq[ j ], or_seq[ i ] ) ) {
+                TODO;
             }
         }
     }
@@ -100,7 +109,7 @@ bool BoolOpSeq::simplify_and_seq( Vec<Item> &and_seq ) {
     return false;
 }
 
-BoolOpSeq op_and( const BoolOpSeq &a, const BoolOpSeq &b ) {
+BoolOpSeq operator&&( const BoolOpSeq &a, const BoolOpSeq &b ) {
     if ( not a.or_seq.size() )
         return a.val_if_not_or_seq ? b : BoolOpSeq( false );
     if ( not b.or_seq.size() )
@@ -119,7 +128,7 @@ BoolOpSeq op_and( const BoolOpSeq &a, const BoolOpSeq &b ) {
     return res.simplify();
 }
 
-BoolOpSeq op_or( const BoolOpSeq &a, const BoolOpSeq &b ) {
+BoolOpSeq operator||( const BoolOpSeq &a, const BoolOpSeq &b ) {
     if ( not a.or_seq.size() )
         return a.val_if_not_or_seq ? BoolOpSeq( true ) : b;
     if ( not b.or_seq.size() )
@@ -148,7 +157,7 @@ static void push_not_rec( BoolOpSeq &res, const BoolOpSeq &a, const Vec<int> &in
 }
 
 
-BoolOpSeq op_not( const BoolOpSeq &a ) {
+BoolOpSeq operator!( const BoolOpSeq &a ) {
     if ( a.or_seq.size() ) {
         BoolOpSeq res;
         push_not_rec( res, a, Vec<int>() );

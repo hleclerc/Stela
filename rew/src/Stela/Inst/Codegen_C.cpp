@@ -1,6 +1,7 @@
 #include "../System/RaiiSave.h"
 #include "InstInfo_C.h"
 #include "Codegen_C.h"
+#include "BoolOpSeq.h"
 #include "SelectDep.h"
 #include "Store.h"
 #include "ValAt.h"
@@ -76,7 +77,7 @@ static bool ready_to_be_scheduled( Expr inst ) {
 
 
 struct CInstBlock {
-    CInstBlock( Expr cond ) : cond( cond ), op_id( 0 ) {}
+    CInstBlock( BoolOpSeq cond ) : cond( cond ), op_id( 0 ) {}
 
     void update_dep() {
         dep.resize( 0 );
@@ -101,14 +102,9 @@ struct CInstBlock {
         }
     }
 
-    void update_sc() {
-        cond->_get_sub_cond_and( sc, true );
-    }
-
-    Vec<std::pair<Expr,bool> > sc; ///< cond as a vec of anded op
     Vec<CInstBlock *> dep, par;
     Vec<Expr> inst;
-    Expr cond;
+    BoolOpSeq cond; ///< cond as a vec of anded op
 
     static  PI64 cur_op_id;
     mutable PI64 op_id;
@@ -144,15 +140,15 @@ static bool ready_to_be_scheduled( Expr inst, CInstBlock *b ) {
 }
 
 struct CBlockAsm {
-    CBlockAsm( CBlockAsm *par = 0, const Vec<std::pair<Expr,bool> > &sc = Vec<std::pair<Expr,bool> >() ) : sc( sc ), par( par ) {
+    CBlockAsm( CBlockAsm *par = 0, const BoolOpSeq &cond = BoolOpSeq( true ) ) : par( par ), cond( cond ) {
     }
     struct Item {
         CInstBlock *b;
         CBlockAsm  *s;
     };
-    Vec<std::pair<Expr,bool> > sc; ///< cond as a vec of anded op
-    CBlockAsm                 *par;
-    Vec<Item>                  items;
+    CBlockAsm *par;
+    BoolOpSeq  cond; ///< cond as a vec of anded op
+    Vec<Item>  items;
 };
 
 struct AddToNeeded : Inst::Visitor {
@@ -160,8 +156,6 @@ struct AddToNeeded : Inst::Visitor {
     }
     virtual void operator()( Expr expr ) {
         needed << expr;
-        if ( expr->when )
-            expr->when->visit( *this );
     }
     Vec<Expr> &needed;
 };
@@ -213,7 +207,7 @@ void Codegen_C::make_code() {
     // update inst->when
     // pour éviter les boucles: on fait une liste d'exploration...
     for( Expr inst : out )
-        inst->update_when( ip->cst_true );
+        inst->update_when( BoolOpSeq( true ) );
 
     Inst::display_graph( out );
 
@@ -256,11 +250,11 @@ void Codegen_C::make_code() {
 
     ++Inst::cur_op_id;
     SplittedVec<CInstBlock,8> blocks;
-    CInstBlock *cur_block = blocks.push_back( ip->cst_true );
+    CInstBlock *cur_block = blocks.push_back( BoolOpSeq( true ) );
     while ( front.size() ) {
         Expr inst;
         for( int i = 0; i < front.size(); ++i ) {
-            if ( front[ i ]->when == cur_block->cond ) {
+            if ( *front[ i ]->when == cur_block->cond ) {
                 inst = front[ i ];
                 front.remove_unordered( i );
                 break;
@@ -272,7 +266,7 @@ void Codegen_C::make_code() {
             inst = front.back();
             front.pop_back();
 
-            cur_block = blocks.push_back( inst->when );
+            cur_block = blocks.push_back( *inst->when );
         }
 
         inst->op_id = Inst::cur_op_id; // done
@@ -292,7 +286,6 @@ void Codegen_C::make_code() {
     Vec<CInstBlock *> front_block;
     for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
         CInstBlock *b = &blocks[ num_block ];
-        b->update_sc();
         b->update_dep();
         if ( not b->dep.size() )
             front_block << b;
@@ -314,7 +307,7 @@ void Codegen_C::make_code() {
     ++CInstBlock::cur_op_id;
     SplittedVec<CBlockAsm,8> block_asm;
     CBlockAsm *cba = block_asm.push_back();
-    cba->sc << std::make_pair( ip->cst_true, 1 );
+    // cba->sc << std::make_pair( ip->cst_true, 1 );
     while ( front_block.size() ) {
         CInstBlock *b = 0;
         // try to find a block with
@@ -327,10 +320,10 @@ void Codegen_C::make_code() {
 
         b->op_id = b->cur_op_id;
 
-        if ( b->sc == cba->sc )
+        if ( b->cond == cba->cond )
             cba->items << CBlockAsm::Item{ b, 0 };
         else {
-            CBlockAsm *nba = block_asm.push_back( cba, b->sc );
+            CBlockAsm *nba = block_asm.push_back( cba, b->cond );
             nba->items << CBlockAsm::Item{ b, 0 };
 
             cba->items << CBlockAsm::Item{ 0, nba };
@@ -353,32 +346,33 @@ void Codegen_C::make_code() {
     //     std::cout << inst << " when " << inst->when << "\n";
 }
 
-static bool same_cond_with_an_else( Vec<std::pair<Expr,bool> > &a, Vec<std::pair<Expr,bool> > &b ) {
-    return a.size() and
-           a.size() == b.size() and
-           a.slice( 0, a.size() - 1 ) == b.slice( 0, a.size() - 1 ) and
-           a.back().first == b.back().first and
-           a.back().second != b.back().second;
-}
+//static bool same_cond_with_an_else( Vec<std::pair<Expr,bool> > &a, Vec<std::pair<Expr,bool> > &b ) {
+//    return a.size() and
+//           a.size() == b.size() and
+//           a.slice( 0, a.size() - 1 ) == b.slice( 0, a.size() - 1 ) and
+//           a.back().first == b.back().first and
+//           a.back().second != b.back().second;
+//}
 
 void Codegen_C::write( CBlockAsm &cba ) {
     CBlockAsm *prev = 0;
     for( CBlockAsm::Item &item : cba.items ) {
         if ( item.s ) {
-            if ( prev and same_cond_with_an_else( prev->sc, item.s->sc ) ) {
-                on << "else {";
-            } else {
+            //if ( prev and same_cond_with_an_else( prev->cond, item.s->cond ) ) {
+            //    on << "else {";
+            //} else {
                 on.write_beg();
                 *os << "if ( ";
-                for( int i = 0; i < item.s->sc.size(); ++i ) {
-                    if ( i )
-                        *os << " and ";
-                    if ( not item.s->sc[ i ].second )
-                        *os << "not ";
-                    *os << item.s->sc[ i ].first;
-                }
+                //                for( int i = 0; i < item.s->cond.size(); ++i ) {
+                //                    if ( i )
+                //                        *os << " and ";
+                //                    if ( not item.s->sc[ i ].second )
+                //                        *os << "not ";
+                //                    *os << item.s->sc[ i ].first;
+                //                }
+                TODO;
                 on.write_end( " ) {" );
-            }
+            //}
             on.nsp += 4;
 
             write( *item.s );

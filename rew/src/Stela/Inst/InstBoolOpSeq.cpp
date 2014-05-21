@@ -60,6 +60,11 @@ public:
         }
         return res;
     }
+    virtual void update_out_type() {
+        out_type_proposition( &ip->type_Bool );
+        for( Expr ch : inp )
+            ch->out_type_proposition( &ip->type_Bool );
+    }
 
 
     Vec<Vec<Item> > or_seq;

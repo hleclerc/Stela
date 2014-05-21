@@ -99,3 +99,4 @@ src/Stela/Inst/BoolOpSeq.h
 src/Stela/Inst/BoolOpSeq.cpp
 src/Stela/Inst/InstBoolOpSeq.h
 src/Stela/Inst/InstBoolOpSeq.cpp
+src/Stela/System/AssignIfNeq.h

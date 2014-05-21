@@ -1,3 +1,4 @@
+#include "../System/AssignIfNeq.h"
 #include "InstInfo_C.h"
 #include "BoolOpSeq.h"
 #include "Codegen_C.h"
@@ -11,6 +12,7 @@ PI64 Inst::cur_op_id = 0;
 
 Inst::Inst() {
     ext_par   = 0;
+    when      = 0;
 
     op_id_vis = 0;
     op_id     = 0;
@@ -21,6 +23,7 @@ Inst::Inst() {
 
 Inst::~Inst() {
     rem_ref_to_this();
+    delete when;
 }
 
 void Inst::write_to_stream( Stream &os, int prec ) const {
@@ -284,28 +287,16 @@ Expr Inst::_at( int len ) {
     return cst( 0, 0 );
 }
 
-void Inst::update_when( Expr cond ) {
-    if ( when ) {
-        Expr res = op( &ip->type_Bool, &ip->type_Bool, when, &ip->type_Bool, cond, Op_or_boolean() );
-        if ( when == res )
-            return;
-        when = res;
-        // res->update_when( cond );
-    } else
-        when = cond;
+void Inst::update_when( const BoolOpSeq &cond ) {
+    if ( not when )
+        when = new BoolOpSeq( cond );
+    else if ( not assign_if_neq( *when, *when or cond ) )
+        return;
 
     for( Expr inst : inp )
         inst->update_when( cond );
     for( Expr inst : dep )
         inst->update_when( cond );
-}
-
-void Inst::_get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
-    sc << std::make_pair( this, pos );
-}
-
-void Inst::_get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
-    sc << std::make_pair( this, pos );
 }
 
 BoolOpSeq Inst::get_BoolOpSeq() {
