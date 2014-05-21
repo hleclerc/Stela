@@ -1,4 +1,5 @@
 #include "InstInfo_C.h"
+#include "BoolOpSeq.h"
 #include "Codegen_C.h"
 #include <fstream>
 #include "Inst.h"
@@ -22,7 +23,7 @@ Inst::~Inst() {
     rem_ref_to_this();
 }
 
-void Inst::write_to_stream( Stream &os ) const {
+void Inst::write_to_stream( Stream &os, int prec ) const {
     write_dot( os );
     if ( inp.size() ) {
         for( int i = 0; i < inp.size(); ++i )
@@ -288,8 +289,8 @@ void Inst::update_when( Expr cond ) {
         Expr res = op( &ip->type_Bool, &ip->type_Bool, when, &ip->type_Bool, cond, Op_or_boolean() );
         if ( when == res )
             return;
-        res->update_when( cond );
         when = res;
+        // res->update_when( cond );
     } else
         when = cond;
 
@@ -307,4 +308,7 @@ void Inst::_get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
     sc << std::make_pair( this, pos );
 }
 
+BoolOpSeq Inst::get_BoolOpSeq() {
+    return BoolOpSeq( this );
+}
 

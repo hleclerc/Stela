@@ -1,5 +1,7 @@
 #include "../System/SameType.h"
+#include "InstBoolOpSeq.h"
 #include "InstInfo_C.h"
+#include "BoolOpSeq.h"
 #include "Type.h"
 #include "Cst.h"
 #include "Op.h"
@@ -14,6 +16,26 @@ public:
     }
     virtual void write_dot( Stream &os ) const {
         os << T();
+    }
+    virtual void write_to_stream( Stream &os, int prec = -1 ) const {
+        if ( T::is_oper ) {
+            if ( T::prec <= prec )
+                os << "(";
+            if ( T::n == 1 ) {
+                T().write_oper( os );
+                os << " ";
+                inp[ 0 ]->write_to_stream( os, T::prec );
+            } else {
+                inp[ 0 ]->write_to_stream( os, T::prec );
+                os << " ";
+                T().write_oper( os );
+                os << " ";
+                inp[ 1 ]->write_to_stream( os, T::prec );
+            }
+            if ( T::prec <= prec )
+                os << ")";
+        } else
+            Inst::write_to_stream( os, prec );
     }
     virtual void update_out_type() {
         out_type_proposition( tr );
@@ -126,6 +148,7 @@ public:
     Type *tb;
 };
 
+
 // ---------------------------------------------------------------------------------------
 // binary specialisations
 template<class OP>
@@ -134,90 +157,19 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, OP ) {
 }
 
 // or
-static Expr make_or( Vec<std::pair<Expr,bool> > &sc, int beg, int end ) {
-    if ( beg == end )
-        return ip->cst_true;
-    if ( beg + 1 == end )
-        return sc[ beg ].second ? sc[ beg ].first : op( &ip->type_Bool, &ip->type_Bool, sc[ beg ].first, Op_not_boolean() );
-    return op( &ip->type_Bool, &ip->type_Bool, make_or( sc, beg, ( beg + end ) / 2 ), &ip->type_Bool, make_or( sc, ( beg + end ) / 2, end ), Op_or_boolean() );
-}
-
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_or_boolean ) {
     Bool val;
-    if ( a == b )
-        return a;
-    if ( a->get_val( val ) )
-        return val ? a : b;
-    if ( b->get_val( val ) )
-        return val ? b : a;
-
-    Vec<std::pair<Expr,bool> > sc;
-    a->_get_sub_cond_or( sc, true );
-    int sa = sc.size();
-    b->_get_sub_cond_or( sc, true );
-    int sb = sc.size();
-    for( int i = 0; i < sa; ++i ) {
-        for( int j = sa; j < sc.size(); ++j ) {
-            if ( sc[ i ].first == sc[ j ].first ) {
-                if ( sc[ i ].second == sc[ j ].second )
-                    sc.remove( j-- );
-                else {
-                    sc.remove( j );
-                    sc.remove( i-- );
-                    --sa;
-                    break;
-                }
-            }
-        }
-    }
-    if ( sb != sc.size() )
-        return make_or( sc, 0, sc.size() );
-
-    return 0;
+    if ( a->get_val( val ) ) return val ? ip->cst_true : b;
+    if ( b->get_val( val ) ) return val ? ip->cst_true : a;
+    return inst_bool_op_seq( op_or( a->get_BoolOpSeq(), b->get_BoolOpSeq() ) );
 }
 
 // and
-static Expr make_and( Vec<std::pair<Expr,bool> > &sc, int beg, int end ) {
-    if ( beg == end )
-        ERROR( "weirdos");
-    if ( beg + 1 == end )
-        return sc[ beg ].second ? sc[ beg ].first : op( &ip->type_Bool, &ip->type_Bool, sc[ beg ].first, Op_not_boolean() );
-    return op( &ip->type_Bool, &ip->type_Bool, make_and( sc, beg, ( beg + end ) / 2 ), &ip->type_Bool, make_and( sc, ( beg + end ) / 2, end ), Op_and_boolean() );
-}
-
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_boolean ) {
     Bool val;
-    if ( a == b )
-        return a;
-    if ( a->get_val( val ) )
-        return val ? b : a;
-    if ( b->get_val( val ) )
-        return val ? a : b;
-    if ( int res = a->checked_if( b ) )
-        return res > 0 ? b : ip->cst_false; // knowing b is enough to know the result; if b ==> not a, -> false
-    if ( int res = b->checked_if( a ) )
-        return res > 0 ? a : ip->cst_false; // knowing b is enough to know the result; if a ==> not v, -> false
-
-    Vec<std::pair<Expr,bool> > sc;
-    a->_get_sub_cond_and( sc, true );
-    int sa = sc.size();
-    b->_get_sub_cond_and( sc, true );
-    int sb = sc.size();
-    for( int i = 0; i < sa; ++i ) {
-        for( int j = sa; j < sc.size(); ++j ) {
-            if ( sc[ i ].first == sc[ j ].first ) {
-                if ( sc[ i ].second == sc[ j ].second )
-                    sc.remove( j-- );
-                else
-                    return ip->cst_false;
-            }
-        }
-    }
-    if ( sb != sc.size() )
-        return make_and( sc, 0, sc.size() );
-
-
-    return 0;
+    if ( a->get_val( val ) ) return val ? b : ip->cst_false;
+    if ( b->get_val( val ) ) return val ? a : ip->cst_false;
+    return inst_bool_op_seq( op_and( a->get_BoolOpSeq(), b->get_BoolOpSeq() ) );
 }
 
 //
@@ -244,7 +196,7 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Op_not_boolean ) {
     Bool val;
     if ( a->get_val( val ) )
         return val ? ip->cst_false : ip->cst_true;
-    return 0;
+    return inst_bool_op_seq( op_not( a->get_BoolOpSeq() ) );
 }
 
 //
@@ -259,14 +211,14 @@ Expr _op( Type *tr, Type *ta, Expr a, OP op ) {
 }
 
 
-#define DECL_OP( NAME, GEN, OPER, BOOL ) \
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
     Expr op( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_##NAME o ) { \
         return _op( tr, ta, a, tb, b, o ); \
     }
 #include "DeclOp_Binary.h"
 #undef DECL_OP
 
-#define DECL_OP( NAME, GEN, OPER, BOOL ) \
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
     Expr op( Type *tr, Type *ta, Expr a, Op_##NAME o ) { \
         return _op( tr, ta, a, o ); \
     }

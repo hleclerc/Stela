@@ -19,7 +19,7 @@ public:
     virtual void write_dot( Stream &os ) const {
         os << "@" << num;
     }
-    virtual void write_to_stream( Stream &os ) const {
+    virtual void write_to_stream( Stream &os, int prec = -1 ) const {
         os << "(@" << num << ")" << val;
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {

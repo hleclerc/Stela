@@ -4,6 +4,7 @@
 #include "../System/Vec.h"
 #include <string.h>
 #include "Expr.h"
+class BoolOpSeq;
 class Codegen_C;
 class Type;
 
@@ -30,7 +31,7 @@ public:
     Inst();
     virtual ~Inst();
 
-    virtual void write_to_stream( Stream &os ) const;
+    virtual void write_to_stream( Stream &os, int prec = -1 ) const;
     virtual void write_dot( Stream &os ) const = 0;
 
 
@@ -82,6 +83,8 @@ public:
     virtual Expr _at( int len );
     virtual void _get_sub_cond_or( Vec<std::pair<Expr,bool> > &sc, bool pos );
     virtual void _get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos );
+
+    virtual BoolOpSeq get_BoolOpSeq();
 
     Vec<Expr>           inp; ///< inputs
     Vec<Expr>           dep; ///< dependencies

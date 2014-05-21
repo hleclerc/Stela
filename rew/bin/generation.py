@@ -115,67 +115,67 @@ class Operators:
 
 
             #
-            O( "or"         , "__or__"                , Need2args  , 14 ),
+            O( "or"         , "__or__"                , Need2args  , 13 ),
             O( "and"        , "__and__"               , Need2args  , 14 ),
-            O( "xor"        , "__xor___"              , Need2args  , 14 ),
+            O( "xor"        , "__xor___"              , Need2args  , 15 ),
 
             #
-            O( "not"        , "not_boolean"           , Needrarg   , 15 ),
+            O( "not"        , "not_boolean"           , Needrarg   , 16 ),
 
             #
-            O( "inst_of"    , "__inst_of__"           , Need2args  , 16 ),
-            O( "in"         , "__in__"                , Need2args  , 16 ),
-            O( "not_inst_of", "__not_inst_of__"       , Need2args  , 16 ),
-            O( "not_in"     , "__not_in__"            , Need2args  , 16 ),
+            O( "inst_of"    , "__inst_of__"           , Need2args  , 17 ),
+            O( "in"         , "__in__"                , Need2args  , 17 ),
+            O( "not_inst_of", "__not_inst_of__"       , Need2args  , 17 ),
+            O( "not_in"     , "__not_in__"            , Need2args  , 17 ),
 
             #
-            O( "!="         , "not_equal"             , Need2args  , 17 ),
-            O( "=="         , "equal"                 , Need2args  , 17 ),
-            O( ">="         , "superior_equal"        , Need2args  , 17 ),
-            O( "<="         , "inferior_equal"        , Need2args  , 17 ),
-            O( ">"          , "superior"              , Need2args  , 17 ),
-            O( "<"          , "inferior"              , Need2args  , 17 ),
+            O( "!="         , "not_equal"             , Need2args  , 18 ),
+            O( "=="         , "equal"                 , Need2args  , 18 ),
+            O( ">="         , "superior_equal"        , Need2args  , 18 ),
+            O( "<="         , "inferior_equal"        , Need2args  , 18 ),
+            O( ">"          , "superior"              , Need2args  , 18 ),
+            O( "<"          , "inferior"              , Need2args  , 18 ),
 
-            O( "+++"        , "concatenate"           , Need2args  , 18 ),
+            O( "+++"        , "concatenate"           , Need2args  , 19 ),
 
-            O( ".."         , "range"                 , Need2args  , 19 ),
-            O( "..."        , "triple_dots"           , Needlarg   , 19 ),
+            O( ".."         , "range"                 , Need2args  , 20 ),
+            O( "..."        , "triple_dots"           , Needlarg   , 20 ),
 
-            O( "+"          , "add"                   , Need2args  , 20 ),
-            O( "-"          , "sub"                   , MayNeedlarg+Needrarg, 20 ),
-            O( ""           , "neg"                   , Needrarg   , 20 ),
+            O( "+"          , "add"                   , Need2args  , 21 ),
+            O( "-"          , "sub"                   , MayNeedlarg+Needrarg, 21 ),
+            O( ""           , "neg"                   , Needrarg   , 21 ),
 
-            O( "%"          , "mod"                   , Need2args  , 21 ),
-            O( "*"          , "mul"                   , Need2args  , 21 ),
-            O( ":"          , "doubledot"             , Need2args  , 21 ),
-            O( ":."         , "doubledotdot"          , Need2args  , 21 ),
-            O( "/"          , "div"                   , Need2args  , 21 ),
-            O( "//"         , "div_int"               , Need2args  , 21 ),
-            O( "\\"         , "ml_div"                , Need2args  , 21 ),
+            O( "%"          , "mod"                   , Need2args  , 22 ),
+            O( "*"          , "mul"                   , Need2args  , 22 ),
+            O( ":"          , "doubledot"             , Need2args  , 22 ),
+            O( ":."         , "doubledotdot"          , Need2args  , 22 ),
+            O( "/"          , "div"                   , Need2args  , 22 ),
+            O( "//"         , "div_int"               , Need2args  , 22 ),
+            O( "\\"         , "ml_div"                , Need2args  , 22 ),
 
-            O( "^"          , "pow"                   , Need2args  , 22 ),
+            O( "^"          , "pow"                   , Need2args  , 23 ),
 
-            O( "~"          , "not_bitwise"           , Needrarg   , 23 ),
+            O( "~"          , "not_bitwise"           , Needrarg   , 24 ),
 
-            O( "'"          , "trans"                 , Needlarg   , 24 ),
+            O( "'"          , "trans"                 , Needlarg   , 25 ),
 
-            O( "--"         , "pre_dec"               , Needrarg   , 25 ),
-            O( "++"         , "pre_inc"               , Needrarg   , 25 ),
-            O( ""           , "post_dec"              , Needlarg   , 25 ),
-            O( ""           , "post_inc"              , Needlarg   , 25 ),
+            O( "--"         , "pre_dec"               , Needrarg   , 26 ),
+            O( "++"         , "pre_inc"               , Needrarg   , 26 ),
+            O( ""           , "post_dec"              , Needlarg   , 26 ),
+            O( ""           , "post_inc"              , Needlarg   , 26 ),
 
-            O( "&"          , "pointer_on"            , Needrarg   , 26 ),
-            O( "@"          , "pointed_value"         , Needrarg   , 26 ),
-            O( "$"          , "calc_name"             , Needrarg   , 26 ),
+            O( "&"          , "pointer_on"            , Needrarg   , 27 ),
+            O( "@"          , "pointed_value"         , Needrarg   , 27 ),
+            O( "$"          , "calc_name"             , Needrarg   , 27 ),
 
-            O( "::"         , "doubledoubledot"       , Need2args  , 27 ),
-            O( "->"         , "get_attr_ptr"          , Need2args  , 27 ),
-            O( "."          , "get_attr"              , Need2args  , 27 ),
-            O( ".?"         , "get_attr_ask"          , Need2args  , 27 ),
-            O( "->?"        , "get_attr_ptr_ask"      , Need2args  , 27 ),
+            O( "::"         , "doubledoubledot"       , Need2args  , 28 ),
+            O( "->"         , "get_attr_ptr"          , Need2args  , 28 ),
+            O( "."          , "get_attr"              , Need2args  , 28 ),
+            O( ".?"         , "get_attr_ask"          , Need2args  , 28 ),
+            O( "->?"        , "get_attr_ptr_ask"      , Need2args  , 28 ),
 
-            O( ""           , "__string_assembly__"   , Need2args  , 28 ),
-            O( ""           , "tensorial_product"     , Need2args  , 29 ),
+            O( ""           , "__string_assembly__"   , Need2args  , 29 ),
+            O( ""           , "tensorial_product"     , Need2args  , 30 ),
             
         ]
         

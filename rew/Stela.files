@@ -95,3 +95,7 @@ src/Stela/System/RaiiSave.h
 src/Stela/Inst/ValAt.h
 src/Stela/Inst/ValAt.cpp
 src/Stela/Inst/CppOperatorPrecedence.h
+src/Stela/Inst/BoolOpSeq.h
+src/Stela/Inst/BoolOpSeq.cpp
+src/Stela/Inst/InstBoolOpSeq.h
+src/Stela/Inst/InstBoolOpSeq.cpp

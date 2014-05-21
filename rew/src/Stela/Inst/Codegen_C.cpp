@@ -211,6 +211,7 @@ void Codegen_C::make_code() {
         select_to_select_dep( inst );
 
     // update inst->when
+    // pour éviter les boucles: on fait une liste d'exploration...
     for( Expr inst : out )
         inst->update_when( ip->cst_true );
 

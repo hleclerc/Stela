@@ -46,20 +46,33 @@ void test_checked_if() {
 void test_simp_bool() {
     Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
     Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
+    Var c2( &ip->type_Bool, symbol( "c2", 1 ) );
 
-    PVAL( c0.and_boolean( c0 ) );
-    PVAL( c0.and_boolean( c0.not_boolean() ) );
-    PVAL( c0.not_boolean().and_boolean( c0 ) );
-    PVAL( c0.not_boolean().and_boolean( c0.not_boolean() ) );
-    PVAL( c0.and_boolean( c1.and_boolean( c0 ) ) );
-    PVAL( c0.and_boolean( c1.and_boolean( c0.not_boolean() ) ) );
-
+    //    PVAL( c0.not_boolean() );
     PVAL( c0.or_boolean( c0 ) );
-    PVAL( c0.or_boolean( c0.not_boolean() ) );
-    PVAL( c0.not_boolean().or_boolean( c0 ) );
-    PVAL( c0.not_boolean().or_boolean( c0.not_boolean() ) );
-    PVAL( c0.or_boolean( c1.or_boolean( c0 ) ) );
-    PVAL( c0.or_boolean( c1.or_boolean( c0.not_boolean() ) ) );
+    PVAL( c0.or_boolean( c1 ) );
+    PVAL( c0.not_boolean() );
+    PVAL( c0.or_boolean( c1 ).not_boolean() );
+    PVAL( c0.and_boolean( c0 ) );
+    PVAL( c0.and_boolean( c1 ) );
+    PVAL( c0.and_boolean( c1.or_boolean( c2 ) ) );
+    PVAL( c0.and_boolean( c1 ).not_boolean() );
+//    PVAL( c0.and_boolean( c0.not_boolean() ) );
+//    PVAL( c0.not_boolean().and_boolean( c0 ) );
+//    PVAL( c0.not_boolean().and_boolean( c0.not_boolean() ) );
+//    PVAL( c0.and_boolean( c1.and_boolean( c0 ) ) );
+//    PVAL( c0.and_boolean( c1.and_boolean( c0.not_boolean() ) ) );
+
+//    PVAL( c0.or_boolean( c0 ) );
+//    PVAL( c0.or_boolean( c0.not_boolean() ) );
+//    PVAL( c0.not_boolean().or_boolean( c0 ) );
+//    PVAL( c0.not_boolean().or_boolean( c0.not_boolean() ) );
+//    PVAL( c0.or_boolean( c1.or_boolean( c0 ) ) );
+//    PVAL( c0.or_boolean( c1.or_boolean( c0.not_boolean() ) ) );
+
+//    PVAL( c0.or_boolean( c0.and_boolean( c1 ) ) );
+//    PVAL( c0.and_boolean( c1 ).or_boolean( c0 ) );
+//    PVAL( c0.not_boolean().or_boolean( c0.not_boolean().and_boolean( c1 ) ) );
 }
 
 void test_cond() {
@@ -152,7 +165,7 @@ int main() {
     // test_checked_if();
     // test_cond();
     // test_graph();
-    // test_simp_bool();
+    test_simp_bool();
     // test_code_syscall();
-    test_code_select();
+    // test_code_select();
 }
