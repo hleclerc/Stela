@@ -21,9 +21,9 @@ public:
 
     Var ptr();
     Var at( Type *type );
-    Var and_boolean( Var b );
-    Var or_boolean( Var b );
-    Var not_boolean();
+    Var operator&&( Var b );
+    Var operator||( Var b );
+    Var operator!();
 
     friend Var syscall( const Vec<Var> &inp );
 

@@ -1,5 +1,6 @@
 #include "InstBoolOpSeq.h"
 #include "Op.h"
+#include "Ip.h"
 #include <map>
 
 /**
@@ -65,18 +66,21 @@ public:
 };
 
 Expr inst_bool_op_seq( const BoolOpSeq &bos ) {
-    std::map<Expr,int> ind;
-    InstBoolOpSeq *res = new InstBoolOpSeq;
-    for( int i = 0; i < bos.or_seq.size(); ++i ) {
-        Vec<InstBoolOpSeq::Item> *v = res->or_seq.push_back();
-        for( int j = 0; j < bos.or_seq[ i ].size(); ++j ) {
-            Expr expr = bos.or_seq[ i ][ j ].expr;
-            auto it = ind.insert( std::make_pair( expr, ind.size() ) );
-            if ( it.second )
-                res->add_inp( expr );
-            v->push_back( InstBoolOpSeq::Item{ it.first->second, bos.or_seq[ i ][ j ].pos } );
+    if ( bos.or_seq.size() ) {
+        std::map<Expr,int> ind;
+        InstBoolOpSeq *res = new InstBoolOpSeq;
+        for( int i = 0; i < bos.or_seq.size(); ++i ) {
+            Vec<InstBoolOpSeq::Item> *v = res->or_seq.push_back();
+            for( int j = 0; j < bos.or_seq[ i ].size(); ++j ) {
+                Expr expr = bos.or_seq[ i ][ j ].expr;
+                auto it = ind.insert( std::make_pair( expr, ind.size() ) );
+                if ( it.second )
+                    res->add_inp( expr );
+                v->push_back( InstBoolOpSeq::Item{ it.first->second, bos.or_seq[ i ][ j ].pos } );
+            }
         }
+        return res;
     }
-    return res;
+    return bos.val_if_not_or_seq ? ip->cst_true : ip->cst_false;
 }
 

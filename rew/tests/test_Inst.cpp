@@ -47,32 +47,25 @@ void test_simp_bool() {
     Var c0( &ip->type_Bool, symbol( "c0", 1 ) );
     Var c1( &ip->type_Bool, symbol( "c1", 1 ) );
     Var c2( &ip->type_Bool, symbol( "c2", 1 ) );
+    Var cf( &ip->type_Bool, ip->cst_false );
+    Var ct( &ip->type_Bool, ip->cst_true  );
 
-    //    PVAL( c0.not_boolean() );
-    PVAL( c0.or_boolean( c0 ) );
-    PVAL( c0.or_boolean( c1 ) );
-    PVAL( c0.not_boolean() );
-    PVAL( c0.or_boolean( c1 ).not_boolean() );
-    PVAL( c0.and_boolean( c0 ) );
-    PVAL( c0.and_boolean( c1 ) );
-    PVAL( c0.and_boolean( c1.or_boolean( c2 ) ) );
-    PVAL( c0.and_boolean( c1 ).not_boolean() );
-//    PVAL( c0.and_boolean( c0.not_boolean() ) );
-//    PVAL( c0.not_boolean().and_boolean( c0 ) );
-//    PVAL( c0.not_boolean().and_boolean( c0.not_boolean() ) );
-//    PVAL( c0.and_boolean( c1.and_boolean( c0 ) ) );
-//    PVAL( c0.and_boolean( c1.and_boolean( c0.not_boolean() ) ) );
+    PVAL( not c0 );
+    PVAL( c0 or c0 );
+    PVAL( c0 or c1 );
+    PVAL( c0 or cf );
+    PVAL( c0 or ct );
+    PVAL( c0 or not c0 );
+    PVAL( not ( c0 or c1 ) );
+    PVAL( ( c0 and c1 ) or ( not c0 and c1 ) );
 
-//    PVAL( c0.or_boolean( c0 ) );
-//    PVAL( c0.or_boolean( c0.not_boolean() ) );
-//    PVAL( c0.not_boolean().or_boolean( c0 ) );
-//    PVAL( c0.not_boolean().or_boolean( c0.not_boolean() ) );
-//    PVAL( c0.or_boolean( c1.or_boolean( c0 ) ) );
-//    PVAL( c0.or_boolean( c1.or_boolean( c0.not_boolean() ) ) );
-
-//    PVAL( c0.or_boolean( c0.and_boolean( c1 ) ) );
-//    PVAL( c0.and_boolean( c1 ).or_boolean( c0 ) );
-//    PVAL( c0.not_boolean().or_boolean( c0.not_boolean().and_boolean( c1 ) ) );
+    PVAL( not c0 );
+    PVAL( c0 and c0 );
+    PVAL( c0 and c1 );
+    PVAL( c0 and cf );
+    PVAL( c0 and ct );
+    PVAL( c0 and not c0 );
+    PVAL( not ( c0 and c1 ) );
 }
 
 void test_cond() {
@@ -88,7 +81,7 @@ void test_cond() {
     a.set_val( b );
     PRINT( a );
 
-    ip->set_cond( c0.and_boolean( c1 ) );
+    ip->set_cond( c0 and c1 );
     // *a = c;
     PRINT( a );
     PRINT( a.get_val() );

@@ -46,15 +46,15 @@ Var Var::at( Type *type ) {
     return Var( Ref(), type, res );
 }
 
-Var Var::and_boolean( Var b ) {
+Var Var::operator&&( Var b ) {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_and_boolean() ) );
 }
 
-Var Var::or_boolean( Var b ) {
+Var Var::operator||( Var b ) {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_or_boolean() ) );
 }
 
-Var Var::not_boolean() {
+Var Var::operator!() {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), Op_not_boolean() ) );
 }
 

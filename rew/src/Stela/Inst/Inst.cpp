@@ -309,6 +309,6 @@ void Inst::_get_sub_cond_and( Vec<std::pair<Expr,bool> > &sc, bool pos ) {
 }
 
 BoolOpSeq Inst::get_BoolOpSeq() {
-    return BoolOpSeq( this );
+    return BoolOpSeq( this, true );
 }
 

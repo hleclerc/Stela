@@ -15,12 +15,16 @@ public:
         bool pos; ///< 0 -> not
     };
 
-    BoolOpSeq( Expr expr, bool pos = true );
-    BoolOpSeq();
+    BoolOpSeq( Expr expr, bool pos );
+    BoolOpSeq( bool pos = true );
 
     void write_to_stream( Stream &os ) const;
+    BoolOpSeq &simplify();
 
     Vec<Vec<Item> > or_seq; // ( c0 and c1 ) or ( c2 and c3 and ... ) or ...
+    bool val_if_not_or_seq;
+protected:
+    bool simplify_and_seq( Vec<Item> &and_seq );
 };
 
 BoolOpSeq op_and( const BoolOpSeq &a, const BoolOpSeq &b );

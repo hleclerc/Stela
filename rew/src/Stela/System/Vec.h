@@ -645,6 +645,12 @@ public:
         return res;
     }
 
+    template<class V>
+    void append( const V &v ) {
+        for( auto i : v )
+            push_back( i );
+    }
+
     // erase first element equal to val
     void remove_first_unordered( const T &val ) {
         for(ST i=0;i<_size;++i) {
