@@ -3,6 +3,7 @@
 #include "Codegen_C.h"
 #include "BoolOpSeq.h"
 #include "SelectDep.h"
+#include <fstream>
 #include "Store.h"
 #include "ValAt.h"
 #include "Room.h"
@@ -192,6 +193,35 @@ static void select_to_select_dep( Expr inst ) {
         select_to_select_dep( ch );
 }
 
+static int display_graphviz( SplittedVec<CInstBlock,8> &blocks, const char *filename = ".blk.dot" ) {
+    std::ofstream f( filename );
+    f << "digraph Instruction {\n";
+    f << "  node [shape = record];\n";
+
+    for( int i = 0; i < blocks.size(); ++i ) {
+        f << "  subgraph cluster" << &blocks[ i ] <<" {\n  color=yellow;\n  style=dotted;\n";
+        for( const Expr &inst : blocks[ i ].inst ) {
+            f << "  node" << inst.ptr() << " [label=\"";
+            inst->write_dot( f );
+            f << "\"];\n";
+            for( const Expr &ch : inst->inp )
+                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << ";\n";
+            for( const Expr &ch : inst->dep )
+                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << " [style=dotted];\n";
+        }
+        f << "  label = \"" << blocks[ i ].cond << "\"\n";
+        f << "  }\n";
+        for( const auto &v : blocks[ i ].cond.or_seq )
+            for( const auto &item : v )
+                f << "  node" << blocks[ i ].inst[ 0 ].ptr() <<"  -> node" << item.expr.ptr() << " [ltail=cluster" << &blocks[ i ] << " color=gray];\n";
+    }
+
+    f << "}";
+    f.close();
+
+    return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
+}
+
 void Codegen_C::make_code() {
     // clone (-> out)
     ++Inst::cur_op_id;
@@ -276,6 +306,8 @@ void Codegen_C::make_code() {
             }
         }
     }
+
+    display_graphviz( blocks );
 
     // block scheduling
     Vec<CInstBlock *> front_block;

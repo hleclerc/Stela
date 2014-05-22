@@ -1,4 +1,7 @@
 À faire
+* Rq: pb avec les room+store pour préparer des variables. Si un if est interrompu, on n'a plus accès aux variables...
+  -> on ne peut pas fermer un block s'il reste des dépendances type inp
+  * l'autre solution, c'était de prévoir
 * gestion des else
 * tests imbriqués
 
