@@ -74,13 +74,15 @@ BoolOpSeq &BoolOpSeq::simplify() {
                 or_seq.resize( 0 );
                 return *this;
             }
-            // A and c or c -> c
-            if ( is_a_subset( or_seq[ i ], or_seq[ j ] ) ) {
-                TODO;
+            // ( C_i or C_j with C_i => C_j ) -> remove C_j
+            if ( or_seq[ j ].subset_of( or_seq[ i ] ) ) {
+                or_seq.remove( j-- );
+                continue;
             }
-            // c or A and c -> c
-            if ( is_a_subset( or_seq[ j ], or_seq[ i ] ) ) {
-                TODO;
+            // ( C_i or C_j with C_j => C_i ) -> remove C_i
+            if ( or_seq[ i ].subset_of( or_seq[ j ] ) ) {
+                or_seq.remove( i-- );
+                break;
             }
         }
     }

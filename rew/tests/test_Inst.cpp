@@ -159,7 +159,7 @@ int main() {
     // test_checked_if();
     // test_cond();
     // test_graph();
-    test_simp_bool();
+    // test_simp_bool();
     // test_code_syscall();
-    // test_code_select();
+    test_code_select();
 }

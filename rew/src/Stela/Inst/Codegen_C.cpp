@@ -77,29 +77,33 @@ static bool ready_to_be_scheduled( Expr inst ) {
 
 
 struct CInstBlock {
-    CInstBlock( BoolOpSeq cond ) : cond( cond ), op_id( 0 ) {}
+    CInstBlock( BoolOpSeq cond ) : cond( cond ), op_id( 0 ) {
+    }
+
+    void update_dep_child( const Expr &ch ) {
+        CInstBlock *b = IIC( ch )->block;
+        if ( b->op_id != cur_op_id ) {
+            b->op_id = cur_op_id;
+            b->par << this;
+            dep << b;
+        }
+    }
+
+    void update_dep_inst( const Expr &i ) {
+        for( Expr ch : i->inp )
+            update_dep_child( ch );
+        for( Expr ch : i->dep )
+            update_dep_child( ch );
+    }
 
     void update_dep() {
         dep.resize( 0 );
         op_id = ++cur_op_id;
-        for( Expr i : inst ) {
-            for( Expr ch : i->inp ) {
-                CInstBlock *b = IIC( ch )->block;
-                if ( b->op_id != cur_op_id ) {
-                    b->op_id = cur_op_id;
-                    b->par << this;
-                    dep << b;
-                }
-            }
-            for( Expr ch : i->dep ) {
-                CInstBlock *b = IIC( ch )->block;
-                if ( b->op_id != cur_op_id ) {
-                    b->op_id = cur_op_id;
-                    b->par << this;
-                    dep << b;
-                }
-            }
-        }
+        for( const Expr &i : inst )
+            update_dep_inst( i );
+        for( const auto &v : cond.or_seq )
+            for( const auto &item : v )
+                update_dep_child( item.expr );
     }
 
     Vec<CInstBlock *> dep, par;
@@ -205,7 +209,6 @@ void Codegen_C::make_code() {
         select_to_select_dep( inst );
 
     // update inst->when
-    // pour éviter les boucles: on fait une liste d'exploration...
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
 
@@ -219,7 +222,6 @@ void Codegen_C::make_code() {
     AddToNeeded add_to_needed( needed );
     for( Expr inst : out )
         inst->visit( add_to_needed );
-    PRINT( needed );
 
     // op_mp = inst_info on all needed expressions
     SplittedVec<InstInfo_C,16> inst_info_list;
@@ -233,13 +235,7 @@ void Codegen_C::make_code() {
         if ( not IIC( inst )->out_type )
             inst->out_type_proposition( ip->artificial_type_for_size( inst->size() ) );
 
-    //    for( Expr inst : needed )
-    //        if ( IIC( inst )->out_type )
-    //            std::cout << *IIC( inst )->out_type << "\t" << inst << std::endl;
-    //        else
-    //            std::cout << "???\t" << inst << std::endl;
-
-    // basic scheduling to get Block data
+    // first basic scheduling to get Block data
     ++Inst::cur_op_id;
     Vec<Expr> front;
     for( Expr inst : out )
@@ -253,6 +249,7 @@ void Codegen_C::make_code() {
     CInstBlock *cur_block = blocks.push_back( BoolOpSeq( true ) );
     while ( front.size() ) {
         Expr inst;
+        // try to find an instruction with the same condition set
         for( int i = 0; i < front.size(); ++i ) {
             if ( *front[ i ]->when == cur_block->cond ) {
                 inst = front[ i ];
@@ -261,8 +258,6 @@ void Codegen_C::make_code() {
             }
         }
         if ( not inst ) {
-            if ( not front.size() )
-                ERROR( "??" );
             inst = front.back();
             front.pop_back();
 
@@ -290,19 +285,19 @@ void Codegen_C::make_code() {
         if ( not b->dep.size() )
             front_block << b;
     }
-
     ++CInstBlock::cur_op_id;
     for( CInstBlock *b : front_block )
         b->op_id = b->cur_op_id;
 
-    //    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
-    //        CInstBlock *b = &blocks[ num_block ];
-    //        std::cout << b << std::endl;
-    //        std::cout << "  par=" << b->par << std::endl;
-    //        std::cout << "  dep=" << b->dep << std::endl;
-    //        std::cout << "  cond=" << b->cond << std::endl;
-    //        std::cout << "  inst=" << b->inst << std::endl;
-    //    }
+
+    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
+        CInstBlock *b = &blocks[ num_block ];
+        std::cout << b << std::endl;
+        std::cout << "  par=" << b->par << std::endl;
+        std::cout << "  dep=" << b->dep << std::endl;
+        std::cout << "  cond=" << b->cond << std::endl;
+        std::cout << "  inst=" << b->inst << std::endl;
+    }
 
     ++CInstBlock::cur_op_id;
     SplittedVec<CBlockAsm,8> block_asm;
@@ -328,8 +323,6 @@ void Codegen_C::make_code() {
 
             cba->items << CBlockAsm::Item{ 0, nba };
         }
-        //        while ( not cba->cond->checked_if( b->cond ) )
-        //            cba = cba->par;
 
         // parents
         for( CInstBlock *p : b->par ) {
@@ -345,14 +338,6 @@ void Codegen_C::make_code() {
     // for( Expr inst : needed )
     //     std::cout << inst << " when " << inst->when << "\n";
 }
-
-//static bool same_cond_with_an_else( Vec<std::pair<Expr,bool> > &a, Vec<std::pair<Expr,bool> > &b ) {
-//    return a.size() and
-//           a.size() == b.size() and
-//           a.slice( 0, a.size() - 1 ) == b.slice( 0, a.size() - 1 ) and
-//           a.back().first == b.back().first and
-//           a.back().second != b.back().second;
-//}
 
 void Codegen_C::write( CBlockAsm &cba ) {
     CBlockAsm *prev = 0;
@@ -370,7 +355,7 @@ void Codegen_C::write( CBlockAsm &cba ) {
                 //                        *os << "not ";
                 //                    *os << item.s->sc[ i ].first;
                 //                }
-                TODO;
+                *os << item.s->cond;
                 on.write_end( " ) {" );
             //}
             on.nsp += 4;
@@ -386,7 +371,7 @@ void Codegen_C::write( CBlockAsm &cba ) {
             CInstBlock *b = item.b;
             prev = 0;
 
-            // front
+            // inst front
             Vec<Expr> front;
             ++Inst::cur_op_id;
             for( Expr inst : item.b->inst ) {
