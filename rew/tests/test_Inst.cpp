@@ -54,7 +54,23 @@ void test_simp_bool() {
     PVAL( not ( c0 and c1 ) );
 
     PVAL( ( c0 and c1 ) or ( c0 and c2 ) );
-    PRINT( ( ( c0 and c1 ) or ( c0 and c2 ) ).get_val()->get_BoolOpSeq().common_terms() );
+}
+
+void test_bool_op() {
+    BoolOpSeq c0( symbol( "c0", 1 ), true );
+    BoolOpSeq c1( symbol( "c1", 1 ), true );
+    BoolOpSeq c2( symbol( "c2", 1 ), true );
+
+    PRINT( c0 );
+    PRINT( ( c0 and c1 ) or ( c0 and c2 ) );
+    PRINT( ( ( c0 and c1 ) or ( c0 and c2 ) ) - c0 );
+    PRINT( ( ( c0 and c1 ) or ( c0 and c2 ) ) - ( c0 or c1 ) );
+    PRINT( ( ( c0 and c1 ) or ( c0 and c2 ) ) - ( c1 or c2 ) );
+    PRINT( ( ( c0 or c1 ) == ( c1 or c0 ) ) );
+
+    PRINT( ( c0 and c1 ).imply( c1 ) );
+    PRINT( ( c0 and c1 ).imply( c2 ) );
+    PRINT( ( c0 and c1 ).imply( c0 or c1 ) );
 }
 
 void test_cond() {
@@ -146,7 +162,8 @@ int main() {
 
     // test_cond();
     // test_graph();
-    test_simp_bool();
+    //    test_simp_bool();
+    //    test_bool_op();
     // test_code_syscall();
-    // test_code_select();
+    test_code_select();
 }

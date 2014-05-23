@@ -29,10 +29,25 @@ void BoolOpSeq::write_to_stream( Stream &os ) const {
 }
 
 bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
-    // i.e. every cond of b is present in this
-    // ( a or b ) =?> true  : no
-    // ( a or b ) =?> false : no
-    return b.or_seq.size() and or_seq.size() ? b.or_seq.subset_of( or_seq ) : false;
+    // val b knowing self
+    if ( not b.or_seq.size() )
+        return b.val_if_not_or_seq;
+    // true =?> a or b: no
+    if ( not or_seq.size() )
+        return false;
+
+    // ( a and b ) or c =?> b or c
+    // a_0 or a_1 =?> b_0 or b1
+    // ( b_0 or b_1 ) has to be true for a_0 alone, and a_1 alone
+    for( const Vec<Item> &ai : or_seq ) { // test for a_0, then for a_1, ...
+        for( int i = 0; ; ++i ) {
+            if ( i == b.or_seq.size() )
+                return false;
+            if ( b.or_seq[ i ].subset_of( ai ) )
+                break;
+        }
+    }
+    return true;
 }
 
 Vec<BoolOpSeq::Item> BoolOpSeq::common_terms() const {
@@ -64,6 +79,9 @@ static bool eq_excepted( const Vec<BoolOpSeq::Item> &a, const Vec<BoolOpSeq::Ite
 BoolOpSeq &BoolOpSeq::simplify() {
     // simplify and_seqs
     if ( or_seq.size() ) {
+        for( int i = 0; i < or_seq.size(); ++i )
+            if ( not or_seq[ i ].size() )
+                or_seq.remove( i-- );
         for( int i = 0; i < or_seq.size(); ++i )
             if ( simplify_and_seq( or_seq[ i ] ) )
                 or_seq.remove( i-- );
@@ -104,6 +122,8 @@ BoolOpSeq &BoolOpSeq::simplify() {
             }
         }
     }
+
+    std::sort( or_seq.begin(), or_seq.end() );
 
     return *this;
 }
@@ -161,10 +181,14 @@ BoolOpSeq operator||( const BoolOpSeq &a, const BoolOpSeq &b ) {
 }
 
 BoolOpSeq operator-( const BoolOpSeq &a, const BoolOpSeq &b ) {
-    BoolOpSeq res = a;
-    // we remove
-    TODO;
-    return res;
+    if ( b.or_seq.size() ) {
+        BoolOpSeq res;
+        for( const Vec<BoolOpSeq::Item> &bi : b.or_seq )
+            for( const Vec<BoolOpSeq::Item> &ai : a.or_seq )
+                res.or_seq << ai.without_vals_of( bi );
+        return res.simplify();
+    }
+    return a;
 }
 
 static void push_not_rec( BoolOpSeq &res, const BoolOpSeq &a, const Vec<int> &ind ) {

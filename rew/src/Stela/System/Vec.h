@@ -647,18 +647,25 @@ public:
 
     template<class V>
     void append( const V &v ) {
-        for( const auto &i : v )
+        for( const T &i : v )
             push_back( i );
     }
 
     template<class V>
     bool subset_of( const V &v ) const {
-        for( const auto &i : *this )
+        for( const T &i : *this )
             if ( not v.contains( i ) )
                 return false;
         return true;
     }
 
+    Vec without_vals_of( const Vec &v ) const {
+        Vec res;
+        for( const T &val : *this )
+            if ( not v.contains( val ) )
+                res << val;
+        return res;
+    }
 
     // erase first element equal to val
     void remove_first_unordered( const T &val ) {

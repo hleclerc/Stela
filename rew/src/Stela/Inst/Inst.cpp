@@ -243,7 +243,7 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
 
 void Inst::write_to( Codegen_C *cc, int prec ) {
     if ( prec < 0 )
-        cc->on.write_beg() << "// ";
+        cc->on.write_beg() << "// " << *when << " ";
     write_dot( *cc->os );
     if ( prec < 0 )
         cc->on.write_end();

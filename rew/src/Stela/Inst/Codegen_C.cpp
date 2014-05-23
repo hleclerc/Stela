@@ -330,24 +330,48 @@ void Codegen_C::make_code() {
     Vec<BoolOpSeq> cond_stack;
     cond_stack << true;
     for( Expr inst : seq ) {
+        //std::cout << ( *inst->when != anded( cond_stack ) )
         if ( *inst->when != anded( cond_stack ) ) {
-            while ( not inst->when->imply( anded( cond_stack ) ) ) {
-                cond_stack.pop_back();
-                on.nsp -= 4;
-                on << "}";
+            BoolOpSeq poped;
+            if ( inst->when->always( true ) ) {
+                for( int i = cond_stack.size() - 1; i >= 0; --i ) {
+                    if ( cond_stack[ i ].or_seq.size() ) {
+                        on.nsp -= 4;
+                        on << "}";
+                    }
+                }
+                cond_stack.resize( 0 );
+            } else {
+                while ( not inst->when->imply( anded( cond_stack ) ) ) {
+                    poped = cond_stack.pop_back_val();
+                    if ( poped.or_seq.size() ) {
+                        on.nsp -= 4;
+                        on << "}";
+                    }
+                }
             }
             BoolOpSeq nc = *inst->when - anded( cond_stack );
             cond_stack << nc;
+            PRINT( *inst->when );
 
-            nc.write_to_stream( on.write_beg() << "if ( " );
-            on.write_end( " ) {" );
-            on.nsp += 4;
+            if ( nc.or_seq.size() ) {
+                if ( poped == not nc ) {
+                    on << "else {";
+                    on.nsp += 4;
+                } else {
+                    nc.write_to_stream( on.write_beg() << "if ( " );
+                    on.write_end( " ) {" );
+                    on.nsp += 4;
+                }
+            }
         }
         inst->write_to( this );
     }
-    for( int i = 0; i < cond_stack.size(); ++i ) {
-        on.nsp -= 4;
-        on << "}";
+    for( int i = cond_stack.size() - 1; i >= 0; --i ) {
+        if ( cond_stack[ i ].or_seq.size() ) {
+            on.nsp -= 4;
+            on << "}";
+        }
     }
 
     //    display_graphviz( blocks );
