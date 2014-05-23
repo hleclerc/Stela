@@ -20,8 +20,6 @@ public:
         return inp[ 1 ]->size();
     }
     virtual Expr _simplified() {
-        if ( int res = inp[ 0 ]->checked_if( ip->cur_cond() ) )
-            return res > 0 ? inp[ 1 ] : inp[ 2 ];
         return 0;
     }
     virtual void update_when( const BoolOpSeq &cond ) {
@@ -38,6 +36,11 @@ public:
 
         for( Expr inst : dep )
             inst->update_when( cond );
+    }
+    virtual void set_out_reg( Codegen_C *cc, OutReg *reg ) {
+        Inst::set_out_reg( cc, reg );
+        inp[ 1 ]->set_out_reg_from( cc, reg, this );
+        inp[ 2 ]->set_out_reg_from( cc, reg, this );
     }
     virtual bool is_a_Select() const {
         return true;

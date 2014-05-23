@@ -4,6 +4,7 @@
 #include "Codegen_C.h"
 #include "Inst.h"
 class CInstBlock;
+class OutReg;
 
 /**
 */
@@ -16,6 +17,7 @@ public:
     int num_reg;
     Type *out_type;
     Type *val_type; ///< for pointers
+    OutReg *out_reg;
 };
 
 #define IIC( A ) reinterpret_cast<InstInfo_C *>( ( A )->op_mp )

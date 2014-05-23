@@ -6,6 +6,7 @@
 #include "Expr.h"
 class BoolOpSeq;
 class Codegen_C;
+class OutReg;
 class Type;
 
 /**
@@ -53,9 +54,9 @@ public:
     void visit( Visitor &v, bool pointed_data = false, bool want_dep = true );
     virtual void _visit_pointed_data( Visitor &v, bool want_dep );
 
-    virtual int checked_if( Expr cond ); ///< -1 = false, 0 = unknown, 1 = true
-    virtual int always_checked() const; ///< -1 = false, 0 = unknown, 1 = true
-    virtual int allow_to_check( Expr val ); ///< -1 = false, 0 = unknown, 1 = true
+    virtual int always_checked() const;
+
+    virtual bool has_inp_parent() const;
 
     virtual bool is_a_pointer() const;
     virtual bool is_a_Select() const;
@@ -75,6 +76,10 @@ public:
     virtual void write_to( Codegen_C *cc, int prec, int num_reg );
 
     virtual void update_when( const BoolOpSeq &cond );
+
+    virtual void update_out_reg( Codegen_C *cc );
+    virtual void set_out_reg( Codegen_C *cc, OutReg *reg );
+    virtual void set_out_reg_from( Codegen_C *cc, OutReg *reg, Inst *par );
 
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();

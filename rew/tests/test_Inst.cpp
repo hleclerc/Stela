@@ -1,4 +1,5 @@
 #include <Stela/Inst/Codegen_C.h>
+#include <Stela/Inst/BoolOpSeq.h>
 #include <Stela/Inst/Symbol.h>
 #include <Stela/Inst/Cst.h>
 #include <Stela/Inst/Op.h>
@@ -21,22 +22,6 @@ Expr _or( Expr c0, Expr c1 ) {
 }
 Expr _not( Expr c0 ) {
     return op( &ip->type_Bool, &ip->type_Bool, c0, Op_not_boolean() );
-}
-
-void test_checked_if() {
-    Expr c0 = symbol( "c0", 1 );
-    Expr c1 = symbol( "c1", 1 );
-    PRINT( ip->cst_false->always_checked() );
-    PRINT( ip->cst_true ->always_checked() );
-    PRINT( c0->checked_if( c0 ) );
-    PRINT( _not( c0 )->checked_if( c0 ) );
-    PRINT( c0->checked_if( _not( c0 ) ) );
-    PRINT( c0->checked_if( c1 ) );
-    PRINT( c0->checked_if( _and( c0, c1 ) ) );
-    PRINT( c0->checked_if( _or ( c0, c1 ) ) );
-    PRINT( _and( c0, c1 )->checked_if( _and( c0, c1 ) ) );
-    PRINT( _and( c0, c1 )->checked_if( c0 ) );
-    PRINT( _or ( c0, c1 )->checked_if( c0 ) );
 }
 
 #define PVAL( A ) \
@@ -67,6 +52,9 @@ void test_simp_bool() {
     PVAL( c0 and not c0 );
     PVAL( ( c0 and c1 ) or c0 );
     PVAL( not ( c0 and c1 ) );
+
+    PVAL( ( c0 and c1 ) or ( c0 and c2 ) );
+    PRINT( ( ( c0 and c1 ) or ( c0 and c2 ) ).get_val()->get_BoolOpSeq().common_terms() );
 }
 
 void test_cond() {
@@ -156,10 +144,9 @@ void test_code_select() {
 int main() {
     Ip ip_inst; ip = &ip_inst;
 
-    // test_checked_if();
     // test_cond();
     // test_graph();
-    // test_simp_bool();
+    test_simp_bool();
     // test_code_syscall();
-    test_code_select();
+    // test_code_select();
 }

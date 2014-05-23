@@ -3,6 +3,7 @@
 #include "BoolOpSeq.h"
 #include "Codegen_C.h"
 #include <fstream>
+#include "OutReg.h"
 #include "Inst.h"
 #include "Cst.h"
 #include "Op.h"
@@ -135,19 +136,6 @@ void Inst::visit( Visitor &v, bool pointed_data, bool want_dep ) {
 void Inst::_visit_pointed_data( Visitor &v, bool want_dep ) {
 }
 
-int Inst::checked_if( Expr cond ) {
-    return cond->allow_to_check( this );
-}
-
-int Inst::always_checked() const {
-    return 0;
-}
-
-int Inst::allow_to_check( Expr val ) {
-    return this == val.ptr();
-}
-
-
 void Inst::inp_type_proposition( Type *type, int ninp ) {
 }
 
@@ -209,6 +197,8 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
 
     if ( when )
         when->write_to_stream( ss << "\n" );
+    if ( IIC( this )->out_reg )
+        IIC( this )->out_reg->write_to_stream( ss << " " );
 
     // node
     std::string ls = ss.str();
@@ -297,6 +287,44 @@ void Inst::update_when( const BoolOpSeq &cond ) {
         inst->update_when( cond );
     for( Expr inst : dep )
         inst->update_when( cond );
+}
+
+int Inst::always_checked() const {
+    return false;
+}
+
+bool Inst::has_inp_parent() const {
+    for( int i = 0; i < par.size(); ++i )
+        if ( par[ i ].ninp >= 0 )
+            return true;
+    return false;
+}
+
+void Inst::update_out_reg( Codegen_C *cc ) {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+
+    if ( has_inp_parent() and not IIC( this )->out_reg )
+        set_out_reg( cc, cc->new_out_reg( IIC( this )->out_type ) );
+
+    for( Expr ch : inp )
+        ch->update_out_reg( cc );
+    for( Expr ch : dep )
+        ch->update_out_reg( cc );
+}
+
+void Inst::set_out_reg( Codegen_C *cc, OutReg *reg ) {
+    IIC( this )->out_reg = reg;
+}
+
+void Inst::set_out_reg_from( Codegen_C *cc, OutReg *reg, Inst *par ) {
+    if ( IIC( this )->out_reg != reg ) {
+        if ( IIC( this )->out_reg ) {
+            TODO;
+        } else
+            this->set_out_reg( cc, reg );
+    }
 }
 
 BoolOpSeq Inst::get_BoolOpSeq() {

@@ -652,7 +652,7 @@ public:
     }
 
     template<class V>
-    bool subset_of( const V &v ) {
+    bool subset_of( const V &v ) const {
         for( const auto &i : *this )
             if ( not v.contains( i ) )
                 return false;

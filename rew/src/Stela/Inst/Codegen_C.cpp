@@ -26,6 +26,10 @@ void Codegen_C::exec() {
     TODO;
 }
 
+OutReg *Codegen_C::new_out_reg( Type *type ) {
+    return out_regs.push_back( type, nb_regs++ );
+}
+
 int Codegen_C::new_num_reg() {
     return nb_regs++;
 }
@@ -222,6 +226,13 @@ static int display_graphviz( SplittedVec<CInstBlock,8> &blocks, const char *file
     return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
 }
 
+static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
+    BoolOpSeq res;
+    for( const BoolOpSeq &b : cond_stack )
+        res = res && b;
+    return res;
+}
+
 void Codegen_C::make_code() {
     // clone (-> out)
     ++Inst::cur_op_id;
@@ -234,17 +245,13 @@ void Codegen_C::make_code() {
     ip->cst_true  = cloned( ip->cst_true , created );
 
     // select -> select_dep
-    ++Inst::cur_op_id;
-    for( Expr inst : out )
-        select_to_select_dep( inst );
+    //    ++Inst::cur_op_id;
+    //    for( Expr inst : out )
+    //        select_to_select_dep( inst );
 
     // update inst->when
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
-
-    Inst::display_graph( out );
-
-    // the place to make simplifications
 
     // get needed expressions
     Vec<Expr> needed;
@@ -274,6 +281,7 @@ void Codegen_C::make_code() {
     for( Expr inst : front )
         inst->op_id = Inst::cur_op_id;
 
+    Vec<Expr> seq;
     ++Inst::cur_op_id;
     SplittedVec<CInstBlock,8> blocks;
     CInstBlock *cur_block = blocks.push_back( BoolOpSeq( true ) );
@@ -287,6 +295,17 @@ void Codegen_C::make_code() {
                 break;
             }
         }
+        // try to find an instruction with only with additional conditions
+        //        if ( not inst ) {
+        //            for( int i = 0; i < front.size(); ++i ) {
+        //                if ( *front[ i ]->when == cur_block->cond ) {
+        //                    inst = front[ i ];
+        //                    front.remove_unordered( i );
+        //                    break;
+        //                }
+        //            }
+        //        }
+        // else, take a random one
         if ( not inst ) {
             inst = front.back();
             front.pop_back();
@@ -297,6 +316,7 @@ void Codegen_C::make_code() {
         inst->op_id = Inst::cur_op_id; // done
         IIC( inst )->block = cur_block;
         cur_block->inst << inst;
+        seq << inst;
 
         // parents
         for( Inst::Parent &p : inst->par ) {
@@ -307,68 +327,88 @@ void Codegen_C::make_code() {
         }
     }
 
-    display_graphviz( blocks );
-
-    // block scheduling
-    Vec<CInstBlock *> front_block;
-    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
-        CInstBlock *b = &blocks[ num_block ];
-        b->update_dep();
-        if ( not b->dep.size() )
-            front_block << b;
-    }
-    ++CInstBlock::cur_op_id;
-    for( CInstBlock *b : front_block )
-        b->op_id = b->cur_op_id;
-
-
-    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
-        CInstBlock *b = &blocks[ num_block ];
-        std::cout << b << std::endl;
-        std::cout << "  par=" << b->par << std::endl;
-        std::cout << "  dep=" << b->dep << std::endl;
-        std::cout << "  cond=" << b->cond << std::endl;
-        std::cout << "  inst=" << b->inst << std::endl;
-    }
-
-    ++CInstBlock::cur_op_id;
-    SplittedVec<CBlockAsm,8> block_asm;
-    CBlockAsm *cba = block_asm.push_back();
-    // cba->sc << std::make_pair( ip->cst_true, 1 );
-    while ( front_block.size() ) {
-        CInstBlock *b = 0;
-        // try to find a block with
-        // - the same set if conditions
-        // - or few additionnal conditions
-        // - or few conditions to remove
-        // Rq: if ( b and a ) ... if ( a ) ... -> if ( a ) { if ( b ) ... ... }
-        b = front_block.back();
-        front_block.pop_back();
-
-        b->op_id = b->cur_op_id;
-
-        if ( b->cond == cba->cond )
-            cba->items << CBlockAsm::Item{ b, 0 };
-        else {
-            CBlockAsm *nba = block_asm.push_back( cba, b->cond );
-            nba->items << CBlockAsm::Item{ b, 0 };
-
-            cba->items << CBlockAsm::Item{ 0, nba };
-        }
-
-        // parents
-        for( CInstBlock *p : b->par ) {
-            if ( ready_to_be_scheduled( p ) ) {
-                p->op_id = b->cur_op_id - 1; // -> in the front
-                front_block << p;
+    Vec<BoolOpSeq> cond_stack;
+    cond_stack << true;
+    for( Expr inst : seq ) {
+        if ( *inst->when != anded( cond_stack ) ) {
+            while ( not inst->when->imply( anded( cond_stack ) ) ) {
+                cond_stack.pop_back();
+                on.nsp -= 4;
+                on << "}";
             }
+            BoolOpSeq nc = *inst->when - anded( cond_stack );
+            cond_stack << nc;
+
+            nc.write_to_stream( on.write_beg() << "if ( " );
+            on.write_end( " ) {" );
+            on.nsp += 4;
         }
+        inst->write_to( this );
+    }
+    for( int i = 0; i < cond_stack.size(); ++i ) {
+        on.nsp -= 4;
+        on << "}";
     }
 
-    write( block_asm[ 0 ] );
-    // display
-    // for( Expr inst : needed )
-    //     std::cout << inst << " when " << inst->when << "\n";
+    //    display_graphviz( blocks );
+
+    //    // block scheduling
+    //    Vec<CInstBlock *> front_block;
+    //    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
+    //        CInstBlock *b = &blocks[ num_block ];
+    //        b->update_dep();
+    //        if ( not b->dep.size() )
+    //            front_block << b;
+    //    }
+    //    ++CInstBlock::cur_op_id;
+    //    for( CInstBlock *b : front_block )
+    //        b->op_id = b->cur_op_id;
+
+
+    //    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
+    //        CInstBlock *b = &blocks[ num_block ];
+    //        std::cout << b << std::endl;
+    //        std::cout << "  par=" << b->par << std::endl;
+    //        std::cout << "  dep=" << b->dep << std::endl;
+    //        std::cout << "  cond=" << b->cond << std::endl;
+    //        std::cout << "  inst=" << b->inst << std::endl;
+    //    }
+
+    //    ++CInstBlock::cur_op_id;
+    //    SplittedVec<CBlockAsm,8> block_asm;
+    //    CBlockAsm *cba = block_asm.push_back();
+    //    // cba->sc << std::make_pair( ip->cst_true, 1 );
+    //    while ( front_block.size() ) {
+    //        CInstBlock *b = 0;
+    //        // try to find a block with
+    //        // - the same set if conditions
+    //        // - or few additionnal conditions
+    //        // - or few conditions to remove
+    //        // Rq: if ( b and a ) ... if ( a ) ... -> if ( a ) { if ( b ) ... ... }
+    //        b = front_block.back();
+    //        front_block.pop_back();
+
+    //        b->op_id = b->cur_op_id;
+
+    //        if ( b->cond == cba->cond )
+    //            cba->items << CBlockAsm::Item{ b, 0 };
+    //        else {
+    //            CBlockAsm *nba = block_asm.push_back( cba, b->cond );
+    //            nba->items << CBlockAsm::Item{ b, 0 };
+
+    //            cba->items << CBlockAsm::Item{ 0, nba };
+    //        }
+
+    //        // parents
+    //        for( CInstBlock *p : b->par ) {
+    //            if ( ready_to_be_scheduled( p ) ) {
+    //                p->op_id = b->cur_op_id - 1; // -> in the front
+    //                front_block << p;
+    //            }
+    //        }
+    //    }
+
+    //    write( block_asm[ 0 ] );
 }
 
 void Codegen_C::write( CBlockAsm &cba ) {

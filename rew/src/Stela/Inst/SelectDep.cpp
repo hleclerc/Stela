@@ -20,8 +20,6 @@ public:
         return 0;
     }
     virtual Expr _simplified() {
-        if ( int res = inp[ 0 ]->checked_if( ip->cur_cond() ) )
-            return res > 0 ? dep[ 0 ] : dep[ 1 ];
         return 0;
     }
     virtual Expr _get_val() {

@@ -28,6 +28,24 @@ void BoolOpSeq::write_to_stream( Stream &os ) const {
         os << ( val_if_not_or_seq ? "true" : "false" );
 }
 
+bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
+    // i.e. every cond of b is present in this
+    // ( a or b ) =?> true  : no
+    // ( a or b ) =?> false : no
+    return b.or_seq.size() and or_seq.size() ? b.or_seq.subset_of( or_seq ) : false;
+}
+
+Vec<BoolOpSeq::Item> BoolOpSeq::common_terms() const {
+    if ( not or_seq.size() )
+        return Vec<BoolOpSeq::Item>();
+    Vec<BoolOpSeq::Item> res = or_seq[ 0 ];
+    for( int i = 1; i < or_seq.size(); ++i )
+        for( int j = 0; j < res.size(); ++j )
+            if ( not or_seq[ i ].contains( res[ j ] ) )
+                res.remove( j-- );
+    return res;
+}
+
 static bool eq_excepted( const Vec<BoolOpSeq::Item> &a, const Vec<BoolOpSeq::Item> &b, int &index ) {
     if ( a.size() != b.size() )
         return false;
@@ -142,6 +160,13 @@ BoolOpSeq operator||( const BoolOpSeq &a, const BoolOpSeq &b ) {
     return res.simplify();
 }
 
+BoolOpSeq operator-( const BoolOpSeq &a, const BoolOpSeq &b ) {
+    BoolOpSeq res = a;
+    // we remove
+    TODO;
+    return res;
+}
+
 static void push_not_rec( BoolOpSeq &res, const BoolOpSeq &a, const Vec<int> &ind ) {
     if ( ind.size() == a.or_seq.size() ) {
         Vec<BoolOpSeq::Item> tmp;
@@ -167,3 +192,4 @@ BoolOpSeq operator!( const BoolOpSeq &a ) {
     }
     return BoolOpSeq( not a.val_if_not_or_seq );
 }
+

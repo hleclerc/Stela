@@ -1,9 +1,12 @@
 #ifndef CODEGEN_C_H
 #define CODEGEN_C_H
 
+#include "../System/SplittedVec.h"
 #include "../System/StreamSep.h"
 #include "Codegen.h"
+#include "OutReg.h"
 struct CBlockAsm;
+struct OutReg;
 
 /**
 */
@@ -22,6 +25,7 @@ public:
     virtual void exec();
 
     C_Code code( Expr inst, int prec = 0 );
+    OutReg *new_out_reg( Type *type );
     int new_num_reg();
 
     StreamSepMaker<std::ostringstream> on;
@@ -29,6 +33,8 @@ public:
     std::ostringstream *os;
 
 protected:
+    SplittedVec<OutReg,32> out_regs;
+
     void write( CBlockAsm &cba );
     void make_code();
     int nb_regs;
