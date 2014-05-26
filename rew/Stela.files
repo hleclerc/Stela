@@ -102,3 +102,5 @@ src/Stela/Inst/InstBoolOpSeq.cpp
 src/Stela/System/AssignIfNeq.h
 src/Stela/Inst/OutReg.h
 src/Stela/Inst/OutReg.cpp
+src/Stela/Inst/Save.h
+src/Stela/Inst/Save.cpp

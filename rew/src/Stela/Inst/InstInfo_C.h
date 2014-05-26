@@ -12,9 +12,6 @@ class InstInfo_C {
 public:
     InstInfo_C();
 
-    CInstBlock *block;
-
-    int num_reg;
     Type *out_type;
     Type *val_type; ///< for pointers
     OutReg *out_reg;

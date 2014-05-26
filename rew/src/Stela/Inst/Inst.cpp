@@ -197,8 +197,8 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
 
     if ( when )
         when->write_to_stream( ss << "\n" );
-    if ( IIC( this )->out_reg )
-        IIC( this )->out_reg->write_to_stream( ss << " " );
+    //if ( IIC( this )->out_reg )
+    //    IIC( this )->out_reg->write_to_stream( ss << " " );
 
     // node
     std::string ls = ss.str();
@@ -242,18 +242,23 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
 }
 
 void Inst::write_to( Codegen_C *cc, int prec ) {
-    if ( prec < 0 )
-        cc->on.write_beg() << "// " << *when << " ";
-    write_dot( *cc->os );
-    if ( prec < 0 )
-        cc->on.write_end();
+    //if ( prec < 0 )
+    //    cc->on.write_beg() << "// " << *when << " ";
+    if ( prec >= 0 )
+        write_dot( *cc->os );
+    //if ( prec < 0 )
+    //    cc->on.write_end();
 }
 
-void Inst::write_to( Codegen_C *cc, int prec, int num_reg ) {
-    if ( num_reg >= 0 )
-        *cc->os << "R" << num_reg;
+void Inst::write_to( Codegen_C *cc, int prec, OutReg *out_reg ) {
+    if ( out_reg )
+        *cc->os << *out_reg;
     else
         write_to( cc, prec );
+}
+
+bool Inst::going_to_write_c_code() {
+    return true;
 }
 
 void Inst::_add_store_dep_if_necessary( Expr res, Expr fut ) {
@@ -298,33 +303,6 @@ bool Inst::has_inp_parent() const {
         if ( par[ i ].ninp >= 0 )
             return true;
     return false;
-}
-
-void Inst::update_out_reg( Codegen_C *cc ) {
-    if ( op_id == cur_op_id )
-        return;
-    op_id = cur_op_id;
-
-    if ( has_inp_parent() and not IIC( this )->out_reg )
-        set_out_reg( cc, cc->new_out_reg( IIC( this )->out_type ) );
-
-    for( Expr ch : inp )
-        ch->update_out_reg( cc );
-    for( Expr ch : dep )
-        ch->update_out_reg( cc );
-}
-
-void Inst::set_out_reg( Codegen_C *cc, OutReg *reg ) {
-    IIC( this )->out_reg = reg;
-}
-
-void Inst::set_out_reg_from( Codegen_C *cc, OutReg *reg, Inst *par ) {
-    if ( IIC( this )->out_reg != reg ) {
-        if ( IIC( this )->out_reg ) {
-            TODO;
-        } else
-            this->set_out_reg( cc, reg );
-    }
 }
 
 BoolOpSeq Inst::get_BoolOpSeq() {

@@ -49,6 +49,26 @@ public:
         return new Op( tr, ta, tb );
     }
 
+    virtual void write_to( Codegen_C *cc, int prec ) {
+        if ( prec < 0 and par.size() <= 1 )
+            return;
+        if ( T::is_oper ) {
+            if ( T::prec <= prec )
+                *cc->os << "(";
+            if ( T::n == 1 ) {
+                T().write_oper( *cc->os );
+                *cc->os << " " << cc->code( inp[ 0 ], T::prec );
+            } else {
+                *cc->os << cc->code( inp[ 0 ], T::prec ) << " ";
+                T().write_oper( *cc->os );
+                *cc->os << " " << cc->code( inp[ 1 ], T::prec );
+            }
+            if ( T::prec <= prec )
+                *cc->os << ")";
+        } else
+            TODO;
+    }
+
     Type *tr;
     Type *ta;
     Type *tb;

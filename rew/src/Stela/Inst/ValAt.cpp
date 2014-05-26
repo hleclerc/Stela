@@ -13,7 +13,7 @@ public:
     virtual void write_to( Codegen_C *cc, int prec ) {
         if ( prec >= 0 ) {
             if ( inp[ 0 ]->is_a_Room() )
-                *cc->os << "R" << IIC( inp[ 0 ] )->num_reg;
+                *cc->os << *IIC( inp[ 0 ] )->out_reg;
             else
                 *cc->os << "*" << cc->code( inp[ 0 ], CppOperatorPrecedence::POINTED_DATA );
         }

@@ -58,6 +58,12 @@ Var Var::operator!() {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), Op_not_boolean() ) );
 }
 
+Var Var::operator+( Var b ) {
+    if ( type != b.type )
+        TODO;
+    return Var( type, op( type, type, get_val(), b.type, b.get_val(), Op_add() ) );
+}
+
 struct AddStoreDep : public Inst::Visitor {
     virtual void operator()( Expr expr ) {
         expr->_add_store_dep_if_necessary( res, fut );

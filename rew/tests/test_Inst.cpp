@@ -147,7 +147,7 @@ void test_code_select() {
 
     ip->set_cond( c1 );
     //ip->set_cond( c0.and_boolean( c1 ) );
-    a.set_val( c );
+    a.set_val( c + b );
     ip->pop_cond();
 
     syscall( a.ptr() );

@@ -32,6 +32,8 @@ public:
     bool imply( const BoolOpSeq &b ) const; ///< val of b knowing this == true
     Vec<Item> common_terms() const;
 
+    int nb_sub_conds() const;
+
     Vec<Vec<Item> > or_seq; // ( c0 and c1 ) or ( c2 and c3 and ... ) or ...
     bool val_if_not_or_seq;
 protected:

@@ -73,13 +73,10 @@ public:
     virtual void write_sub_graph_rec( Stream &os ) const;
 
     virtual void write_to( Codegen_C *cc, int prec = -1 ); ///< prec = -1 -> make a new line for this instruction
-    virtual void write_to( Codegen_C *cc, int prec, int num_reg );
+    virtual void write_to( Codegen_C *cc, int prec, OutReg *out_reg );
+    virtual bool going_to_write_c_code();
 
     virtual void update_when( const BoolOpSeq &cond );
-
-    virtual void update_out_reg( Codegen_C *cc );
-    virtual void set_out_reg( Codegen_C *cc, OutReg *reg );
-    virtual void set_out_reg_from( Codegen_C *cc, OutReg *reg, Inst *par );
 
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();

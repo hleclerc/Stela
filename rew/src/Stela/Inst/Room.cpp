@@ -56,11 +56,12 @@ public:
         future_dep << fut;
     }
     virtual void write_to( Codegen_C *cc, int prec ) {
-        if ( prec < 0 )
-            cc->on << *IIC( this )->val_type << " R" << ( IIC( this )->num_reg = cc->new_num_reg() ) << ";";
+        //        if ( prec < 0 )
+        //            cc->on << *IIC( this )->val_type << " " << *( IIC( this )->out_reg = cc->new_out_reg( IIC( this )->out_type ) ) << ";";
+        IIC( this )->out_reg = cc->new_out_reg( IIC( this )->val_type );
     }
-    virtual void write_to( Codegen_C *cc, int prec, int num_reg ) {
-        *cc->os << "&R" << num_reg;
+    virtual void write_to( Codegen_C *cc, int prec, OutReg *out_reg ) {
+        *cc->os << "&" << *out_reg;
     }
     virtual void val_type_proposition( Type *type ) {
         IIC( this )->val_type = type;

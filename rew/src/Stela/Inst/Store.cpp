@@ -17,7 +17,7 @@ public:
         return 0;
     }
     virtual void write_to( Codegen_C *cc, int prec ) {
-        cc->on << "R" << IIC( inp[ 0 ] )->num_reg << " = " << cc->code( inp[ 1 ] ) << ";";
+        cc->on << *IIC( inp[ 0 ] )->out_reg << " = " << cc->code( inp[ 1 ] ) << ";";
     }
     virtual void inp_type_proposition( Type *type, int ninp ) {
         if ( ninp == 1 )

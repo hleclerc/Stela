@@ -15,6 +15,9 @@ public:
     virtual int size() const {
         return len;
     }
+    virtual bool going_to_write_c_code() {
+        return false;
+    }
 
     String name;
     int len;

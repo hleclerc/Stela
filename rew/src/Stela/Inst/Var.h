@@ -25,6 +25,8 @@ public:
     Var operator||( Var b );
     Var operator!();
 
+    Var operator+( Var b );
+
     friend Var syscall( const Vec<Var> &inp );
 
 protected:

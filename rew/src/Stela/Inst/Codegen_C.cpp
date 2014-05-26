@@ -6,7 +6,9 @@
 #include <fstream>
 #include "Store.h"
 #include "ValAt.h"
+#include "Save.h"
 #include "Room.h"
+#include <limits>
 #include "Ip.h"
 
 Codegen_C::Codegen_C() : on( &main_os ), os( &main_os ) {
@@ -17,7 +19,29 @@ void Codegen_C::write_to( Stream &out ) {
     on.nsp = 4;
     make_code();
 
+    // types
+    std::map<Type *,Vec<OutReg *> > orbt;
+    for( int i = 0; i < out_regs.size(); ++i )
+        orbt[ out_regs[ i ].type ] << &out_regs[ i ];
+
+    for( auto iter : orbt )
+        iter.first->write_C_decl( out );
+
+
+    //
     out << "int main() {\n";
+
+    // out_regs
+    for( auto iter : orbt ) {
+        out << "    " << *iter.first << " ";
+        for( int n = 0; n < iter.second.size(); ++n ) {
+            if ( n )
+                out << ", ";
+            out << *iter.second[ n ];
+        }
+        out << ";\n";
+    }
+
     out << main_os.str();
     out << "}\n";
 }
@@ -35,7 +59,7 @@ int Codegen_C::new_num_reg() {
 }
 
 void Codegen_C::C_Code::write_to_stream( Stream &os ) const {
-    inst->write_to( cc, prec, IIC( inst )->num_reg );
+    inst->write_to( cc, prec, IIC( inst )->out_reg );
 }
 
 Codegen_C::C_Code Codegen_C::code( Expr inst, int prec ) {
@@ -81,91 +105,9 @@ static bool ready_to_be_scheduled( Expr inst ) {
 }
 
 
-struct CInstBlock {
-    CInstBlock( BoolOpSeq cond ) : cond( cond ), op_id( 0 ) {
-    }
-
-    void update_dep_child( const Expr &ch ) {
-        CInstBlock *b = IIC( ch )->block;
-        if ( b->op_id != cur_op_id ) {
-            b->op_id = cur_op_id;
-            b->par << this;
-            dep << b;
-        }
-    }
-
-    void update_dep_inst( const Expr &i ) {
-        for( Expr ch : i->inp )
-            update_dep_child( ch );
-        for( Expr ch : i->dep )
-            update_dep_child( ch );
-    }
-
-    void update_dep() {
-        dep.resize( 0 );
-        op_id = ++cur_op_id;
-        for( const Expr &i : inst )
-            update_dep_inst( i );
-        for( const auto &v : cond.or_seq )
-            for( const auto &item : v )
-                update_dep_child( item.expr );
-    }
-
-    Vec<CInstBlock *> dep, par;
-    Vec<Expr> inst;
-    BoolOpSeq cond; ///< cond as a vec of anded op
-
-    static  PI64 cur_op_id;
-    mutable PI64 op_id;
-};
-
-PI64 CInstBlock::cur_op_id = 0;
-
-bool ready_to_be_scheduled( const CInstBlock *b ) {
-    // already in the front ?
-    if ( b->op_id >= b->cur_op_id - 1 )
-        return false;
-    // not computed ?
-    for( const CInstBlock *ch : b->dep )
-        if ( ch->op_id < b->cur_op_id )
-            return false;
-    // ok
-    return true;
-}
-
-static bool ready_to_be_scheduled( Expr inst, CInstBlock *b ) {
-    // already in the front ?
-    if ( inst->op_id >= Inst::cur_op_id - 1 )
-        return false;
-    // not computed ?
-    for( const Expr &ch : inst->inp )
-        if ( ch->op_id < Inst::cur_op_id and IIC( ch )->block == b )
-            return false;
-    for( const Expr &ch : inst->dep )
-        if ( ch->op_id < Inst::cur_op_id and IIC( ch )->block == b )
-            return false;
-    // ok
-    return true;
-}
-
-struct CBlockAsm {
-    CBlockAsm( CBlockAsm *par = 0, const BoolOpSeq &cond = BoolOpSeq( true ) ) : par( par ), cond( cond ) {
-    }
-    struct Item {
-        CInstBlock *b;
-        CBlockAsm  *s;
-    };
-    CBlockAsm *par;
-    BoolOpSeq  cond; ///< cond as a vec of anded op
-    Vec<Item>  items;
-};
-
 struct AddToNeeded : Inst::Visitor {
-    AddToNeeded( Vec<Expr> &needed ) : needed( needed ) {
-    }
-    virtual void operator()( Expr expr ) {
-        needed << expr;
-    }
+    AddToNeeded( Vec<Expr> &needed ) : needed( needed ) { }
+    virtual void operator()( Expr expr ) { needed << expr; }
     Vec<Expr> &needed;
 };
 
@@ -197,34 +139,34 @@ static void select_to_select_dep( Expr inst ) {
         select_to_select_dep( ch );
 }
 
-static int display_graphviz( SplittedVec<CInstBlock,8> &blocks, const char *filename = ".blk.dot" ) {
-    std::ofstream f( filename );
-    f << "digraph Instruction {\n";
-    f << "  node [shape = record];\n";
+//static int display_graphviz( SplittedVec<CInstBlock,8> &blocks, const char *filename = ".blk.dot" ) {
+//    std::ofstream f( filename );
+//    f << "digraph Instruction {\n";
+//    f << "  node [shape = record];\n";
 
-    for( int i = 0; i < blocks.size(); ++i ) {
-        f << "  subgraph cluster" << &blocks[ i ] <<" {\n  color=yellow;\n  style=dotted;\n";
-        for( const Expr &inst : blocks[ i ].inst ) {
-            f << "  node" << inst.ptr() << " [label=\"";
-            inst->write_dot( f );
-            f << "\"];\n";
-            for( const Expr &ch : inst->inp )
-                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << ";\n";
-            for( const Expr &ch : inst->dep )
-                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << " [style=dotted];\n";
-        }
-        f << "  label = \"" << blocks[ i ].cond << "\"\n";
-        f << "  }\n";
-        for( const auto &v : blocks[ i ].cond.or_seq )
-            for( const auto &item : v )
-                f << "  node" << blocks[ i ].inst[ 0 ].ptr() <<"  -> node" << item.expr.ptr() << " [ltail=cluster" << &blocks[ i ] << " color=gray];\n";
-    }
+//    for( int i = 0; i < blocks.size(); ++i ) {
+//        f << "  subgraph cluster" << &blocks[ i ] <<" {\n  color=yellow;\n  style=dotted;\n";
+//        for( const Expr &inst : blocks[ i ].inst ) {
+//            f << "  node" << inst.ptr() << " [label=\"";
+//            inst->write_dot( f );
+//            f << "\"];\n";
+//            for( const Expr &ch : inst->inp )
+//                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << ";\n";
+//            for( const Expr &ch : inst->dep )
+//                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << " [style=dotted];\n";
+//        }
+//        f << "  label = \"" << blocks[ i ].cond << "\"\n";
+//        f << "  }\n";
+//        for( const auto &v : blocks[ i ].cond.or_seq )
+//            for( const auto &item : v )
+//                f << "  node" << blocks[ i ].inst[ 0 ].ptr() <<"  -> node" << item.expr.ptr() << " [ltail=cluster" << &blocks[ i ] << " color=gray];\n";
+//    }
 
-    f << "}";
-    f.close();
+//    f << "}";
+//    f.close();
 
-    return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
-}
+//    return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
+//}
 
 static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
     BoolOpSeq res;
@@ -249,9 +191,18 @@ void Codegen_C::make_code() {
     //    for( Expr inst : out )
     //        select_to_select_dep( inst );
 
+    // add "save" children to Select inst
+    for( Expr inst : created )
+        if ( inst->is_a_Select() )
+            for( int i = 1; i < 3; ++i )
+                inst->mod_inp( save( inst->inp[ i ] ), i );
+
+
     // update inst->when
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
+
+    Inst::display_graph( out );
 
     // get needed expressions
     Vec<Expr> needed;
@@ -272,6 +223,16 @@ void Codegen_C::make_code() {
         if ( not IIC( inst )->out_type )
             inst->out_type_proposition( ip->artificial_type_for_size( inst->size() ) );
 
+    // update IIC(  )->out_reg
+    for( Expr inst : needed ) {
+        if ( inst->is_a_Select() ) {
+            OutReg *reg = new_out_reg( IIC( inst )->out_type );
+            IIC( inst )->out_reg = reg;
+            IIC( inst->inp[ 1 ] )->out_reg = reg;
+            IIC( inst->inp[ 2 ] )->out_reg = reg;
+        }
+    }
+
     // first basic scheduling to get Block data
     ++Inst::cur_op_id;
     Vec<Expr> front;
@@ -283,39 +244,73 @@ void Codegen_C::make_code() {
 
     Vec<Expr> seq;
     ++Inst::cur_op_id;
-    SplittedVec<CInstBlock,8> blocks;
-    CInstBlock *cur_block = blocks.push_back( BoolOpSeq( true ) );
+    Vec<BoolOpSeq> cond_stack;
+    cond_stack << true;
     while ( front.size() ) {
         Expr inst;
-        // try to find an instruction with the same condition set
+        // try to find an instruction with the same condition set or an inst the is not going to write anything
+        BoolOpSeq cur_cond = anded( cond_stack );
         for( int i = 0; i < front.size(); ++i ) {
-            if ( *front[ i ]->when == cur_block->cond ) {
+            if ( *front[ i ]->when == cur_cond or not front[ i ]->going_to_write_c_code()  ) {
                 inst = front[ i ];
                 front.remove_unordered( i );
                 break;
             }
         }
         // try to find an instruction with only with additional conditions
-        //        if ( not inst ) {
-        //            for( int i = 0; i < front.size(); ++i ) {
-        //                if ( *front[ i ]->when == cur_block->cond ) {
-        //                    inst = front[ i ];
-        //                    front.remove_unordered( i );
-        //                    break;
-        //                }
-        //            }
-        //        }
+        if ( not inst ) {
+            int best_score = std::numeric_limits<int>::max(), best_index = -1;
+            const int score_close = 10000;
+            // std::cout << front << std::endl;
+            Vec<BoolOpSeq> best_cond_stack;
+            for( int i = 0; i < front.size(); ++i ) {
+                BoolOpSeq &cond = *front[ i ]->when;
+                Vec<BoolOpSeq> trial_cond_stack = cond_stack;
+                int score = 0;
+
+                BoolOpSeq poped;
+                if ( cond.always( true ) ) {
+                    score += trial_cond_stack.size() * score_close;
+                    trial_cond_stack.resize( 0 );
+                } else {
+                    while ( not cond.imply( anded( trial_cond_stack ) ) ) {
+                        poped = trial_cond_stack.pop_back_val();
+                        if ( poped.or_seq.size() )
+                            score += score_close;
+                    }
+                }
+                BoolOpSeq nc = cond - anded( trial_cond_stack );
+                trial_cond_stack << nc;
+
+                if ( nc.or_seq.size() ) {
+                    if ( nc.imply( not poped ) )
+                        score += 1 + 2 * ( nc - not poped ).nb_sub_conds();
+                    else
+                        score += 2 * nc.nb_sub_conds();
+                }
+
+                // std::cout << "  " << cond << " -> " << score << " " << nc << std::endl;
+                if ( best_score > score ) {
+                    best_cond_stack = trial_cond_stack;
+                    best_score = score;
+                    best_index = i;
+                }
+            }
+            if ( best_index >= 0 ) {
+                inst = front[ best_index ];
+                cond_stack = best_cond_stack;
+                front.remove_unordered( best_index );
+            }
+        }
         // else, take a random one
         if ( not inst ) {
             inst = front.back();
             front.pop_back();
-
-            cur_block = blocks.push_back( *inst->when );
         }
 
         inst->op_id = Inst::cur_op_id; // done
-        IIC( inst )->block = cur_block;
-        cur_block->inst << inst;
+        if ( inst->going_to_write_c_code() )
+            cur_cond = inst->when;
         seq << inst;
 
         // parents
@@ -327,10 +322,11 @@ void Codegen_C::make_code() {
         }
     }
 
-    Vec<BoolOpSeq> cond_stack;
+    cond_stack.resize( 0 );
     cond_stack << true;
     for( Expr inst : seq ) {
-        //std::cout << ( *inst->when != anded( cond_stack ) )
+        if ( not inst->going_to_write_c_code() )
+            continue;
         if ( *inst->when != anded( cond_stack ) ) {
             BoolOpSeq poped;
             if ( inst->when->always( true ) ) {
@@ -340,7 +336,7 @@ void Codegen_C::make_code() {
                         on << "}";
                     }
                 }
-                cond_stack.resize( 0 );
+                cond_stack.resize( 1 );
             } else {
                 while ( not inst->when->imply( anded( cond_stack ) ) ) {
                     poped = cond_stack.pop_back_val();
@@ -351,14 +347,17 @@ void Codegen_C::make_code() {
                 }
             }
             BoolOpSeq nc = *inst->when - anded( cond_stack );
-            cond_stack << nc;
-            PRINT( *inst->when );
 
             if ( nc.or_seq.size() ) {
-                if ( poped == not nc ) {
+                if ( nc.imply( not poped ) ) {
+                    cond_stack << not poped;
+                    nc = nc - not poped;
                     on << "else {";
                     on.nsp += 4;
-                } else {
+                }
+
+                if ( nc.or_seq.size() ) {
+                    cond_stack << nc;
                     nc.write_to_stream( on.write_beg() << "if ( " );
                     on.write_end( " ) {" );
                     on.nsp += 4;
@@ -373,133 +372,6 @@ void Codegen_C::make_code() {
             on << "}";
         }
     }
-
-    //    display_graphviz( blocks );
-
-    //    // block scheduling
-    //    Vec<CInstBlock *> front_block;
-    //    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
-    //        CInstBlock *b = &blocks[ num_block ];
-    //        b->update_dep();
-    //        if ( not b->dep.size() )
-    //            front_block << b;
-    //    }
-    //    ++CInstBlock::cur_op_id;
-    //    for( CInstBlock *b : front_block )
-    //        b->op_id = b->cur_op_id;
-
-
-    //    for( int num_block = 0; num_block < blocks.size(); ++num_block ) {
-    //        CInstBlock *b = &blocks[ num_block ];
-    //        std::cout << b << std::endl;
-    //        std::cout << "  par=" << b->par << std::endl;
-    //        std::cout << "  dep=" << b->dep << std::endl;
-    //        std::cout << "  cond=" << b->cond << std::endl;
-    //        std::cout << "  inst=" << b->inst << std::endl;
-    //    }
-
-    //    ++CInstBlock::cur_op_id;
-    //    SplittedVec<CBlockAsm,8> block_asm;
-    //    CBlockAsm *cba = block_asm.push_back();
-    //    // cba->sc << std::make_pair( ip->cst_true, 1 );
-    //    while ( front_block.size() ) {
-    //        CInstBlock *b = 0;
-    //        // try to find a block with
-    //        // - the same set if conditions
-    //        // - or few additionnal conditions
-    //        // - or few conditions to remove
-    //        // Rq: if ( b and a ) ... if ( a ) ... -> if ( a ) { if ( b ) ... ... }
-    //        b = front_block.back();
-    //        front_block.pop_back();
-
-    //        b->op_id = b->cur_op_id;
-
-    //        if ( b->cond == cba->cond )
-    //            cba->items << CBlockAsm::Item{ b, 0 };
-    //        else {
-    //            CBlockAsm *nba = block_asm.push_back( cba, b->cond );
-    //            nba->items << CBlockAsm::Item{ b, 0 };
-
-    //            cba->items << CBlockAsm::Item{ 0, nba };
-    //        }
-
-    //        // parents
-    //        for( CInstBlock *p : b->par ) {
-    //            if ( ready_to_be_scheduled( p ) ) {
-    //                p->op_id = b->cur_op_id - 1; // -> in the front
-    //                front_block << p;
-    //            }
-    //        }
-    //    }
-
-    //    write( block_asm[ 0 ] );
 }
 
-void Codegen_C::write( CBlockAsm &cba ) {
-    CBlockAsm *prev = 0;
-    for( CBlockAsm::Item &item : cba.items ) {
-        if ( item.s ) {
-            //if ( prev and same_cond_with_an_else( prev->cond, item.s->cond ) ) {
-            //    on << "else {";
-            //} else {
-                on.write_beg();
-                *os << "if ( ";
-                //                for( int i = 0; i < item.s->cond.size(); ++i ) {
-                //                    if ( i )
-                //                        *os << " and ";
-                //                    if ( not item.s->sc[ i ].second )
-                //                        *os << "not ";
-                //                    *os << item.s->sc[ i ].first;
-                //                }
-                *os << item.s->cond;
-                on.write_end( " ) {" );
-            //}
-            on.nsp += 4;
-
-            write( *item.s );
-
-            on.nsp -= 4;
-            on << "}";
-
-            //
-            prev = item.s;
-        } else {
-            CInstBlock *b = item.b;
-            prev = 0;
-
-            // inst front
-            Vec<Expr> front;
-            ++Inst::cur_op_id;
-            for( Expr inst : item.b->inst ) {
-                int nb_ch = 0;
-                for( Expr ch : inst->inp )
-                    nb_ch += IIC( ch )->block == b;
-                for( Expr ch : inst->dep )
-                    nb_ch += IIC( ch )->block == b;
-                if ( not nb_ch ) {
-                    inst->op_id = inst->cur_op_id;
-                    front << inst;
-                }
-            }
-
-            //
-            ++Inst::cur_op_id;
-            while ( front.size() ) {
-                Expr inst = front.back();
-                front.pop_back();
-
-                inst->write_to( this );
-                inst->op_id = inst->cur_op_id;
-
-                // parents
-                for( Inst::Parent &p : inst->par ) {
-                    if ( IIC( p.inst )->block == b and ready_to_be_scheduled( p.inst, b ) ) {
-                        p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
-                        front << p.inst;
-                    }
-                }
-            }
-        }
-    }
-}
 

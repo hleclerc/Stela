@@ -37,13 +37,16 @@ public:
         for( Expr inst : dep )
             inst->update_when( cond );
     }
-    virtual void set_out_reg( Codegen_C *cc, OutReg *reg ) {
-        Inst::set_out_reg( cc, reg );
-        inp[ 1 ]->set_out_reg_from( cc, reg, this );
-        inp[ 2 ]->set_out_reg_from( cc, reg, this );
-    }
     virtual bool is_a_Select() const {
         return true;
+    }
+    virtual void write_to( Codegen_C *cc, int prec ) {
+    }
+    virtual void inp_type_proposition( Type *type, int ninp ) {
+        if ( ninp >= 1 and ninp <= 2 ) {
+            inp[ 3 - ninp ]->out_type_proposition( type );
+            out_type_proposition( type );
+        }
     }
 };
 

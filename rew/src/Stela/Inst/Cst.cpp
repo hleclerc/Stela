@@ -69,6 +69,9 @@ public:
             return d()[ 0 ] & 1 ? 1 : -1;
         return 0;
     }
+    virtual bool going_to_write_c_code() {
+        return false;
+    }
 
     int len;
     Vec<PI8> data;

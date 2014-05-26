@@ -10,14 +10,15 @@ public:
     Type( int name = -1, int len = -1 );
 
     void write_to_stream( Stream &os ) const;
+    void write_C_decl( Stream &out ) const;
 
-    int pod();
-    int size();
-    virtual void parse();
+    int pod() const;
+    int size() const;
+    virtual void parse() const;
 
     int name;
-    int _len;
-    int _pod;
+    mutable int _len;
+    mutable int _pod;
 };
 
 #endif // TYPE_H

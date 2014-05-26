@@ -61,6 +61,13 @@ Vec<BoolOpSeq::Item> BoolOpSeq::common_terms() const {
     return res;
 }
 
+int BoolOpSeq::nb_sub_conds() const {
+    int res = 0;
+    for( int i = 0; i < or_seq.size(); ++i )
+        res += or_seq[ i ].size();
+    return res;
+}
+
 static bool eq_excepted( const Vec<BoolOpSeq::Item> &a, const Vec<BoolOpSeq::Item> &b, int &index ) {
     if ( a.size() != b.size() )
         return false;

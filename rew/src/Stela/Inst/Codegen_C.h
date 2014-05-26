@@ -26,7 +26,6 @@ public:
 
     C_Code code( Expr inst, int prec = 0 );
     OutReg *new_out_reg( Type *type );
-    int new_num_reg();
 
     StreamSepMaker<std::ostringstream> on;
     std::ostringstream main_os;
@@ -34,8 +33,8 @@ public:
 
 protected:
     SplittedVec<OutReg,32> out_regs;
+    int new_num_reg();
 
-    void write( CBlockAsm &cba );
     void make_code();
     int nb_regs;
 };
