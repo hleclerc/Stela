@@ -104,3 +104,7 @@ src/Stela/Inst/OutReg.h
 src/Stela/Inst/OutReg.cpp
 src/Stela/Inst/Save.h
 src/Stela/Inst/Save.cpp
+src/Stela/Inst/Slice.h
+src/Stela/Inst/Slice.cpp
+src/Stela/Inst/FillAt.h
+src/Stela/Inst/FillAt.cpp

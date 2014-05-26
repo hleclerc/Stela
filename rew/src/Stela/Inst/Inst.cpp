@@ -101,6 +101,11 @@ void Inst::clone( Vec<Expr> &created ) const {
     created << res;
 }
 
+int Inst::size_ptd() const {
+    ERROR( "not a ptr" );
+    return 0;
+}
+
 const PI8 *Inst::data_ptr( int offset ) const {
     return 0;
 }
@@ -268,18 +273,13 @@ Expr Inst::_simplified() {
     return 0;
 }
 
-Expr Inst::_get_val() {
+Expr Inst::_get_val( int len ) {
     ERROR( "_get_val works only with pointer type variables" );
     return 0;
 }
 
-void Inst::_set_val( Expr val ) {
+void Inst::_set_val( Expr val, int len ) {
     ip->disp_error( "_set_val works only with pointer type variables" );
-}
-
-Expr Inst::_at( int len ) {
-    ip->disp_error( "at work only with pointer type expressions" );
-    return cst( 0, 0 );
 }
 
 void Inst::update_when( const BoolOpSeq &cond ) {

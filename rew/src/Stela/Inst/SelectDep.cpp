@@ -22,7 +22,7 @@ public:
     virtual Expr _simplified() {
         return 0;
     }
-    virtual Expr _get_val() {
+    virtual Expr _get_val( int len ) {
          return this;
     }
     virtual void update_when( const BoolOpSeq &cond ) {

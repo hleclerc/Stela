@@ -9,7 +9,7 @@ Ip::Ip() :
     type_Void  ( STRING_Void_NUM  ,  0 ),
     type_Bool  ( STRING_Bool_NUM  ,  1 ),
     type_Error ( STRING_Error_NUM ,  0 ),
-    type_RawPtr( STRING_RawPtr_NUM, sizeof( void * ) * 8 ),
+    // type_RawPtr( STRING_RawPtr_NUM, sizeof( void * ) * 8 ),
     type_ST    ( sizeof( void * ) == 8 ? &type_SI64 : &type_SI32 ),
     sys_state( Ref(), &type_Void, ::sys_state() ) {
 

@@ -15,7 +15,7 @@ public:
     virtual int size() const {
         return ip->type_ST->size();
     }
-    virtual Expr _get_val() {
+    virtual Expr _get_val( int len ) {
         return this;
     }
     virtual void write_to( Codegen_C *cc, int prec ) {

@@ -1,7 +1,9 @@
 #include "InstInfo_C.h"
 #include "Select.h"
 #include "Store.h"
+#include "Slice.h"
 #include "Room.h"
+#include "Cst.h"
 #include "Ip.h"
 
 static int nb_rooms = 0; ///< for the display
@@ -28,10 +30,10 @@ public:
     virtual int size() const {
         return ip->type_ST->size();
     }
-    virtual Expr _get_val() {
+    virtual Expr _get_val( int len ) {
         return val;
     }
-    virtual void _set_val( Expr val ) {
+    virtual void _set_val( Expr val, int len ) {
         if ( ip->cond_stack.size() )
             this->val = select( ip->cur_cond(), val, this->val );
         else
@@ -39,9 +41,6 @@ public:
     }
     virtual bool is_a_pointer() const {
         return true;
-    }
-    virtual Expr _at( int len ) {
-        return val;
     }
     virtual void _visit_pointed_data( Visitor &v, bool want_dep ) {
         val->visit( v, true, want_dep );
@@ -68,6 +67,9 @@ public:
     }
     virtual bool is_a_Room() const {
         return true;
+    }
+    virtual int size_ptd() const {
+        return val->size();
     }
 
     Vec<Expr> future_dep;

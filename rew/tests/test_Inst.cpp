@@ -157,6 +157,26 @@ void test_code_select() {
     cc.write_to( std::cout );
 }
 
+void test_code_slice() {
+    Var a( &ip->type_SI64, symbol( "a", 64 ) );
+    Var b( &ip->type_SI32, symbol( "b", 32 ) );
+    Var c( &ip->type_SI32, symbol( "c", 32 ) );
+
+    Var p = a.ptr();
+    PRINT( p );
+    PRINT( p.at( &ip->type_SI32 ) );
+    PRINT( p + 4 );
+    PRINT( ( p + 4 ).at( &ip->type_SI32 ) );
+    PRINT( ( p + 4 ).at( &ip->type_SI32 ) + b );
+    ( p + 4 ).at( &ip->type_SI32 ).set_val( b );
+    // syscall( a.ptr() );
+    PRINT( a );
+
+    // Codegen_C cc;
+    //    cc << ip->sys_state.get_val();
+    //    cc.write_to( std::cout );
+}
+
 int main() {
     Ip ip_inst; ip = &ip_inst;
 
@@ -165,5 +185,6 @@ int main() {
     //    test_simp_bool();
     //    test_bool_op();
     // test_code_syscall();
-    test_code_select();
+    // test_code_select();
+    test_code_slice();
 }

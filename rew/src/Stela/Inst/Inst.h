@@ -49,6 +49,7 @@ public:
     bool get_val( T &res ) { if ( const PI8 *ptr = data_ptr() ) { int sb = ( size() + 7 ) / 8; if ( sizeof( res ) <= sb ) { memcpy( &res, ptr, sizeof( res ) ); return true; } } return false; }
 
     virtual int size() const = 0;
+    virtual int size_ptd() const;
     virtual const PI8 *data_ptr( int offset = 0 ) const;
 
     void visit( Visitor &v, bool pointed_data = false, bool want_dep = true );
@@ -80,9 +81,8 @@ public:
 
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();
-    virtual Expr _get_val();
-    virtual void _set_val( Expr val );
-    virtual Expr _at( int len ); /// val at adress...
+    virtual Expr _get_val( int len );
+    virtual void _set_val( Expr val, int len );
 
     virtual BoolOpSeq get_BoolOpSeq();
 

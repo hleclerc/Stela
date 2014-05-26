@@ -14,6 +14,8 @@ public:
     Var( Type *type, Expr val ); ///< reserve new room and set val to `val`
     Var( Type *type );
 
+    Var( SI64 val );
+
     void write_to_stream( Stream &os ) const;
     void set_val( Expr val );
     void set_val( Var val );

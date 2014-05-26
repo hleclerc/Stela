@@ -34,7 +34,7 @@ public:
     Type  type_Void;
     Type  type_Bool;
     Type  type_Error;
-    Type  type_RawPtr;
+    // Type  type_RawPtr;
     Type *type_ST;
 
     std::map<int,Type> art_types;

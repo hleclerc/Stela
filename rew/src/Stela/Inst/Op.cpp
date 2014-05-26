@@ -2,6 +2,8 @@
 #include "InstBoolOpSeq.h"
 #include "InstInfo_C.h"
 #include "BoolOpSeq.h"
+#include "FillAt.h"
+#include "Slice.h"
 #include "Type.h"
 #include "Cst.h"
 #include "Op.h"
@@ -69,6 +71,22 @@ public:
             TODO;
     }
 
+    virtual Expr _get_val( int len ) {
+        if ( SameType<T,Op_add>::res )
+            return slice( inp[ 0 ], inp[ 1 ], len );
+        return Inst::_get_val( len );
+    }
+
+    virtual void _set_val( Expr val, int len ) {
+        if ( SameType<T,Op_add>::res )
+            return inp[ 0 ]->_set_val( fill_at( inp[ 0 ]->_get_val( inp[ 0 ]->size_ptd() ), val, inp[ 1 ] ), len );
+        return Inst::_set_val( val, len );
+    }
+
+    virtual bool is_a_pointer() const {
+        return SameType<T,Op_add>::res and inp[ 0 ]->is_a_pointer();
+    }
+
     Type *tr;
     Type *ta;
     Type *tb;
@@ -90,6 +108,11 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_or_boole
 // and
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_boolean ) {
     return inst_bool_op_seq( a->get_BoolOpSeq() and b->get_BoolOpSeq() );
+}
+
+// add
+Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_add ) {
+    return 0;
 }
 
 //

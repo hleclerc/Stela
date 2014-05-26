@@ -3,6 +3,7 @@
 #include "Room.h"
 #include "Type.h"
 #include "Var.h"
+#include "Cst.h"
 #include "Op.h"
 #include "Ip.h"
 
@@ -15,35 +16,43 @@ Var::Var( Type *type, Expr val ) : type( type ), inst( room( type->size(), val )
 Var::Var( Type *type ) : type( type ), inst( room( type->size() ) ) {
 }
 
+Var::Var( SI64 val ) : Var( &ip->type_SI64, cst( 64, (const PI8 *)&val ) ) {
+}
+
 void Var::write_to_stream( Stream &os ) const {
     os << "{" << *type << "}(" << inst << ')';
 }
 
 Expr Var::get_val() {
-    return simplified( inst->_get_val() );
+    return simplified( inst->_get_val( type->size() ) );
 }
 
 void Var::set_val( Var val ) {
-    if ( type != val.type )
+    if ( type != val.type ) {
+        PRINT( *type );
+        PRINT( *val.type );
         TODO;
+    }
     if ( not type->pod() )
         TODO;
     set_val( val.get_val() );
 }
 
 void Var::set_val( Expr val ) {
-    inst->_set_val( val );
+    inst->_set_val( val, type->size() );
 }
 
 Var Var::ptr() {
-    return Var( &ip->type_RawPtr, inst );
+    return Var( ip->type_ST, inst );
 }
 
-Var Var::at( Type *type ) {
-    Expr res = inst->_at( type->size() );
-    if ( not res->is_a_pointer() )
+Var Var::at( Type *target_type ) {
+    Expr res = simplified( inst->_get_val( target_type->size() ) );
+    if ( not res->is_a_pointer() ) {
+        std::cerr << res << std::endl;
         return ip->ret_error( "at requires a pointer var" );
-    return Var( Ref(), type, res );
+    }
+    return Var( Ref(), target_type, res );
 }
 
 Var Var::operator&&( Var b ) {
@@ -59,8 +68,11 @@ Var Var::operator!() {
 }
 
 Var Var::operator+( Var b ) {
-    if ( type != b.type )
+    if ( type != b.type ) {
+        PRINT( *type );
+        PRINT( *b.type );
         TODO;
+    }
     return Var( type, op( type, type, get_val(), b.type, b.get_val(), Op_add() ) );
 }
 

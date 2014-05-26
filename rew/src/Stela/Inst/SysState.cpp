@@ -13,7 +13,7 @@ public:
     virtual int size() const {
         return 0;
     }
-    virtual Expr _get_val() {
+    virtual Expr _get_val( int len ) {
         return this;
     }
 };
