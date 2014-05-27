@@ -18,7 +18,7 @@ void IrWriter::parse( const Lexem *root ) {
 }
 
 ST IrWriter::size_of_binary_data() {
-    ST res = 0;
+    ST res = 2;
     for( auto iter : nstrings )
         res += BinStreamWriter::size_needed_for( iter.first.size() ) + iter.first.size();
     return res + 1 + data.size();

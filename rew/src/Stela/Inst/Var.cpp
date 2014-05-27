@@ -16,6 +16,9 @@ Var::Var( Type *type, Expr val ) : type( type ), inst( room( type->size(), val )
 Var::Var( Type *type ) : type( type ), inst( room( type->size() ) ) {
 }
 
+Var::Var() : type( 0 ) {
+}
+
 Var::Var( SI64 val ) : Var( &ip->type_SI64, cst( 64, (const PI8 *)&val ) ) {
 }
 

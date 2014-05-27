@@ -13,6 +13,8 @@
 
 Codegen_C::Codegen_C() : on( &main_os ), os( &main_os ) {
     nb_regs = 0;
+    disp_inst_graph = false;
+    disp_inst_graph_wo_phi = false;
 }
 
 void Codegen_C::write_to( Stream &out ) {
@@ -202,7 +204,7 @@ void Codegen_C::make_code() {
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
 
-    Inst::display_graph( out );
+    // Inst::display_graph( out );
 
     // get needed expressions
     Vec<Expr> needed;

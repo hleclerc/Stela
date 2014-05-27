@@ -31,6 +31,8 @@ public:
     std::ostringstream main_os;
     std::ostringstream *os;
 
+    bool disp_inst_graph;
+    bool disp_inst_graph_wo_phi;
 protected:
     SplittedVec<OutReg,32> out_regs;
     int new_num_reg();

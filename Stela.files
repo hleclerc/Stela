@@ -40,7 +40,9 @@ src/Stela/Inst/Inst_.h
 src/Stela/Ref/Ip.h
 src/Stela/Ref/Type.h
 src/Stela/Ref/Var.h
+src/Stela/Ref/RefItem_SetVal.h
 src/Stela/Ref/RefItem_PointerOn.h
+src/Stela/Ref/RefItem_Slice.h
 src/Stela/Ref/RefItem.h
 src/Stela/Ref/RefItem_Expr.h
 src/Stela/Ref/Ref.h
@@ -144,6 +146,8 @@ src/Stela/Inst/Arch.cpp
 src/Stela/Inst/Cst.cpp
 src/Stela/Inst/Syscall.cpp
 src/Stela/Inst/Expr.cpp
+src/Stela/Ref/RefItem_Slice.cpp
+src/Stela/Ref/RefItem_SetVal.cpp
 src/Stela/Ref/Ip.cpp
 src/Stela/Ref/Type.cpp
 src/Stela/Ref/RefItem.cpp
@@ -187,10 +191,6 @@ src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Var.cpp
 tests/test_Expr.cpp
+tests/test_nexpr.cpp
 tests/test_Lexer.cpp
 tests/test.met
-src/Stela/Ref/RefItem_Slice.h
-src/Stela/Ref/RefItem_Slice.cpp
-src/Stela/Ref/RefItem_SetVal.h
-src/Stela/Ref/RefItem_SetVal.cpp
-tests/test_nexpr.cpp

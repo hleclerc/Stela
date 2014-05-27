@@ -182,8 +182,8 @@ int main() {
 
     // test_cond();
     // test_graph();
-    //    test_simp_bool();
-    //    test_bool_op();
+    // test_simp_bool();
+    // test_bool_op();
     // test_code_syscall();
     // test_code_select();
     test_code_slice();

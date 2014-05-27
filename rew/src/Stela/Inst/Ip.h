@@ -3,6 +3,9 @@
 
 #include "../System/ErrorList.h"
 #include "../System/NstrCor.h"
+#include "../System/AutoPtr.h"
+#include "Sourcefile.h"
+#include "Scope.h"
 #include "Type.h"
 #include "Var.h"
 #include <map>
@@ -15,9 +18,9 @@ public:
 
     Ip();
 
-    Var ret_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
-    void disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
-    ErrorList::Error &error_msg( String msg, bool warn = false, const char *file = 0, int line = -1 );
+    Var ret_error( String msg, bool warn = false, const char *file = 0, int line = 0 );
+    void disp_error( String msg, bool warn = false, const char *file = 0, int line = 0 );
+    ErrorList::Error &error_msg( String msg, bool warn = false, const char *file = 0, int line = 0 );
 
     void set_cond( Expr cond );
     void set_cond( Var cond );
@@ -27,6 +30,13 @@ public:
     Var error_var();
 
     Type *artificial_type_for_size( int size );
+
+    Vec<Scope::NamedVar> *get_static_scope( String path );
+
+    void add_inc_path( String inc_path );
+    void import( String file );
+
+    SourceFile *new_sf( String file );
 
     // base type
     Type  type_SI32;
@@ -38,6 +48,8 @@ public:
     Type *type_ST;
 
     std::map<int,Type> art_types;
+    std::map<String,SourceFile> sourcefiles;
+    std::map<String,Vec<Scope::NamedVar> > static_scopes;
 
     // std variables
     Expr cst_false;
@@ -46,6 +58,12 @@ public:
     // context
     Vec<Expr> cond_stack;
     Var       sys_state;
+
+    Vec<String>    inc_paths;
+    AutoPtr<Scope> main_scope;
+
+    int off;        ///< current offset in sourcefile
+    SourceFile *sf; ///< current sourcefile
 
     //
     ErrorList error_list;

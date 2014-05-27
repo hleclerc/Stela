@@ -13,6 +13,7 @@ public:
     Var( Ref, Type *type, Expr ptr ); ///<
     Var( Type *type, Expr val ); ///< reserve new room and set val to `val`
     Var( Type *type );
+    Var();
 
     Var( SI64 val );
 

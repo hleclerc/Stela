@@ -18,6 +18,10 @@ Ip::Ip() :
     cst_true  = cst( 1, (PI8 *)&t );
 
     cond_stack << cst_true;
+
+    main_scope = new Scope( 0, "", this );
+
+    sf = 0;
 }
 
 Var Ip::ret_error( String msg, bool warn, const char *file, int line ) {
@@ -73,5 +77,27 @@ Type *Ip::artificial_type_for_size( int size ) {
     res._len = size;
     return &res;
 }
+
+Vec<Scope::NamedVar> *Ip::get_static_scope( String path ) {
+    return &static_scopes[ path ];
+}
+
+
+void Ip::add_inc_path( String inc_path ) {
+    inc_paths.push_back_unique( inc_path );
+}
+
+void Ip::import( String file ) {
+    main_scope->import( file );
+}
+
+SourceFile *Ip::new_sf( String file ) {
+    if ( sourcefiles.count( file ) )
+        return 0;
+    SourceFile *res = &sourcefiles[ file ];
+    res->name = file;
+    return res;
+}
+
 
 Ip *ip = 0;
