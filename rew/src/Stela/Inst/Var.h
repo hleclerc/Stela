@@ -21,6 +21,10 @@ public:
     void set_val( Expr val );
     void set_val( Var val );
     Expr get_val();
+    Expr ref();
+
+    bool is_surdef() const;
+    operator bool() const;
 
     Var ptr();
     Var at( Type *type );
@@ -32,8 +36,8 @@ public:
 
     friend Var syscall( const Vec<Var> &inp );
 
-protected:
     Type *type;
+protected:
     Expr  inst; ///< Room or equivalent (e.g. Room+offset, ...)
 };
 

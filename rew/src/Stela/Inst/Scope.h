@@ -11,22 +11,36 @@ class Ip;
 class Scope {
 public:
     struct NamedVar {
+        bool operator==( SI32 n ) const { return n == name; }
         SI32 name;
-        Expr inst;
+        Var  var;
+    };
+    struct VecNamedVar {
+        Var add( int name, Var var );
+        bool contains( int name );
+        Var get( int name );
+        Vec<NamedVar> data;
     };
 
-    Scope( Scope *parent, String name, Ip *ip );
+    Scope( Scope *parent, String name, Ip *ip = 0 );
 
     void import( String file );
     Var  parse( const PI8 *tok );
 
-    bool           do_not_execute_anything;
-    Vec<NamedVar>  local_scope;
-    Vec<NamedVar> *static_scope;
-    String         path;
-    Ip            *ip;
+    bool         do_not_execute_anything;
+    VecNamedVar  local_scope;
+    VecNamedVar *static_scope;
+    String       path;
+    Ip          *ip;
+
+    Scope       *parent;
 
 protected:
+    int read_nstring( BinStreamReader &bin );
+    Var reg_var( int name, Var var, bool static_scope = false );
+    Var find_first_var( int name );
+    Var find_var( int name );
+
     #define DECL_IR_TOK( N ) Var parse_##N( BinStreamReader bin );
     #include "../Ir/Decl.h"
     #undef DECL_IR_TOK

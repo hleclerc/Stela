@@ -77,5 +77,7 @@ String to_string( const T &val ) {
     return ss.str();
 }
 
+String to_string( const PI8 *val );
+
 
 #endif // STREAM_H

@@ -28,10 +28,11 @@ public:
     void pop_cond();
 
     Var error_var();
+    Var void_var();
 
     Type *artificial_type_for_size( int size );
 
-    Vec<Scope::NamedVar> *get_static_scope( String path );
+    Scope::VecNamedVar *get_static_scope( String path );
 
     void add_inc_path( String inc_path );
     void import( String file );
@@ -49,7 +50,7 @@ public:
 
     std::map<int,Type> art_types;
     std::map<String,SourceFile> sourcefiles;
-    std::map<String,Vec<Scope::NamedVar> > static_scopes;
+    std::map<String,Scope::VecNamedVar> static_scopes;
 
     // std variables
     Expr cst_false;

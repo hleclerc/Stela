@@ -737,6 +737,14 @@ public:
         return -1;
     }
 
+    template<class T2>
+    int first_item_equal_to( const T2 &d ) const { /// returns -1 if not found
+        for(int i = 0; i < _size; ++i )
+            if ( _data[ i ] == d )
+                return _data[ i ];
+        return -1;
+    }
+
     template<class TA,class TB>
     void replace( const TA &a, const TB &b ) {
         for(int i = 0; i < _size; ++i )

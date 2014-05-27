@@ -30,6 +30,19 @@ Expr Var::get_val() {
     return simplified( inst->_get_val( type->size() ) );
 }
 
+Expr Var::ref() {
+    return inst;
+}
+
+bool Var::is_surdef() const {
+    return false;
+}
+
+Var::operator bool() const {
+    return type;
+}
+
+
 void Var::set_val( Var val ) {
     if ( type != val.type ) {
         PRINT( *type );

@@ -66,6 +66,10 @@ Var Ip::error_var() {
     return Var( &type_Error );
 }
 
+Var Ip::void_var() {
+    return Var( &type_Void );
+}
+
 Type *Ip::artificial_type_for_size( int size ) {
     if ( size == 0 ) return &type_Void;
     if ( size == 1 ) return &type_Bool;
@@ -78,7 +82,7 @@ Type *Ip::artificial_type_for_size( int size ) {
     return &res;
 }
 
-Vec<Scope::NamedVar> *Ip::get_static_scope( String path ) {
+Scope::VecNamedVar *Ip::get_static_scope( String path ) {
     return &static_scopes[ path ];
 }
 
