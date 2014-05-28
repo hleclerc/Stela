@@ -15,7 +15,7 @@ public:
     Room( int len, Expr val ) : val( val ), len( len ) {
         num = nb_rooms++;
     }
-    Room( int len ) : len( len ) {
+    Room( int len ) : val( cst( len, 0 ) ), len( len ) {
         num = nb_rooms++;
     }
     virtual void write_dot( Stream &os ) const {

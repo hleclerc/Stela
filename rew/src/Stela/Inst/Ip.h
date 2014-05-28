@@ -6,6 +6,7 @@
 #include "../System/AutoPtr.h"
 #include "Sourcefile.h"
 #include "Scope.h"
+#include "Class.h"
 #include "Type.h"
 #include "Var.h"
 #include <map>
@@ -39,7 +40,10 @@ public:
 
     SourceFile *new_sf( String file );
 
-    Var make_Callable( const Vec<Var> &lst, Var self );
+    Var make_Callable( Vec<Var> lst, Var self );
+    Var make_Varargs( Vec<Var> lst, const Vec<int> &names = Vec<int>() );
+    Type *make_Varargs_type( const Vec<Type *> &lst, const Vec<int> &names, int o );
+    Var make_type_var( Type *type );
 
     // base type
     #define DECL_BT( T ) \
@@ -51,7 +55,7 @@ public:
 
     // base classes
     #define DECL_BT( T ) \
-        Var class_##T;
+        Class class_##T;
     #include "DeclBaseClass.h"
     #include "DeclParmClass.h"
     #undef DECL_BT

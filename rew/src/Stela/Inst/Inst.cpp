@@ -101,6 +101,21 @@ void Inst::clone( Vec<Expr> &created ) const {
     created << res;
 }
 
+bool Inst::get_val( SI32 &val, Type *type ) {
+    if ( type == &ip->type_SI32 )
+        return get_val( val );
+    if ( type == &ip->type_SI64 ) {
+        SI64 res;
+        if ( not get_val( res ) )
+            return false;
+        val = res;
+        return val == res;
+    }
+    PRINT( *type );
+    TODO;
+    return false;
+}
+
 int Inst::size_ptd() const {
     ERROR( "not a ptr" );
     return 0;

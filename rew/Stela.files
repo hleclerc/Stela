@@ -129,3 +129,9 @@ src/Stela/Met/TypeChar.h.py
 tests/test_Inst.cpp
 tests/test.met
 src/Stela/Inst/CallableData.h
+src/Stela/Inst/Class.h
+src/Stela/Inst/Class.cpp
+src/Stela/Inst/Callable.h
+src/Stela/Inst/Callable.cpp
+src/Stela/Inst/Def.h
+src/Stela/Inst/Def.cpp

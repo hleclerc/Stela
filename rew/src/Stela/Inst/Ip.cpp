@@ -22,6 +22,16 @@ Ip::Ip() :
     type_Def  ._len = 8 * sizeof( CallableData );
     type_Class._len = 8 * sizeof( CallableData );
 
+    #define DECL_BT( T ) type_##T.orig = &class_##T;
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+
+    // class
+    #define DECL_BT( T ) class_##T.name = STRING_##T##_NUM;
+    #include "DeclBaseClass.h"
+    #include "DeclParmClass.h"
+    #undef DECL_BT
+
     // std variables
     bool f = false, t = true;
     cst_false = cst( 1, (PI8 *)&f );
@@ -115,9 +125,54 @@ SourceFile *Ip::new_sf( String file ) {
     return res;
 }
 
-Var Ip::make_Callable( const Vec<Var> &lst, Var self ) {
+Var Ip::make_type_var( Type *type ) {
+    SI64 ptr = (SI64)type;
+    return Var( &type_SI64, cst( 64, (PI8 *)&ptr ) );
+}
+
+/*
+class VarargsItemBeg[ data_type, data_name, next_type ]
+    data ~= Ptr[ data_type ]
+    next ~= next_type
+
+class VarargsItemEnd
+    # void
+*/
+Type *Ip::make_Varargs_type( const Vec<Type *> &types, const Vec<int> &names, int o ) {
+    if ( o == types.size() )
+        return &type_VarargsItemEnd;
+    int n = o < names.size() ? names[ o ] : -1;
+
+    Vec<Var> lt;
+    lt << make_type_var( types[ o ] );
+    lt << Var( &type_SI32, cst( 32, (PI8 *)&n ) );
+    lt << make_type_var( make_Varargs_type( types, names, o + 1 ) );
+    return class_VarargsItemBeg.find_type( lt );
+}
+
+Var Ip::make_Varargs( Vec<Var> lst, const Vec<int> &names ) {
+    // type
+    Vec<Type *> types;
+    for( const Var &v : lst )
+        types << v.type;
+    Type *type = make_Varargs_type( types, names, 0 );
+    type->_len = lst.size() * type_ST->size();
+
+    // data
+    Var res( type );
+    for( int i = 0; i < lst.size(); ++i )
+        ( res.ptr() + Var( i * type_ST->size() / 8 ) ).at( type_ST ).set_val( lst[ i ].ptr() );
+    return res;
+}
+
+Var Ip::make_Callable( Vec<Var> lst, Var self ) {
+    // template argument: a varargs with unnamed arguments
+    // -> self_ptr
+    // -> self_ptr
+    Var va = make_Varargs( lst );
+    PRINT( va );
     TODO;
-    return Var();
+    return Var(  );
 }
 
 

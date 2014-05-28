@@ -9,6 +9,7 @@
 #include "Select.h"
 #include "Scope.h"
 #include "Cst.h"
+#include "Def.h"
 #include "Op.h"
 #include "Ip.h"
 
@@ -43,6 +44,13 @@ Var Scope::VecNamedVar::get( int name ) {
     for( NamedVar &nv : data )
         if ( nv.name == name )
             return nv.var;
+    return Var();
+}
+
+bool Scope::VecNamedVar::get( Vec<Var> &lst, int name ) {
+    for( NamedVar &nv : data )
+        if ( nv.name == name )
+            lst << nv.var;
     return Var();
 }
 
@@ -110,27 +118,30 @@ Var Scope::parse_BLOCK( BinStreamReader bin ) {
 }
 
 Var Scope::parse_CALLABLE( BinStreamReader bin, Type *type ) {
-    int bin_offset = bin.ptr - ip->sf->tok_data.ptr();
     int name = read_nstring( bin );
 
     // supporting variable
-    Var res;
+    Callable *c;
     switch( name ) {
-    #define DECL_BT( T ) case STRING_##T##_NUM: res = ip->class_##T; break;
+    #define DECL_BT( T ) case STRING_##T##_NUM: c = &ip->class_##T; break;
     #include "DeclBaseClass.h"
     #include "DeclParmClass.h"
     #undef DECL_BT
-    default: res = Var( type );
+    default:
+        if ( type == &ip->type_Def ) c = new Def;
+        else if ( type == &ip->type_Class ) c = new Class;
+        else ERROR( "..." );
     }
 
-    CallableData d;
-    d.sourcefile_ptr = (SI64)ip->sf;
-    d.bin_off = bin_offset;
-    d.src_off = ip->off;
+    // fill in
+    c->name = name;
+    c->off  = ip->off;
+    c->sf   = ip->sf;
+    c->read_bin( bin );
 
+    SI64 ptr = (SI64)c;
+    Var res( type, cst( 64, (PI8 *)&ptr ) );
     res.flags |= Var::SURDEF;
-    res.inst = cst( 8 * sizeof( d ), (PI8 *)&d );
-    res.type = type;
 
     reg_var( name, res, true );
     return ip->void_var();
@@ -418,7 +429,7 @@ Var Scope::parse_VAR( BinStreamReader bin ) {
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 Var Scope::find_first_var( int name ) {
-    for( Scope *s = this; ; s = s->parent ) {
+    for( Scope *s = this; s; s = s->parent ) {
         if ( Var res = s->local_scope.get( name ) )
             return res;
         if ( Var res = s->static_scope->get( name ) )
@@ -428,7 +439,10 @@ Var Scope::find_first_var( int name ) {
 }
 
 void Scope::find_var_clist( Vec<Var> &lst, int name ) {
-    TODO;
+    for( Scope *s = this; s; s = s->parent ) {
+        s->local_scope.get( lst, name );
+        s->static_scope->get( lst, name );
+    }
 }
 
 Var Scope::find_var( int name ) {

@@ -90,6 +90,10 @@ Var Var::operator||( Var b ) {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_or_boolean() ) );
 }
 
+Var Var::operator==( Var b ) {
+    return type == b.type and get_val() == b.get_val();
+}
+
 Var Var::operator!() {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), Op_not_boolean() ) );
 }

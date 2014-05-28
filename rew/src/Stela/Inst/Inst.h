@@ -48,6 +48,8 @@ public:
     template<class T>
     bool get_val( T &res ) { if ( const PI8 *ptr = data_ptr() ) { int sb = ( size() + 7 ) / 8; if ( sizeof( res ) <= sb ) { memcpy( &res, ptr, sizeof( res ) ); return true; } } return false; }
 
+    bool get_val( SI32 &val, Type *type );
+
     virtual int size() const = 0;
     virtual int size_ptd() const;
     virtual const PI8 *data_ptr( int offset = 0 ) const;

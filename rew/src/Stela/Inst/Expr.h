@@ -31,6 +31,7 @@ public:
 
     void write_to_stream( Stream &os ) const;
 
+
     Inst *inst;
 };
 

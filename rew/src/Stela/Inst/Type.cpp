@@ -1,12 +1,22 @@
 #include "Type.h"
 #include "Ip.h"
 
-Type::Type( int name, int len ) : name( name ), _len( len ) {
+Type::Type( int name ) : name( name ), _len( -1 ) {
+    orig = 0;
     _pod = true;
 }
 
 void Type::write_to_stream( Stream &os ) const {
     os << ip->str_cor.str( name );
+    if ( parameters.size() ) {
+        os << "[ ";
+        for( int i = 0; i < parameters.size(); ++i ) {
+            if ( i )
+                os << ", ";
+            os << parameters[ i ];
+        }
+        os << " ]";
+    }
 }
 
 void Type::write_C_decl( Stream &out ) const {
@@ -30,6 +40,7 @@ int Type::size() const {
 }
 
 void Type::parse() const {
-    PRINT( ip->str_cor.str( name ) );
+    PRINT( orig->name );
+    PRINT( *this );
     TODO;
 }
