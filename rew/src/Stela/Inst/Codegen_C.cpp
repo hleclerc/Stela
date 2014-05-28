@@ -204,7 +204,7 @@ void Codegen_C::make_code() {
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
 
-    // Inst::display_graph( out );
+    Inst::display_graph( out );
 
     // get needed expressions
     Vec<Expr> needed;
@@ -253,7 +253,7 @@ void Codegen_C::make_code() {
         // try to find an instruction with the same condition set or an inst the is not going to write anything
         BoolOpSeq cur_cond = anded( cond_stack );
         for( int i = 0; i < front.size(); ++i ) {
-            if ( *front[ i ]->when == cur_cond or not front[ i ]->going_to_write_c_code()  ) {
+            if ( *front[ i ]->when == cur_cond or not front[ i ]->going_to_write_c_code() or front[ i ]->when->always( false ) ) {
                 inst = front[ i ];
                 front.remove_unordered( i );
                 break;
@@ -311,7 +311,7 @@ void Codegen_C::make_code() {
         }
 
         inst->op_id = Inst::cur_op_id; // done
-        if ( inst->going_to_write_c_code() )
+        if ( inst->going_to_write_c_code() and not inst->when->always( false ) )
             cur_cond = inst->when;
         seq << inst;
 
@@ -327,8 +327,9 @@ void Codegen_C::make_code() {
     cond_stack.resize( 0 );
     cond_stack << true;
     for( Expr inst : seq ) {
-        if ( not inst->going_to_write_c_code() )
+        if ( not inst->going_to_write_c_code() or inst->when->always( false ) )
             continue;
+        // std::cout << inst << "  " << *inst->when << " -> " << anded( cond_stack ) << std::endl;
         if ( *inst->when != anded( cond_stack ) ) {
             BoolOpSeq poped;
             if ( inst->when->always( true ) ) {

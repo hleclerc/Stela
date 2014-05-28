@@ -64,7 +64,8 @@ Vec<BoolOpSeq::Item> BoolOpSeq::common_terms() const {
 int BoolOpSeq::nb_sub_conds() const {
     int res = 0;
     for( int i = 0; i < or_seq.size(); ++i )
-        res += or_seq[ i ].size();
+        for( int j = 0; j < or_seq[ i ].size(); ++j )
+            res += 2 - or_seq[ i ][ j ].pos;
     return res;
 }
 

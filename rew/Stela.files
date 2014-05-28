@@ -128,3 +128,4 @@ src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Inst.cpp
 tests/test.met
+src/Stela/Inst/CallableData.h

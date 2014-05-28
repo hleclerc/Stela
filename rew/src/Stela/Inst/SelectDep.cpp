@@ -43,6 +43,9 @@ public:
     virtual void update_out_type() {
         inp[ 0 ]->out_type_proposition( &ip->type_Bool );
     }
+    virtual bool going_to_write_c_code() {
+        return false;
+    }
 };
 
 Expr select_dep( Expr cond, Expr ok_dep, Expr ko_dep ) {

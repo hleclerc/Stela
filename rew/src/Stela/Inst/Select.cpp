@@ -20,6 +20,12 @@ public:
         return inp[ 1 ]->size();
     }
     virtual Expr _simplified() {
+        BoolOpSeq cur = ip->cond_stack.back()->get_BoolOpSeq();
+        BoolOpSeq val = inp[ 0 ]->get_BoolOpSeq();
+        if ( cur.imply( val ) )
+            return simplified( inp[ 1 ] );
+        if ( cur.imply( not val ) )
+            return simplified( inp[ 2 ] );
         return 0;
     }
     virtual void update_when( const BoolOpSeq &cond ) {
@@ -47,6 +53,9 @@ public:
             inp[ 3 - ninp ]->out_type_proposition( type );
             out_type_proposition( type );
         }
+    }
+    virtual bool going_to_write_c_code() {
+        return false;
     }
 };
 

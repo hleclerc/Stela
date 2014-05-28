@@ -72,6 +72,9 @@ public:
 
 Expr inst_bool_op_seq( const BoolOpSeq &bos ) {
     if ( bos.or_seq.size() ) {
+        if ( bos.or_seq.size() == 1 and bos.or_seq[ 0 ].size() == 0 and bos.or_seq[ 0 ][ 0 ].pos )
+            return bos.or_seq[ 0 ][ 0 ].expr;
+
         std::map<Expr,int> ind;
         InstBoolOpSeq *res = new InstBoolOpSeq;
         for( int i = 0; i < bos.or_seq.size(); ++i ) {

@@ -1,27 +1,39 @@
 #include "Stela/System/UsualStrings.h"
+#include "CallableData.h"
 #include "SysState.h"
 #include "Cst.h"
 #include "Ip.h"
 
 Ip::Ip() :
-    type_SI32  ( STRING_SI32_NUM  , 32 ),
-    type_SI64  ( STRING_SI64_NUM  , 64 ),
-    type_Void  ( STRING_Void_NUM  ,  0 ),
-    type_Bool  ( STRING_Bool_NUM  ,  1 ),
-    type_Error ( STRING_Error_NUM ,  0 ),
-    // type_RawPtr( STRING_RawPtr_NUM, sizeof( void * ) * 8 ),
+    #define DECL_BT( T ) \
+        type_##T( STRING_##T##_NUM ),
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
     type_ST    ( sizeof( void * ) == 8 ? &type_SI64 : &type_SI32 ),
     sys_state( Ref(), &type_Void, ::sys_state() ) {
 
+    // type info
+    type_SI64 ._len = 64;
+    type_SI32 ._len = 32;
+    type_Bool ._len = 1;
+    type_Void ._len = 0;
+    type_Error._len = 0;
+
+    type_Def  ._len = 8 * sizeof( CallableData );
+    type_Class._len = 8 * sizeof( CallableData );
+
+    // std variables
     bool f = false, t = true;
     cst_false = cst( 1, (PI8 *)&f );
     cst_true  = cst( 1, (PI8 *)&t );
 
+    // context
     cond_stack << cst_true;
-
-    main_scope = new Scope( 0, "", this );
-
+    off = -1;
     sf = 0;
+
+    // global var
+    main_scope = new Scope( 0, "", this );
 }
 
 Var Ip::ret_error( String msg, bool warn, const char *file, int line ) {
@@ -101,6 +113,11 @@ SourceFile *Ip::new_sf( String file ) {
     SourceFile *res = &sourcefiles[ file ];
     res->name = file;
     return res;
+}
+
+Var Ip::make_Callable( const Vec<Var> &lst, Var self ) {
+    TODO;
+    return Var();
 }
 
 

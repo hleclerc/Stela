@@ -1,5 +1,7 @@
+def reassign a, b
+    ___reassign_rec a, 10
+
 a := 5
 if ___rand()
-    ___reassign_rec a, 10
-    ___syscall a
-
+    reassign a, 10
+___syscall a

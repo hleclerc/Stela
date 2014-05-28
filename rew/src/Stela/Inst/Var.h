@@ -10,6 +10,11 @@ class Type;
 */
 class Var {
 public:
+    enum {
+        SURDEF = 1,
+        WEAK_CONST = 2
+    };
+
     Var( Ref, Type *type, Expr ptr ); ///<
     Var( Type *type, Expr val ); ///< reserve new room and set val to `val`
     Var( Type *type );
@@ -24,6 +29,8 @@ public:
     Expr ref();
 
     bool is_surdef() const;
+    bool is_weak_const() const;
+    bool is_an_error() const;
     operator bool() const;
 
     Var ptr();
@@ -37,8 +44,8 @@ public:
     friend Var syscall( const Vec<Var> &inp );
 
     Type *type;
-protected:
     Expr  inst; ///< Room or equivalent (e.g. Room+offset, ...)
+    int   flags;
 };
 
 Var syscall( const Vec<Var> &inp );

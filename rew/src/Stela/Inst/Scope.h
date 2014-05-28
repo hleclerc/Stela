@@ -34,12 +34,19 @@ public:
     Ip          *ip;
 
     Scope       *parent;
+    Var          self;
 
 protected:
-    int read_nstring( BinStreamReader &bin );
-    Var reg_var( int name, Var var, bool static_scope = false );
-    Var find_first_var( int name );
-    Var find_var( int name );
+    enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
+
+    int  read_nstring( BinStreamReader &bin );
+    Var  reg_var( int name, Var var, bool static_scope = false );
+    Var  find_first_var( int name );
+    void find_var_clist( Vec<Var> &lst, int name );
+    Var  find_var( int name );
+    Var  parse_CALLABLE( BinStreamReader bin, Type *type );
+    Var  apply( Var f, int nu = 0, Var *u_args = 0, int nn = 0, int *n_name = 0, Var *n_args = 0, ApplyMode am = APPLY_MODE_STD );
+    Var  get_attr( Var s, int name );
 
     #define DECL_IR_TOK( N ) Var parse_##N( BinStreamReader bin );
     #include "../Ir/Decl.h"

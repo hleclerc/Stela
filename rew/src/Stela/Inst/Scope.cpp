@@ -1,7 +1,9 @@
 #include "../System/BinStreamReader.h"
+#include "../System/UsualStrings.h"
 #include "../System/ReadFile.h"
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
+#include "CallableData.h"
 #include "Sourcefile.h"
 #include "Symbol.h"
 #include "Select.h"
@@ -107,21 +109,274 @@ Var Scope::parse_BLOCK( BinStreamReader bin ) {
     return res;
 }
 
+Var Scope::parse_CALLABLE( BinStreamReader bin, Type *type ) {
+    int bin_offset = bin.ptr - ip->sf->tok_data.ptr();
+    int name = read_nstring( bin );
+
+    // supporting variable
+    Var res;
+    switch( name ) {
+    #define DECL_BT( T ) case STRING_##T##_NUM: res = ip->class_##T; break;
+    #include "DeclBaseClass.h"
+    #include "DeclParmClass.h"
+    #undef DECL_BT
+    default: res = Var( type );
+    }
+
+    CallableData d;
+    d.sourcefile_ptr = (SI64)ip->sf;
+    d.bin_off = bin_offset;
+    d.src_off = ip->off;
+
+    res.flags |= Var::SURDEF;
+    res.inst = cst( 8 * sizeof( d ), (PI8 *)&d );
+    res.type = type;
+
+    reg_var( name, res, true );
+    return ip->void_var();
+}
+
 Var Scope::parse_DEF( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    return parse_CALLABLE( bin, &ip->type_Def );
 }
 Var Scope::parse_CLASS( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    return parse_CALLABLE( bin, &ip->type_Class );
 }
 Var Scope::parse_RETURN( BinStreamReader bin ) {
     TODO;
     return ip->error_var();
 }
-Var Scope::parse_APPLY( BinStreamReader bin ) {
+Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am ) {
+    if ( f.type == &ip->type_Error )
+        return ip->error_var();
+    for( int i = 0; i < nu; ++i )
+        if ( u_args[ i ].type == &ip->type_Error )
+            return ip->error_var();
+    for( int i = 0; i < nn; ++i )
+        if ( n_args[ i ].type == &ip->type_Error )
+            return ip->error_var();
+
+//    if ( f.type == &ip->type_Callable ) {
+//        // a type contains class ptr + [ parameter type, parameter refs ]*
+//        // 0 * ps -> Callable
+//        // 1 * ps -> surdef_list_type
+//        // 2 * ps -> surdef_list_data
+//        // 3 * ps -> self_type_type
+//        // 4 * ps -> self_type_data
+//        // 5 * ps -> parm_type_type
+//        // 6 * ps -> parm_type_data
+//        SI32 nb_surdefs = 0, ps = arch->ptr_size;
+//        Expr surdef_list_ptr_data = slice( f.type->ptr->expr(), 2 * ps, 3 * ps );
+//        if ( not surdef_list_ptr_data.get_vat( nb_surdefs ) )
+//            return disp_error( "pb decoding callable (to find surdef list)" );
+
+//        // self
+//        Var l_self;
+//        int off_ref = 0;
+//        Expr self_tp = slice( f.type->ptr->expr(), 3 * ps, 4 * ps );
+//        if ( ClassInfo *self_ci = ip->class_info( self_tp, false ) ) {
+//            if ( self_ci->name != STRING_Void_NUM ) {
+//                l_self = f.get_ref( 0 );
+//                off_ref += ps;
+//            }
+//        }
+
+//        // parm
+//        Vec<int> pn_names;
+//        Vec<Var> pu_args, pn_args;
+
+//        Expr parm_tp = slice( f.type->ptr->expr(), 5 * ps, 6 * ps );
+//        if ( ClassInfo *parm_ci = ip->class_info( parm_tp, false ) ) {
+//            if ( parm_ci->name == STRING_Type_NUM ) {
+//                int off = 0;
+//                Var varargs = f.get_ref( off_ref );
+//                for( const TypeInfo *type = ip->type_info( varargs.type_expr() ); ; ) {
+//                    if ( type->orig->name == STRING_VarargsItemEnd_NUM )
+//                        break;
+
+//                    int name;
+//                    if ( not type->parameters[ 1 ].expr().get_val( name ) )
+//                        return disp_error( "expecting an int as second arg...", sf, off );
+
+//                    if ( name >= 0 ) {
+//                        pn_names << name;
+//                        pn_args  << varargs.get_ref( off );
+//                    } else {
+//                        pu_args  << varargs.get_ref( off );
+//                    }
+
+//                    off += ps;
+//                    type = ip->type_info( type->parameters[ 2 ].expr() );
+//                }
+//            }
+//        }
+//        int pnu = pu_args.size(), pnn = pn_args.size();
+
+
+//        // tests
+//        CallableInfo *ci[ nb_surdefs ];
+//        for( int i = 0; i < nb_surdefs; ++i ) {
+//            Expr surdef = val_at( surdef_list_ptr_data,
+//                                 32 + ( i + 0 ) * ps,
+//                                 32 + ( i + 1 ) * ps
+//                                 );
+//            ci[ i ] = ip->callable_info( surdef );
+//        }
+//        std::sort( ci, ci + nb_surdefs, CmpCallableInfobyPertinence() );
+
+//        int nb_ok = 0;
+//        double guaranted_pertinence = 0;
+//        bool   has_guaranted_pertinence = false;
+//        AutoPtr<CallableInfo::Trial> trials[ nb_surdefs ];
+//        for( int i = 0; i < nb_surdefs; ++i ) {
+//            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
+//                for( int j = i; j < nb_surdefs; ++j )
+//                    trials[ j ] = new CallableInfo::Trial( "Already a more pertinent solution" );
+//                break;
+//            }
+
+//            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_names, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, sf, off, this );
+
+//            if ( trials[ i ]->ok() ) {
+//                if ( not trials[ i ]->cond ) {
+//                    has_guaranted_pertinence = true;
+//                    guaranted_pertinence = ci[ i ]->pertinence;
+//                }
+//                ++nb_ok;
+//            }
+//        }
+
+//        //
+//        for( int i = 0; i < nb_surdefs; ++i )
+//            if ( ip->isa_Error( trials[ i ]->cond ) )
+//                return ip->error_var;
+
+//        // no valid surdef ?
+//        if ( nb_ok == 0 ) {
+//            std::ostringstream ss;
+//            ss << "No matching surdef";
+//            //            if ( self ) {
+//            //                ss << " (looking for '" << *self.type;
+//            //                if ( lst_def.size() )
+//            //                    ss << "." << glob_nstr_cor.str( lst_def[ 0 ]->name );
+//            //                ss << "' with " << na << " argument";
+//            //                ss << ")";
+//            //            }
+//            ErrorList::Error &err = make_error( ss.str(), sf, off );
+//            for( int i = 0; i < nb_surdefs; ++i )
+//                err.ap( ci[ i ]->filename(), ci[ i ]->off(), std::string( "possibility (" ) + trials[ i ]->reason + ")" );
+//            std::cerr << err;
+//            return ip->error_var;
+//        }
+
+//        // valid surdefs, but only with runtime conditions
+//        if ( not has_guaranted_pertinence ) {
+//            std::ostringstream ss;
+//            ss << "There is no failback surdefinition (only runtime conditions)";
+//            ErrorList::Error &err = make_error( ss.str(), sf, off );
+//            for( int i = 0; i < nb_surdefs; ++i ) {
+//                if ( trials[ i ]->ok() )
+//                    err.ap( ci[ i ]->filename(), ci[ i ]->off(), "accepted" );
+//                else
+//                    err.ap( ci[ i ]->filename(), ci[ i ]->off(), std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+//            }
+//            std::cerr << err;
+//            return ip->error_var;
+//        }
+
+//        // ambiguous overload ?
+//        if ( nb_ok > 1 ) {
+//            double best_pertinence = -std::numeric_limits<double>::max();
+//            for( int i = 0; i < nb_surdefs; ++i )
+//                best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
+//            int nb_wp = 0;
+//            for( int i = 0; i < nb_surdefs; ++i )
+//                nb_wp += trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence;
+//            if ( nb_wp > 1 ) {
+//                std::ostringstream ss;
+//                ss << "Ambiguous overload";
+//                ErrorList::Error &err = make_error( ss.str(), sf, off );
+//                for( int i = 0; i < nb_surdefs; ++i )
+//                    if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
+//                        err.ap( ci[ i ]->filename(), ci[ i ]->off(), "possibility" );
+//                std::cerr << err;
+//                return ip->error_var;
+//            }
+//        }
+
+//        Var res;
+//        Expr cond = cst( true );
+//        for( int i = 0; i < nb_surdefs; ++i ) {
+//            if ( trials[ i ]->ok() ) {
+//                Expr ok_cond;
+//                if ( trials[ i ]->cond )
+//                    ok_cond = op_and( bt_Bool, cond, trials[ i ]->cond.expr() );
+//                else
+//                    ok_cond = cond;
+
+//                Var loc = trials[ i ]->call( nu, u_args, nn, n_names, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, sf, off, this, am );
+//                set( res, loc, sf, off, cond );
+
+//                if ( trials[ i ]->cond )
+//                    cond = op_and( bt_Bool, cond, op_not( bt_Bool, trials[ i ]->cond.expr() ) );
+//                else
+//                    break;
+//            }
+//        }
+
+//        return res;
+//    }
+
+//    //
+//    if ( ip->isa_Type( f ) ) {
+//        TypeInfo *ti = ip->type_info( f.expr() ); ///< parse if necessary
+
+//        Var ret;
+//        if ( ti->static_size_in_bits >= 0 )
+//            ret = Var( &ti->var, cst( 0, 0, ti->static_size_in_bits ) );
+//        else
+//            TODO; // res = undefined cst with unknown size
+
+//        if ( am == APPLY_MODE_NEW )
+//            TODO;
+
+//        // call init
+//        if ( am != APPLY_MODE_PARTIAL_INST )
+//            apply( get_attr( ret, STRING_init_NUM, sf, off ), nu, u_args, nn, n_names, n_args, Scope::APPLY_MODE_STD, sf, off );
+//        return ret;
+//    }
     TODO;
-    return ip->error_var();
+
+    // f.apply ...
+    Var applier = get_attr( f, STRING_apply_NUM );
+    if ( applier.is_an_error() )
+        return applier;
+
+    return apply( applier, nu, u_args, nn, n_name, n_args, am );
+}
+
+Var Scope::get_attr( Var s, int name ) {
+    TODO;
+    return Var();
+}
+
+Var Scope::parse_APPLY( BinStreamReader bin ) {
+    Var f = parse( bin.read_offset() );
+
+    int nu = bin.read_positive_integer();
+    Var u_args[ nu ];
+    for( int i = 0; i < nu; ++i )
+        u_args[ i ] = parse( bin.read_offset() );
+
+    int nn = bin.read_positive_integer();
+    int n_name[ nn ];
+    Var n_args[ nn ];
+    for( int i = 0; i < nn; ++i ) {
+        n_name[ i ] = read_nstring( bin );
+        n_args[ i ] = parse( bin.read_offset() );
+    }
+
+    return apply( f, nu, u_args, nn, n_name, n_args, APPLY_MODE_STD );
 }
 Var Scope::parse_SELECT( BinStreamReader bin ) {
     TODO;
@@ -172,14 +427,17 @@ Var Scope::find_first_var( int name ) {
     return Var();
 }
 
+void Scope::find_var_clist( Vec<Var> &lst, int name ) {
+    TODO;
+}
+
 Var Scope::find_var( int name ) {
     Var res = find_first_var( name );
     if ( res.is_surdef() ) {
         // surdef_list = nb_surdefs, [ surdef_expr ]*n
-        //Vec<Var> lst;
-        //find_var_clist( lst, name );
-        //return ip->make_Callable( lst, self );
-        TODO;
+        Vec<Var> lst;
+        find_var_clist( lst, name );
+        return ip->make_Callable( lst, self );
     }
     return res;
 
@@ -263,7 +521,6 @@ Var Scope::parse_IF( BinStreamReader bin ) {
 
     // simplified expression
     Expr expr = cond.get_val();
-    PRINT( expr );
 
     //
     const PI8 *ok = bin.read_offset();
@@ -405,8 +662,6 @@ Var Scope::parse_reassign_rec( BinStreamReader bin ) {
         return ip->ret_error( "expecting 1 or 2 args" );
     Var dst = parse( bin.read_offset() );
     Var src = parse( bin.read_offset() );
-    PRINT( dst );
-    PRINT( src );
     dst.set_val( src );
     return dst;
 }

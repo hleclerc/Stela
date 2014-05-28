@@ -39,14 +39,23 @@ public:
 
     SourceFile *new_sf( String file );
 
+    Var make_Callable( const Vec<Var> &lst, Var self );
+
     // base type
-    Type  type_SI32;
-    Type  type_SI64;
-    Type  type_Void;
-    Type  type_Bool;
-    Type  type_Error;
-    // Type  type_RawPtr;
+    #define DECL_BT( T ) \
+        Type  type_##T;
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+
     Type *type_ST;
+
+    // base classes
+    #define DECL_BT( T ) \
+        Var class_##T;
+    #include "DeclBaseClass.h"
+    #include "DeclParmClass.h"
+    #undef DECL_BT
+
 
     std::map<int,Type> art_types;
     std::map<String,SourceFile> sourcefiles;

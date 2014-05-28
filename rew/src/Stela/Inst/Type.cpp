@@ -30,6 +30,6 @@ int Type::size() const {
 }
 
 void Type::parse() const {
-    PRINT( name );
+    PRINT( ip->str_cor.str( name ) );
     TODO;
 }

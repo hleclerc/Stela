@@ -7,16 +7,16 @@
 #include "Op.h"
 #include "Ip.h"
 
-Var::Var( Ref, Type *type, Expr ptr ) : type( type ), inst( ptr ) {
+Var::Var( Ref, Type *type, Expr ptr ) : type( type ), inst( ptr ), flags( 0 ) {
 }
 
-Var::Var( Type *type, Expr val ) : type( type ), inst( room( type->size(), val ) ) {
+Var::Var( Type *type, Expr val ) : type( type ), inst( room( type->size(), val ) ), flags( 0 ) {
 }
 
-Var::Var( Type *type ) : type( type ), inst( room( type->size() ) ) {
+Var::Var( Type *type ) : type( type ), inst( room( type->size() ) ), flags( 0 ) {
 }
 
-Var::Var() : type( 0 ) {
+Var::Var() : type( 0 ), flags( 0 ) {
 }
 
 Var::Var( SI64 val ) : Var( &ip->type_SI64, cst( 64, (const PI8 *)&val ) ) {
@@ -35,7 +35,15 @@ Expr Var::ref() {
 }
 
 bool Var::is_surdef() const {
-    return false;
+    return flags & SURDEF;
+}
+
+bool Var::is_weak_const() const {
+    return flags & WEAK_CONST;
+}
+
+bool Var::is_an_error() const {
+    return type == &ip->type_Error;
 }
 
 Var::operator bool() const {
@@ -55,7 +63,10 @@ void Var::set_val( Var val ) {
 }
 
 void Var::set_val( Expr val ) {
-    inst->_set_val( val, type->size() );
+    if ( inst )
+        inst->_set_val( val, type->size() );
+    else
+        inst = val;
 }
 
 Var Var::ptr() {
@@ -106,7 +117,7 @@ Var syscall( const Vec<Var> &inp ) {
     Expr res = syscall( inp_expr, ip->sys_state.inst );
     Expr fut = select_dep( ip->cur_cond(), res, ip->sys_state.inst );
 
-    // each time we see a pointer on something, we have to add a store a dep
+    // each time we see a pointer on something, we have to add a store dep
     AddStoreDep add_store_dep;
     add_store_dep.res = res;
     add_store_dep.fut = fut;
