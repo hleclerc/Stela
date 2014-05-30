@@ -46,13 +46,15 @@ public:
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
 
     template<class T>
-    bool get_val( T &res ) { if ( const PI8 *ptr = data_ptr() ) { int sb = ( size() + 7 ) / 8; if ( sizeof( res ) <= sb ) { memcpy( &res, ptr, sizeof( res ) ); return true; } } return false; }
+    bool get_val( T &res ) { return get_val( &res, 8 * sizeof( res ), 0 ); }
 
     bool get_val( SI32 &val, Type *type );
 
-    virtual int size() const = 0;
+    virtual bool get_val( void *dst, int size, int offset = 0, int dst_offset = 0 ) const;
+
+    virtual int sb() const; ///< size in bytes
+    virtual int size() const = 0; ///< size in bits
     virtual int size_ptd() const;
-    virtual const PI8 *data_ptr( int offset = 0 ) const;
 
     void visit( Visitor &v, bool pointed_data = false, bool want_dep = true );
     virtual void _visit_pointed_data( Visitor &v, bool want_dep );

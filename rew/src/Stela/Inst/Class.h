@@ -10,7 +10,7 @@ class Class : public Callable {
 public:
     Class();
 
-    Type *find_type( const Vec<Var> &args );
+    Type *type_for( const Vec<Var> &args );
 
     Vec<Type *> types;
 };

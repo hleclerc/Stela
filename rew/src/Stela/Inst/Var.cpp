@@ -62,6 +62,18 @@ void Var::set_val( Var val ) {
     set_val( val.get_val() );
 }
 
+void Var::set_val( int offset, Var val ) {
+    if ( offset % 8 )
+        TODO;
+    ( ptr() + Var( offset / 8 ) ).at( val.type ).set_val( val );
+}
+
+void Var::set_val( int offset, Type *type, Expr val ) {
+    if ( offset % 8 )
+        TODO;
+    ( ptr() + Var( offset / 8 ) ).at( type ).set_val( val );
+}
+
 void Var::set_val( Expr val ) {
     if ( inst )
         inst->_set_val( val, type->size() );

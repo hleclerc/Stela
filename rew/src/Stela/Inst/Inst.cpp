@@ -116,13 +116,17 @@ bool Inst::get_val( SI32 &val, Type *type ) {
     return false;
 }
 
+int Inst::sb() const {
+    return ( size() + 7 ) / 8;
+}
+
 int Inst::size_ptd() const {
     ERROR( "not a ptr" );
     return 0;
 }
 
-const PI8 *Inst::data_ptr( int offset ) const {
-    return 0;
+bool Inst::get_val( void *dst, int size, int offset, int dst_offset ) const {
+    return false;
 }
 
 bool Inst::is_a_pointer() const {

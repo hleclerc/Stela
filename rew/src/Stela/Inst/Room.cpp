@@ -35,7 +35,7 @@ public:
     }
     virtual void _set_val( Expr val, int len ) {
         if ( ip->cond_stack.size() )
-            this->val = select( ip->cur_cond(), val, this->val );
+            this->val = select( ip->cur_cond(), simplified( val ), simplified( this->val ) );
         else
             this->val = val;
     }

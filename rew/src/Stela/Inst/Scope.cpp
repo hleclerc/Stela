@@ -167,7 +167,8 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
         if ( n_args[ i ].type == &ip->type_Error )
             return ip->error_var();
 
-//    if ( f.type == &ip->type_Callable ) {
+    if ( f.type->orig == &ip->class_Callable ) {
+        TODO;
 //        // a type contains class ptr + [ parameter type, parameter refs ]*
 //        // 0 * ps -> Callable
 //        // 1 * ps -> surdef_list_type
@@ -336,10 +337,11 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
 //        }
 
 //        return res;
-//    }
+    }
 
-//    //
-//    if ( ip->isa_Type( f ) ) {
+    //
+    if ( f.type == &ip->type_Type ) {
+        TODO;
 //        TypeInfo *ti = ip->type_info( f.expr() ); ///< parse if necessary
 
 //        Var ret;
@@ -355,8 +357,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
 //        if ( am != APPLY_MODE_PARTIAL_INST )
 //            apply( get_attr( ret, STRING_init_NUM, sf, off ), nu, u_args, nn, n_names, n_args, Scope::APPLY_MODE_STD, sf, off );
 //        return ret;
-//    }
-    TODO;
+    }
 
     // f.apply ...
     Var applier = get_attr( f, STRING_apply_NUM );

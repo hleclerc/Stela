@@ -147,7 +147,7 @@ Type *Ip::make_Varargs_type( const Vec<Type *> &types, const Vec<int> &names, in
     lt << make_type_var( types[ o ] );
     lt << Var( &type_SI32, cst( 32, (PI8 *)&n ) );
     lt << make_type_var( make_Varargs_type( types, names, o + 1 ) );
-    return class_VarargsItemBeg.find_type( lt );
+    return class_VarargsItemBeg.type_for( lt );
 }
 
 Var Ip::make_Varargs( Vec<Var> lst, const Vec<int> &names ) {
@@ -161,18 +161,34 @@ Var Ip::make_Varargs( Vec<Var> lst, const Vec<int> &names ) {
     // data
     Var res( type );
     for( int i = 0; i < lst.size(); ++i )
-        ( res.ptr() + Var( i * type_ST->size() / 8 ) ).at( type_ST ).set_val( lst[ i ].ptr() );
+        res.set_val( i * type_ST->size(), lst[ i ].ptr() );
     return res;
 }
 
 Var Ip::make_Callable( Vec<Var> lst, Var self ) {
-    // template argument: a varargs with unnamed arguments
-    // -> self_ptr
-    // -> self_ptr
-    Var va = make_Varargs( lst );
-    PRINT( va );
-    TODO;
-    return Var(  );
+    // template arguments:
+    // -> varargs with unnamed arguments
+    // -> self_type
+    // -> parm_type
+    // attributes:
+    // -> self_ptr (ST)
+    // -> parm_ptr (ST)
+    Vec<Var> lt;
+    lt << make_Varargs( lst );
+    lt << make_type_var( &type_Void );
+    lt << make_type_var( &type_Void );
+    Type *type = class_Callable.type_for( lt );
+    type->_len = 2 * type_ST->size();
+
+    // data
+    SI64 d = 0;
+    Var res( type );
+    if ( self )
+        res.set_val( 0 * type_ST->size(), self );
+    else
+        res.set_val( 0 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
+    res.set_val( 1 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
+    return res;
 }
 
 

@@ -1,3 +1,4 @@
+#include "../System/Memcpy.h"
 #include "Cst.h"
 
 class Cst;
@@ -7,7 +8,7 @@ static Vec<Cst *> cst_list;
 */
 class Cst : public Inst {
 public:
-    Cst( int len, const PI8 *data, const PI8 *kwnw ) : len( len ) {
+    Cst( int len, const void *data, const void *kwnw ) : len( len ) {
         this->data.resize( 2 * sb() );
         memcpy( d(), data, sb() );
         memcpy( k(), kwnw, sb() );
@@ -50,8 +51,11 @@ public:
         return len;
     }
 
-    virtual const PI8 *data_ptr( int offset ) const {
-        return d();
+    bool get_val( void *dst, int size, int offset = 0, int dst_offset = 0 ) const {
+        if ( offset + size > len )
+            return false;
+        memcpy_bit( dst, dst_offset, d(), offset, size );
+        return true;
     }
     bool equal( int l, const PI8 *nd, const PI8 *nk ) const {
         if ( l != len )
@@ -77,7 +81,7 @@ public:
     Vec<PI8> data;
 };
 
-Expr cst( int len, const PI8 *data, const PI8 *kwnw ) {
+Expr cst( int len, const void *data, const void *kwnw ) {
     int sb = ( len + 7 ) / 8;
     if ( not data ) {
         PI8 nd[ sb ];
@@ -94,10 +98,10 @@ Expr cst( int len, const PI8 *data, const PI8 *kwnw ) {
     // normalize data
     PI8 nd[ sb ];
     for( int i = 0; i < sb; ++i )
-        nd[ i ] = data[ i ] & kwnw[ i ];
+        nd[ i ] = reinterpret_cast<const PI8 *>( data )[ i ] & reinterpret_cast<const PI8 *>( kwnw )[ i ];
     // already created ?
     for( Cst *c : cst_list )
-        if ( c->equal( len, nd, kwnw ) )
+        if ( c->equal( len, nd, (PI8 *)kwnw ) )
             return c;
     // else, create a new one
     return new Cst( len, nd, kwnw );

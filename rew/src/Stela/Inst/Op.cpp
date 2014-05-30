@@ -79,7 +79,10 @@ public:
 
     virtual void _set_val( Expr val, int len ) {
         if ( SameType<T,Op_add>::res )
-            return inp[ 0 ]->_set_val( fill_at( inp[ 0 ]->_get_val( inp[ 0 ]->size_ptd() ), val, tb, inp[ 1 ] ), len );
+            return inp[ 0 ]->_set_val(
+                    fill_at( simplified( inp[ 0 ]->_get_val( inp[ 0 ]->size_ptd() ) ),
+                             val, tb, simplified( inp[ 1 ] ) ),
+                    len );
         return Inst::_set_val( val, len );
     }
 

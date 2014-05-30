@@ -4,7 +4,7 @@
 Class::Class() {
 }
 
-Type *Class::find_type( const Vec<Var> &args ) {
+Type *Class::type_for( const Vec<Var> &args ) {
     for( Type *t : types )
         if ( t->parameters == args )
             return t;

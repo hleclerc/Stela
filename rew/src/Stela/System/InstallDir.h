@@ -1,1 +1,1 @@
-#define INSTALL_DIR "/home/hugo/Stela/rew"
+#define INSTALL_DIR "/home/leclerc/Code/StelaIr/rew"

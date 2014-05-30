@@ -23,6 +23,8 @@ public:
     Var( SI64 val );
 
     void write_to_stream( Stream &os ) const;
+    void set_val( int offset, Type *type, Expr val );
+    void set_val( int offset, Var val );
     void set_val( Expr val );
     void set_val( Var val );
     Expr get_val();
