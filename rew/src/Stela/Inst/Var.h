@@ -30,6 +30,8 @@ public:
     Expr get_val();
     Expr ref();
 
+    bool always( Bool val );
+
     bool is_surdef() const;
     bool is_weak_const() const;
     bool is_an_error() const;
@@ -37,6 +39,7 @@ public:
 
     Var ptr();
     Var at( Type *type );
+    Var conv( Type *type );
     Var operator&&( Var b );
     Var operator||( Var b );
     Var operator!();

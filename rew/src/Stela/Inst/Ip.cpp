@@ -146,6 +146,18 @@ Type *Ip::type_from_type_var( Var var ) {
     return reinterpret_cast<Type *>( ST( p ) );
 }
 
+void Ip::push_sf( SourceFile *nsf, const char *reason ) {
+    sf_stack << CS{ sf, off, reason };
+    sf  = nsf;
+    off = -1;
+}
+
+void Ip::pop_sf() {
+    sf  = sf_stack.back().sf;
+    off = sf_stack.back().off;
+    sf_stack.pop_back();
+}
+
 /*
 class VarargsItemBeg[ data_type, data_name, next_type ]
     data ~= Ptr[ data_type ]

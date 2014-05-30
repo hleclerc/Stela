@@ -1,6 +1,7 @@
 #include "../System/BinStreamReader.h"
 #include "../System/UsualStrings.h"
 #include "../System/ReadFile.h"
+#include "../System/RaiiSave.h"
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
 #include "Sourcefile.h"
@@ -94,6 +95,13 @@ void Scope::import( String file ) {
     // -> instructions
     ip->sf = sf;
     parse( bin.ptr );
+}
+
+Var Scope::parse( SourceFile *sf, const PI8 *tok, const char *reason ) {
+    ip->push_sf( sf, reason );
+    Var res = parse( tok );
+    ip->pop_sf();
+    return res;
 }
 
 Var Scope::parse( const PI8 *tok ) {

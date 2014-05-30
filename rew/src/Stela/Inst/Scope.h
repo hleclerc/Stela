@@ -27,6 +27,7 @@ public:
 
     void import( String file );
     Var  parse( const PI8 *tok );
+    Var  parse( SourceFile *sf, const PI8 *tok, const char *reason ); ///< version that change sf in ip
 
     bool         do_not_execute_anything;
     VecNamedVar  local_scope;
@@ -39,6 +40,8 @@ public:
 
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
+    friend class Class;
+    friend class Def;
 
     int  read_nstring( BinStreamReader &bin );
     Var  reg_var( int name, Var var, bool static_scope = false );

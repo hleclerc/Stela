@@ -16,7 +16,7 @@ public:
     struct Code {
         Code( SourceFile *sf, const PI8 *tok ) : sf( sf ), tok( tok ) {}
         Code() : tok( 0 ) {}
-        operator bool() const { return sf and tok; }
+        operator bool() const { return tok; }
         SourceFile *sf;
         const PI8 *tok;
     };

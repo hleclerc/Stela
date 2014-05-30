@@ -3,6 +3,7 @@
 
 template<class T>
 struct RaiiSave {
+    RaiiSave( T &val, const T &n ) : RaiiSave( val ) { val = n; }
     RaiiSave( T &val ) : ref( val ), old( val ) {}
     ~RaiiSave() { ref = old; }
     T &ref, old;

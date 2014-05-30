@@ -37,6 +37,13 @@ Expr Var::get_val() {
     return simplified( inst->_get_val( type->size() ) );
 }
 
+bool Var::always( Bool val ) {
+    if ( type != &ip->type_Bool )
+        return conv( &ip->type_Bool ).always( val );
+    Bool res;
+    return get_val()->get_val( res ) and res == val;
+}
+
 Expr Var::ref() {
     return inst;
 }
@@ -99,6 +106,11 @@ Var Var::at( Type *target_type ) {
         return ip->ret_error( "at requires a pointer var" );
     }
     return Var( Ref(), target_type, res );
+}
+
+Var Var::conv( Type *type ) {
+    TODO;
+    return *this;
 }
 
 Var Var::operator&&( Var b ) {

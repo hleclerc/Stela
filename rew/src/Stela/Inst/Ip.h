@@ -16,6 +16,7 @@
 class Ip {
 public:
     typedef SplittedVec<Vec<Expr>,16> OldCondSet;
+    struct CS { SourceFile *sf; int off; const char *reason; };
 
     Ip();
 
@@ -46,6 +47,8 @@ public:
     Type *make_Varargs_type( const Vec<Type *> &lst, const Vec<int> &names, int o );
     Var make_type_var( Type *type );
     Type *type_from_type_var( Var var );
+    void push_sf( SourceFile *sf, const char *reason );
+    void pop_sf();
 
     // base type
     #define DECL_BT( T ) \
@@ -80,6 +83,7 @@ public:
 
     int off;        ///< current offset in sourcefile
     SourceFile *sf; ///< current sourcefile
+    Vec<CS> sf_stack;
 
     //
     ErrorList error_list;
