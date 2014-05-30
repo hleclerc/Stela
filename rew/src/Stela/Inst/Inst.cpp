@@ -301,6 +301,12 @@ void Inst::_set_val( Expr val, int len ) {
     ip->disp_error( "_set_val works only with pointer type variables" );
 }
 
+Expr Inst::_simp_slice( int off, int len ) {
+    if ( off == 0 and len == size() )
+        return this;
+    return Expr();
+}
+
 void Inst::update_when( const BoolOpSeq &cond ) {
     if ( not when )
         when = new BoolOpSeq( cond );

@@ -88,6 +88,8 @@ public:
     virtual Expr _get_val( int len );
     virtual void _set_val( Expr val, int len );
 
+    virtual Expr _simp_slice( int off, int len );
+
     virtual BoolOpSeq get_BoolOpSeq();
 
     Vec<Expr>           inp; ///< inputs

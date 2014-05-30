@@ -39,11 +39,13 @@ public:
     void import( String file );
 
     SourceFile *new_sf( String file );
+    int read_nstring( BinStreamReader &bin );
 
     Var make_Callable( Vec<Var> lst, Var self );
     Var make_Varargs( Vec<Var> lst, const Vec<int> &names = Vec<int>() );
     Type *make_Varargs_type( const Vec<Type *> &lst, const Vec<int> &names, int o );
     Var make_type_var( Type *type );
+    Type *type_from_type_var( Var var );
 
     // base type
     #define DECL_BT( T ) \

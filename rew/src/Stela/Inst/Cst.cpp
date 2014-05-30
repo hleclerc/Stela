@@ -57,6 +57,15 @@ public:
         memcpy_bit( dst, dst_offset, d(), offset, size );
         return true;
     }
+    virtual Expr _simp_slice( int off, int len ) {
+        int s = ( len + 7 ) / 8;
+        PI8 data[ s ];
+        PI8 knwn[ s ];
+        memcpy_bit( data, 0, d(), off, len );
+        memcpy_bit( knwn, 0, k(), off, len );
+        return cst( len, data, knwn );
+    }
+
     bool equal( int l, const PI8 *nd, const PI8 *nk ) const {
         if ( l != len )
             return false;
@@ -105,4 +114,8 @@ Expr cst( int len, const void *data, const void *kwnw ) {
             return c;
     // else, create a new one
     return new Cst( len, nd, kwnw );
+}
+
+Expr cst( bool val ) {
+    return cst( 1, &val );
 }

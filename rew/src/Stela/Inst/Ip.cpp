@@ -19,6 +19,8 @@ Ip::Ip() :
     type_Void ._len = 0;
     type_Error._len = 0;
 
+    type_Type ._len = 64; // ptr to Type
+
     type_Def  ._len = 8 * sizeof( CallableData );
     type_Class._len = 8 * sizeof( CallableData );
 
@@ -125,9 +127,23 @@ SourceFile *Ip::new_sf( String file ) {
     return res;
 }
 
+int Ip::read_nstring( BinStreamReader &bin ) {
+    return sf->cor_str[ bin.read_positive_integer() ];
+}
+
 Var Ip::make_type_var( Type *type ) {
     SI64 ptr = (SI64)type;
-    return Var( &type_SI64, cst( 64, (PI8 *)&ptr ) );
+    return Var( &type_Type, cst( 64, (PI8 *)&ptr ) );
+}
+
+Type *Ip::type_from_type_var( Var var ) {
+    if ( var.type != &ip->type_Type )
+        return 0;
+    SI64 p;
+    Expr v = var.get_val();
+    if ( not v->get_val( p ) )
+        return 0;
+    return reinterpret_cast<Type *>( ST( p ) );
 }
 
 /*

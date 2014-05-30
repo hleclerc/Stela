@@ -204,7 +204,7 @@ void Codegen_C::make_code() {
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
 
-    Inst::display_graph( out );
+    // Inst::display_graph( out );
 
     // get needed expressions
     Vec<Expr> needed;

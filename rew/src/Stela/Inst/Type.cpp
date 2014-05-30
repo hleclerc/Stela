@@ -9,13 +9,13 @@ Type::Type( int name ) : name( name ), _len( -1 ) {
 void Type::write_to_stream( Stream &os ) const {
     os << ip->str_cor.str( name );
     if ( parameters.size() ) {
-        os << "[ ";
+        os << "[";
         for( int i = 0; i < parameters.size(); ++i ) {
             if ( i )
-                os << ", ";
+                os << ",";
             os << parameters[ i ];
         }
-        os << " ]";
+        os << "]";
     }
 }
 

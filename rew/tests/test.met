@@ -1,5 +1,8 @@
 def reassign a, b
     ___reassign_rec a, 10
+    
+def reassign a, b, c
+    ___reassign_rec a, 10
 
 a := 5
 if ___rand()

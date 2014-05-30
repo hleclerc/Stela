@@ -23,7 +23,14 @@ Var::Var( SI64 val ) : Var( &ip->type_SI64, cst( 64, (const PI8 *)&val ) ) {
 }
 
 void Var::write_to_stream( Stream &os ) const {
-    os << "{" << *type << "}(" << inst << ')';
+    Expr v = const_cast<Var *>( this )->get_val();
+    if ( type == &ip->type_Type ) {
+        SI64 p;
+        if ( v->get_val( p ) )
+            os << *reinterpret_cast<Type *>( ST( p ) );
+        return;
+    }
+    os << *type << "{" << v << '}';
 }
 
 Expr Var::get_val() {
