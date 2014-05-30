@@ -37,6 +37,10 @@ Expr Var::get_val() {
     return simplified( inst->_get_val( type->size() ) );
 }
 
+bool Var::get_val( SI32 &val ) {
+    return get_val()->get_val( val, type );
+}
+
 bool Var::always( Bool val ) {
     if ( type != &ip->type_Bool )
         return conv( &ip->type_Bool ).always( val );
@@ -66,6 +70,13 @@ Var::operator bool() const {
 
 
 void Var::set_val( Var val ) {
+    if ( type == &ip->type_Error or val.type == &ip->type_Error)
+        return;
+    if ( not type ) {
+        type = val.type;
+        inst = val.inst;
+        return;
+    }
     if ( type != val.type ) {
         PRINT( *type );
         PRINT( *val.type );

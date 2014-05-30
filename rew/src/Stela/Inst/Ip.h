@@ -47,6 +47,7 @@ public:
     Type *make_Varargs_type( const Vec<Type *> &lst, const Vec<int> &names, int o );
     Var make_type_var( Type *type );
     Type *type_from_type_var( Var var );
+    bool ext_method( Var m );
     void push_sf( SourceFile *sf, const char *reason );
     void pop_sf();
 

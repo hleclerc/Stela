@@ -20,13 +20,17 @@
 #include "../Ir/Numbers.h"
 
 Scope::Scope( Scope *parent, String name, Ip *_ip ) : ip( _ip ? _ip : ::ip ), parent( parent ) {
-
     if ( parent )
         path = parent->path + "/";
     path += name;
 
     static_scope = ip->get_static_scope( path );
     do_not_execute_anything = false;
+    class_scope = 0;
+
+    base_size = 0;
+    base_alig = 1;
+
 }
 
 Var Scope::VecNamedVar::add( int name, Var var ) {
@@ -196,6 +200,8 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
             // ptr
             SI64 d;
             Expr p = slice( inst_data, o, 64 );
+            PRINT( sur_var );
+            PRINT( p );
             if ( not p->_get_val( 64 )->get_val( &d, 64 ) )
                 return ip->ret_error( "expecting a known Callable ptr" );
             // type (Def, Class, ...)
@@ -333,18 +339,18 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
         }
 
         Var res;
-        Expr cond = cst( true );
+        Expr cond = ip->cond_stack.back();
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
-                Expr ok_cond;
                 if ( trials[ i ]->cond )
-                    ok_cond = op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_and_boolean() );
+                    ip->set_cond( op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_and_boolean() ) );
                 else
-                    ok_cond = cond;
+                    ip->set_cond( cond );
 
                 Var loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, am );
-                //set( res, loc, sf, off, cond );
-                TODO;
+                res.set_val( loc );
+
+                ip->pop_cond();
 
                 if ( trials[ i ]->cond )
                     cond = op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, op( &ip->type_Bool, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_not_boolean() ), Op_and_boolean() );
@@ -384,9 +390,114 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
     return apply( applier, nu, u_args, nn, n_name, n_args, am );
 }
 
-Var Scope::get_attr( Var s, int name ) {
-    TODO;
+Var Scope::get_attr_rec( Var self, int name ) {
+    // look in attributes
+    if ( const Type::Attr *attr = self.type->find_attr( name ) )
+        return self.type->make_attr( self, attr );
+
+    // interet d'avoir super:
+    //    // ancestors
+    // OR NOT: may use aggr of attributes done in TypeInfo
+    //    if ( name != STRING_init_NUM and name != STRING_destroy_NUM ) {
+    //        for( int i = 0; i < self.type->ancestors.size(); ++i ) {
+    //            Var super = self.type->make_attr( self, self.type->ancestor_attr( i ) );
+    //            if ( Var res = get_attr_rec( super, name ) )
+    //                return res;
+    //        }
+    //    }
     return Var();
+}
+
+void Scope::get_attr_rec( Vec<Var> &res, Var self, int name ) {
+    // look in attributes
+    Vec<const Type::Attr *> lattr;
+    self.type->find_attr( lattr, name );
+    for( const Type::Attr *attr: lattr )
+        res << self.type->make_attr( self, attr );
+
+    // interet d'avoir super:
+    //    // ancestors
+    // OR NOT: may use aggr of attributes done in TypeInfo
+    //    if ( name != STRING_init_NUM and name != STRING_destroy_NUM ) {
+    //        for( int i = 0; i < self.type->ancestors.size(); ++i ) {
+    //            Var super = self.type->make_attr( self, self.type->ancestor_attr( i ) );
+    //            if ( Var res = get_attr_rec( super, name ) )
+    //                return res;
+    //        }
+    //    }
+}
+
+
+Var Scope::get_attr( Var self, int name ) {
+    if ( self.type == &ip->type_Error )
+        return ip->error_var();
+
+    if ( not self.type->orig )
+        return ip->ret_error( "Class " + to_string( *self.type ) + " has not been defined" );
+
+    if ( self.type->orig == &ip->class_GetSetSopInst )
+        TODO;
+        //return get_attr( get_val_if_GetSetSopInst( self, sf, off ), name, sf, off );
+
+    // in self or super(s)
+    Var res = get_attr_rec( self, name );
+
+    // look for external methods
+    if ( res.type == 0 ) {
+        for( Scope *s = this; s; s = s->parent ) {
+            if ( s->static_scope ) {
+                if ( Var tmp = s->static_scope->get( name ) ) {
+                    if ( tmp.type == &ip->type_Def ) {
+                        res = tmp;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if ( res.type == 0 )
+        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self.type ) + "'" );
+
+    if ( res.type->orig == &ip->class_GetSetSopDef ) {
+        TODO;
+        //            SI32 get_of = to_int( res.type->parameters[ 0 ] );
+        //            Var getr;
+        //            if ( get_of >= 0 )
+        //                getr = apply( get_attr( self, get_of, sf, off ), 0, 0, 0, 0, 0, true );
+
+        //            Vec<Var> par;
+        //            par << make_type_var( self.type );
+        //            par << make_type_var( getr.type );
+        //            for( int i = 0; i < 3; ++i )
+        //                par << res.type->parameters[ i ];
+        //            Var tmp( ip, ip->class_GetSetSopInst.type_for( this, par, sf, off ) );
+        //            ip->set_ref( tmp.data + 0 * sizeof( void * ), self );
+        //            ip->set_ref( tmp.data + 1 * sizeof( void * ), getr );
+        //            return tmp;
+    }
+
+
+    if ( res.is_surdef() ) {
+        // find all the variants
+        Vec<Var> lst;
+
+        // in attributes
+        get_attr_rec( lst, self, name );
+
+        // (filtered) external methods
+        int os = lst.size();
+        for( Scope *s = this; s; s = s->parent )
+            if ( s->static_scope )
+                s->static_scope->get( lst, name );
+        for( int i = os; i < lst.size(); ++i )
+            if ( not ip->ext_method( lst[ i ] ) )
+                lst.remove_unordered( i-- );
+
+        return ip->make_Callable( lst, self );
+    }
+
+    return res;
 }
 
 Var Scope::parse_APPLY( BinStreamReader bin ) {
@@ -519,8 +630,13 @@ Var Scope::parse_REASSIGN( BinStreamReader bin ) {
     return ip->error_var();
 }
 Var Scope::parse_GET_ATTR( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    Var self = parse( bin.read_offset() );
+    int attr = read_nstring( bin );
+    if ( self.type == &ip->type_Error )
+        return ip->error_var();
+    if ( Var res = get_attr( self, attr ) )
+        return res;
+    return ip->ret_error( "No attribute " + ip->str_cor.str( attr ) );
 }
 Var Scope::parse_GET_ATTR_PTR( BinStreamReader bin ) {
     TODO;
@@ -677,9 +793,21 @@ Var Scope::parse_syscall( BinStreamReader bin ) {
 
     return syscall( inp );
 }
+
+#define CHECK_PRIM_ARGS( N ) \
+    int n = bin.read_positive_integer(); \
+    if ( n != N ) \
+        return ip->ret_error( "Expecting " #N " operand" );
+
 Var Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 2 );
+    Var a = parse( bin.read_offset() );
+    Var b = parse( bin.read_offset() );
+    if ( a.type == &ip->type_Error or b.type == &ip->type_Error )
+        return ip->void_var();
+    if ( not a.get_val( base_size ) or not b.get_val( base_alig ) )
+        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 types only" );
+    return ip->void_var();
 }
 Var Scope::parse_set_RawRef_dependancy( BinStreamReader bin ) {
     TODO;

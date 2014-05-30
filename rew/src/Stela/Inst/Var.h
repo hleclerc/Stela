@@ -30,6 +30,8 @@ public:
     Expr get_val();
     Expr ref();
 
+    bool get_val( SI32 &val );
+
     bool always( Bool val );
 
     bool is_surdef() const;

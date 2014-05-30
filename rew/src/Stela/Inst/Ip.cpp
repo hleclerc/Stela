@@ -2,6 +2,7 @@
 #include "CallableData.h"
 #include "SysState.h"
 #include "Cst.h"
+#include "Def.h"
 #include "Ip.h"
 
 Ip::Ip() :
@@ -62,11 +63,11 @@ ErrorList::Error &Ip::error_msg( String msg, bool warn, const char *file, int li
     if ( file )
         res.caller_stack.push_back( line, file );
 
-    //    if ( sf )
-    //        res.ac( sf_info( sf )->filename, off );
-    //    for( Scope *s = sc; s; s = s->caller )
-    //        if ( s->instantiated_from_sf )
-    //            res.ac( sf_info( s->instantiated_from_sf )->filename, s->instantiated_from_off );
+    if ( sf and off >= 0 )
+        res.ac( sf->name.c_str(), off );
+    for( int i = sf_stack.size() - 1; i >= 0; --i )
+        if ( sf_stack[ i ].sf and sf_stack[ i ].off >= 0 )
+            res.ac( sf_stack[ i ].sf->name.c_str(), sf_stack[ i ].off );
     return res;
 }
 
@@ -146,6 +147,17 @@ Type *Ip::type_from_type_var( Var var ) {
     return reinterpret_cast<Type *>( ST( p ) );
 }
 
+bool Ip::ext_method( Var m ) {
+    if ( m.type != &type_Def )
+        return false;
+    SI64 p;
+    if ( not m.get_val()->get_val( p ) ) {
+        disp_error( "expecting a known value" );
+        return false;
+    }
+    return reinterpret_cast<Def *>( ST( p ) )->self_as_arg();
+}
+
 void Ip::push_sf( SourceFile *nsf, const char *reason ) {
     sf_stack << CS{ sf, off, reason };
     sf  = nsf;
@@ -212,7 +224,7 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     SI64 d = 0;
     Var res( type );
     if ( self )
-        res.set_val( 0 * type_ST->size(), self );
+        res.set_val( 0 * type_ST->size(), self.ptr() );
     else
         res.set_val( 0 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
     res.set_val( 1 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );

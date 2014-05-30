@@ -1,4 +1,5 @@
 #include "../System/Memcpy.h"
+#include "BoolOpSeq.h"
 #include "Cst.h"
 
 class Cst;
@@ -85,6 +86,11 @@ public:
     virtual bool going_to_write_c_code() {
         return false;
     }
+    virtual BoolOpSeq get_BoolOpSeq() {
+        return BoolOpSeq( len ? data[ 0 ] : false );
+    }
+
+
 
     int len;
     Vec<PI8> data;

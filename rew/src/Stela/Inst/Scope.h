@@ -32,8 +32,12 @@ public:
     bool         do_not_execute_anything;
     VecNamedVar  local_scope;
     VecNamedVar *static_scope;
+    const Type  *class_scope;
     String       path;
     Ip          *ip;
+
+    int          base_size;
+    int          base_alig;
 
     Scope       *parent;
     Var          self;
@@ -41,6 +45,7 @@ public:
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     friend class Class;
+    friend class Type;
     friend class Def;
 
     int  read_nstring( BinStreamReader &bin );
@@ -51,6 +56,8 @@ protected:
     Var  parse_CALLABLE( BinStreamReader bin, Type *type );
     Var  apply( Var f, int nu = 0, Var *u_args = 0, int nn = 0, int *n_name = 0, Var *n_args = 0, ApplyMode am = APPLY_MODE_STD );
     Var  get_attr( Var s, int name );
+    Var  get_attr_rec( Var self, int name );
+    void get_attr_rec( Vec<Var> &res, Var self, int name );
 
     #define DECL_IR_TOK( N ) Var parse_##N( BinStreamReader bin );
     #include "../Ir/Decl.h"
