@@ -54,11 +54,10 @@ Var Scope::VecNamedVar::get( int name ) {
     return Var();
 }
 
-bool Scope::VecNamedVar::get( Vec<Var> &lst, int name ) {
+void Scope::VecNamedVar::get( Vec<Var> &lst, int name ) {
     for( NamedVar &nv : data )
         if ( nv.name == name )
             lst << nv.var;
-    return Var();
 }
 
 void Scope::import( String file ) {
@@ -200,8 +199,6 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
             // ptr
             SI64 d;
             Expr p = slice( inst_data, o, 64 );
-            PRINT( sur_var );
-            PRINT( p );
             if ( not p->_get_val( 64 )->get_val( &d, 64 ) )
                 return ip->ret_error( "expecting a known Callable ptr" );
             // type (Def, Class, ...)
@@ -272,7 +269,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
             trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self );
 
             if ( trials[ i ]->ok() ) {
-                if ( not trials[ i ]->cond ) {
+                if ( trials[ i ]->cond.always( true ) ) {
                     has_guaranted_pertinence = true;
                     guaranted_pertinence = ci[ i ]->pertinence;
                 }
@@ -342,7 +339,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
         Expr cond = ip->cond_stack.back();
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
-                if ( trials[ i ]->cond )
+                if ( trials[ i ]->cond.defined() )
                     ip->set_cond( op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_and_boolean() ) );
                 else
                     ip->set_cond( cond );
@@ -352,7 +349,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
 
                 ip->pop_cond();
 
-                if ( trials[ i ]->cond )
+                if ( trials[ i ]->cond.defined() )
                     cond = op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, op( &ip->type_Bool, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_not_boolean() ), Op_and_boolean() );
                 else
                     break;
@@ -446,7 +443,8 @@ Var Scope::get_attr( Var self, int name ) {
     if ( res.type == 0 ) {
         for( Scope *s = this; s; s = s->parent ) {
             if ( s->static_scope ) {
-                if ( Var tmp = s->static_scope->get( name ) ) {
+                Var tmp = s->static_scope->get( name );
+                if ( tmp.defined() ) {
                     if ( tmp.type == &ip->type_Def ) {
                         res = tmp;
                         break;
@@ -553,15 +551,18 @@ Var Scope::parse_STRING( BinStreamReader bin ) {
 }
 Var Scope::parse_VAR( BinStreamReader bin ) {
     int name = read_nstring( bin );
-    if ( Var res = find_var( name ) )
+    Var res = find_var( name );
+    if ( res.defined() )
         return res;
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 Var Scope::find_first_var( int name ) {
     for( Scope *s = this; s; s = s->parent ) {
-        if ( Var res = s->local_scope.get( name ) )
+        Var res = s->local_scope.get( name );
+        if ( res.defined() )
             return res;
-        if ( Var res = s->static_scope->get( name ) )
+        res = s->static_scope->get( name );
+        if ( res.defined() )
             return res;
     }
     return Var();
@@ -634,7 +635,8 @@ Var Scope::parse_GET_ATTR( BinStreamReader bin ) {
     int attr = read_nstring( bin );
     if ( self.type == &ip->type_Error )
         return ip->error_var();
-    if ( Var res = get_attr( self, attr ) )
+    Var res = get_attr( self, attr );
+    if ( res.defined() )
         return res;
     return ip->ret_error( "No attribute " + ip->str_cor.str( attr ) );
 }

@@ -64,7 +64,7 @@ bool Var::is_an_error() const {
     return type == &ip->type_Error;
 }
 
-Var::operator bool() const {
+bool Var::defined() const {
     return type;
 }
 
@@ -132,8 +132,12 @@ Var Var::operator||( Var b ) {
     return Var( &ip->type_Bool, op( &ip->type_Bool, type, get_val(), b.type, b.get_val(), Op_or_boolean() ) );
 }
 
-Var Var::operator==( Var b ) {
+bool Var::operator==( Var b ) {
     return type == b.type and get_val() == b.get_val();
+}
+
+bool Var::operator!=( Var b ) {
+    return type != b.type or get_val() != b.get_val();
 }
 
 Var Var::operator!() {

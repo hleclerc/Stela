@@ -48,6 +48,8 @@ public:
     template<class T>
     bool get_val( T &res ) { return get_val( &res, 8 * sizeof( res ), 0 ); }
 
+    bool get_val( Bool &res ) { return get_val( &res, 1, 0 ); }
+
     bool get_val( SI32 &val, Type *type );
 
     virtual bool get_val( void *dst, int size, int offset = 0, int dst_offset = 0 ) const;

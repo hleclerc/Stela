@@ -37,7 +37,7 @@ public:
     bool is_surdef() const;
     bool is_weak_const() const;
     bool is_an_error() const;
-    operator bool() const;
+    bool defined() const;
 
     Var ptr();
     Var at( Type *type );
@@ -46,11 +46,13 @@ public:
     Var operator||( Var b );
     Var operator!();
 
-    Var operator==( Var b );
+    bool operator==( Var b );
+    bool operator!=( Var b );
 
     Var operator+( Var b );
 
     friend Var syscall( const Vec<Var> &inp );
+
 
     Type *type;
     Expr  inst; ///< Room or equivalent (e.g. Room+offset, ...)

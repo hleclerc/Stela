@@ -75,6 +75,8 @@ void Type::parse() const {
         //        ancestors << ip->type_info( anc.type->expr() );
     }
 
+    if ( not orig->block.tok )
+        ip->disp_error( "Attempting to parse class '" + ip->str_cor.str( name ) + "' which is not defined." );
     scope.parse( orig->block.sf, orig->block.tok, "parsing class" );
 
     // attr and size

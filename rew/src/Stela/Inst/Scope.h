@@ -18,7 +18,7 @@ public:
     struct VecNamedVar {
         Var add( int name, Var var );
         bool contains( int name );
-        bool get( Vec<Var> &lst, int name );
+        void get( Vec<Var> &lst, int name );
         Var get( int name );
         Vec<NamedVar> data;
     };

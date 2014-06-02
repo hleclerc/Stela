@@ -223,7 +223,7 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     // data
     SI64 d = 0;
     Var res( type );
-    if ( self )
+    if ( self.defined() )
         res.set_val( 0 * type_ST->size(), self.ptr() );
     else
         res.set_val( 0 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
