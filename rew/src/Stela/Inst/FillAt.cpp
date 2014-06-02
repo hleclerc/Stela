@@ -17,7 +17,6 @@ public:
     virtual Expr _simp_slice( int off, int len ) {
         SI32 beg;
         if ( inp[ 2 ]->get_val( beg, off_type ) ) {
-            beg *= 8;
             SI32 end = beg + inp[ 1 ]->size();
             if ( off + len <= beg or off >= end )
                 return slice( inp[ 0 ], off, len );

@@ -25,7 +25,7 @@ Ip::Ip() :
     type_Def  ._len = 8 * sizeof( CallableData );
     type_Class._len = 8 * sizeof( CallableData );
 
-    #define DECL_BT( T ) type_##T.orig = &class_##T;
+    #define DECL_BT( T ) type_##T.orig = &class_##T; class_##T.types << &type_##T;
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
@@ -215,11 +215,11 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     // -> parm_ptr (ST)
     Vec<Var> lt;
     lt << make_Varargs( lst );
-    lt << make_type_var( &type_Void );
     if ( self.defined() )
         lt << make_type_var( self.type );
     else
         lt << make_type_var( &type_Void );
+    lt << make_type_var( &type_Void );
     Type *type = class_Callable.type_for( lt );
     type->_len = 2 * type_ST->size();
 

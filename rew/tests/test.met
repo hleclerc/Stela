@@ -9,6 +9,8 @@ class SI32
         tata()
     def tata
         19
+    def reassign val
+        ___reassign_rec val
     
 class SI64
     ___set_base_size_and_alig 64, 64
@@ -22,15 +24,19 @@ void := Void()
     
 def init self
     # -> do nothing
-    void
 
-class Toto
+class Toto[ y ]
+    u := y
     v := 100
-    def init
-        # -> do nothing
-        void
-    
-a := Toto()
+
+a := 4
+t := Toto[ a ]()
+t.v = 17
 ___info a
+___info t
+___info t.y
+___info t.v
+___disp t.u
+___disp t.v
 # a = 10
 # ___syscall a.toto()

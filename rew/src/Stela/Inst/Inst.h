@@ -87,6 +87,7 @@ public:
 
     virtual void _add_store_dep_if_necessary( Expr res, Expr fut );
     virtual Expr _simplified();
+    virtual Expr _get_val();
     virtual Expr _get_val( int len );
     virtual void _set_val( Expr val, int len );
 

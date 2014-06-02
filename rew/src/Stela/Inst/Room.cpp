@@ -1,5 +1,6 @@
 #include "InstInfo_C.h"
 #include "Select.h"
+#include "FillAt.h"
 #include "Store.h"
 #include "Slice.h"
 #include "Room.h"
@@ -34,10 +35,18 @@ public:
         return val;
     }
     virtual void _set_val( Expr val, int len ) {
-        if ( ip->cond_stack.size() )
-            this->val = select( ip->cur_cond(), simplified( val ), simplified( this->val ) );
-        else
-            this->val = val;
+        if ( this->len != len ) {
+            Expr n = fill_at( simplified( this->val ), simplified( val ), &ip->type_SI32, cst( 0 ) );
+            if ( ip->cond_stack.size() )
+                this->val = select( ip->cur_cond(), n, simplified( this->val ) );
+            else
+                this->val = n;
+        } else {
+            if ( ip->cond_stack.size() )
+                this->val = select( ip->cur_cond(), simplified( val ), simplified( this->val ) );
+            else
+                this->val = val;
+        }
     }
     virtual bool is_a_pointer() const {
         return true;

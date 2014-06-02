@@ -292,6 +292,10 @@ Expr Inst::_simplified() {
     return 0;
 }
 
+Expr Inst::_get_val() {
+    return _get_val( size_ptd() );
+}
+
 Expr Inst::_get_val( int len ) {
     ERROR( "_get_val works only with pointer type variables" );
     return 0;

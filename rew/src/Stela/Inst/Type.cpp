@@ -50,6 +50,11 @@ void Type::parse() const {
         return;
     _parsed = true;
 
+    if ( not orig->block.tok ) {
+        ip->disp_error( "Attempting to parse class '" + ip->str_cor.str( name ) + "' which is not defined." );
+        return;
+    }
+
     //
     Scope scope( ip->main_scope.ptr(), "_type_" + to_string( *this ) );
     scope.class_scope = this;
@@ -75,8 +80,6 @@ void Type::parse() const {
         //        ancestors << ip->type_info( anc.type->expr() );
     }
 
-    if ( not orig->block.tok )
-        ip->disp_error( "Attempting to parse class '" + ip->str_cor.str( name ) + "' which is not defined." );
     scope.parse( orig->block.sf, orig->block.tok, "parsing class" );
 
     // attr and size
@@ -139,9 +142,6 @@ void Type::find_attr( Vec<const Attr *> &res, int name ) {
 Var Type::make_attr( Var self, const Attr *attr ) const {
     if ( attr->offset < 0 )
         return attr->var;
-    if ( attr->offset % 8 )
-        TODO;
-
-    return ( self.ptr() + Var( attr->offset / 8 ) ).at( attr->var.type );
+    return ( self.ptr() + Var( attr->offset ) ).at( attr->var.type );
 }
 

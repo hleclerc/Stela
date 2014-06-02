@@ -30,7 +30,8 @@ void Var::write_to_stream( Stream &os ) const {
             os << *reinterpret_cast<Type *>( ST( p ) );
         return;
     }
-    os << *type << "{" << v << '}';
+    // os << *type << "{" << v << '}';
+    os << *type << "{" << inst << '}';
 }
 
 Expr Var::get_val() {
@@ -88,15 +89,11 @@ void Var::set_val( Var val ) {
 }
 
 void Var::set_val( int offset, Var val ) {
-    if ( offset % 8 )
-        TODO;
-    ( ptr() + Var( offset / 8 ) ).at( val.type ).set_val( val );
+    ( ptr() + Var( offset ) ).at( val.type ).set_val( val );
 }
 
 void Var::set_val( int offset, Type *type, Expr val ) {
-    if ( offset % 8 )
-        TODO;
-    ( ptr() + Var( offset / 8 ) ).at( type ).set_val( val );
+    ( ptr() + Var( offset ) ).at( type ).set_val( val );
 }
 
 void Var::set_val( Expr val ) {

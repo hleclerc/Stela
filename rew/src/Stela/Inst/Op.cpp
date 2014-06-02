@@ -73,7 +73,7 @@ public:
 
     virtual Expr _get_val( int len ) {
         if ( SameType<T,Op_add>::res )
-            return slice( inp[ 0 ], inp[ 1 ], len );
+            return slice( simplified( inp[ 0 ]->_get_val() ), tb, simplified( inp[ 1 ] ), len );
         return Inst::_get_val( len );
     }
 
@@ -115,6 +115,15 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_and_bool
 
 // add
 Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_add ) {
+    SI32 va, vb;
+    if ( a->get_val( va, ta ) ) {
+        if ( not va )
+            return b;
+    }
+    if ( b->get_val( vb, tb ) ) {
+        if ( not vb )
+            return a;
+    }
     return 0;
 }
 
