@@ -98,8 +98,10 @@ Callable::Trial *Def::test( int nu, Var *vu, int nn, int *names, Var *vn, int pn
     if ( pnu + pnn + nu + nn > max_nb_args() ) return res->wr( "To much arguments" );
 
     res->scope = new Scope( ip->main_scope.ptr(), name + "_" + sf->name + "_" + to_string( off ) );
-    if ( self.defined() )
+    if ( self.defined() ) {
+        res->scope->method = true;
         res->scope->self = self;
+    }
 
 
     Vec<bool> arg_ok( Size(), arg_names.size(), false );

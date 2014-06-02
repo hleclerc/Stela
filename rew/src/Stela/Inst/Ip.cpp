@@ -216,7 +216,10 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     Vec<Var> lt;
     lt << make_Varargs( lst );
     lt << make_type_var( &type_Void );
-    lt << make_type_var( &type_Void );
+    if ( self.defined() )
+        lt << make_type_var( self.type );
+    else
+        lt << make_type_var( &type_Void );
     Type *type = class_Callable.type_for( lt );
     type->_len = 2 * type_ST->size();
 

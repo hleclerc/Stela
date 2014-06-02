@@ -20,13 +20,17 @@
 #include "../Ir/Numbers.h"
 
 Scope::Scope( Scope *parent, String name, Ip *_ip ) : ip( _ip ? _ip : ::ip ), parent( parent ) {
-    if ( parent )
+    if ( parent ) {
         path = parent->path + "/";
+        if ( parent->self.defined() )
+            self = parent->self;
+    }
     path += name;
 
     static_scope = ip->get_static_scope( path );
     do_not_execute_anything = false;
     class_scope = 0;
+    method = false;
 
     base_size = 0;
     base_alig = 1;
@@ -212,14 +216,12 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
 
         // self
         Var l_self;
-        //        int off_ref = 0;
-        //        Expr self_tp = slice( f.type->ptr->expr(), 3 * ps, 4 * ps );
-        //        if ( ClassInfo *self_ci = ip->class_info( self_tp, false ) ) {
-        //            if ( self_ci->name != STRING_Void_NUM ) {
-        //                l_self = f.get_ref( 0 );
-        //                off_ref += ps;
-        //            }
-        //        }
+        l_self.type = ip->type_from_type_var( f.type->parameters[ 2 ] );
+        if ( l_self.type and l_self.type != &ip->type_Void ) {
+            if ( l_self.type == &ip->type_Error )
+                return ip->error_var();
+            l_self.inst = slice( f.get_val(), 0, 64 );
+        }
 
         // parm
         Vec<int> pn_names;
@@ -557,6 +559,11 @@ Var Scope::parse_VAR( BinStreamReader bin ) {
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 Var Scope::find_first_var( int name ) {
+    if ( self.defined() ) {
+        Var res = get_attr( self, name );
+        if ( res.defined() )
+            return res;
+    }
     for( Scope *s = this; s; s = s->parent ) {
         Var res = s->local_scope.get( name );
         if ( res.defined() )
@@ -569,6 +576,8 @@ Var Scope::find_first_var( int name ) {
 }
 
 void Scope::find_var_clist( Vec<Var> &lst, int name ) {
+    if ( self.defined() )
+        get_attr_rec( lst, self, name );
     for( Scope *s = this; s; s = s->parent ) {
         s->local_scope.get( lst, name );
         s->static_scope->get( lst, name );

@@ -3,15 +3,13 @@
     
 class SI32
     ___set_base_size_and_alig 32, 32
-    # def toto
-        # 17
-    def toto pertinence 2
-        18
+    def toto
+        tata()
+    def tata
+        19
     
 class SI64
     ___set_base_size_and_alig 64, 64
-    def toto
-        17
     
 a := 5
 # a = 10

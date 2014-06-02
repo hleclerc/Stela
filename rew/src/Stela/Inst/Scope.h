@@ -41,6 +41,7 @@ public:
 
     Scope       *parent;
     Var          self;
+    bool         method;
 
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
