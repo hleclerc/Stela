@@ -12,8 +12,10 @@ class Scope {
 public:
     struct NamedVar {
         bool operator==( SI32 n ) const { return n == name; }
-        SI32 name;
-        Var  var;
+        SI32        name;
+        Var         var;
+        SourceFile *sf;
+        SI32        off;
     };
     struct VecNamedVar {
         Var add( int name, Var var );

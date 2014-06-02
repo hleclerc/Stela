@@ -3,6 +3,8 @@
     
 class SI32
     ___set_base_size_and_alig 32, 32
+    def init val
+        ___reassign_rec val
     def toto
         tata()
     def tata
@@ -10,7 +12,25 @@ class SI32
     
 class SI64
     ___set_base_size_and_alig 64, 64
+
+class Void
+    # nothing
+    def init
+        10 # fake
     
-a := 5
+void := Void()
+    
+def init self
+    # -> do nothing
+    void
+
+class Toto
+    v := 100
+    def init
+        # -> do nothing
+        void
+    
+a := Toto()
+___info a
 # a = 10
-___syscall a.toto()
+# ___syscall a.toto()

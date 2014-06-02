@@ -98,6 +98,8 @@ void Type::parse() const {
         attr->offset = _len;
         attr->name   = name;
         attr->var    = var;
+        attr->sf     = scope.local_scope.data[ i ].sf;
+        attr->off    = scope.local_scope.data[ i ].off;
 
         if ( var.type->_len >= 0 and _len >= 0 )
             _len += var.type->_len;
@@ -108,6 +110,8 @@ void Type::parse() const {
         attr->offset = -2;
         attr->name   = scope.static_scope->data[ i ].name;
         attr->var    = scope.static_scope->data[ i ].var;
+        attr->sf     = scope.static_scope->data[ i ].sf;
+        attr->off    = scope.static_scope->data[ i ].off;
     }
 
     // has_a_...

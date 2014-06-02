@@ -17,37 +17,42 @@ Var Def::TrialDef::call( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, 
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
-        TODO;
-        //        TypeInfo *ti = self.type_info();
-        //        for( int i = 0; i < ti->attributes.size(); ++i ) {
-        //            if ( ti->attributes[ i ].dynamic() ) {
-        //                Var subv = scope->get_attr( self, ti->attributes[ i ].name, sf, off );
-        //                Var suin = scope->get_attr( subv, STRING_init_NUM, sf, off );
-        //                for( int a = 0; ; ++a ) {
-        //                    if ( a == orig->attr_init.size() ) {
-        //                        if ( ti->attributes[ i ].var.data )
-        //                            scope->apply( suin, 1, &ti->attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
-        //                        else
-        //                            scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD, sf, off );
-        //                        break;
-        //                    }
-        //                    AttrInit *ai = &orig->attr_init[ a ];
-        //                    if ( ai->name == ti->attributes[ i ].name ) {
-        //                        Var vu[ ai->nu ];
-        //                        for( int i = 0; i < ai->nu; ++i )
-        //                            vu[ i ] = scope->parse( ai->args[ i ].sf, ai->args[ i ].tok );
-        //                        Var vn[ ai->nn ];
-        //                        for( int i = 0; i < ai->nn; ++i )
-        //                            vn[ i ] = scope->parse( ai->args[ i + ai->nu ].sf, ai->args[ i + ai->nu ].tok );
-        //                        scope->apply( suin, ai->nu, vu, ai->nn, ai->names.ptr(), vn, Scope::APPLY_MODE_STD, sf, off );
-        //                        break;
-        //                    }
-        //                }
-        //            }
-        //        }
+        Type *ti = self.type;
+        ti->parse();
+        for( int i = 0; i < ti->_attributes.size(); ++i ) {
+            if ( ti->_attributes[ i ].dyn() ) {
+                ip->push_sf( ti->_attributes[ i ].sf, "init attr" );
+                ip->off = ti->_attributes[ i ].off;
+
+                Var subv = scope->get_attr( self, ti->_attributes[ i ].name );
+                Var suin = scope->get_attr( subv, STRING_init_NUM );
+                for( int a = 0; ; ++a ) {
+                    if ( a == orig->attr_init.size() ) {
+                        if ( ti->_attributes[ i ].var.defined() )
+                            scope->apply( suin, 1, &ti->_attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD );
+                        else
+                            scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD );
+                        break;
+                    }
+                    AttrInit *ai = &orig->attr_init[ a ];
+                    if ( ai->name == ti->_attributes[ i ].name ) {
+                        Var vu[ ai->nu ];
+                        for( int i = 0; i < ai->nu; ++i )
+                            vu[ i ] = scope->parse( ai->args[ i ].sf, ai->args[ i ].tok, "parsing init value" );
+                        Var vn[ ai->nn ];
+                        for( int i = 0; i < ai->nn; ++i )
+                            vn[ i ] = scope->parse( ai->args[ i + ai->nu ].sf, ai->args[ i + ai->nu ].tok, "parsing init value" );
+                        scope->apply( suin, ai->nu, vu, ai->nn, ai->names.ptr(), vn, Scope::APPLY_MODE_STD );
+                        break;
+                    }
+                }
+
+                ip->pop_sf();
+            }
+        }
     }
 
-    // static variables
+    // new scope
     String path;
     for( int i = 0; i < orig->arg_names.size(); ++i )
         path += "_" + to_string( *scope->find_var( orig->arg_names[ i ] ).type );

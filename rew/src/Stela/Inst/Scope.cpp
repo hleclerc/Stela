@@ -41,6 +41,8 @@ Var Scope::VecNamedVar::add( int name, Var var ) {
     NamedVar *res = data.push_back();
     res->name = name;
     res->var = var;
+    res->sf  = ::ip->sf;
+    res->off = ::ip->off;
     return res->var;
 }
 
@@ -457,7 +459,8 @@ Var Scope::get_attr( Var self, int name ) {
     }
 
     if ( res.type == 0 )
-        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self.type ) + "'" );
+        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self.type ) + "' or in parent scopes" );
+
 
     if ( res.type->orig == &ip->class_GetSetSopDef ) {
         TODO;
@@ -560,7 +563,7 @@ Var Scope::parse_VAR( BinStreamReader bin ) {
 }
 Var Scope::find_first_var( int name ) {
     if ( self.defined() ) {
-        Var res = get_attr( self, name );
+        Var res = get_attr_rec( self, name );
         if ( res.defined() )
             return res;
     }
@@ -786,12 +789,18 @@ Var Scope::parse_OR( BinStreamReader bin ) {
 }
 
 Var Scope::parse_info( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    int n = bin.read_positive_integer();
+    for( int i = 0; i < n; ++i )
+        std::cout << ( i ? ", " : "" ) << parse( bin.read_offset() );
+    std::cout << std::endl;
+    return ip->void_var();
 }
 Var Scope::parse_disp( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    int n = bin.read_positive_integer();
+    for( int i = 0; i < n; ++i )
+        std::cout << ( i ? ", " : "" ) << parse( bin.read_offset() );
+    std::cout << std::endl;
+    return ip->void_var();
 }
 Var Scope::parse_rand( BinStreamReader bin ) {
     return Var( &ip->type_Bool, symbol( "rand", 1 ) );
@@ -827,7 +836,10 @@ Var Scope::parse_set_RawRef_dependancy( BinStreamReader bin ) {
 Var Scope::parse_reassign_rec( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     if ( n == 1 ) {
-        TODO;
+        if ( not self.defined() )
+            return ip->ret_error( "expecting a defined self" );
+        self.set_val( parse( bin.read_offset() ) );
+        return self;
     }
     if ( n != 2 )
         return ip->ret_error( "expecting 1 or 2 args" );

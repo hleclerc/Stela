@@ -3,6 +3,7 @@
 
 #include "../System/Stream.h"
 #include "Var.h"
+class SourceFile;
 class Class;
 
 /**
@@ -13,9 +14,12 @@ public:
         bool dyn() const { return offset >= 0; }
         bool sta() const { return offset <  0; }
 
-        int offset; ///<
+        int offset; ///< in bits
         int name;
         Var var;
+
+        SourceFile *sf;
+        int off; ///< on sourcefile
     };
 
     Type( int name = -1 );
