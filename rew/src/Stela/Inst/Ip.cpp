@@ -25,6 +25,9 @@ Ip::Ip() :
     type_Def  ._len = 8 * sizeof( CallableData );
     type_Class._len = 8 * sizeof( CallableData );
 
+    type_SI64 ._pod = 1;
+    type_SI32 ._pod = 1;
+
     #define DECL_BT( T ) type_##T.orig = &class_##T; class_##T.types << &type_##T;
     #include "DeclBaseClass.h"
     #undef DECL_BT

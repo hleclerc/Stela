@@ -240,8 +240,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
             }
 
             int o = 0;
-            // pointer on varargs data
-            Var vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST );
+            Var vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
             while ( parm_type->orig != &ip->class_VarargsItemEnd ) {
                 PRINT( *parm_type );
 
@@ -251,7 +250,8 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
                 if ( tn >= 0 ) {
                     TODO;
                 } else {
-                    pu_args << ( vp + o * ip->type_ST->size() ).at( ip->type_ST ).at( ip->type_from_type_var( parm_type->parameters[ 0 ] ) );
+                    Var p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
+                    pu_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
                 }
 
                 // iteration

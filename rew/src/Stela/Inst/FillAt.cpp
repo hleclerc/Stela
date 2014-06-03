@@ -23,7 +23,7 @@ public:
             if ( off >= beg and off + len <= end )
                 return slice( inp[ 1 ], off - beg, len );
         }
-        return Expr();
+        return Inst::_simp_slice( off, len );
     }
     Type *off_type;
 };

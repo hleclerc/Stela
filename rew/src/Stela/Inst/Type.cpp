@@ -35,7 +35,8 @@ void Type::write_C_decl( Stream &out ) const {
 }
 
 int Type::pod() const {
-    parse();
+    if ( _pod < 0 )
+        parse();
     return _pod;
 }
 

@@ -23,7 +23,7 @@ public:
         os << "@" << num;
     }
     virtual void write_to_stream( Stream &os, int prec = -1 ) const {
-        os << "(@" << num << ")" << val;
+        os << "@" << num << "(" << val << ")";
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new Room( len );
@@ -32,6 +32,8 @@ public:
         return ip->type_ST->size();
     }
     virtual Expr _get_val( int len ) {
+        if ( val->size() != len )
+            return slice( val, 0, len );
         return val;
     }
     virtual void _set_val( Expr val, int len ) {

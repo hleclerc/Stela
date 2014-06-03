@@ -159,16 +159,17 @@ void test_code_select() {
 
 void test_code_slice() {
     Var a( &ip->type_SI64, symbol( "a", 64 ) );
+    // Var a( &ip->type_SI64, cst( SI64( 0 ) ) );
     Var b( &ip->type_SI32, symbol( "b", 32 ) );
     Var c( &ip->type_SI32, symbol( "c", 32 ) );
 
     Var p = a.ptr();
     PRINT( p );
     PRINT( p.at( &ip->type_SI32 ) );
-    PRINT( p + 4 );
-    PRINT( ( p + 4 ).at( &ip->type_SI32 ) );
-    PRINT( ( p + 4 ).at( &ip->type_SI32 ) + b );
-    ( p + 4 ).at( &ip->type_SI32 ).set_val( b );
+    PRINT( p + 32 );
+    PRINT( ( p + 32 ).at( &ip->type_SI32 ) );
+    PRINT( ( p + 32 ).at( &ip->type_SI32 ) + b );
+    ( p + 32 ).at( &ip->type_SI32 ).set_val( b );
     // syscall( a.ptr() );
     PRINT( a );
 

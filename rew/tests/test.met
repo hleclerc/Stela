@@ -25,16 +25,17 @@ void := Void()
 def init self
     # -> do nothing
 
-class Toto[ y ]
+class Toto[ y, z ]
     u := y
     v := 100
 
 a := 4
-t := Toto[ a ]()
+t := Toto[ a, 5 ]()
 t.v = 17
 ___info a
 ___info t
 ___info t.y
+___info t.z
 ___info t.v
 ___disp t.u
 ___disp t.v

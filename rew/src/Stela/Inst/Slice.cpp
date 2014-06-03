@@ -32,8 +32,7 @@ Expr slice( Expr ptr, Type *off_type, Expr off, int len ) {
 Expr slice( Expr ptr, int off, int len ) {
     if ( Expr res = ptr->_simp_slice( off, len ) )
         return res;
-    TODO;
-    return slice( ptr, &ip->type_SI32, cst( 32, &off ), len );
+    return slice( ptr, &ip->type_SI32, cst( off ), len );
 }
 
 

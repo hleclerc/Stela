@@ -108,7 +108,7 @@ Var Var::ptr() {
 }
 
 Var Var::at( Type *target_type ) {
-    Expr res = simplified( inst->_get_val( target_type->size() ) );
+    Expr res = simplified( inst->_get_val() );
     if ( not res->is_a_pointer() ) {
         std::cerr << res << std::endl;
         return ip->ret_error( "at requires a pointer var" );
