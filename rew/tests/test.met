@@ -14,6 +14,12 @@ class SI32
     
 class SI64
     ___set_base_size_and_alig 64, 64
+    
+class Type
+    ptr := 0l
+    
+def init self
+    # -> do nothing
 
 class Void
     # nothing
@@ -22,22 +28,23 @@ class Void
     
 void := Void()
     
-def init self
-    # -> do nothing
 
 class Toto[ y, z ]
     u := y
     v := 100
 
 a := 4
-t := Toto[ a, 5 ]()
-t.v = 17
-___info a
-___info t
-___info t.y
-___info t.z
-___info t.v
-___disp t.u
-___disp t.v
+t := Toto[ a, z = 10l ]()
+a = 5
+___disp t.y
+t.y = 7
+# t.v = 17
+# ___info a
+# ___info t
+# ___info t.y
+# ___info t.z
+# ___info t.v
+# ___disp t.u
+# ___disp t.v
 # a = 10
 # ___syscall a.toto()

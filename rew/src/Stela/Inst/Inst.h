@@ -17,6 +17,9 @@ public:
         TPAR_DEP = -1,
         TPAR_CND = -2
     };
+    enum {
+        CONST = 1
+    };
 
     struct Parent {
         bool operator==( const Parent &p ) { return inst == p.inst and ninp == p.ninp; }
@@ -102,6 +105,8 @@ public:
     BoolOpSeq          *when; ///< used for code generation (to know when needed)
 
     Inst               *ext_par;
+
+    int                 flags;
 
     static  PI64        cur_op_id; ///<
     mutable PI64        op_id_vis; ///<

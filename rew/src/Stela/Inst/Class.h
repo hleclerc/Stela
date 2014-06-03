@@ -19,7 +19,9 @@ public:
     virtual void read_bin( BinStreamReader &bin );
     virtual Trial *test( int nu, Var *vu, int nn, int *names, Var *vn, int pnu, Var *pvu, int pnn, int *pnames, Var *pvn, const Var &self );
 
-    Type *type_for( const Vec<Var> &args );
+    Type *type_for( Vec<Var> &args );
+
+    static Var const_or_copy( Var &var );
 
     Vec<Type *> types;
     Vec<Code> ancestors;

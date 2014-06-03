@@ -97,6 +97,8 @@ void Var::set_val( int offset, Type *type, Expr val ) {
 }
 
 void Var::set_val( Expr val ) {
+    if ( flags & WEAK_CONST )
+        return ip->disp_error( "attempting to modify a const value" );
     if ( inst )
         inst->_set_val( val, type->size() );
     else
@@ -175,3 +177,5 @@ Var syscall( const Vec<Var> &inp ) {
     ip->sys_state.inst = fut;
     return Var( ip->type_ST, res );
 }
+
+

@@ -27,6 +27,8 @@ Ip::Ip() :
 
     type_SI64 ._pod = 1;
     type_SI32 ._pod = 1;
+    type_Type ._pod = 1;
+    type_VarargsItemEnd._pod = 1;
 
     #define DECL_BT( T ) type_##T.orig = &class_##T; class_##T.types << &type_##T;
     #include "DeclBaseClass.h"
@@ -200,6 +202,7 @@ Var Ip::make_Varargs( Vec<Var> lst, const Vec<int> &names ) {
         types << v.type;
     Type *type = make_Varargs_type( types, names, 0 );
     type->_len = lst.size() * type_ST->size();
+    type->_pod = 1;
 
     // data
     Var res( type );

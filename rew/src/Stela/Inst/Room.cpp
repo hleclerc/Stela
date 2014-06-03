@@ -37,6 +37,8 @@ public:
         return val;
     }
     virtual void _set_val( Expr val, int len ) {
+        if ( flags & CONST )
+            return ip->disp_error( "attempting to modify a const value" );
         if ( this->len != len ) {
             Expr n = fill_at( simplified( this->val ), simplified( val ), &ip->type_SI32, cst( 0 ) );
             if ( ip->cond_stack.size() )

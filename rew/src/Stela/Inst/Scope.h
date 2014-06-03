@@ -61,6 +61,7 @@ protected:
     Var  get_attr( Var s, int name );
     Var  get_attr_rec( Var self, int name );
     void get_attr_rec( Vec<Var> &res, Var self, int name );
+    Var copy( Var &var );
 
     #define DECL_IR_TOK( N ) Var parse_##N( BinStreamReader bin );
     #include "../Ir/Decl.h"

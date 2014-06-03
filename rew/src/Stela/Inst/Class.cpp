@@ -97,12 +97,21 @@ Var Class::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int p
     return ret;
 }
 
-Type *Class::type_for( const Vec<Var> &args ) {
+Var Class::const_or_copy( Var &var ) {
+    if ( var.inst->flags & Inst::CONST )
+        return var;
+    Var res = ip->main_scope->copy( var );
+    res.inst->flags |= Inst::CONST;
+    return res;
+}
+
+Type *Class::type_for( Vec<Var> &args ) {
     for( Type *t : types )
         if ( t->parameters == args )
             return t;
     Type *res = new Type( name );
-    res->parameters = args;
+    for( int i = 0; i < args.size(); ++i )
+        res->parameters << const_or_copy( args[ i ] );
     res->orig = this;
     return res;
 }

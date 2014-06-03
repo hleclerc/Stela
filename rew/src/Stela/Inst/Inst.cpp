@@ -19,6 +19,8 @@ Inst::Inst() {
     op_id     = 0;
     op_mp     = 0;
 
+    flags     = 0;
+
     cpt_use   = 0;
 }
 

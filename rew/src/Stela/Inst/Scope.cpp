@@ -242,15 +242,15 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
             int o = 0;
             Var vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
             while ( parm_type->orig != &ip->class_VarargsItemEnd ) {
-                PRINT( *parm_type );
+                Var p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
 
                 SI32 tn;
                 if ( not parm_type->parameters[ 1 ].get_val( tn ) )
                     return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
                 if ( tn >= 0 ) {
-                    TODO;
+                    pn_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
+                    pn_names << tn;
                 } else {
-                    Var p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
                     pu_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
                 }
 
@@ -260,7 +260,6 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
                 if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd )
                     return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
             }
-            PRINT( pu_args );
         }
         int pnu = pu_args.size(), pnn = pn_args.size();
 
@@ -436,6 +435,15 @@ void Scope::get_attr_rec( Vec<Var> &res, Var self, int name ) {
     //    }
 }
 
+Var Scope::copy( Var &var ) {
+    // shortcut (for bootstrap)
+    if ( var.type->pod() )
+        return Var( var.type, var.get_val() );
+    //
+    Var res( var.type );
+    apply( get_attr( res, STRING_init_NUM ), 1, &var );
+    return res;
+}
 
 Var Scope::get_attr( Var self, int name ) {
     if ( self.type == &ip->type_Error )

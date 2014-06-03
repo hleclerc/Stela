@@ -53,6 +53,7 @@ public:
 
     friend Var syscall( const Vec<Var> &inp );
 
+    int cpt_use() const { return inst->cpt_use; }
 
     Type *type;
     Expr  inst; ///< Room or equivalent (e.g. Room+offset, ...)
@@ -60,5 +61,6 @@ public:
 };
 
 Var syscall( const Vec<Var> &inp );
+Var copy( const Var &var );
 
 #endif // VAR_H
