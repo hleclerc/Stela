@@ -696,8 +696,10 @@ Var Scope::parse_ASSIGN( BinStreamReader bin ) {
     return reg_var( name, var, flags & IR_ASSIGN_STATIC );
 }
 Var Scope::reg_var( int name, Var var, bool stat ) {
-    if ( not var.is_surdef() and ( local_scope.contains( name ) or static_scope->contains( name ) ) )
+    if ( not var.is_surdef() and ( local_scope.contains( name ) or static_scope->contains( name ) ) ) {
+        PRINT( var );
         return ip->ret_error( "There is already a var named '" + ip->str_cor.str( name ) + "' in the current scope" );
+    }
     VecNamedVar &scope = stat ? *static_scope : local_scope;
     return scope.add( name, var );
 }
@@ -813,12 +815,16 @@ Var Scope::parse_VOID( BinStreamReader bin ) {
     return Var( &ip->type_Void );
 }
 Var Scope::parse_SELF( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    if ( not self.defined() )
+        return ip->ret_error( "not in an object" );
+    return self;
 }
 Var Scope::parse_THIS( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    if ( not self.defined() )
+        return ip->ret_error( "not in an object" );
+    Vec<Var> lt;
+    lt << ip->make_type_var( self.type );
+    return Var( ip->class_Ptr.type_for( lt ), self.ptr().get_val() );
 }
 Var Scope::parse_FOR( BinStreamReader bin ) {
     TODO;
@@ -963,8 +969,13 @@ Var Scope::parse_get_slice( BinStreamReader bin ) {
     return ip->error_var();
 }
 Var Scope::parse_pointed_value( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 2 );
+    Var a = parse( bin.read_offset() );
+    Var T = parse( bin.read_offset() );
+    Type *type = ip->type_from_type_var( T );
+    if ( not type )
+        return ip->ret_error( "expecting a type var as second arg" );
+    return a.at( type );
 }
 Var Scope::parse_pointer_on( BinStreamReader bin ) {
     TODO;
@@ -997,6 +1008,8 @@ Type *Scope::type_promote( Type *ta, Type *tb, OP ) {
         return &ip->type_Bool;
     if ( ta == tb )
         return ta;
+    if ( ta == &ip->type_SI32 and tb == &ip->type_SI64 ) return &ip->type_SI64;
+    if ( ta == &ip->type_SI64 and tb == &ip->type_SI32 ) return &ip->type_SI64;
     TODO;
     return 0;
 }

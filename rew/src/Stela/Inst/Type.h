@@ -29,6 +29,7 @@ public:
 
     int pod() const;
     int size() const;
+    int size_in_bytes() const { return ( size() + 7 ) / 8; }
     int alig() const;
     virtual void parse() const;
     const Attr *find_attr( int name ) const;
@@ -39,6 +40,7 @@ public:
     Class              *orig;
     Vec<Var>            parameters; ///< template parameters
 
+    bool                _aryth;
     mutable int         _len;
     mutable int         _ali;
     mutable int         _pod;

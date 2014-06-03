@@ -7,6 +7,7 @@ Type::Type( int name ) : name( name ) {
     _ali = 1;
     _len = -1;
     _pod = -1;
+    _aryth = false;
     _parsed = false;
     _has_a_destructor = false;
 }

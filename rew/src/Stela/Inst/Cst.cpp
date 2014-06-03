@@ -13,6 +13,9 @@ public:
         this->data.resize( 2 * sb() );
         memcpy( d(), data, sb() );
         memcpy( k(), kwnw, sb() );
+
+        ++cpt_use;
+        cst_list << this;
     }
     int sb() const { return ( len + 7 ) / 8; }
     const PI8 *d() const { return data.ptr() + 0 * sb(); }
@@ -110,10 +113,12 @@ Expr cst( int len, const void *data, const void *kwnw ) {
             nk[ i ] = 0xFF;
         return cst( len, data, nk );
     }
+
     // normalize data
     PI8 nd[ sb ];
     for( int i = 0; i < sb; ++i )
         nd[ i ] = reinterpret_cast<const PI8 *>( data )[ i ] & reinterpret_cast<const PI8 *>( kwnw )[ i ];
+
     // already created ?
     for( Cst *c : cst_list )
         if ( c->equal( len, nd, (PI8 *)kwnw ) )

@@ -30,6 +30,11 @@ Ip::Ip() :
     type_Type ._pod = 1;
     type_VarargsItemEnd._pod = 1;
 
+    #define DECL_BT( T ) type_##T._aryth = true;
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+
+
     #define DECL_BT( T ) type_##T.orig = &class_##T; class_##T.types << &type_##T;
     #include "DeclBaseClass.h"
     #undef DECL_BT

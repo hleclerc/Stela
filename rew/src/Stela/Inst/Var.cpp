@@ -1,6 +1,7 @@
 #include "SelectDep.h"
 #include "Syscall.h"
 #include "Room.h"
+#include "Conv.h"
 #include "Type.h"
 #include "Var.h"
 #include "Cst.h"
@@ -73,20 +74,21 @@ bool Var::defined() const {
 
 
 void Var::set_val( Var val ) {
-    if ( type == &ip->type_Error or val.type == &ip->type_Error)
+    if ( type == &ip->type_Error or val.type == &ip->type_Error )
         return;
     if ( not type ) {
         type = val.type;
         inst = val.inst;
         return;
     }
-    if ( type != val.type ) {
-        PRINT( *type );
-        PRINT( *val.type );
-        TODO;
+    if ( type != val.type or not type->pod() ) {
+        if ( type->_aryth and val.type->_aryth ) {
+            set_val( val.conv( type ) );
+            return;
+        }
+        ip->main_scope->apply( ip->main_scope->get_attr( *this, STRING_reassign_NUM ), 1, &val );
+        return;
     }
-    if ( not type->pod() )
-        TODO;
     set_val( val.get_val() );
 }
 
@@ -120,9 +122,10 @@ Var Var::at( Type *target_type ) {
     return Var( Ref(), target_type, res );
 }
 
-Var Var::conv( Type *type ) {
-    TODO;
-    return *this;
+Var Var::conv( Type *ntype ) {
+    if ( type == ntype )
+        return *this;
+    return Var( ntype, ::conv( ntype, type, get_val() ) );
 }
 
 Var Var::operator&&( Var b ) {

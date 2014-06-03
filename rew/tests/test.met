@@ -17,6 +17,10 @@ class SI32
 
 class SI64
     ___set_base_size_and_alig 64, 64
+    def init val
+        ___reassign_rec val
+    def reassign val
+        ___reassign_rec val
     
 class Type
     ptr := 0l
@@ -37,14 +41,36 @@ def sizeof T
 def aligof T
     ___alig_of T
     
+def add a, b
+    ___add a, b
+
 def mul a, b
     ___mul a, b
 
+class Ptr[ T ]
+    ptr := 0l
+    def init val : SI64
+        ptr = val
+    def reassign val : SI64
+        ptr = val
+
+def pointed_value ptr
+    ___pointed_value ptr, T
+        
 class Vec[ T, size ]
     ___set_base_size_and_alig size * sizeof( T ), aligof( T )
+    def select index
+        @Ptr[ T ]( this.ptr + index * sizeof( T ) )
+        
 
 t := Vec[ PI8, 5l ]()
-___disp sizeof Vec[ PI8, 5l ]
+t[ 0 ] = 1
+t[ 1 ] = 2
+t[ 2 ] = 3
+___info t[ 0 ]
+___disp t[ 0 ]
+___info t[ 1 ]
+___disp t[ 1 ]
 # t.v = 17
 # ___info a
 # ___info t

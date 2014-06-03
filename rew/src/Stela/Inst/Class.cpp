@@ -98,6 +98,11 @@ Var Class::TrialClass::call( int nu, Var *vu, int nn, int *names, Var *vn, int p
 }
 
 Var Class::const_or_copy( Var &var ) {
+    if ( var.type->orig == &ip->class_Callable ) {
+        Var i = ip->main_scope->apply( var, 0, 0, 0, 0, 0, Scope::APPLY_MODE_PARTIAL_INST );
+        Var v = ip->make_type_var( i.type );
+        return const_or_copy( v );
+    }
     if ( var.inst->flags & Inst::CONST )
         return var;
     Var res = ip->main_scope->copy( var );
@@ -113,6 +118,8 @@ Type *Class::type_for( Vec<Var> &args ) {
     for( int i = 0; i < args.size(); ++i )
         res->parameters << const_or_copy( args[ i ] );
     res->orig = this;
+
+    types << res;
     return res;
 }
 
