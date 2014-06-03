@@ -1,17 +1,20 @@
 # def reassign a, b
     # ___reassign_rec a, b
     
+class PI8
+    ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec val
+    def reassign val
+        ___reassign_rec val
+    
 class SI32
     ___set_base_size_and_alig 32, 32
     def init val
         ___reassign_rec val
-    def toto
-        tata()
-    def tata
-        19
     def reassign val
         ___reassign_rec val
-    
+
 class SI64
     ___set_base_size_and_alig 64, 64
     
@@ -28,16 +31,20 @@ class Void
     
 void := Void()
     
+def sizeof T
+    ___size_of T
 
-class Toto[ y, z ]
-    u := y
-    v := 100
+def aligof T
+    ___alig_of T
+    
+def mul a, b
+    ___mul a, b
 
-a := 4
-t := Toto[ a, z = 10l ]()
-a = 5
-___disp t.y
-t.y = 7
+class Vec[ T, size ]
+    ___set_base_size_and_alig size * sizeof( T ), aligof( T )
+
+t := Vec[ PI8, 5l ]()
+___disp sizeof Vec[ PI8, 5l ]
 # t.v = 17
 # ___info a
 # ___info t

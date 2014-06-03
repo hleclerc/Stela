@@ -143,13 +143,18 @@ Var Ip::make_type_var( Type *type ) {
 }
 
 Type *Ip::type_from_type_var( Var var ) {
-    if ( var.type != &ip->type_Type )
-        return 0;
-    SI64 p;
-    Expr v = var.get_val();
-    if ( not v->get_val( p ) )
-        return 0;
-    return reinterpret_cast<Type *>( ST( p ) );
+    if ( var.type == &ip->type_Type ) {
+        SI64 p;
+        Expr v = var.get_val();
+        if ( not v->get_val( p ) )
+            return 0;
+        return reinterpret_cast<Type *>( ST( p ) );
+    }
+    if ( var.type->orig == &ip->class_Callable ) {
+        Var r = main_scope->apply( var, 0, 0, 0, 0, 0, Scope::APPLY_MODE_PARTIAL_INST ); // partial_instanciation
+        return r.type;
+    }
+    return 0;
 }
 
 bool Ip::ext_method( Var m ) {
@@ -228,6 +233,7 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     lt << make_type_var( &type_Void );
     Type *type = class_Callable.type_for( lt );
     type->_len = 2 * type_ST->size();
+    type->_pod = 1;
 
     // data
     SI64 d = 0;

@@ -5,6 +5,7 @@ make_class.met
 bin/generation.py
 src/args.h
 src/Stela/Inst/Store.h
+src/Stela/Inst/CallableData.h
 src/Stela/Inst/Ip.h
 src/Stela/Inst/Codegen.h
 src/Stela/Inst/Slice.h
@@ -16,6 +17,7 @@ src/Stela/Inst/Var.h
 src/Stela/Inst/OutReg.h
 src/Stela/Inst/InstInfo_C.h
 src/Stela/Inst/DeclOp_Unary.h
+src/Stela/Inst/Callable.h
 src/Stela/Inst/Symbol.h
 src/Stela/Inst/Sourcefile.h
 src/Stela/Inst/BoolOpSeq.h
@@ -24,11 +26,18 @@ src/Stela/Inst/Op.h
 src/Stela/Inst/ValAt.h
 src/Stela/Inst/InstBoolOpSeq.h
 src/Stela/Inst/Syscall.h
+src/Stela/Inst/DeclParmClass.h
 src/Stela/Inst/Scope.h
+src/Stela/Inst/DeclBaseClass.h
 src/Stela/Inst/Select.h
+src/Stela/Inst/Def.h
 src/Stela/Inst/FillAt.h
 src/Stela/Inst/CppOperatorPrecedence.h
+src/Stela/Inst/DeclOp_Binary_Oper.h
+src/Stela/Inst/DeclArytTypes.h
 src/Stela/Inst/Save.h
+src/Stela/Inst/Class.h
+src/Stela/Inst/DeclOp_Binary_Func.h
 src/Stela/Inst/Expr.h
 src/Stela/Inst/Cst.h
 src/Stela/Inst/Inst.h
@@ -87,7 +96,9 @@ src/Stela/System/Assert.h
 src/Stela/System/ErrorList.h
 src/stela.cpp
 src/Stela/Inst/Sourcefile.cpp
+src/Stela/Inst/Class.cpp
 src/Stela/Inst/InstBoolOpSeq.cpp
+src/Stela/Inst/Callable.cpp
 src/Stela/Inst/Room.cpp
 src/Stela/Inst/Slice.cpp
 src/Stela/Inst/Codegen.cpp
@@ -104,6 +115,7 @@ src/Stela/Inst/Select.cpp
 src/Stela/Inst/SelectDep.cpp
 src/Stela/Inst/Codegen_C.cpp
 src/Stela/Inst/BoolOpSeq.cpp
+src/Stela/Inst/Def.cpp
 src/Stela/Inst/Cst.cpp
 src/Stela/Inst/OutReg.cpp
 src/Stela/Inst/Syscall.cpp
@@ -128,10 +140,6 @@ src/Stela/System/BinStreamReader.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Inst.cpp
 tests/test.met
-src/Stela/Inst/CallableData.h
-src/Stela/Inst/Class.h
-src/Stela/Inst/Class.cpp
-src/Stela/Inst/Callable.h
-src/Stela/Inst/Callable.cpp
-src/Stela/Inst/Def.h
-src/Stela/Inst/Def.cpp
+src/Stela/Inst/Conv.h
+src/Stela/Inst/Conv.cpp
+src/Stela/Inst/TypePromoteInt.h

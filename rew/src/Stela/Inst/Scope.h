@@ -50,6 +50,7 @@ protected:
     friend class Class;
     friend class Type;
     friend class Def;
+    friend class Ip;
 
     int  read_nstring( BinStreamReader &bin );
     Var  reg_var( int name, Var var, bool static_scope = false );
@@ -62,6 +63,10 @@ protected:
     Var  get_attr_rec( Var self, int name );
     void get_attr_rec( Vec<Var> &res, Var self, int name );
     Var copy( Var &var );
+
+    template<class OP> Var parse_una( BinStreamReader bin, OP op );
+    template<class OP> Var parse_bin( BinStreamReader bin, OP op );
+    template<class OP> Type *type_promote( Type *ta, Type *tb, OP op );
 
     #define DECL_IR_TOK( N ) Var parse_##N( BinStreamReader bin );
     #include "../Ir/Decl.h"

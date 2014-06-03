@@ -604,7 +604,6 @@ Var Scope::parse_PI32( BinStreamReader bin ) {
 }
 Var Scope::parse_SI64( BinStreamReader bin ) {
     SI64 data = bin.read_positive_integer();
-    PRINT( data );
     return Var( &ip->type_SI64, cst( 64, (PI8 *)&data ) );
 }
 Var Scope::parse_PI64( BinStreamReader bin ) {
@@ -891,8 +890,11 @@ Var Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
     Var b = parse( bin.read_offset() );
     if ( a.type == &ip->type_Error or b.type == &ip->type_Error )
         return ip->void_var();
-    if ( not a.get_val( base_size ) or not b.get_val( base_alig ) )
-        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 types only" );
+    if ( not a.get_val( base_size ) or not b.get_val( base_alig ) ) {
+        PRINT( a );
+        PRINT( b );
+        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 known values" );
+    }
     return ip->void_var();
 }
 Var Scope::parse_set_RawRef_dependancy( BinStreamReader bin ) {
@@ -935,12 +937,18 @@ Var Scope::parse_ptr_alig( BinStreamReader bin ) {
     return ip->error_var();
 }
 Var Scope::parse_size_of( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 1 );
+    Var T = parse( bin.read_offset() );
+    if ( Type *t = ip->type_from_type_var( T ) )
+        return Var( ip->type_ST, cst( ST( t->size() ) ) );
+    return ip->ret_error( "Expecting a type variable" );
 }
 Var Scope::parse_alig_of( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 1 );
+    Var T = parse( bin.read_offset() );
+    if ( Type *t = ip->type_from_type_var( T ) )
+        return Var( ip->type_ST, cst( ST( t->alig() ) ) );
+    return ip->ret_error( "Expecting a type variable" );
 }
 Var Scope::parse_typeof( BinStreamReader bin ) {
     TODO;
@@ -983,7 +991,36 @@ Var Scope::parse_inst_of( BinStreamReader bin ) {
     return ip->error_var();
 }
 
-#define DECL_IR_TOK( N ) Var Scope::parse_##N( BinStreamReader bin ) { std::cout << #N << std::endl; return ip->error_var(); }
+template<class OP>
+Type *Scope::type_promote( Type *ta, Type *tb, OP ) {
+    if ( OP::b )
+        return &ip->type_Bool;
+    if ( ta == tb )
+        return ta;
+    TODO;
+    return 0;
+}
+
+template<class OP>
+Var Scope::parse_una( BinStreamReader bin, OP o ) {
+    CHECK_PRIM_ARGS( 1 );
+    TODO;
+    return Var();
+}
+
+template<class OP>
+Var Scope::parse_bin( BinStreamReader bin, OP o ) {
+    CHECK_PRIM_ARGS( 2 );
+    Var a = parse( bin.read_offset() );
+    Var b = parse( bin.read_offset() );
+    Type *tr = type_promote( a.type, b.type, o );
+    return Var( tr, op( tr, a.type, a.get_val(), b.type, b.get_val(), o ) );
+}
+
+#define DECL_IR_TOK( N ) Var Scope::parse_##N( BinStreamReader bin ) { return parse_una( bin, Op_##N() ); }
 #include "../Ir/Decl_UnaryOperations.h"
+#undef DECL_IR_TOK
+
+#define DECL_IR_TOK( N ) Var Scope::parse_##N( BinStreamReader bin ) { return parse_bin( bin, Op_##N() ); }
 #include "../Ir/Decl_BinaryOperations.h"
 #undef DECL_IR_TOK

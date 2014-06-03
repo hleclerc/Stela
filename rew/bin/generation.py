@@ -421,7 +421,7 @@ def make_primitive_inc():
 operators = Operators()
 
 unary_bool_operations = string.split( """
-    not
+    not_boolean
 """ )
 
 unary_homo_operations = string.split( """
@@ -434,8 +434,8 @@ unary_operations = unary_bool_operations + unary_homo_operations
 # conv
 
 binary_bool_operations = string.split( """
-    or
-    and
+    or_boolean
+    and_boolean
 
     equ
     neq

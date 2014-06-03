@@ -46,6 +46,12 @@ int Type::size() const {
     return _len;
 }
 
+int Type::alig() const {
+    if ( _ali < 0 )
+        parse();
+    return _ali;
+}
+
 void Type::parse() const {
     if ( _parsed )
         return;

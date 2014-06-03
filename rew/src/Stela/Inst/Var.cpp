@@ -39,7 +39,9 @@ Expr Var::get_val() {
 }
 
 bool Var::get_val( SI32 &val ) {
-    return get_val()->get_val( val, type );
+    if ( Expr e = get_val() )
+        return e->get_val( val, type );
+    return false;
 }
 
 bool Var::always( Bool val ) {

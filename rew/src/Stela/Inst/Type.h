@@ -29,6 +29,7 @@ public:
 
     int pod() const;
     int size() const;
+    int alig() const;
     virtual void parse() const;
     const Attr *find_attr( int name ) const;
     void find_attr( Vec<const Attr *> &res, int name );

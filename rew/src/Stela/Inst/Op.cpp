@@ -1,13 +1,16 @@
 #include "../System/SameType.h"
+#include "TypePromoteInt.h"
 #include "InstBoolOpSeq.h"
 #include "InstInfo_C.h"
 #include "BoolOpSeq.h"
 #include "FillAt.h"
 #include "Slice.h"
 #include "Type.h"
+#include "Conv.h"
 #include "Cst.h"
 #include "Op.h"
 #include "Ip.h"
+#include <math.h>
 
 /**
 */
@@ -127,9 +130,61 @@ Expr _op_simplication( Type *tr, Type *ta, Expr a, Type *tb, Expr b, Op_add ) {
     return 0;
 }
 
+template<class T1,class T2>
+bool my_xor( T1 a, T2 b ) {
+    return bool( a ) ^ bool( b );
+}
+
+template<class T1,class T2> typename TypePromoteInt<T1,T2>::T my_mod( T1 a, T2 b ) { return a % b; }
+template<class T1> FP32 my_mod( T1 a, FP32 b ) { return fmod( a, b ); }
+template<class T1> FP64 my_mod( T1 a, FP64 b ) { return fmod( a, b ); }
+template<class T2> FP32 my_mod( FP32 a, T2 b ) { return fmod( a, b ); }
+template<class T2> FP64 my_mod( FP64 a, T2 b ) { return fmod( a, b ); }
+FP32 my_mod( FP32 a, FP32 b ) { return fmod( a, b ); }
+FP64 my_mod( FP32 a, FP64 b ) { return fmod( a, b ); }
+FP64 my_mod( FP64 a, FP32 b ) { return fmod( a, b ); }
+FP64 my_mod( FP64 a, FP64 b ) { return fmod( a, b ); }
+
+
+#define DECL_BT( TR ) Expr _conv( Type *tr, const TR &v ) { return conv( tr, &ip->type_##TR, cst( v ) ); }
+#include "DeclArytTypes.h"
+#undef DECL_BT
+
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    template<class TA,class TB> \
+    Expr _op_cst( Type *tr, TA *da, TB *db, Op_##NAME ) { return _conv( tr, *da GEN *db ); }
+#include "DeclOp_Binary_Oper.h"
+#undef DECL_OP
+
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    template<class TA,class TB> \
+    Expr _op_cst( Type *tr, TA *da, TB *db, Op_##NAME ) { return _conv( tr, GEN( *da, *db ) ); }
+#include "DeclOp_Binary_Func.h"
+#undef DECL_OP
+
+
+template<class TA,class OP>
+Expr _op_cst( Type *tr, TA *da, Type *tb, PI8 *db, OP op ) {
+    #define DECL_BT( T ) if ( tb == &ip->type_##T ) return _op_cst( tr, da, reinterpret_cast<T *>( db ), op );
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+    return Expr();
+}
+
 //
 template<class OP>
 Expr _op( Type *tr, Type *ta, Expr a, Type *tb, Expr b, OP op ) {
+    // cst op cst ?
+    PI8 da[ ( ta->size() + 7 ) / 8 ];
+    PI8 db[ ( ta->size() + 7 ) / 8 ];
+    if ( a->get_val( da, ta->size() ) and b->get_val( db, tb->size() ) ) {
+        #define DECL_BT( T ) if ( ta == &ip->type_##T ) if ( Expr res = _op_cst( tr, reinterpret_cast<T *>( da ), tb, db, op ) ) return res;
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+    }
+
+
+    // specialized simplifications
     if ( Expr res = _op_simplication( tr, ta, a, tb, b, op ) )
         return res;
 
