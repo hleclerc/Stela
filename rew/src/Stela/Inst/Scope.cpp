@@ -978,8 +978,9 @@ Var Scope::parse_pointed_value( BinStreamReader bin ) {
     return a.at( type );
 }
 Var Scope::parse_pointer_on( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 1 );
+    Var a = parse( bin.read_offset() );
+    return a.ptr();
 }
 Var Scope::parse_block_exec( BinStreamReader bin ) {
     TODO;

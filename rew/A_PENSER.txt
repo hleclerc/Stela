@@ -1,1 +1,3 @@
 * Callable[ ..., VarargsItemEnd plutôt que Void ]
+* ne pas utiliser le to_string( *type ) pour déterminer le scope statique (deux val != peuvent avoir la même repr)
+

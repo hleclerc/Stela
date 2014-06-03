@@ -62,15 +62,18 @@ class Vec[ T, size ]
     def select index
         @Ptr[ T ]( this.ptr + index * sizeof( T ) )
         
+def write data, size
+    ___syscall SI64( 1 ), SI64( 0 ), data, SI64( size )
 
+def pointer_on val
+    ___pointer_on val
+    
 t := Vec[ PI8, 5l ]()
-t[ 0 ] = 1
-t[ 1 ] = 2
-t[ 2 ] = 3
-___info t[ 0 ]
-___disp t[ 0 ]
-___info t[ 1 ]
-___disp t[ 1 ]
+t[ 0 ] = 54
+t[ 1 ] = 70
+t[ 2 ] = 75
+write &t, 3
+
 # t.v = 17
 # ___info a
 # ___info t
@@ -80,4 +83,4 @@ ___disp t[ 1 ]
 # ___disp t.u
 # ___disp t.v
 # a = 10
-# ___syscall a.toto()
+# 

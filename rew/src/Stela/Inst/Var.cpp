@@ -69,7 +69,7 @@ bool Var::is_an_error() const {
 }
 
 bool Var::defined() const {
-    return type;
+    return type and inst;
 }
 
 

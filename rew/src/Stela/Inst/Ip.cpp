@@ -22,8 +22,8 @@ Ip::Ip() :
 
     type_Type ._len = 64; // ptr to Type
 
-    type_Def  ._len = 8 * sizeof( CallableData );
-    type_Class._len = 8 * sizeof( CallableData );
+    type_Def  ._len = type_ST->size();
+    type_Class._len = type_ST->size();
 
     type_SI64 ._pod = 1;
     type_SI32 ._pod = 1;
@@ -243,9 +243,9 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     // data
     SI64 d = 0;
     Var res( type );
-    if ( self.defined() )
+    if ( self.defined() ) {
         res.set_val( 0 * type_ST->size(), self.ptr() );
-    else
+    } else
         res.set_val( 0 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
     res.set_val( 1 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
     return res;

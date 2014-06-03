@@ -34,8 +34,8 @@ Expr _conv( Type *dst, const TS &val ) {
 Expr conv( Type *dst, Type *src, Expr val ) {
     if ( dst == src )
         return val;
-    PI8 d[ dst->size_in_bytes() ];
-    if ( dst->_aryth and src->_aryth and val->get_val( d, dst->size() ) ) {
+    PI8 d[ src->size_in_bytes() ];
+    if ( dst->_aryth and src->_aryth and val->get_val( d, src->size() ) ) {
         #define DECL_BT( TR ) if ( src == &ip->type_##TR ) return _conv( dst, *reinterpret_cast<TR *>( d ) );
         #include "DeclArytTypes.h"
         #undef DECL_BT

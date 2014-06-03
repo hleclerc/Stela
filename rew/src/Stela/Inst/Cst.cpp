@@ -1,4 +1,5 @@
 #include "../System/Memcpy.h"
+#include "Codegen_C.h"
 #include "BoolOpSeq.h"
 #include "Cst.h"
 
@@ -88,6 +89,10 @@ public:
     }
     virtual bool going_to_write_c_code() {
         return false;
+    }
+    virtual void write_to( Codegen_C *cc, int prec ) {
+        if ( prec >= 0 )
+            *cc->os << "pouet";
     }
     virtual BoolOpSeq get_BoolOpSeq() {
         return BoolOpSeq( len ? data[ 0 ] : false );
