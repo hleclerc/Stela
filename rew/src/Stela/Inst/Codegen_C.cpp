@@ -31,6 +31,8 @@ void Codegen_C::write_to( Stream &out ) {
 
 
     //
+    out << "#include <unistd.h>\n";
+    out << "#pragma cpp_flag -std=c++11\n";
     out << "int main() {\n";
 
     // out_regs

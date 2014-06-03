@@ -1,7 +1,9 @@
 #include "../System/Memcpy.h"
-#include "Codegen_C.h"
+#include "InstInfo_C.h"
 #include "BoolOpSeq.h"
+#include "Type.h"
 #include "Cst.h"
+#include "Ip.h"
 
 class Cst;
 static Vec<Cst *> cst_list;
@@ -91,8 +93,28 @@ public:
         return false;
     }
     virtual void write_to( Codegen_C *cc, int prec ) {
-        if ( prec >= 0 )
-            *cc->os << "pouet";
+        if ( prec < 0 )
+            return;
+        if ( IIC( this )->out_type == &ip->type_Bool ) *cc->os << ( *d() ? "true" : "false" );
+        else if ( IIC( this )->out_type == &ip->type_SI8  ) *cc->os << "SI8( "  << int( *reinterpret_cast<const SI8  *>( d() ) ) << " )";
+        else if ( IIC( this )->out_type == &ip->type_PI8  ) *cc->os << "PI8( "  << int( *reinterpret_cast<const PI8  *>( d() ) ) << " )";
+        else if ( IIC( this )->out_type == &ip->type_SI16 ) *cc->os << "SI16( " << int( *reinterpret_cast<const SI16 *>( d() ) ) << " )";
+        else if ( IIC( this )->out_type == &ip->type_PI16 ) *cc->os << "PI16( " << int( *reinterpret_cast<const PI16 *>( d() ) ) << " )";
+        else if ( IIC( this )->out_type == &ip->type_SI32 ) *cc->os << *reinterpret_cast<const SI32 *>( d() );
+        else if ( IIC( this )->out_type == &ip->type_PI32 ) *cc->os << *reinterpret_cast<const PI32 *>( d() ) << "u";
+        else if ( IIC( this )->out_type == &ip->type_SI64 ) *cc->os << *reinterpret_cast<const SI64 *>( d() ) << "l";
+        else if ( IIC( this )->out_type == &ip->type_PI64 ) *cc->os << *reinterpret_cast<const PI64 *>( d() ) << "lu";
+        else if ( IIC( this )->out_type == &ip->type_FP32 ) *cc->os << std::scientific << *reinterpret_cast<const FP32 *>( d() );
+        else if ( IIC( this )->out_type == &ip->type_FP64 ) *cc->os << std::scientific << *reinterpret_cast<const FP64 *>( d() );
+        else {
+            *cc->os << *IIC( this )->out_type << "{ ";
+            for( int i = 0; i < sb(); ++i ) {
+                if ( i )
+                    *cc->os << ", ";
+                *cc->os << int( d()[ i ] );
+            }
+            *cc->os << " }";
+        }
     }
     virtual BoolOpSeq get_BoolOpSeq() {
         return BoolOpSeq( len ? data[ 0 ] : false );
