@@ -1,4 +1,5 @@
 #include "InstInfo_C.h"
+#include "IpSnapshot.h"
 #include "Select.h"
 #include "FillAt.h"
 #include "Store.h"
@@ -13,10 +14,10 @@ static int nb_rooms = 0; ///< for the display
 */
 class Room : public Inst {
 public:
-    Room( int len, Expr val ) : val( val ), len( len ) {
+    Room( int len, Expr val ) : date( IpSnapshot::cur_date ), val( val ), len( len ) {
         num = nb_rooms++;
     }
-    Room( int len ) : val( cst( len, 0 ) ), len( len ) {
+    Room( int len ) : date( IpSnapshot::cur_date ), val( cst( len, 0 ) ), len( len ) {
         num = nb_rooms++;
     }
     virtual void write_dot( Stream &os ) const {
@@ -39,6 +40,12 @@ public:
     virtual void _set_val( Expr val, int len ) {
         if ( flags & CONST )
             return ip->disp_error( "attempting to modify a const value" );
+        for( IpSnapshot *is : ip->snapshots ) {
+            if ( date >= is->date ) {
+                if ( not is->changed.count( this ) )
+                    is->changed[ this ] = this->val;
+            }
+        }
         if ( this->len != len ) {
             Expr n = fill_at( simplified( this->val ), simplified( val ), &ip->type_SI32, cst( 0 ) );
             if ( ip->cond_stack.size() )
@@ -68,8 +75,6 @@ public:
         future_dep << fut;
     }
     virtual void write_to( Codegen_C *cc, int prec ) {
-        //        if ( prec < 0 )
-        //            cc->on << *IIC( this )->val_type << " " << *( IIC( this )->out_reg = cc->new_out_reg( IIC( this )->out_type ) ) << ";";
         IIC( this )->out_reg = cc->new_out_reg( IIC( this )->val_type );
     }
     virtual void write_to( Codegen_C *cc, int prec, OutReg *out_reg ) {
@@ -86,6 +91,7 @@ public:
     }
 
     Vec<Expr> future_dep;
+    PI64 date;
     Expr val;
     int  len;
     int  num; ///< for the display

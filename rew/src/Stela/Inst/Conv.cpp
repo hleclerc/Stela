@@ -1,3 +1,4 @@
+#include "InstInfo_C.h"
 #include "Type.h"
 #include "Conv.h"
 #include "Cst.h"
@@ -16,6 +17,12 @@ public:
     }
     virtual int size() const {
         return dst->size();
+    }
+    virtual void write_to( Codegen_C *cc, int prec ) {
+        if ( prec >= 0 ) {
+            cc->add_type( dst );
+            *cc->os << *dst << "( " << cc->code( inp[ 0 ] ) << " )";
+        }
     }
 
     Type *dst;

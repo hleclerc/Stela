@@ -1,6 +1,13 @@
 # def reassign a, b
     # ___reassign_rec a, b
     
+class Bool
+    ___set_base_size_and_alig 1, 1
+    def init val
+        ___reassign_rec val
+    def reassign val
+        ___reassign_rec val
+    
 class PI8
     ___set_base_size_and_alig 8, 8
     def init val
@@ -47,6 +54,18 @@ def add a, b
 def mul a, b
     ___mul a, b
 
+def mod a, b
+    ___mod a, b
+
+def inferior a, b
+    ___inf a, b
+
+def superior a, b
+    ___sup a, b
+
+def not_boolean a
+    ___not_boolean a
+
 class Ptr[ T ]
     ptr := 0l
     def init val : SI64
@@ -69,10 +88,12 @@ def pointer_on val
     ___pointer_on val
     
 t := Vec[ PI8, 5l ]()
-t[ 0 ] = 54
-t[ 1 ] = 70
-t[ 2 ] = 75
-write &t, 3
+
+a := 0
+while a < 5
+    t[ a ] = 70 + a
+    a = a + 1
+write &t, 5
 
 # t.v = 17
 # ___info a

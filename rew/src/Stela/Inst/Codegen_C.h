@@ -5,6 +5,7 @@
 #include "../System/StreamSep.h"
 #include "Codegen.h"
 #include "OutReg.h"
+#include <set>
 struct CBlockAsm;
 struct OutReg;
 
@@ -26,6 +27,9 @@ public:
 
     C_Code code( Expr inst, int prec = 0 );
     OutReg *new_out_reg( Type *type );
+    void add_include( String name );
+    void add_prel( String data );
+    void add_type( Type *type );
 
     StreamSepMaker<std::ostringstream> on;
     std::ostringstream main_os;
@@ -35,6 +39,9 @@ public:
     bool disp_inst_graph_wo_phi;
 protected:
     SplittedVec<OutReg,32> out_regs;
+    std::set<String> includes;
+    Vec<String> preliminaries;
+    std::set<Type *> types;
     int new_num_reg();
 
     void make_code();

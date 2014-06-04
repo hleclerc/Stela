@@ -75,6 +75,16 @@ void Inst::clear_children() {
     ext.resize( 0 );
 }
 
+void Inst::mark_children() {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+    for( Expr &e : inp )
+        e->mark_children();
+    for( Expr &e : ext )
+        e->mark_children();
+}
+
 void Inst::clone( Vec<Expr> &created ) const {
     if ( op_id == cur_op_id )
         return;

@@ -45,6 +45,7 @@ public:
     void clear_children(); ///< remove inp and dep
     void rem_ref_to_this(); ///< remove inp and dep
 
+    void mark_children();
     virtual void clone( Vec<Expr> &created ) const;
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
 

@@ -106,8 +106,12 @@ Var Ip::void_var() {
 }
 
 Type *Ip::artificial_type_for_size( int size ) {
-    if ( size == 0 ) return &type_Void;
-    if ( size == 1 ) return &type_Bool;
+    if ( size == 0  ) return &type_Void;
+    if ( size == 1  ) return &type_Bool;
+    if ( size == 8  ) return &type_PI8 ;
+    if ( size == 16 ) return &type_PI16;
+    if ( size == 32 ) return &type_PI32;
+    if ( size == 64 ) return &type_PI64;
     auto iter = art_types.find( size );
     if ( iter != art_types.end() )
         return &iter->second;

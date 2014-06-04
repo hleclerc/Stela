@@ -2,6 +2,7 @@
 #define BOOLOPSEQ_H
 
 #include "Inst.h"
+class Codegen_C;
 class Expr;
 
 /**
@@ -21,6 +22,7 @@ public:
     BoolOpSeq( Expr expr, bool pos );
     BoolOpSeq( bool pos = true );
 
+    void write_to_stream( Codegen_C *cc, Stream &os, int prec ) const;
     void write_to_stream( Stream &os ) const;
     BoolOpSeq &simplify();
 

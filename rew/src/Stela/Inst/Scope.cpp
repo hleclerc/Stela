@@ -4,7 +4,9 @@
 #include "../System/RaiiSave.h"
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
+#include "UnknownInst.h"
 #include "Sourcefile.h"
+#include "IpSnapshot.h"
 #include <algorithm>
 #include "Symbol.h"
 #include "Select.h"
@@ -742,10 +744,9 @@ Var Scope::parse_IF( BinStreamReader bin ) {
 
     // bool conversion
     if ( cond.type != &ip->type_Bool ) {
-        TODO;
-        //        cond = apply( find_var( STRING_Bool_NUM ), 1, &cond, 0, 0, 0, APPLY_MODE_STD, sf, off );
-        //        if ( ip->isa_Error( cond ) )
-        //            return cond;
+        cond = apply( find_var( STRING_Bool_NUM ), 1, &cond );
+        if ( cond.type == &ip->type_Error )
+            return cond;
     }
 
     // simplified expression
@@ -792,16 +793,131 @@ Var Scope::parse_IF( BinStreamReader bin ) {
 }
 
 Var Scope::parse_WHILE( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    const PI8 *tok = bin.read_offset();
+
+    // stop condition
+    // created before nsv_date because we want to use set(...) to update it
+    // nevertheless, for each iteration where unknown are added, it has to start at true
+    Var cont_var( &ip->type_Bool, cst( true ) );
+
+    IpSnapshot nsv;
+    ip->snapshots << &nsv;
+
+    // we repeat until there are no external modified values
+    int ne = ip->error_list.size();
+    std::map<Expr,Expr> unknowns;
+    for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.changed.size(), ++cpt ) {
+        if ( cpt == 100 )
+            return ip->ret_error( "infinite loop during while parse" );
+
+        Scope wh_scope( this, "while_" + to_string( ip->off ) );
+        wh_scope.cont = cont_var;
+        wh_scope.parse( tok );
+
+        if ( ne != ip->error_list.size() )
+            return ip->error_var();
+
+        // if no new modified variables
+        if ( old_nsv_size == nsv.changed.size() )
+            break;
+
+        // replace each modified variable to Unknown variables
+        // (to avoid simplifications during the next round)
+        auto rs = raii_save( ip->snapshots );
+        ip->snapshots.resize( 0 );
+
+        for( auto &it : nsv.changed ) {
+            Expr pref = it.first;
+            if ( pref == cont_var.get_val() ) {
+                pref->_set_val( cst( true ), 1 );
+            } else {
+                Expr unk = unknown_inst( it.second->size(), cpt );
+                unknowns[ it.first ] = unk;
+                pref->_set_val( unk, unk->size() );
+            }
+        }
+    }
+
+    // extract the cont_var from nsv (we don't want to output it twice)
+    nsv.changed.erase( cont_var.inst );
+
+    // corr table (output number -> input number)
+    // -> mark the children of output variables to find precomputed variables (i.e. that do not depend on the unknowns)
+    ++Inst::cur_op_id;
+    for( auto it : nsv.changed )
+        it.first->_get_val()->mark_children();
+    int cpt = 0;
+    Vec<int> corr;
+    Vec<int> inp_sizes;
+    for( auto it : nsv.changed ) {
+        //
+        if ( unknowns[ it.first ]->op_id == Inst::cur_op_id ) {
+            corr << cpt++;
+            inp_sizes << it.second->size_in_bits();
+        } else
+            corr << -1;
+    }
+    PRINT( corr );
+
+//    // prepare a while inp (for initial values of variables modified in the loop)
+//    // and set cont_var to true (initial condition)
+//    Inst *winp = while_inp( inp_sizes );
+
+//    cpt = 0;
+//    for( auto &it : nsv ) {
+//        PRef *pref = const_cast<PRef *>( it.first.ptr() );
+//        int num_inp = corr[ cpt++ ];
+//        if ( num_inp >= 0 )
+//            pref->ptr = new RefExpr( Expr( winp, num_inp ) );
+//        else
+//            pref->ptr = it.second;
+//    }
+
+//    cont_var.data->ptr = new RefExpr( cst( true ) );
+
+//    // relaunch the while inst
+//    Scope wh_scope( this );
+//    wh_scope.cont = cont_var;
+//    wh_scope.parse( sf, tok );
+
+//    // make the while instruction
+//    Vec<Expr> out_exprs;
+//    for( auto it : nsv )
+//        out_exprs << simplified_expr( *it.first, sf, off );
+//    out_exprs << simplified_expr( cont_var.expr(), sf, off );
+//    Inst *wout = while_out( out_exprs );
+
+//    cpt = 0;
+//    Vec<Expr> inp_exprs;
+//    for( auto it : nsv )
+//        if ( corr[ cpt++ ] >= 0 )
+//            inp_exprs << simplified_expr( it.second->expr(), sf, off );
+//    Inst *wins = while_inst( inp_exprs, winp, wout, corr );
+
+//    // replace changed variable by while_inst outputs
+//    cpt = 0;
+//    for( auto it : nsv ) {
+//        Ptr<PRef> pref = it.first;
+//        Var dst( &ip->type_Void, pref );
+//        set( dst, Var( &ip->type_Void, Expr( wins, cpt++ ) ), sf, off );
+//        // pref->ptr = new RefExpr( Expr( wins, cpt++ ) );
+//    }
+
+//    // break(s) to transmit ?
+//    for( RemBreak rb : wh_scope.rem_breaks )
+//        BREAK( rb.count, sf, off, rb.cond );
+
+
+    ip->snapshots.pop_back();
+    return ip->void_var();
 }
 Var Scope::parse_BREAK( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    ip->disp_error( "break", true );
+    return ip->void_var();
 }
 Var Scope::parse_CONTINUE( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    ip->disp_error( "continue", true );
+    return ip->void_var();
 }
 Var Scope::parse_FALSE( BinStreamReader bin ) {
     Bool val = false;
@@ -874,7 +990,7 @@ Var Scope::parse_disp( BinStreamReader bin ) {
     return ip->void_var();
 }
 Var Scope::parse_rand( BinStreamReader bin ) {
-    return Var( &ip->type_Bool, symbol( "rand", 1 ) );
+    return Var( &ip->type_Bool, symbol( "rand()", 1 ) );
 }
 Var Scope::parse_syscall( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
@@ -1004,6 +1120,13 @@ Var Scope::parse_inst_of( BinStreamReader bin ) {
 }
 
 template<class OP>
+Type *Scope::type_promote( Type *ta, OP ) {
+    if ( OP::b )
+        return &ip->type_Bool;
+    return ta;
+}
+
+template<class OP>
 Type *Scope::type_promote( Type *ta, Type *tb, OP ) {
     if ( OP::b )
         return &ip->type_Bool;
@@ -1011,6 +1134,8 @@ Type *Scope::type_promote( Type *ta, Type *tb, OP ) {
         return ta;
     if ( ta == &ip->type_SI32 and tb == &ip->type_SI64 ) return &ip->type_SI64;
     if ( ta == &ip->type_SI64 and tb == &ip->type_SI32 ) return &ip->type_SI64;
+    if ( ta == &ip->type_Bool ) return tb;
+    if ( tb == &ip->type_Bool ) return ta;
     TODO;
     return 0;
 }
@@ -1018,8 +1143,9 @@ Type *Scope::type_promote( Type *ta, Type *tb, OP ) {
 template<class OP>
 Var Scope::parse_una( BinStreamReader bin, OP o ) {
     CHECK_PRIM_ARGS( 1 );
-    TODO;
-    return Var();
+    Var a = parse( bin.read_offset() );
+    Type *tr = type_promote( a.type, o );
+    return Var( tr, op( tr, a.type, a.get_val(), o ) );
 }
 
 template<class OP>

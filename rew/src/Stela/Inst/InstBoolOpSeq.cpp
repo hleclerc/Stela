@@ -1,4 +1,5 @@
 #include "InstBoolOpSeq.h"
+#include "InstInfo_C.h"
 #include "Op.h"
 #include "Ip.h"
 #include <map>

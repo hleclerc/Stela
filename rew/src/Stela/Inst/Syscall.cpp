@@ -19,6 +19,8 @@ public:
         return this;
     }
     virtual void write_to( Codegen_C *cc, int prec ) {
+        cc->add_include( "<unistd.h>" );
+
         cc->on.write_beg() <<  "syscall( " ;
         for( int i = 0; i < inp.size(); ++i ) {
             if ( i )

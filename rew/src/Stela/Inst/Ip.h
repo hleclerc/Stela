@@ -10,6 +10,8 @@
 #include "Type.h"
 #include "Var.h"
 #include <map>
+class IpSnapshot;
+
 
 /**
 */
@@ -81,6 +83,8 @@ public:
 
     Vec<String>    inc_paths;
     AutoPtr<Scope> main_scope;
+
+    Vec<IpSnapshot *> snapshots;
 
     int off;        ///< current offset in sourcefile
     SourceFile *sf; ///< current sourcefile

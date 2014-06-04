@@ -70,8 +70,25 @@ public:
             }
             if ( T::prec <= prec )
                 *cc->os << ")";
-        } else
-            TODO;
+        } else {
+            if ( SameType<T,Op_mod>::res ) {
+                if ( tr == &ip->type_FP32 or tr == &ip->type_FP64 ) {
+                    cc->add_include( "<math.h>" );
+                    *cc->os << "fmod";
+                } else {
+                    if ( T::prec <= prec ) *cc->os << "(";
+                    *cc->os << cc->code( inp[ 0 ], T::prec ) << " % " << cc->code( inp[ 1 ], T::prec );
+                    if ( T::prec <= prec ) *cc->os << ")";
+                    return;
+                }
+            } else
+                T().write_oper( *cc->os );
+
+            *cc->os << "( " << cc->code( inp[ 0 ], T::prec );
+            if ( T::n == 2 )
+                *cc->os << ", " << cc->code( inp[ 1 ], T::prec );
+            *cc->os << " )";
+        }
     }
 
     virtual Expr _get_val( int len ) {

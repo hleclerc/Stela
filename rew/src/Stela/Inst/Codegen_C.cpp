@@ -15,35 +15,50 @@ Codegen_C::Codegen_C() : on( &main_os ), os( &main_os ) {
     nb_regs = 0;
     disp_inst_graph = false;
     disp_inst_graph_wo_phi = false;
+
+    add_include( "<stdint.h>" );
+    add_include( "<stdlib.h>" );
+    add_include( "<time.h>" );
 }
 
 void Codegen_C::write_to( Stream &out ) {
     on.nsp = 4;
     make_code();
 
+    // include
+    for( String inc : includes )
+        out << "#include " << inc << "\n";
+
     // types
     std::map<Type *,Vec<OutReg *> > orbt;
     for( int i = 0; i < out_regs.size(); ++i )
         orbt[ out_regs[ i ].type ] << &out_regs[ i ];
+    for( Type *type : types )
+        orbt[ type ];
 
     for( auto iter : orbt )
         iter.first->write_C_decl( out );
 
+    // preliminaries
+    for( String prel : preliminaries )
+        out << prel << "\n";
 
     //
-    out << "#include <unistd.h>\n";
     out << "#pragma cpp_flag -std=c++11\n";
     out << "int main() {\n";
+    out << "    srand(time(0));\n";
 
     // out_regs
     for( auto iter : orbt ) {
-        out << "    " << *iter.first << " ";
-        for( int n = 0; n < iter.second.size(); ++n ) {
-            if ( n )
-                out << ", ";
-            out << *iter.second[ n ];
+        if ( iter.second.size() ) {
+            out << "    " << *iter.first << " ";
+            for( int n = 0; n < iter.second.size(); ++n ) {
+                if ( n )
+                    out << ", ";
+                out << *iter.second[ n ];
+            }
+            out << ";\n";
         }
-        out << ";\n";
     }
 
     out << main_os.str();
@@ -56,6 +71,18 @@ void Codegen_C::exec() {
 
 OutReg *Codegen_C::new_out_reg( Type *type ) {
     return out_regs.push_back( type, nb_regs++ );
+}
+
+void Codegen_C::add_include( String name ) {
+    includes.insert( name );
+}
+
+void Codegen_C::add_prel( String data ) {
+    preliminaries.push_back_unique( data );
+}
+
+void Codegen_C::add_type( Type *type ) {
+    types.insert( type );
 }
 
 int Codegen_C::new_num_reg() {
@@ -143,35 +170,6 @@ static void select_to_select_dep( Expr inst ) {
         select_to_select_dep( ch );
 }
 
-//static int display_graphviz( SplittedVec<CInstBlock,8> &blocks, const char *filename = ".blk.dot" ) {
-//    std::ofstream f( filename );
-//    f << "digraph Instruction {\n";
-//    f << "  node [shape = record];\n";
-
-//    for( int i = 0; i < blocks.size(); ++i ) {
-//        f << "  subgraph cluster" << &blocks[ i ] <<" {\n  color=yellow;\n  style=dotted;\n";
-//        for( const Expr &inst : blocks[ i ].inst ) {
-//            f << "  node" << inst.ptr() << " [label=\"";
-//            inst->write_dot( f );
-//            f << "\"];\n";
-//            for( const Expr &ch : inst->inp )
-//                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << ";\n";
-//            for( const Expr &ch : inst->dep )
-//                f << "  node" << inst.ptr() << " -> node" << ch.ptr() << " [style=dotted];\n";
-//        }
-//        f << "  label = \"" << blocks[ i ].cond << "\"\n";
-//        f << "  }\n";
-//        for( const auto &v : blocks[ i ].cond.or_seq )
-//            for( const auto &item : v )
-//                f << "  node" << blocks[ i ].inst[ 0 ].ptr() <<"  -> node" << item.expr.ptr() << " [ltail=cluster" << &blocks[ i ] << " color=gray];\n";
-//    }
-
-//    f << "}";
-//    f.close();
-
-//    return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
-//}
-
 static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
     BoolOpSeq res;
     for( const BoolOpSeq &b : cond_stack )
@@ -206,7 +204,7 @@ void Codegen_C::make_code() {
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
 
-    // Inst::display_graph( out );
+    Inst::display_graph( out );
 
     // get needed expressions
     Vec<Expr> needed;
@@ -363,7 +361,7 @@ void Codegen_C::make_code() {
 
                 if ( nc.or_seq.size() ) {
                     cond_stack << nc;
-                    nc.write_to_stream( on.write_beg() << "if ( " );
+                    nc.write_to_stream( this, on.write_beg() << "if ( ", -1 );
                     on.write_end( " ) {" );
                     on.nsp += 4;
                 }

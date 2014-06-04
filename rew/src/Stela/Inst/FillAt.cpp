@@ -1,6 +1,10 @@
+#include "InstInfo_C.h"
 #include "FillAt.h"
 #include "Slice.h"
+#include "Type.h"
 #include "Cst.h"
+#include "Op.h"
+#include "Ip.h"
 
 
 /**
@@ -25,6 +29,17 @@ public:
         }
         return Inst::_simp_slice( off, len );
     }
+    virtual void write_to( Codegen_C *cc, int prec = -1 ) {
+        if ( par.size() > 1 )
+            TODO;
+        cc->add_type( &ip->type_PI8 );
+        cc->on << "*(" << *IIC( inp[ 1 ] )->out_type << " *)( (PI8 *)&" <<  cc->code( inp[ 0 ] ) << " + " << cc->code( inp[ 2 ], PREC_div ) << " / 8 ) = " << cc->code( inp[ 1 ] ) << ";";
+        IIC( this )->out_reg = IIC( inp[ 0 ] )->out_reg;
+    }
+    //    virtual void write_to( Codegen_C *cc, int prec, OutReg *out_reg ) {
+    //        *cc->os << "2";
+    //    }
+
     Type *off_type;
 };
 

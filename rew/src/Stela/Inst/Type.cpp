@@ -27,11 +27,19 @@ void Type::write_to_stream( Stream &os ) const {
 
 void Type::write_C_decl( Stream &out ) const {
     switch( name ) {
-        case STRING_SI32_NUM: out << "typedef int SI32;\n"; break;
-        default:
-            out << "struct " << *this << " {\n";
-            out << "    char data[ " << ( size() + 7 ) / 8 << " ];\n";
-            out << "};\n";
+    case STRING_Bool_NUM: out << "typedef bool Bool;\n"; break;
+    case STRING_SI8_NUM : out << "typedef signed char SI8;\n" ; break;
+    case STRING_PI8_NUM : out << "typedef unsigned char PI8;\n" ; break;
+    case STRING_SI16_NUM: out << "typedef short int SI16;\n"; break;
+    case STRING_PI16_NUM: out << "typedef unsigned short int PI16;\n"; break;
+    case STRING_SI32_NUM: out << "typedef int SI32;\n"; break;
+    case STRING_PI32_NUM: out << "typedef unsigned int PI32;\n"; break;
+    case STRING_SI64_NUM: out << "typedef int64_t SI64;\n"; break;
+    case STRING_PI64_NUM: out << "typedef uint64_t PI64;\n"; break;
+    default:
+        out << "struct " << *this << " {\n";
+        out << "    char data[ " << ( size() + 7 ) / 8 << " ];\n";
+        out << "};\n";
     }
 }
 

@@ -143,3 +143,7 @@ tests/test.met
 src/Stela/Inst/Conv.h
 src/Stela/Inst/Conv.cpp
 src/Stela/Inst/TypePromoteInt.h
+src/Stela/Inst/IpSnapshot.h
+src/Stela/Inst/IpSnapshot.cpp
+src/Stela/Inst/UnknownInst.h
+src/Stela/Inst/UnknownInst.cpp

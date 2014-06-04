@@ -43,6 +43,7 @@ public:
 
     Scope       *parent;
     Var          self;
+    Var          cont;
     bool         method;
 
 protected:
@@ -68,6 +69,7 @@ protected:
     template<class OP> Var parse_una( BinStreamReader bin, OP op );
     template<class OP> Var parse_bin( BinStreamReader bin, OP op );
     template<class OP> Type *type_promote( Type *ta, Type *tb, OP op );
+    template<class OP> Type *type_promote( Type *ta, OP op );
 
     #define DECL_IR_TOK( N ) Var parse_##N( BinStreamReader bin );
     #include "../Ir/Decl.h"
