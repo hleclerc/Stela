@@ -8,8 +8,10 @@
 #include "Sourcefile.h"
 #include "IpSnapshot.h"
 #include <algorithm>
+#include "GetNout.h"
 #include "Symbol.h"
 #include "Select.h"
+#include "While.h"
 #include "Slice.h"
 #include "Scope.h"
 #include <limits>
@@ -37,6 +39,9 @@ Scope::Scope( Scope *parent, String name, Ip *_ip ) : ip( _ip ? _ip : ::ip ), pa
     base_size = 0;
     base_alig = 1;
 
+    for_surrounding_scope = 0;
+    for_def_scope         = 0;
+    for_block             = false;
 }
 
 Var Scope::VecNamedVar::add( int name, Var var ) {
@@ -358,7 +363,7 @@ Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, 
                     ip->set_cond( cond );
 
                 Var loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, am );
-                res.set_val( loc );
+                res.set_val( loc, Rese(), ip->cur_cond() );
 
                 ip->pop_cond();
 
@@ -584,7 +589,7 @@ Var Scope::parse_SELECT( BinStreamReader bin ) {
 
         // new data
         Var res( t_res, f.get_val() );
-        res.set_val( ip->type_ST->size(), va.ptr() );
+        res.set_val( ip->type_ST->size(), va.ptr(), Rese(), Expr() );
 
         return res;
     }
@@ -821,100 +826,139 @@ Var Scope::parse_WHILE( BinStreamReader bin ) {
         if ( old_nsv_size == nsv.changed.size() )
             break;
 
-        // replace each modified variable to Unknown variables
+        // replace each modified variable to a new unknown variables
         // (to avoid simplifications during the next round)
-        auto rs = raii_save( ip->snapshots );
-        ip->snapshots.resize( 0 );
-
         for( auto &it : nsv.changed ) {
-            Expr pref = it.first;
-            if ( pref == cont_var.get_val() ) {
-                pref->_set_val( cst( true ), 1 );
-            } else {
-                Expr unk = unknown_inst( it.second->size(), cpt );
-                unknowns[ it.first ] = unk;
-                pref->_set_val( unk, unk->size() );
-            }
+            Expr unk = unknown_inst( it.second->size(), cpt );
+            unknowns[ it.first ] = unk;
+            const_cast<Expr &>( it.first )->_set_val( unk, unk->size(), Rese(), Expr() );
         }
+        cont_var.set_val( Var( &ip->type_Bool, cst( true ) ), Rese(), Expr() );
     }
 
     // extract the cont_var from nsv (we don't want to output it twice)
     nsv.changed.erase( cont_var.inst );
 
     // corr table (output number -> input number)
-    // -> mark the children of output variables to find precomputed variables (i.e. that do not depend on the unknowns)
+    // -> find if Unknown inst are used to compute the outputs
     ++Inst::cur_op_id;
     for( auto it : nsv.changed )
-        it.first->_get_val()->mark_children();
+        const_cast<Expr &>( it.first )->_get_val()->mark_children();
     int cpt = 0;
     Vec<int> corr;
     Vec<int> inp_sizes;
     for( auto it : nsv.changed ) {
-        //
         if ( unknowns[ it.first ]->op_id == Inst::cur_op_id ) {
             corr << cpt++;
-            inp_sizes << it.second->size_in_bits();
+            inp_sizes << it.second->size();
         } else
             corr << -1;
     }
-    PRINT( corr );
 
-//    // prepare a while inp (for initial values of variables modified in the loop)
-//    // and set cont_var to true (initial condition)
-//    Inst *winp = while_inp( inp_sizes );
+    // prepare a while inp (for initial values of variables modified in the loop)
+    Expr winp = while_inp( inp_sizes );
 
-//    cpt = 0;
-//    for( auto &it : nsv ) {
-//        PRef *pref = const_cast<PRef *>( it.first.ptr() );
-//        int num_inp = corr[ cpt++ ];
-//        if ( num_inp >= 0 )
-//            pref->ptr = new RefExpr( Expr( winp, num_inp ) );
-//        else
-//            pref->ptr = it.second;
-//    }
+    // set winp[...] as initial values of modified variables
+    cpt = 0;
+    for( auto &it : nsv.changed ) {
+        int num_inp = corr[ cpt++ ];
+        if ( num_inp >= 0 )
+            const_cast<Expr &>( it.first )->_set_val( get_nout( winp, num_inp ), Rese(), Expr() );
+        else
+            const_cast<Expr &>( it.first )->_set_val( it.second, Rese(), Expr() );
+    }
 
-//    cont_var.data->ptr = new RefExpr( cst( true ) );
+    // and set cont_var to true (initial condition)
+    cont_var.set_val( Var( &ip->type_Bool, cst( true ) ), Rese(), Expr() );
 
-//    // relaunch the while inst
-//    Scope wh_scope( this );
-//    wh_scope.cont = cont_var;
-//    wh_scope.parse( sf, tok );
 
-//    // make the while instruction
-//    Vec<Expr> out_exprs;
-//    for( auto it : nsv )
-//        out_exprs << simplified_expr( *it.first, sf, off );
-//    out_exprs << simplified_expr( cont_var.expr(), sf, off );
-//    Inst *wout = while_out( out_exprs );
+    // relaunch the while inst
+    Scope wh_scope( this, "while_" + to_string( ip->off ) );
+    wh_scope.cont = cont_var;
+    wh_scope.parse( tok );
 
-//    cpt = 0;
-//    Vec<Expr> inp_exprs;
-//    for( auto it : nsv )
-//        if ( corr[ cpt++ ] >= 0 )
-//            inp_exprs << simplified_expr( it.second->expr(), sf, off );
-//    Inst *wins = while_inst( inp_exprs, winp, wout, corr );
+    // make the while instruction
+    Vec<Expr> out_exprs;
+    for( auto it : nsv.changed )
+        out_exprs << const_cast<Expr &>( it.first )->_get_val();
+    out_exprs << cont_var.get_val();
+    Expr wout = while_out( out_exprs );
 
-//    // replace changed variable by while_inst outputs
-//    cpt = 0;
-//    for( auto it : nsv ) {
-//        Ptr<PRef> pref = it.first;
-//        Var dst( &ip->type_Void, pref );
-//        set( dst, Var( &ip->type_Void, Expr( wins, cpt++ ) ), sf, off );
-//        // pref->ptr = new RefExpr( Expr( wins, cpt++ ) );
-//    }
+    cpt = 0;
+    Vec<Expr> inp_exprs;
+    for( auto it : nsv.changed )
+        if ( corr[ cpt++ ] >= 0 )
+            inp_exprs << simplified( it.second );
+    Expr wins = while_inst( inp_exprs, winp, wout, corr );
 
-//    // break(s) to transmit ?
-//    for( RemBreak rb : wh_scope.rem_breaks )
-//        BREAK( rb.count, sf, off, rb.cond );
+    // replace changed variable by while_inst outputs
+    {
+        auto rs = raii_save( ip->snapshots );
+        ip->snapshots.resize( 0 );
+
+        int cpt = 0;
+        for( auto it : nsv.changed )
+            const_cast<Expr &>( it.first )->_set_val( get_nout( wins, cpt++ ) );
+    }
+
+    // break(s) to transmit ?
+    for( RemBreak rb : wh_scope.rem_breaks )
+        BREAK( rb.count, rb.cond );
 
 
     ip->snapshots.pop_back();
     return ip->void_var();
 }
+void Scope::BREAK( int n, Expr cond ) {
+//    Expr c = cst( true );
+//    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+//        // found a for or a while ?
+//        // (for_block = true for surrounding scope)
+//        // (for_def_scope != 0 from ___bloc_exec call)
+//        if ( s->cont.defined() or s->for_block ) {
+//            if ( s->cont.defined() )
+//                s->cont.set_val( Var( &ip->type_Bool, cst( false ) ) );
+//            if ( n > 1 )
+//                s->rem_breaks << RemBreak{ n - 1, c };
+//            if ( s->cond.defined() )
+//                s->cond = op( &ip->type_Bool, &ip->type_Bool, s->cond, &ip->type_Bool, op( &ip->type_Bool, &ip->type_Bool, c, Op_not_boolean() ), Op_and_boolean() );
+//            else
+//                s->cond = op( &ip->type_Bool, c, Op_not_boolean() );
+//    ²        return;
+//        }
+//        if ( s->cond )
+//            c = op( bt_Bool, bt_Bool, c, bt_Bool, s->cond, Op_and_boolean() );
+//    }
+    return ip->disp_error( "nothing to break" );
+}
+
 Var Scope::parse_BREAK( BinStreamReader bin ) {
-    ip->disp_error( "break", true );
+//    int n = bin.read_positive_integer();
+//    if ( not n )
+//        n = 1;
+
+//    // if we are breaking from a for, update n accordingly
+//    for( Scope *s = this; s; s = s->parent ) {
+//        // -> parsing from a while
+//        if ( s->cont.defined() )
+//            break;
+//        // -> parsing from a for
+//        if ( Scope *f = s->for_def_scope ) {
+//            f = f->for_surrounding_scope; // f points to the surrounding for scope
+//            for( Scope *s = this; s != f; s = s->parent ) {
+//                if ( not s )
+//                    return ip->ret_error( "Impossible to find the surrounding for scope" );
+//                n += s->cont.defined() or s->for_block;
+//            }
+//            break;
+//        }
+//    }
+
+//    //
+//    BREAK( n );
     return ip->void_var();
 }
+
 Var Scope::parse_CONTINUE( BinStreamReader bin ) {
     ip->disp_error( "continue", true );
     return ip->void_var();

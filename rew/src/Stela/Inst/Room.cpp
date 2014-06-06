@@ -37,26 +37,26 @@ public:
             return slice( val, 0, len );
         return val;
     }
-    virtual void _set_val( Expr val, int len ) {
+    virtual void _set_val( Expr val, int len, Rese, Expr cond ) {
         if ( flags & CONST )
             return ip->disp_error( "attempting to modify a const value" );
         for( IpSnapshot *is : ip->snapshots ) {
-            if ( date >= is->date ) {
+            if ( date < is->date ) {
                 if ( not is->changed.count( this ) )
                     is->changed[ this ] = this->val;
             }
         }
         if ( this->len != len ) {
             Expr n = fill_at( simplified( this->val ), simplified( val ), &ip->type_SI32, cst( 0 ) );
-            if ( ip->cond_stack.size() )
-                this->val = select( ip->cur_cond(), n, simplified( this->val ) );
+            if ( cond )
+                this->val = select( cond, n, simplified( this->val ) );
             else
                 this->val = n;
         } else {
-            if ( ip->cond_stack.size() )
-                this->val = select( ip->cur_cond(), simplified( val ), simplified( this->val ) );
+            if ( cond )
+                this->val = select( cond, simplified( val ), simplified( this->val ) );
             else
-                this->val = val;
+                this->val = simplified( val );
         }
     }
     virtual bool is_a_pointer() const {

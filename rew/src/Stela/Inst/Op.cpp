@@ -97,13 +97,13 @@ public:
         return Inst::_get_val( len );
     }
 
-    virtual void _set_val( Expr val, int len ) {
+    virtual void _set_val( Expr val, int len, Rese, Expr cond ) {
         if ( SameType<T,Op_add>::res )
             return inp[ 0 ]->_set_val(
                     fill_at( simplified( inp[ 0 ]->_get_val( inp[ 0 ]->size_ptd() ) ),
                              val, tb, simplified( inp[ 1 ] ) ),
-                    len );
-        return Inst::_set_val( val, len );
+                    len, Rese(), cond );
+        return Inst::_set_val( val, len, Rese(), cond );
     }
 
     virtual bool is_a_pointer() const {

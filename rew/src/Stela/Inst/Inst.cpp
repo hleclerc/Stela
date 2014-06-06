@@ -48,6 +48,11 @@ void Inst::add_inp( const Expr &val ) {
     inp << val;
 }
 
+void Inst::add_ext( const Expr &val ) {
+    val->ext_par = this;
+    ext << val;
+}
+
 void Inst::mod_inp( const Expr &val, int num ) {
     if ( inp.size() <= num )
         inp.resize( num + 1 );
@@ -95,6 +100,8 @@ void Inst::clone( Vec<Expr> &created ) const {
         i->clone( created );
     for( const Expr &i : dep )
         i->clone( created );
+    for( const Expr &i : ext )
+        i->clone( created );
 
     // basic clone
     Expr res = forced_clone( created );
@@ -104,9 +111,8 @@ void Inst::clone( Vec<Expr> &created ) const {
         res->add_inp( reinterpret_cast<Inst *>( i->op_mp ) );
     for( const Expr &i : dep )
         res->add_dep( reinterpret_cast<Inst *>( i->op_mp ) );
-
-    if( ext.size() )
-        TODO;
+    for( const Expr &i : ext )
+        res->add_ext( reinterpret_cast<Inst *>( i->op_mp ) );
 
     // register
     op_mp = res.ptr();
@@ -133,7 +139,14 @@ int Inst::sb() const {
 }
 
 int Inst::size_ptd() const {
+    PRINT( *this );
     ERROR( "not a ptr" );
+    return 0;
+}
+
+int Inst::size_out( int nout ) const {
+    PRINT( *this );
+    ERROR( "not a multiple output var" );
     return 0;
 }
 
@@ -272,9 +285,13 @@ void Inst::write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const {
     }
 
     // ext
-    for( int i = 0; i < ext.size(); ++i )
+    for( int i = 0; i < ext_disp_size(); ++i )
         if ( const Inst *ch = ext[ i ].ptr() )
             ext_buf << ch;
+}
+
+int Inst::ext_disp_size() const {
+    return ext.size();
 }
 
 void Inst::write_to( Codegen_C *cc, int prec ) {
@@ -313,8 +330,12 @@ Expr Inst::_get_val( int len ) {
     return 0;
 }
 
-void Inst::_set_val( Expr val, int len ) {
+void Inst::_set_val( Expr val, int len, Rese, Expr cond ) {
     ip->disp_error( "_set_val works only with pointer type variables" );
+}
+
+void Inst::_set_val( Expr val, Rese, Expr cond ) {
+    return _set_val( val, val->size(), Rese(), cond );
 }
 
 Expr Inst::_simp_slice( int off, int len ) {

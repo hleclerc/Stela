@@ -221,7 +221,7 @@ Var Ip::make_Varargs( Vec<Var> lst, const Vec<int> &names ) {
     // data
     Var res( type );
     for( int i = 0; i < lst.size(); ++i )
-        res.set_val( i * type_ST->size(), lst[ i ].ptr() );
+        res.set_val( i * type_ST->size(), lst[ i ].ptr(), Rese(), Expr() );
     return res;
 }
 
@@ -248,10 +248,10 @@ Var Ip::make_Callable( Vec<Var> lst, Var self ) {
     SI64 d = 0;
     Var res( type );
     if ( self.defined() ) {
-        res.set_val( 0 * type_ST->size(), self.ptr() );
+        res.set_val( 0 * type_ST->size(), self.ptr(), Rese(), Expr() );
     } else
-        res.set_val( 0 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
-    res.set_val( 1 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ) );
+        res.set_val( 0 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ), Rese(), Expr() );
+    res.set_val( 1 * type_ST->size(), type_ST, cst( type_ST->size(), (PI8 *)&d ), Rese(), Expr() );
     return res;
 }
 

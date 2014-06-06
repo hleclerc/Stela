@@ -73,7 +73,7 @@ bool Var::defined() const {
 }
 
 
-void Var::set_val( Var val ) {
+void Var::set_val( Var val, Rese, Expr cond ) {
     if ( type == &ip->type_Error or val.type == &ip->type_Error )
         return;
     if ( not type ) {
@@ -83,28 +83,28 @@ void Var::set_val( Var val ) {
     }
     if ( type != val.type or not type->pod() ) {
         if ( type->_aryth and val.type->_aryth ) {
-            set_val( val.conv( type ) );
+            set_val( val.conv( type ), Rese(), cond );
             return;
         }
         ip->main_scope->apply( ip->main_scope->get_attr( *this, STRING_reassign_NUM ), 1, &val );
         return;
     }
-    set_val( val.get_val() );
+    set_val( val.get_val(), Rese(), cond );
 }
 
-void Var::set_val( int offset, Var val ) {
-    ( ptr() + Var( offset ) ).at( val.type ).set_val( val );
+void Var::set_val( int offset, Var val, Rese, Expr cond ) {
+    ( ptr() + Var( offset ) ).at( val.type ).set_val( val, Rese(), cond );
 }
 
-void Var::set_val( int offset, Type *type, Expr val ) {
-    ( ptr() + Var( offset ) ).at( type ).set_val( val );
+void Var::set_val( int offset, Type *type, Expr val, Rese, Expr cond ) {
+    ( ptr() + Var( offset ) ).at( type ).set_val( val, Rese(), cond );
 }
 
-void Var::set_val( Expr val ) {
+void Var::set_val( Expr val, Rese, Expr cond ) {
     if ( flags & WEAK_CONST )
         return ip->disp_error( "attempting to modify a const value" );
     if ( inst )
-        inst->_set_val( val, type->size() );
+        inst->_set_val( val, type->size(), Rese(), cond );
     else
         inst = val;
 }

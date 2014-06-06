@@ -91,9 +91,10 @@ t := Vec[ PI8, 5l ]()
 
 a := 0
 while a < 5
-    t[ a ] = 70 + a
+    # t[ a ] = 70 + a
     a = a + 1
-write &t, 5
+___syscall a
+# write &t, 5
 
 # t.v = 17
 # ___info a

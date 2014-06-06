@@ -147,3 +147,7 @@ src/Stela/Inst/IpSnapshot.h
 src/Stela/Inst/IpSnapshot.cpp
 src/Stela/Inst/UnknownInst.h
 src/Stela/Inst/UnknownInst.cpp
+src/Stela/Inst/While.h
+src/Stela/Inst/While.cpp
+src/Stela/Inst/GetNout.h
+src/Stela/Inst/GetNout.cpp

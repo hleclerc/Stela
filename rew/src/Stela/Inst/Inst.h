@@ -41,6 +41,7 @@ public:
 
     void add_dep( const Expr &val );
     void add_inp( const Expr &val );
+    void add_ext( const Expr &val );
     void mod_inp( const Expr &val, int num );
     void clear_children(); ///< remove inp and dep
     void rem_ref_to_this(); ///< remove inp and dep
@@ -61,6 +62,7 @@ public:
     virtual int sb() const; ///< size in bytes
     virtual int size() const = 0; ///< size in bits
     virtual int size_ptd() const;
+    virtual int size_out( int nout ) const;
 
     void visit( Visitor &v, bool pointed_data = false, bool want_dep = true );
     virtual void _visit_pointed_data( Visitor &v, bool want_dep );
@@ -82,6 +84,8 @@ public:
     static int display_graph( const Vec<Expr> &outputs, const char *filename = ".res" );
     virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
     virtual void write_sub_graph_rec( Stream &os ) const;
+    virtual int ext_disp_size() const;
+
 
     virtual void write_to( Codegen_C *cc, int prec = -1 ); ///< prec = -1 -> make a new line for this instruction
     virtual void write_to( Codegen_C *cc, int prec, OutReg *out_reg );
@@ -93,7 +97,8 @@ public:
     virtual Expr _simplified();
     virtual Expr _get_val();
     virtual Expr _get_val( int len );
-    virtual void _set_val( Expr val, int len );
+    virtual void _set_val( Expr val, int len, Rese, Expr cond );
+    virtual void _set_val( Expr val, Rese, Expr cond );
 
     virtual Expr _simp_slice( int off, int len );
 
@@ -105,7 +110,7 @@ public:
     mutable Vec<Parent> par; ///< parents
     BoolOpSeq          *when; ///< used for code generation (to know when needed)
 
-    Inst               *ext_par;
+    mutable Inst       *ext_par;
 
     int                 flags;
 

@@ -46,6 +46,10 @@ public:
     Var          cont;
     bool         method;
 
+    Scope         *for_def_scope;
+    Scope         *for_surrounding_scope; // for_def_scope->for_surrounding_scope points to scope `orig` created during the parse_for
+    bool           for_block;
+
 protected:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     friend class Class;
@@ -53,6 +57,12 @@ protected:
     friend class Var;
     friend class Def;
     friend class Ip;
+
+    struct RemBreak {
+        int count;
+        Expr cond;
+    };
+    Vec<RemBreak>  rem_breaks;
 
     int  read_nstring( BinStreamReader &bin );
     Var  reg_var( int name, Var var, bool static_scope = false );
@@ -65,6 +75,7 @@ protected:
     Var  get_attr_rec( Var self, int name );
     void get_attr_rec( Vec<Var> &res, Var self, int name );
     Var copy( Var &var );
+    void BREAK( int n, Expr cond );
 
     template<class OP> Var parse_una( BinStreamReader bin, OP op );
     template<class OP> Var parse_bin( BinStreamReader bin, OP op );
