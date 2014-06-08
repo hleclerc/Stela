@@ -8,7 +8,7 @@ h = r( """#ifndef STELA_INST_NAME_H
 
 #include "Inst.h"
 
-Expr NLME( Type *type );
+Expr NLME();
 
 #endif // STELA_INST_NAME_H
 """ )
@@ -18,15 +18,14 @@ c = r( """#include "NAME.h"
 /**
 */
 struct NAME : Inst {
-    NAME( Type *out_type ) : out_type( out_type ) {} 
+    NAME() {} 
     virtual void write_dot( Stream &os ) { os << "NAME"; }
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new NAME( type ); }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new NAME(); }
     virtual Type *type() { return out_type; }
-    Type *out_type;
 };
 
-Expr NLME( Type *type ) {
-    NAME *res = new NAME( type );
+Expr NLME() {
+    NAME *res = new NAME();
     return res;
 }
 """ )
@@ -39,3 +38,4 @@ c_file = file( r( "src/Stela/Inst/NAME.cpp" ), "w" )
 print >> c_file, c
 
 os.system( "./update_files.sh > /dev/null 2> /dev/null" )
+os.system( r( "git add src/Stela/Inst/NAME.h src/Stela/Inst/NAME.cpp" ) )

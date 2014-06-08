@@ -64,6 +64,7 @@ src/Stela/Inst/ReplBits.h
 src/Stela/Inst/BoolOpSeq.h
 src/Stela/Inst/Inst.h
 src/Stela/Inst/Uninitialized.h
+src/Stela/Inst/Syscall.h
 src/Stela/Inst/Room.h
 src/Stela/Inst/Expr.h
 src/Stela/Met/Lexer.h
@@ -89,6 +90,7 @@ src/Stela/Inst/BoolOpSeq.cpp
 src/Stela/Inst/Sourcefile.cpp
 src/Stela/Inst/Ip.cpp
 src/Stela/Inst/Type.cpp
+src/Stela/Inst/Syscall.cpp
 src/Stela/Inst/Select.cpp
 src/Stela/Inst/Uninitialized.cpp
 src/Stela/Inst/ReplBits.cpp
@@ -99,3 +101,5 @@ src/Stela/Met/IrWriter.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Inst.cpp
 tests/test.met
+src/Stela/Inst/Class.h
+src/Stela/Inst/Class.cpp

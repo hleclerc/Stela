@@ -4,6 +4,7 @@
 #include "../System/ErrorList.h"
 #include "../System/NstrCor.h"
 #include "Sourcefile.h"
+struct Class;
 struct Type;
 struct Expr;
 
@@ -24,6 +25,12 @@ public:
 
 
     #define DECL_BT( T ) Type *type_##T;
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+    Type *type_ST;
+
+    #define DECL_BT( T ) Class *class_##T;
+    #include "DeclParmClass.h"
     #include "DeclBaseClass.h"
     #undef DECL_BT
 

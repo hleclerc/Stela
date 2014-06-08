@@ -2,12 +2,13 @@
 #define TYPE_H
 
 #include "Expr.h"
+class Class;
 
 /**
 */
 class Type {
 public:
-    Type();
+    Type( Class *orig );
 
     void write_to_stream( Stream &os );
     void write_to_stream( Stream &os, void *data, int len );
@@ -16,7 +17,8 @@ public:
 
     void parse();
 
-    int _len;
+    Class *orig;
+    int    _len;
 };
 
 #endif // TYPE_H

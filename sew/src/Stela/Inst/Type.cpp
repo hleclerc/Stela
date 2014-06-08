@@ -1,11 +1,12 @@
-#include "Type.h"
+#include "Class.h"
 
-Type::Type() {
+Type::Type( Class *orig ) : orig( orig ) {
     _len = -1;
 }
 
 void Type::write_to_stream( Stream &os ) {
-    os << "type";
+    os << *orig;
+
 }
 
 void Type::write_to_stream( Stream &os, void *data, int len ) {
