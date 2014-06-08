@@ -1,3 +1,4 @@
+#include "../System/SizeofIf.h"
 #include "Uninitialized.h"
 #include "Symbol.h"
 #include "Type.h"
@@ -13,11 +14,10 @@ Expr::Expr( Inst *inst ) : inst( inst ) {
     if ( inst ) ++inst->cpt_use;
 }
 
-Expr::Expr( SI32 val ) : Expr( cst( ip->type_SI32, 32, &val ) ) {
-}
+#define DECL_BT( T ) Expr::Expr( T val ) : Expr( cst( ip->type_##T, SizeofIf<T,true>::val, &val ) ) {}
+#include "DeclArytTypes.h"
+#undef DECL_BT
 
-Expr::Expr( PI8 val ) : Expr( cst( ip->type_SI8, 8, &val ) ) {
-}
 
 Expr::Expr() : inst( uninitialized() ) {
     ++inst->cpt_use;

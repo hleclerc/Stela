@@ -5,13 +5,16 @@
 #include <Stela/Inst/Expr.h>
 #include <Stela/Inst/Type.h>
 #include <Stela/Inst/Room.h>
+#include <Stela/Inst/Op.h>
 #include <Stela/Inst/Ip.h>
 
 int main() {
     Ip ip_inst;
     ip = &ip_inst;
 
-    BoolOpSeq cond( symbol( ip->type_Bool, "cond" ), true );
+    Expr sc = symbol( ip->type_Bool, "cond" );
+    Expr sym = symbol( ip->type_SI32, "sym" );
+    BoolOpSeq cond( sc, true );
 
     Expr a = room();
     PRINT( a );
@@ -28,4 +31,9 @@ int main() {
 
     // pb: gestion des set partiel
     // prop 1: de l'ext, on fait set( repl_bits( obj, off, val ) )
+    PRINT( add( Expr( 10 ), 20 ) );
+    PRINT( add( sym, 20 ) );
+    PRINT( add( sym, 0 ) );
+    PRINT( mul( sym, 0 ) );
+    PRINT( mul( sym, 1 ) );
 }

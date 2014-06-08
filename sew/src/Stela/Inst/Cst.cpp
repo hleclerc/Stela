@@ -9,6 +9,10 @@
 */
 struct Cst : Inst {
     virtual void write_dot( Stream &os ) {
+        #define DECL_BT( T ) \
+            if ( out_type == ip->type_##T ) { os << *reinterpret_cast<T *>( data.ptr() ); return; }
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
         out_type->write_to_stream( os, data.ptr(), len );
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {

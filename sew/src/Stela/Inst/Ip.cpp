@@ -15,6 +15,10 @@ Ip::Ip() {
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
+    #define DECL_BT( T ) type_##T->aryth = true;
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+
     type_SI32->_len = 32;
     type_SI64->_len = 64;
 

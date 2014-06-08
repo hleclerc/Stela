@@ -11,6 +11,8 @@ struct ReplBits : Inst {
 
 Expr repl_bits( Expr src, Expr off, Expr val ) {
     SI32 voff;
+    PRINT( off->get_val( ip->type_SI32, &voff ) );
+    PRINT( voff );
     if ( off->get_val( ip->type_SI32, &voff ) and voff == 0 and src->size() == val->size() )
         return val;
     if ( Expr res = src->_simp_repl_bits( off, val ) )

@@ -14,10 +14,12 @@ public:
     void write_to_stream( Stream &os, void *data, int len );
 
     int size();
+    int sb();
 
     void parse();
 
     Class *orig;
+    bool   aryth;
     int    _len;
 };
 

@@ -1,7 +1,8 @@
 #include "Class.h"
 
 Type::Type( Class *orig ) : orig( orig ) {
-    _len = -1;
+    _len  = -1;
+    aryth = false;
 }
 
 void Type::write_to_stream( Stream &os ) {
@@ -23,6 +24,11 @@ int Type::size() {
     if ( _len < 0 )
         parse();
     return _len;
+}
+
+int Type::sb() {
+    int s = size();
+    return s >= 0 ? ( s + 7 ) / 8 : -1;
 }
 
 void Type::parse() {

@@ -11,8 +11,9 @@ class Expr {
 public:
     Expr( const Expr &obj );
     Expr( Inst *inst );
-    Expr( SI32 val ); ///< cst
-    Expr( PI8 val ); ///< cst
+    #define DECL_BT( T ) Expr( T val ); ///< cst
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
     Expr(); ///< unitialised variable
     ~Expr();
 
