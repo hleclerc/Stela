@@ -3,7 +3,7 @@
 
 #include "Inst.h"
 
-Inst *cst( Type *type, int len, void *data, void *knwn = 0 );
+Expr cst( Type *type, int len, void *data, void *knwn = 0 );
 
 #endif // STELA_INST_Cst_H
 

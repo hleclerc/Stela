@@ -8,7 +8,7 @@ h = r( """#ifndef STELA_INST_NAME_H
 
 #include "Inst.h"
 
-Inst *NLME();
+Expr NLME( Type *type );
 
 #endif // STELA_INST_NAME_H
 """ )
@@ -18,13 +18,15 @@ c = r( """#include "NAME.h"
 /**
 */
 struct NAME : Inst {
+    NAME( Type *out_type ) : out_type( out_type ) {} 
     virtual void write_dot( Stream &os ) { os << "NAME"; }
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new NAME; }
-    virtual Type *type() { return 0; }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new NAME( type ); }
+    virtual Type *type() { return out_type; }
+    Type *out_type;
 };
 
-Inst *NLME() {
-    NAME *res = new NAME;
+Expr NLME( Type *type ) {
+    NAME *res = new NAME( type );
     return res;
 }
 """ )

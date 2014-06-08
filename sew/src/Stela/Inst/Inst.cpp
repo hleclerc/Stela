@@ -1,5 +1,6 @@
 #include <fstream>
 #include "Inst.h"
+#include "Ip.h"
 
 PI64 Inst::cur_op_id = 0;
 
@@ -21,6 +22,22 @@ Inst::~Inst() {
     // delete when;
 }
 
+void Inst::set( Expr obj, const BoolOpSeq &cond ) {
+    ip->disp_error( "attempting to set an object that is not a pointer" );
+}
+
+Expr Inst::get( const BoolOpSeq &cond ) {
+    if ( type() == ip->type_Error )
+        return ip->error_var();
+    return ip->ret_error( "attempting to get the pointed value of an object that is not a pointer" );
+}
+
+Expr Inst::simplified( const BoolOpSeq &cond ) {
+    return this;
+}
+
+bool Inst::same_cst( const Inst *inst ) const { return false; }
+bool Inst::emas_cst( const Inst *inst ) const { return false; }
 
 void Inst::write_to_stream( Stream &os, int prec ) {
     write_dot( os );
@@ -213,3 +230,6 @@ bool Inst::uninitialized() const {
     return false;
 }
 
+bool Inst::get_val( Type *type, void *data ) const {
+    return false;
+}

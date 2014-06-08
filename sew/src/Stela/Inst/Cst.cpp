@@ -1,5 +1,7 @@
+#include <string.h>
 #include "Type.h"
 #include "Cst.h"
+#include "Ip.h"
 
 /**
 */
@@ -15,7 +17,29 @@ struct Cst : Inst {
         res->len = len;
         return res;
     }
-    virtual Type *type() { return out_type; }
+    virtual Type *type() {
+        return out_type;
+    }
+    virtual bool get_val( Type *type, void *dst ) const {
+        if ( type->size() < 0 )
+            return false;
+        if ( type == out_type ) {
+            memcpy( dst, data.ptr(), data.size() );
+            return true;
+        }
+        //if ( type == ip->type_Bool ) {
+        //    return out_type->conv( dst, type, data.ptr() );
+        //}
+        TODO;
+        return false;
+    }
+    virtual bool same_cst( const Inst *inst ) const {
+        return inst->emas_cst( this );
+    }
+    virtual bool emas_cst( const Inst *inst ) const {
+        const Cst *c = static_cast<const Cst *>( inst );
+        return c->out_type == out_type and c->data == data and c->knwn == knwn and c->len == len;
+    }
 
     Type *out_type;
     Vec<PI8> data;
@@ -23,7 +47,7 @@ struct Cst : Inst {
     int len;
 };
 
-Inst *cst( Type *type, int len, void *data, void *knwn ) {
+Expr cst( Type *type, int len, void *data, void *knwn ) {
     Cst *res = new Cst;
     res->out_type = type;
     res->len = len;

@@ -3,7 +3,8 @@
 
 #include "Inst.h"
 
-Inst *room( Expr expr );
+Expr room( Expr expr );
+Expr room(); ///< room to uninitialized data
 
 #endif // STELA_INST_Room_H
 

@@ -25,6 +25,12 @@ public:
     Inst();
     virtual ~Inst();
 
+    virtual void set( Expr obj, const BoolOpSeq &cond ); ///< set pointed value
+    virtual Expr get( const BoolOpSeq &cond ); ///< get pointed value
+    virtual Expr simplified( const BoolOpSeq &cond );
+    virtual bool same_cst( const Inst *inst ) const;
+    virtual bool emas_cst( const Inst *inst ) const;
+
     void add_dep( const Expr &val );
     void add_inp( const Expr &val );
     void add_ext( const Expr &val );
@@ -47,6 +53,8 @@ public:
     virtual bool has_inp_parent() const;
 
     virtual bool uninitialized() const;
+
+    virtual bool get_val( Type *type, void *data ) const;
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );

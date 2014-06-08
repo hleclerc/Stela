@@ -1,7 +1,7 @@
 #ifndef TYPE_H
 #define TYPE_H
 
-#include "../System/Stream.h"
+#include "Expr.h"
 
 /**
 */
