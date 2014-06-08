@@ -12,6 +12,7 @@ public:
     Expr( const Expr &obj );
     Expr( Inst *inst );
     Expr( SI32 val ); ///< cst
+    Expr( PI8 val ); ///< cst
     Expr(); ///< unitialised variable
     ~Expr();
 
@@ -20,6 +21,7 @@ public:
     bool operator==( const Expr &expr ) const;
     bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
     bool operator<( const Expr &expr ) const { return inst < expr.inst; }
+    operator bool() const { return inst; }
 
     const Inst *operator->() const { return inst; }
     Inst *operator->() { return inst; }

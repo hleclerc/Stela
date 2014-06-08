@@ -30,6 +30,7 @@ public:
     virtual Expr simplified( const BoolOpSeq &cond );
     virtual bool same_cst( const Inst *inst ) const;
     virtual bool emas_cst( const Inst *inst ) const;
+    virtual Expr size();
 
     void add_dep( const Expr &val );
     void add_inp( const Expr &val );
@@ -61,6 +62,8 @@ public:
     virtual void write_graph_rec( Vec<Inst *> ext_buf, Stream &os );
     virtual void write_sub_graph_rec( Stream &os );
     virtual int ext_disp_size() const;
+
+    virtual Expr _simp_repl_bits( Expr off, Expr val );
 
     Vec<Expr>           inp;
     Vec<Expr>           ext;

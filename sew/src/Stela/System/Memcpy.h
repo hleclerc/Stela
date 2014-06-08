@@ -6,5 +6,7 @@
 void memcpy_bit( void *dst, int off_dst, const void *src, int off_src, int len );
 void memcpy_bit( void *dst, const void *src, int len );
 
+void memset_bit( void *dst, int off_dst, bool val, int len );
+
 
 #endif // MEMCPY_H

@@ -16,6 +16,9 @@ Expr::Expr( Inst *inst ) : inst( inst ) {
 Expr::Expr( SI32 val ) : Expr( cst( ip->type_SI32, 32, &val ) ) {
 }
 
+Expr::Expr( PI8 val ) : Expr( cst( ip->type_SI8, 8, &val ) ) {
+}
+
 Expr::Expr() : inst( uninitialized() ) {
     ++inst->cpt_use;
 }

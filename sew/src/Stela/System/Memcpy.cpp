@@ -12,6 +12,42 @@ void memcpy_bit( void *dst, int off_dst, const void *src, int off_src, int len )
         memcpy( dst, src, ( len + 7 ) / 8 );
 }
 
+void memset_bit( void *dst, int off_dst, bool val, int len ) {
+    if ( int o = off_dst / 8 ) {
+        dst = (PI8 *)dst + o;
+        off_dst %= 8;
+    }
+    if ( val ) {
+        if ( off_dst ) {
+            if ( off_dst + len < 8 ) {
+                TODO; // dst[ 0 ] |= 0xFF >> off_dst;
+                return;
+            }
+            TODO; // dst[ 0 ] |= 0xFF;
+            dst = (PI8 *)dst + 1;
+            len -= off_dst;
+        }
+        for( ; len >= 8; len -= 8, dst = (PI8 *)dst + 1 )
+            *(PI8 *)dst = 0xFF;
+        if ( len )
+            TODO;
+    } else {
+        if ( off_dst ) {
+            if ( off_dst + len < 8 ) {
+                TODO; // dst[ 0 ] &= 0xFF >> off_dst;
+                return;
+            }
+            TODO; // dst[ 0 ] &= 0xFF;
+            dst = (PI8 *)dst + 1;
+            len -= off_dst;
+        }
+        for( ; len >= 8; len -= 8, dst = (PI8 *)dst + 1 )
+            *(PI8 *)dst = 0x00;
+        if ( len )
+            TODO;
+    }
+}
+
 void memcpy_bit( void *dst, const void *src, int len ) {
     return memcpy_bit( dst, 0, src, 0, len );
 }

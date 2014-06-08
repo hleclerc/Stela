@@ -1,4 +1,5 @@
 #include <fstream>
+#include "Type.h"
 #include "Inst.h"
 #include "Ip.h"
 
@@ -38,6 +39,13 @@ Expr Inst::simplified( const BoolOpSeq &cond ) {
 
 bool Inst::same_cst( const Inst *inst ) const { return false; }
 bool Inst::emas_cst( const Inst *inst ) const { return false; }
+
+Expr Inst::size() {
+    if ( type()->size() >= 0 )
+        return type()->size();
+    TODO;
+    return 0;
+}
 
 void Inst::write_to_stream( Stream &os, int prec ) {
     write_dot( os );
@@ -214,6 +222,9 @@ int Inst::ext_disp_size() const {
     return ext.size();
 }
 
+Expr Inst::_simp_repl_bits( Expr off, Expr val ) {
+    return (Inst *)0;
+}
 
 int Inst::always_checked() const {
     return false;

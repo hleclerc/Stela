@@ -1,4 +1,5 @@
 #include <Stela/Inst/BoolOpSeq.h>
+#include <Stela/Inst/ReplBits.h>
 #include <Stela/Inst/Symbol.h>
 #include <Stela/Inst/Expr.h>
 #include <Stela/Inst/Room.h>
@@ -14,6 +15,12 @@ int main() {
     PRINT( a );
     a->set( 20, BoolOpSeq() );
     a->set( 21, cond );
-    // a = 10;
+    a->set( 22, cond );
     PRINT( a );
+
+    PRINT( repl_bits( 20, 0, 7 ) );
+    PRINT( repl_bits( 20, 16, PI8( 7 ) ) );
+
+    // pb: gestion des set partiel
+    // prop 1: de l'ext, on fait set( repl_bits( obj, off, val ) )
 }

@@ -60,6 +60,7 @@ src/Stela/Inst/Select.h
 src/Stela/Inst/Cst.h
 src/Stela/Inst/Type.h
 src/Stela/Inst/DeclBaseClass.h
+src/Stela/Inst/ReplBits.h
 src/Stela/Inst/BoolOpSeq.h
 src/Stela/Inst/Inst.h
 src/Stela/Inst/Uninitialized.h
@@ -90,6 +91,7 @@ src/Stela/Inst/Ip.cpp
 src/Stela/Inst/Type.cpp
 src/Stela/Inst/Select.cpp
 src/Stela/Inst/Uninitialized.cpp
+src/Stela/Inst/ReplBits.cpp
 src/Stela/Inst/Cst.cpp
 src/Stela/Met/Lexem.cpp
 src/Stela/Met/Lexer.cpp

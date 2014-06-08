@@ -1,3 +1,5 @@
+#include "../System/Memcpy.h"
+#include "../System/dcast.h"
 #include <string.h>
 #include "Type.h"
 #include "Cst.h"
@@ -39,6 +41,29 @@ struct Cst : Inst {
     virtual bool emas_cst( const Inst *inst ) const {
         const Cst *c = static_cast<const Cst *>( inst );
         return c->out_type == out_type and c->data == data and c->knwn == knwn and c->len == len;
+    }
+    virtual Expr size() {
+        return len;
+    }
+    virtual Expr _simp_repl_bits( Expr off, Expr val ) {
+        if ( Cst *c = dcast( val.inst ) ) {
+            SI32 voff;
+            if ( off->get_val( ip->type_SI32, &voff ) ) {
+                SI32 vlen;
+                if ( val->size()->get_val( ip->type_SI32, &vlen ) ) {
+                    Cst *res = new Cst;
+                    res->out_type = out_type;
+                    res->len = len;
+                    res->knwn = knwn;
+                    res->data = data;
+                    vlen = std::min( vlen, SI32( len - voff ) );
+                    memcpy_bit( res->data.ptr(), voff, c->data.ptr(), 0, vlen );
+                    memset_bit( res->knwn.ptr(), voff, true, vlen );
+                    return res;
+                }
+            }
+        }
+        return (Inst *)0;
     }
 
     Type *out_type;
