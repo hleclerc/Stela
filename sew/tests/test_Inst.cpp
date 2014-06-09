@@ -8,10 +8,7 @@
 #include <Stela/Inst/Op.h>
 #include <Stela/Inst/Ip.h>
 
-int main() {
-    Ip ip_inst;
-    ip = &ip_inst;
-
+void test_set() {
     Expr sc = symbol( ip->type_Bool, "cond" );
     Expr sym = symbol( ip->type_SI32, "sym" );
     BoolOpSeq cond( sc, true );
@@ -25,15 +22,35 @@ int main() {
     PRINT( *Expr( 10 )->type()  );
     PRINT( *a->type()  );
     // Inst::display_graph( a );
+}
 
-    PRINT( repl_bits( 20, 0, 7 ) );
-    PRINT( repl_bits( 20, 16, PI8( 7 ) ) );
+void test_op() {
+    Expr sym = symbol( ip->type_SI32, "sym" );
 
-    // pb: gestion des set partiel
-    // prop 1: de l'ext, on fait set( repl_bits( obj, off, val ) )
     PRINT( add( Expr( 10 ), 20 ) );
     PRINT( add( sym, 20 ) );
     PRINT( add( sym, 0 ) );
     PRINT( mul( sym, 0 ) );
     PRINT( mul( sym, 1 ) );
+}
+
+void test_repl_bits() {
+    PRINT( repl_bits( 20, 0, 7 ) );
+    PRINT( repl_bits( 20, 16, PI8( 7 ) ) );
+}
+
+void test_syscall() {
+    Expr a = room();
+    a->set( symbol( ip->type_SI32, "sym" ), BoolOpSeq() );
+    syscall( a );
+    a->set( symbol( ip->type_SI32, "szm" ), BoolOpSeq() );
+    syscall( a );
+    Inst::display_graph( ip->sys_state );
+}
+
+int main() {
+    Ip ip_inst;
+    ip = &ip_inst;
+
+    test_syscall();
 }

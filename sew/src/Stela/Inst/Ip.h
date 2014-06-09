@@ -42,6 +42,8 @@ public:
 
     ErrorList   error_list;
     NstrCor     str_cor;
+
+    Expr        sys_state;
 };
 
 extern Ip *ip;

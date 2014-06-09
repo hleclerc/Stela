@@ -11,8 +11,15 @@ struct Syscall : Inst {
 
 };
 
-Expr syscall() {
+Expr syscall( Vec<Expr> inp ) {
     Syscall *res = new Syscall();
+    ++Inst::cur_op_id;
+    for( Expr i : inp ) {
+        i->add_store_dep( res );
+        res->add_inp( i );
+    }
+    res->add_dep( ip->sys_state );
+    ip->sys_state = res;
     return res;
 }
 

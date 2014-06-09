@@ -1,6 +1,7 @@
 #include "Uninitialized.h"
 #include "BoolOpSeq.h"
 #include "Select.h"
+#include "Store.h"
 #include "Room.h"
 #include "Ip.h"
 
@@ -33,7 +34,19 @@ struct Room : Inst {
     virtual Expr get( const BoolOpSeq &cond ) {
         return val->simplified( cond );
     }
+    virtual void _mk_store_dep( Inst *dst ) {
+        Expr st = store( this, val );
+        for( Expr &d : future_dep )
+            st->add_dep( d ); // inst that use stored value must be done before thet change
+        dst->add_dep( st ); // dst depends on store
 
+        future_dep.resize( 0 );
+        future_dep << dst;
+
+        val->add_store_dep( dst );
+    }
+
+    Vec<Expr> future_dep;
     Expr val;
     int  flags;
 };

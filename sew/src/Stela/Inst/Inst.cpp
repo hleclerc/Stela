@@ -85,6 +85,14 @@ void Inst::mod_inp( const Expr &val, int num ) {
     inp[ num ] = val;
 }
 
+void Inst::add_store_dep( Inst *dst ) {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+    _mk_store_dep( dst );
+    for( Expr &e : inp )
+        e->add_store_dep( dst );
+}
 
 void Inst::rem_ref_to_this() {
     for( int num = 0; num < inp.size(); ++num )
@@ -224,6 +232,9 @@ int Inst::ext_disp_size() const {
 
 Expr Inst::_simp_repl_bits( Expr off, Expr val ) {
     return (Inst *)0;
+}
+
+void Inst::_mk_store_dep( Inst *dst ) {
 }
 
 int Inst::always_checked() const {

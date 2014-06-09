@@ -3,7 +3,7 @@
 
 #include "Inst.h"
 
-Expr syscall();
+Expr syscall( Vec<Expr> inp );
 
 #endif // STELA_INST_Syscall_H
 

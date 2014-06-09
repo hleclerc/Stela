@@ -64,6 +64,7 @@ src/Stela/Inst/Cst.h
 src/Stela/Inst/Class.h
 src/Stela/Inst/Type.h
 src/Stela/Inst/DeclOp_Binary_Func.h
+src/Stela/Inst/Store.h
 src/Stela/Inst/DeclBaseClass.h
 src/Stela/Inst/ReplBits.h
 src/Stela/Inst/DeclParmClass.h
@@ -102,6 +103,7 @@ src/Stela/Inst/Type.cpp
 src/Stela/Inst/Syscall.cpp
 src/Stela/Inst/Select.cpp
 src/Stela/Inst/Conv.cpp
+src/Stela/Inst/Store.cpp
 src/Stela/Inst/Op.cpp
 src/Stela/Inst/Uninitialized.cpp
 src/Stela/Inst/ReplBits.cpp

@@ -38,6 +38,8 @@ public:
 
     void mod_inp( const Expr &val, int num );
 
+    void add_store_dep( Inst *dst );
+
     virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) = 0;
     virtual Type *type() = 0;
@@ -64,6 +66,7 @@ public:
     virtual int ext_disp_size() const;
 
     virtual Expr _simp_repl_bits( Expr off, Expr val );
+    virtual void _mk_store_dep( Inst *dst );
 
     Vec<Expr>           inp;
     Vec<Expr>           ext;
