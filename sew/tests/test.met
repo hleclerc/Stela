@@ -1,5 +1,6 @@
-class Toto[ t, attr ]
+class Toto[ attr ]
     yok := 4
+    #attr := 8
     def foo
         attr
         def bar

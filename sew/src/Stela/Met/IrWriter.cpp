@@ -935,12 +935,14 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
 
     PRINT( *name );
     for( CatchedVar cv : catched_vars )
-        if ( t->num_scope >= cv.l->num_scope )
+        if ( t->num_scope >= cv.l->num_scope ) {
             std::cout << "    " << *cv.o
                       << " -> scope_type=" << cv.l->scope_type
                       << " np=" << t->num_scope - cv.l->num_scope
                       << " ns=" << cv.l->num_in_scope
                       << " s=" << cv.s << std::endl;
+            add_error( "...", cv.l );
+        }
 
     // output --------------------------------------------------------------
     data << token_type;
