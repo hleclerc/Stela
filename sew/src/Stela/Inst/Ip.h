@@ -4,9 +4,11 @@
 #include "../System/ErrorList.h"
 #include "../System/NstrCor.h"
 #include "Sourcefile.h"
-struct Class;
-struct Type;
-struct Expr;
+#include "Scope.h"
+#include <map>
+class Class;
+class Type;
+class Expr;
 
 /**
 */
@@ -22,7 +24,18 @@ public:
     ErrorList::Error &error_msg( String msg, bool warn = false, const char *file = 0, int line = 0 );
 
     Expr error_var();
+    Expr void_var();
 
+    NamedVarList *get_static_scope( String path );
+
+    void add_inc_path( String inc_path );
+    void import( String file );
+
+    SourceFile *new_sf( String file );
+
+    Expr make_Varargs( Vec<Expr> &v_args, Vec<int> &v_names );
+    Expr make_Callable( Vec<Expr> &lst, Expr self );
+    Expr make_type_var( Type *type );
 
     #define DECL_BT( T ) Type *type_##T;
     #include "DeclBaseClass.h"
@@ -34,16 +47,17 @@ public:
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-    std::map<String,SourceFile> sourcefiles;
+    std::map<String,SourceFile>   sourcefiles;
+    std::map<String,NamedVarList> static_scopes;
+    Vec<String>                   inc_paths;
 
-    int         off;      ///< current offset in sourcefile
-    SourceFile *sf;       ///< current sourcefile
-    Vec<CS>     sf_stack;
+    ErrorList                     error_list;
+    NstrCor                       str_cor;
 
-    ErrorList   error_list;
-    NstrCor     str_cor;
+    Expr                          sys_state;
 
-    Expr        sys_state;
+    Scope                         main_scope;
+    Scope                        *cur_scope;
 };
 
 extern Ip *ip;

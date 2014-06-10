@@ -2,7 +2,7 @@ MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: test_Inst
+all: exe
 
 exe: std
 	
@@ -11,7 +11,7 @@ exe: std
 std: ext/PrepArg install_dir
 	#${MC} -O3 src/stela.cpp ${SRC}
 	${MC} src/stela.cpp ${SRC}
-	cat out.cpp
+#	cat out.cpp
 # 	metil_comp out.cpp
 
 install:

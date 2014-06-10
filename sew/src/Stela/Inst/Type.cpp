@@ -1,4 +1,5 @@
 #include "Class.h"
+#include "Type.h"
 
 Type::Type( Class *orig ) : orig( orig ) {
     _len  = -1;

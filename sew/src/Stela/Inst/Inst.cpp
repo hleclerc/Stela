@@ -1,3 +1,4 @@
+#include "BoolOpSeq.h"
 #include <fstream>
 #include "Type.h"
 #include "Inst.h"
@@ -56,10 +57,12 @@ void Inst::write_to_stream( Stream &os, int prec ) {
     }
 }
 
-
-Type *Inst::type() {
-    return 0;
+Type *Inst::ptype() {
+    TODO;
+    // ip->disp_error( "ptype() on a non pointer type" );
+    return ip->type_Error;
 }
+
 
 
 void Inst::add_dep( const Expr &val ) {
@@ -252,6 +255,19 @@ bool Inst::uninitialized() const {
     return false;
 }
 
+bool Inst::is_surdef() const {
+    return flags & SURDEF;
+}
+
+bool Inst::is_const() const {
+    return flags & CONST;
+}
+
+
 bool Inst::get_val( Type *type, void *data ) const {
     return false;
+}
+
+Inst::operator BoolOpSeq() const {
+    return BoolOpSeq( this, true );
 }

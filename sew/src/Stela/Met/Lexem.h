@@ -21,6 +21,11 @@ public:
 
         NB_BASE_TYPE    = 16
     };
+    enum {
+        SCOPE_TYPE_CLASS   = 1,
+
+        SCOPE_TYPE_STATIC  = 2
+    };
 
     Lexem();
 
@@ -33,6 +38,7 @@ public:
     bool   is_an_int() const;
     bool   eq( const char *p ) const;
     bool   begin_with( const char *p ) const;
+    bool   same_str( const char *p, int len ) const;
 
     int type; /// >0 => operator. <=0 => @see enum
     int num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar
@@ -50,6 +56,10 @@ public:
     int  nb_preceding_cr;
     int  approx_line;
     int  spcr;
+
+    int  num_in_scope; ///< num in the current scope
+    int  num_scope;    ///< num in the scope hierarchy
+    int  scope_type;   ///<
 };
 
 inline int is_in_main_block( const Lexem *t ) { while( t->prev ) t = t->prev; return not t->parent; }
@@ -62,8 +72,8 @@ const Lexem *rightmost_child( const Lexem *t );
 
 
 /// a,b,c -> [a b c]
-template<class TL>
-void get_children_of_type( const Lexem *t, int type, TL &res ) {
+template<class CL,class TL>
+void get_children_of_type( CL t, int type, TL &res ) {
     if ( not t )
         return;
     if ( t->type == type ) {

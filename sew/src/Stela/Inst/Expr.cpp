@@ -1,5 +1,4 @@
 #include "../System/SizeofIf.h"
-#include "Uninitialized.h"
 #include "Symbol.h"
 #include "Type.h"
 #include "Room.h"
@@ -17,11 +16,6 @@ Expr::Expr( Inst *inst ) : inst( inst ) {
 #define DECL_BT( T ) Expr::Expr( T val ) : Expr( cst( ip->type_##T, SizeofIf<T,true>::val, &val ) ) {}
 #include "DeclArytTypes.h"
 #undef DECL_BT
-
-
-Expr::Expr() : inst( uninitialized() ) {
-    ++inst->cpt_use;
-}
 
 Expr::~Expr() {
     if ( inst and --inst->cpt_use <= 0 )
@@ -48,4 +42,8 @@ void Expr::write_to_stream( Stream &os ) const {
         os << *inst;
     else
         os << "NULL";
+}
+
+bool Expr::error() {
+    return inst == 0 or inst->type() == ip->type_Error;
 }

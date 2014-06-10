@@ -1,0 +1,11 @@
+class Toto[ t, attr ]
+    yok := 4
+    def foo
+        attr
+        def bar
+            attr
+
+#a := 10
+#___info a
+#___disp a
+#___disp a + 50

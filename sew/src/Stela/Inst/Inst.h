@@ -16,7 +16,8 @@ public:
         int   ninp; ///< input number (or TPAR_...)
     };
     enum {
-        CONST = 1
+        CONST = 1,
+        SURDEF = 2
     };
     enum {
         TPAR_DEP = -1,
@@ -43,6 +44,7 @@ public:
     virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) = 0;
     virtual Type *type() = 0;
+    virtual Type *ptype();
 
     void rem_ref_to_this();
 
@@ -56,8 +58,11 @@ public:
     virtual bool has_inp_parent() const;
 
     virtual bool uninitialized() const;
+    virtual bool is_surdef() const;
+    virtual bool is_const() const;
 
     virtual bool get_val( Type *type, void *data ) const;
+    virtual operator BoolOpSeq() const;
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );

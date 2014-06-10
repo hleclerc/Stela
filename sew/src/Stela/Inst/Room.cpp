@@ -8,11 +8,7 @@
 /**
 */
 struct Room : Inst {
-    enum {
-        CONST = 1
-    };
-
-    Room() : flags( 0 ) {}
+    Room() {}
     virtual void write_dot( Stream &os ) { os << "&"; }
     virtual void write_to_stream( Stream &os, int prec = -1 ) {
         os << "&(" << val << ")";
@@ -34,6 +30,7 @@ struct Room : Inst {
     virtual Expr get( const BoolOpSeq &cond ) {
         return val->simplified( cond );
     }
+
     virtual void _mk_store_dep( Inst *dst ) {
         Expr st = store( this, val );
         for( Expr &d : future_dep )

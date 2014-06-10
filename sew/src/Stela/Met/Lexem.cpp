@@ -15,6 +15,8 @@ Lexem::Lexem() {
     prev             = 0;
     sibling          = 0;
     prev_chro        = 0;
+    num_in_scope     = -1;
+    num_scope        = -1;
     preceded_by_a_cr = false;
 
     nb_preceding_comma_dot = 0;
@@ -67,6 +69,10 @@ bool Lexem::begin_with( const char *p ) const {
     return int( strlen( p ) ) <= len and strncmp( p, beg, strlen( p ) ) == 0;
 }
 
+bool Lexem::same_str( const char *p, int l ) const {
+    return len == l and strncmp( beg, p, l ) == 0;
+}
+
 const Lexem *leftmost_child( const Lexem *t ) {
     if ( t->type == Lexem::APPLY or t->type == Lexem::SELECT or t->type == Lexem::CHANGE_BEHAVIOR )
         return leftmost_child( t->children[  0] ); // a(15)
@@ -102,10 +108,16 @@ void display_graph_rec( std::ostream &os, const Lexem *t, unsigned level, unsign
     for( ; t ; t = t->next ) {
         os << "{ rank = same; " << level << " node" << t << " [label=\"";
         //if ( t->preceded_by_a_cr ) os << "[CR]";
-        if ( t->nb_preceding_comma_dot )
-            os << "[;=>" << t->nb_preceding_comma_dot << ']';
-        if ( t->nb_preceding_cr )
-            os << "[n=>" << t->nb_preceding_cr << ']';
+        //if ( t->nb_preceding_comma_dot )
+        //    os << "[;=>" << t->nb_preceding_comma_dot << ']';
+        //if ( t->nb_preceding_cr )
+        //    os << "[n=>" << t->nb_preceding_cr << ']';
+        if ( t->num_scope >= 0 ) {
+            os << '[' << t->num_scope;
+            if ( t->num_in_scope >= 0 )
+                os << ',' << t->num_in_scope;
+            os << ']';
+        }
         for( int i = 0; i < t->len; ++i ) {
             if ( t->beg[ i ]=='\n' )
                 os << "\\n";

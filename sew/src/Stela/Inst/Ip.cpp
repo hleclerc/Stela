@@ -1,3 +1,4 @@
+#include "../System/BinStreamReader.h"
 #include "Class.h"
 #include "Type.h"
 #include "Cst.h"
@@ -5,7 +6,7 @@
 
 Ip *ip;
 
-Ip::Ip() {
+Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     #define DECL_BT( T ) class_##T = new Class; class_##T->name = STRING_##T##_NUM;
     #include "DeclParmClass.h"
     #include "DeclBaseClass.h"
@@ -49,15 +50,48 @@ ErrorList::Error &Ip::error_msg( String msg, bool warn, const char *file, int li
     ErrorList::Error &res = error_list.add( msg, warn );
     if ( file )
         res.caller_stack.push_back( line, file );
-
-    if ( sf and off >= 0 )
-        res.ac( sf->name.c_str(), off );
-    for( int i = sf_stack.size() - 1; i >= 0; --i )
-        if ( sf_stack[ i ].sf and sf_stack[ i ].off >= 0 )
-            res.ac( sf_stack[ i ].sf->name.c_str(), sf_stack[ i ].off );
+    for( Scope *s = cur_scope; s; s = s->caller ? s->caller : s->parent )
+        if ( s->sf and s->off >= 0 )
+            res.ac( s->sf->name.c_str(), s->off );
     return res;
 }
 
 Expr Ip::error_var() {
-    return Expr( cst( type_Error, 0, 0 ) );
+    return cst( type_Error, 0, 0 );
+}
+
+Expr Ip::void_var() {
+    return cst( type_Void, 0, 0 );
+}
+
+
+NamedVarList *Ip::get_static_scope( String path ) {
+    return &static_scopes[ path ];
+}
+
+void Ip::add_inc_path( String inc_path ) {
+    inc_paths.push_back_unique( inc_path );
+}
+
+SourceFile *Ip::new_sf( String file ) {
+    if ( sourcefiles.count( file ) )
+        return 0;
+    SourceFile *res = &sourcefiles[ file ];
+    res->name = file;
+    return res;
+}
+
+Expr Ip::make_Varargs( Vec<Expr> &v_args, Vec<int> &v_names ) {
+    TODO;
+    return 0;
+}
+
+Expr Ip::make_Callable( Vec<Expr> &lst, Expr self ) {
+    TODO;
+    return 0;
+}
+
+Expr Ip::make_type_var( Type *type ) {
+    TODO;
+    return 0;
 }

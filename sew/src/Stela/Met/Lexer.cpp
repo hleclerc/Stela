@@ -50,6 +50,7 @@ void Lexer::parse( const char *beg, const char *src ) {
     assemble_op( 0, lif - 1 );                  if ( error_list ) return;
     update_else_order();                        if ( error_list ) return;
     remove_while_conds();                       if ( error_list ) return;
+    set_num_scope();                            if ( error_list ) return;
 }
 
 void Lexer::display() {
@@ -1034,4 +1035,82 @@ void Lexer::remove_while_conds() {
         lex->children[ 1 ] = 0;
     }
 }
+
+void Lexer::set_num_scope() {
+    int nsd = 0, nss = 0;
+    set_num_scope( root(), 0, nsd, nss, Lexem::SCOPE_TYPE_STATIC );
+}
+
+void Lexer::set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type ) {
+    for( ; b; b = b->next ) {
+        b->num_scope = np;
+        b->scope_type = scope_type;
+
+        if ( b->type == STRING_assign_NUM or b->type == STRING_assign_type_NUM ) {
+            b->children[ 0 ]->num_in_scope = ( scope_type & Lexem::SCOPE_TYPE_STATIC ) ? nss++ : nsd++;
+            b->children[ 0 ]->scope_type = scope_type;
+            b->children[ 0 ]->num_scope = np;
+
+            set_num_scope( b->children[ 1 ], np, nsd, nsd, 0 );
+        } else if ( b->type == STRING___if___NUM ) {
+            int oss, osd;
+            set_num_scope( b->children[ 0 ], np + 1, oss = 0, osd = 0, 0 );
+            if ( b->children[ 1 ]->type == STRING___else___NUM ) {
+                set_num_scope( b->children[ 1 ]->children[ 0 ], np + 2, oss = 0, osd = 0, 0 ); // ok
+                set_num_scope( b->children[ 1 ]->children[ 1 ], np + 2, oss = 0, osd = 0, 0 ); // ko
+            } else
+                set_num_scope( b->children[ 1 ], np + 2, oss = 0, osd = 0, 0 ); // ok
+        } else if ( b->type == STRING___while___NUM ) {
+            int oss, osd;
+            if ( b->children[ 0 ]->type == STRING___else___NUM ) {
+                set_num_scope( b->children[ 0 ]->children[ 0 ], np + 2, oss = 0, osd = 0, 0 ); // ok
+                set_num_scope( b->children[ 0 ]->children[ 1 ], np + 2, oss = 0, osd = 0, 0 ); // ko
+            } else
+                set_num_scope( b->children[ 0 ], np + 2, oss = 0, osd = 0, 0 ); // ok
+        } else if ( b->type == STRING___def___NUM or b->type == STRING___class___NUM ) {
+            Lexem *c = b->children[ 0 ];
+            while ( true ) {
+                if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
+                break;
+            }
+
+            int oss = 0, osd = 0;
+            if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT ) {
+                // name
+                c->children[ 0 ]->num_in_scope = nss++; // static
+                c->children[ 0 ]->scope_type = scope_type | Lexem::SCOPE_TYPE_STATIC;
+                c->children[ 0 ]->num_scope = np;
+
+                // args
+                SplittedVec<Lexem *,8> tl;
+                get_children_of_type( c->children[ 1 ], STRING_comma_NUM, tl );
+                for( int i = 0; i < tl.size(); ++i ) {
+                    Lexem *t = tl[ i ];
+                    if ( t->type == STRING_reassign_NUM  ) t = t->children[ 0 ];
+                    if ( t->type == STRING_doubledot_NUM ) t = t->children[ 0 ];
+
+                    t->num_scope = np + 1;
+                    t->num_in_scope = osd++;
+                    t->scope_type = 0;
+                }
+            } else {
+                // name
+                c->num_in_scope = nss++;
+                c->scope_type = scope_type | Lexem::SCOPE_TYPE_STATIC;
+                c->num_scope = np;
+            }
+
+            set_num_scope( b->children[ 1 ], np + 1, osd, oss, ( b->type == STRING___class___NUM ? Lexem::SCOPE_TYPE_CLASS : 0 ) ); // block
+        } else if ( b->type == STRING___static___NUM ) {
+            set_num_scope( b->children[ 0 ], np, nsd, nss, scope_type | Lexem::SCOPE_TYPE_STATIC );
+        } else {
+            set_num_scope( b->children[ 0 ], np, nsd, nss, scope_type );
+            set_num_scope( b->children[ 1 ], np, nsd, nss, scope_type );
+        }
+    }
+}
+
 

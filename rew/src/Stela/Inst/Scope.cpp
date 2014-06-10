@@ -184,13 +184,15 @@ Var Scope::parse_RETURN( BinStreamReader bin ) {
     return ip->error_var();
 }
 
-struct CmpCallableInfobyPertinence {
-    bool operator()( const Callable *a, const Callable *b ) const {
-        return a->pertinence > b->pertinence;
-    }
-};
+//struct CmpCallableInfobyPertinence {
+//    bool operator()( const Callable *a, const Callable *b ) const {
+//        return a->pertinence > b->pertinence;
+//    }
+//};
 
 Var Scope::apply( Var f, int nu, Var *u_args, int nn, int *n_name, Var *n_args, ApplyMode am ) {
+    TODO;
+    return 0;
     if ( f.type == &ip->type_Error )
         return ip->error_var();
     for( int i = 0; i < nu; ++i )

@@ -27,6 +27,10 @@ static Type *type_promote( Type *a, TO ) {
 template<class TO>
 struct Op : Inst {
     virtual void write_dot( Stream &os ) { os << op; }
+    virtual operator BoolOpSeq() const {
+        TODO;
+        return BoolOpSeq();
+    }
     TO op;
 };
 

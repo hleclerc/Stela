@@ -4,6 +4,7 @@
 #include "../System/BinStreamWriter.h"
 #include "../System/ErrorList.h"
 #include <map>
+#include <set>
 struct Lexem;
 
 /**
@@ -32,6 +33,15 @@ protected:
         ST   pos; // offset in data (assuming 64 bits before the reduction)
         Type type;
     };
+
+    struct CatchedVar {
+        operator bool() const { return l; }
+        bool operator<( const CatchedVar &c ) const { return o < c.o; }
+        const Lexem *o; ///< where var is actually defined
+        const Lexem *l; ///< var to be referenced
+        int          s; ///< used if l is a Callable (-> num of catched var of Callable l)
+    };
+
 
     void parse_lexem_and_siblings( const Lexem *l );
     void parse_lexem             ( const Lexem *l ); ///< individual lexem
@@ -74,6 +84,9 @@ protected:
     void push_nstring            ( int nstring_num );
     void output_list             ( const Lexem *l, int nb_dim, bool has_cd );
 
+    CatchedVar find_needed_var   ( const Lexem *v );
+    void get_needed_var_rec      ( std::set<CatchedVar> &vars, const Lexem *b );
+
     BinStreamWriter data;
     ErrorList &error_list;
 
@@ -81,6 +94,7 @@ protected:
     SplittedVec<DelayedParse,32> delayed_parse;
     SplittedVec<IntToReduce,32> int_to_reduce;
     std::map<std::string,int> nstrings;
+    std::map<const Lexem *,std::set<CatchedVar> > catched; ///< catched[ callable ] -> catched vars
     bool static_inst, const_inst;
 };
 

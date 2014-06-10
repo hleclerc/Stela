@@ -10,11 +10,10 @@ class Inst;
 class Expr {
 public:
     Expr( const Expr &obj );
-    Expr( Inst *inst );
+    Expr( Inst *inst = 0 );
     #define DECL_BT( T ) Expr( T val ); ///< cst
     #include "DeclArytTypes.h"
     #undef DECL_BT
-    Expr(); ///< unitialised variable
     ~Expr();
 
     Expr &operator=( const Expr &obj );
@@ -31,6 +30,8 @@ public:
     Inst &operator*() { return *inst; }
 
     void write_to_stream( Stream &os ) const;
+
+    bool error();
 
     Inst *inst;
 };
