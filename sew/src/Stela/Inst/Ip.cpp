@@ -65,8 +65,14 @@ Expr Ip::void_var() {
 }
 
 
-NamedVarList *Ip::get_static_scope( String path ) {
-    return &static_scopes[ path ];
+Vec<Expr> *Ip::get_static_vars( String path ) {
+    return &static_vars[ path ];
+}
+
+Expr Ip::reg_var( int name, Expr var ) {
+    if ( vars.contains( name ) and not var->is_surdef() )
+        return ip->ret_error( "There is already a Expr named '" + ip->str_cor.str( name ) + "' in the current scope" );
+    return vars.add( name, var );
 }
 
 void Ip::add_inc_path( String inc_path ) {

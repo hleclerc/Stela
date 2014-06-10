@@ -23,6 +23,9 @@ public:
     Scope        *caller;
     String        path;
 
+    Vec<Expr>    *static_vars;
+    Vec<Expr>     local_vars;
+
     SourceFile   *sf;     ///< reading context
     SI32          off;    ///< reading context
     const char   *reason; ///< reading context
@@ -31,8 +34,6 @@ public:
     Expr          cont; ///< pointer on Expr, continue or not variable
     BoolOpSeq     cond; ///< condition to execute instructions
 
-    NamedVarList *static_scope;
-    NamedVarList  local_scope;
     Type         *class_scope;
     bool          do_not_execute_anything;
     bool          method;
@@ -42,7 +43,6 @@ public:
 
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, int *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
-    Expr reg_var( int name, Expr var, bool stat = false );
     Expr get_attr( Expr self, int name );
     Expr find_var( int name );
     Expr copy( Expr &Expr );

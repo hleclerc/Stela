@@ -28,7 +28,7 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
     }
     path += name;
 
-    static_scope = ( lip ? lip : ip )->get_static_scope( path );
+    static_vars = ( lip ? lip : ip )->get_static_vars( path );
     do_not_execute_anything = false;
     class_scope = 0;
     method = false;
@@ -142,7 +142,10 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Type *type ) {
     res->flags |= Inst::SURDEF;
     res->flags |= Inst::CONST;
 
-    reg_var( name, res, true );
+    if ( parent )
+        local_vars << res;
+    else
+        ip->vars.add( name, res );
     return ip->void_var();
 }
 
@@ -614,30 +617,22 @@ Expr Scope::parse_STRING( BinStreamReader bin ) {
     TODO;
     return ip->error_var();
 }
+
 Expr Scope::parse_VAR( BinStreamReader bin ) {
     int name = read_nstring( bin );
     if ( Expr res = find_var( name ) )
         return res;
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
+
 Expr Scope::find_first_var( int name ) {
-    if ( Expr res = get_attr_rec( self, name ) )
+    if ( Expr res = ip->vars.get( name ) )
         return res;
-    for( Scope *s = this; s; s = s->parent ) {
-        if ( Expr res = s->local_scope.get( name ) )
-            return res;
-        if ( Expr res = s->static_scope->get( name ) )
-            return res;
-    }
     return (Inst *)0;
 }
 
 void Scope::find_var_clist( Vec<Expr> &lst, int name ) {
-    get_attr_rec( lst, self, name );
-    for( Scope *s = this; s; s = s->parent ) {
-        s->local_scope.get( lst, name );
-        s->static_scope->get( lst, name );
-    }
+    ip->vars.get( lst, name );
 }
 
 Expr Scope::find_var( int name ) {
@@ -648,17 +643,11 @@ Expr Scope::find_var( int name ) {
         return ip->make_Callable( lst, self );
     }
     return res;
-
 }
 
 Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
-    // name
     int name = read_nstring( bin );
-
-    // flags
     int flags = bin.read_positive_integer();
-
-    // inst
     Expr var = parse( bin.read_offset() );
 
     //
@@ -677,13 +666,31 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
         //        var.data->flags = PRef::CONST;
     }
 
-    return reg_var( name, var, flags & IR_ASSIGN_STATIC );
+    return ip->reg_var( name, var );
 }
-Expr Scope::reg_var( int name, Expr var, bool stat ) {
-    if ( var->is_surdef() == false and ( local_scope.contains( name ) or static_scope->contains( name ) ) )
-        return ip->ret_error( "There is already a Expr named '" + ip->str_cor.str( name ) + "' in the current scope" );
-    NamedVarList &scope = stat ? *static_scope : local_scope;
-    return scope.add( name, var );
+
+Expr Scope::parse_PUSH_IN_SCOPE( BinStreamReader bin ) {
+    int flags = bin.read_positive_integer();
+    Expr var = parse( bin.read_offset() );
+
+    //
+    if ( flags & IR_ASSIGN_TYPE )
+        TODO;
+        // Expr = apply( var, 0, 0, 0, 0, 0, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD, sf, off );
+
+    if ( flags & IR_ASSIGN_CONST ) {
+        TODO;
+        //        if ( ( var.flags & Var::WEAK_CONST ) == 0 and var.referenced_more_than_one_time() )
+        //            disp_error( "Impossible to make this variable fully const (already referenced elsewhere)", sf, off );
+        //        var.flags |= Var::WEAK_CONST;
+        //        var.data->flags = PRef::CONST;
+    }
+
+    if ( flags & IR_ASSIGN_STATIC )
+        *static_vars << var;
+    else
+        local_vars << var;
+    return var;
 }
 
 Expr Scope::parse_REASSIGN( BinStreamReader bin ) {

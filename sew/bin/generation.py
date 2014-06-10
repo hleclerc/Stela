@@ -535,6 +535,7 @@ base_token_types = string.split( """
     STRING
     VAR
     ASSIGN
+    PUSH_IN_SCOPE
     REASSIGN
     GET_ATTR
     GET_ATTR_PTR

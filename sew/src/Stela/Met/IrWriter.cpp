@@ -443,10 +443,15 @@ void IrWriter::parse_assign( const Lexem *l, bool assign_type ) {
          c = c->children[ 0 ];
 
      // LHS
-     data << IR_TOK_ASSIGN;
-     push_offset( l );
+     if ( c->num_scope ) {
+         data << IR_TOK_PUSH_IN_SCOPE;
+         push_offset( l );
+     } else {
+         data << IR_TOK_ASSIGN;
+         push_offset( l );
+         push_nstring( l->children[ 0 ] );
+     }
 
-     push_nstring( l->children[ 0 ] );
      data << ref         * IR_ASSIGN_REF +
              static_inst * IR_ASSIGN_STATIC +
              const_inst  * IR_ASSIGN_CONST +
@@ -933,16 +938,16 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     std::set<CatchedVar> &catched_vars = catched[ name ];
     get_needed_var_rec( catched_vars, block );
 
-    PRINT( *name );
-    for( CatchedVar cv : catched_vars )
-        if ( t->num_scope >= cv.l->num_scope ) {
-            std::cout << "    " << *cv.o
-                      << " -> scope_type=" << cv.l->scope_type
-                      << " np=" << t->num_scope - cv.l->num_scope
-                      << " ns=" << cv.l->num_in_scope
-                      << " s=" << cv.s << std::endl;
-            add_error( "...", cv.l );
-        }
+    //    PRINT( *name );
+    //    for( CatchedVar cv : catched_vars )
+    //        if ( cv.l->num_scope and t->num_scope >= cv.l->num_scope ) {
+    //            std::cout << "    " << *cv.o
+    //                      << " -> scope_type=" << cv.l->scope_type
+    //                      << " np=" << t->num_scope - cv.l->num_scope
+    //                      << " ns=" << cv.l->num_in_scope
+    //                      << " s=" << cv.s << std::endl;
+    //            // add_error( "...", cv.l );
+    //        }
 
     // output --------------------------------------------------------------
     data << token_type;
@@ -1001,6 +1006,21 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
 
     // block
     push_delayed_parse( block );
+
+    //
+    data << catched_vars.size();
+    for( CatchedVar cv : catched_vars ) {
+        if ( cv.l->num_scope and t->num_scope >= cv.l->num_scope ) {
+            if ( cv.s >= 0 ) { // in catched vars of a parent callable
+                data << PI8( IN_CATCHED_VARS );
+                data << cv.s;
+            } else {
+                data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
+                data << cv.l->num_in_scope;
+            }
+            data << t->num_scope - cv.l->num_scope; // nb parents
+        }
+    }
 
     if ( token_type == IR_TOK_DEF ) {
         // return type

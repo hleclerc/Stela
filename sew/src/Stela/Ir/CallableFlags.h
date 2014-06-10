@@ -11,7 +11,12 @@ enum CallableFlags {
     IR_NEG_PERT = 64,
     IR_IS_A_GET = 128,
     IR_IS_A_SET = 256,
-    IR_IS_A_SOP = 512
+    IR_IS_A_SOP = 512,
+
+    // for CatchedVar::type
+    IN_CATCHED_VARS = 0,
+    IN_STATIC_SCOPE = 1,
+    IN_LOCAL_SCOPE  = 2
 };
 
 #endif // Stela_Ir_CallableFlags_H

@@ -26,7 +26,8 @@ public:
     Expr error_var();
     Expr void_var();
 
-    NamedVarList *get_static_scope( String path );
+    Vec<Expr> *get_static_vars( String path );
+    Expr reg_var( int name, Expr var );
 
     void add_inc_path( String inc_path );
     void import( String file );
@@ -47,17 +48,18 @@ public:
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-    std::map<String,SourceFile>   sourcefiles;
-    std::map<String,NamedVarList> static_scopes;
-    Vec<String>                   inc_paths;
+    std::map<String,SourceFile> sourcefiles;
+    std::map<String,Vec<Expr> > static_vars;
+    Vec<String>                 inc_paths;
+    NamedVarList                vars;
 
-    ErrorList                     error_list;
-    NstrCor                       str_cor;
+    ErrorList                   error_list;
+    NstrCor                     str_cor;
 
-    Expr                          sys_state;
+    Expr                        sys_state;
 
-    Scope                         main_scope;
-    Scope                        *cur_scope;
+    Scope                       main_scope;
+    Scope                      *cur_scope;
 };
 
 extern Ip *ip;

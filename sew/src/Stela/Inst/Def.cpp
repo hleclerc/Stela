@@ -113,70 +113,75 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
     }
 
 
-    Vec<bool> arg_ok( Size(), arg_names.size(), false );
     if ( pnu + pnn )
         TODO;
     if ( has_varargs() ) {
-        Vec<Expr> v_args;
-        Vec<int> v_names;
+        TODO; // var ordering
 
-        for( int i = 0; i < nn; ++i ) {
-            int o = arg_names.first_index_equal_to( names[ i ] );
-            if ( o >= 0 ) {
-                if ( arg_ok[ o ] )
-                    ip->disp_error( "arg is already assigned", true );
-                res->scope->reg_var( names[ i ], vn[ i ] );
-                arg_ok[ o ] = true;
-            } else {
-                v_args  << vn   [ i ];
-                v_names << names[ i ];
+        //        Vec<Expr> v_args;
+        //        Vec<int> v_names;
+        //        for( int i = 0; i < nn; ++i ) {
+        //            int o = arg_names.first_index_equal_to( names[ i ] );
+        //            if ( o >= 0 ) {
+        //                if ( arg_ok[ o ] )
+        //                    ip->disp_error( "arg is already assigned", true );
+        //                res->scope->local_vars << vn[ i ];
+        //                arg_ok[ o ] = true;
+        //            } else {
+        //                v_args  << vn   [ i ];
+        //                v_names << names[ i ];
+        //            }
+        //        }
+
+        //        for( int i = 0; i < arg_names.size(); ++i ) {
+        //            if ( arg_ok[ i ] )
+        //                ip->disp_error( "arg is already assigned", true );
+        //            res->scope->local_vars << vu[ i ];
+        //            arg_ok[ i ] = true;
+        //        }
+        //        for( int i = arg_names.size(); i < nu; ++i )
+        //            v_args << vu[ i ];
+
+
+        //        Expr varargs = ip->make_Varargs( v_args, v_names );
+        //        res->scope->reg_var( STRING_varargs_NUM, varargs );
+    } else {
+        // unnamed args
+        for( int i = 0; i < nu; ++i )
+            res->scope->local_vars << vu[ i ];
+        // named args
+        Vec<bool> used_arg( Size(), nn, false );
+        for( int i = nu; i < arg_names.size(); ++i ) {
+            int arg_name = arg_names[ i ];
+            for( int n = 0; ; ++n ) {
+                if ( n == nn ) {
+                    // not specified arg
+                    int j = i - ( arg_names.size() - arg_defaults.size() );
+                    if ( j < 0 )
+                        return res->wr( "unspecified mandatory argument" );
+                    res->scope->local_vars << res->scope->parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
+                    break;
+                }
+                if ( arg_name == names[ n ] ) {
+                    res->scope->local_vars << vn[ i ];
+                    used_arg[ n ] = true;
+                    break;
+                }
             }
         }
-
-        for( int i = 0; i < arg_names.size(); ++i ) {
-            if ( arg_ok[ i ] )
-                ip->disp_error( "arg is already assigned", true );
-            res->scope->reg_var( arg_names[ i ], vu[ i ] );
-            arg_ok[ i ] = true;
-        }
-        for( int i = arg_names.size(); i < nu; ++i )
-            v_args << vu[ i ];
-
-
-        Expr varargs = ip->make_Varargs( v_args, v_names );
-        res->scope->reg_var( STRING_varargs_NUM, varargs );
-    } else {
-        for( int i = 0; i < nn; ++i ) {
-            int o = arg_names.first_index_equal_to( names[ i ] );
-            if ( o < 0 )
+        for( int n = 0; n < nn; ++n ) {
+            if ( not used_arg[ n ] ) {
+                for( int m = 0; m < n; ++m )
+                    if ( names[ n ] == names[ m ] )
+                        ip->disp_error( "arg assigned twice", true );
                 return res->wr( "name=... does not appear in def args" );
-            if ( arg_ok[ o ] )
-                ip->disp_error( "arg assigned twice", true );
-            res->scope->reg_var( names[ i ], vn[ i ] );
-            arg_ok[ o ] = true;
-        }
-        for( int i = 0; i < nu; ++i ) {
-            if ( arg_ok[ i ] )
-                ip->disp_error( "arg assigned twice", true );
-            res->scope->reg_var( arg_names[ i ], vu[ i ] );
-            arg_ok[ i ] = true;
-        }
-    }
-
-    // default values
-    for( int i = 0; i < arg_ok.size(); ++i ) {
-        if ( not arg_ok[ i ] ) {
-            int j = i - ( arg_names.size() - arg_defaults.size() );
-            if ( j < 0 )
-                return res->wr( "bad num default arg (weird)" );
-            res->scope->reg_var( arg_names[ i ], res->scope->parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" ) );
-            arg_ok[ i ] = true;
+            }
         }
     }
 
     // arg constraints
     for( int i = 0; i < arg_constraints.size(); ++i ) {
-        Expr v = res->scope->find_var( arg_names[ i ] );
+        Expr v = res->scope->local_vars[ i ];
         int n = v->type()->orig->name;
         if ( int t = arg_constraints[ i ].class_names.size() ) {
             for( int j = 0; ; ++j ) {

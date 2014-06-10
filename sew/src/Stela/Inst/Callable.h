@@ -21,6 +21,11 @@ public:
         SourceFile *sf;
         const PI8 *tok;
     };
+    struct CatchedVar {
+        int type; ///< IN_...
+        int ns;   ///< num in scope
+        int np;   ///< num parent
+    };
     struct Trial {
         Trial( const char *reason = 0 );
         virtual ~Trial();
@@ -47,22 +52,23 @@ public:
     bool self_as_arg() const;
 
     // provenance
-    SourceFile *sf;
-    int         off; ///< in sourcefile
+    SourceFile     *sf;
+    int             off; ///< in sourcefile
 
     // data
-    int         name;
-    double      pertinence;
+    int             name;
+    double          pertinence;
 
-    int         flags;
-    int         nargs;
-    int         dargs;
-    Vec<int>    arg_names;
-    Vec<Code>   arg_defaults;
-    Vec<ArgCst> arg_constraints; ///< class names
-    Code        comp_pert;
-    Code        condition;
-    Code        block;
+    int             flags;
+    int             nargs;
+    int             dargs;
+    Vec<int>        arg_names;
+    Vec<Code>       arg_defaults;
+    Vec<ArgCst>     arg_constraints; ///< class names
+    Code            comp_pert;
+    Code            condition;
+    Code            block;
+    Vec<CatchedVar> catched_vars;
 };
 
 #endif // CALLABLE_H

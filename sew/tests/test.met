@@ -1,12 +1,5 @@
-class Toto[ attr ]
-    yok := 4
-    #attr := 8
-    def foo
-        attr
-        def bar
-            attr
+def foo b
+    ___info b
 
-#a := 10
-#___info a
-#___disp a
+___info foo 10
 #___disp a + 50
