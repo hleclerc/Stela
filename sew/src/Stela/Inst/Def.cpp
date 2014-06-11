@@ -13,45 +13,46 @@ Def::TrialDef::~TrialDef() {
     delete scope;
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Expr self, int apply_mode ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
-        Type *ti = self->type();
-        ti->parse();
-        for( int i = 0; i < ti->_attributes.size(); ++i ) {
-            if ( ti->_attributes[ i ].dyn() ) {
-                // ip->push_sf( ti->_attributes[ i ].sf, "init attr" );
-                // ip->off = ti->_attributes[ i ].off;
+        TODO;
+        //        Type *ti = self->type();
+        //        ti->parse();
+        //        for( int i = 0; i < ti->_attributes.size(); ++i ) {
+        //            if ( ti->_attributes[ i ].dyn() ) {
+        //                // ip->push_sf( ti->_attributes[ i ].sf, "init attr" );
+        //                // ip->off = ti->_attributes[ i ].off;
 
-                Expr subv = scope->get_attr( self, ti->_attributes[ i ].name );
-                Expr suin = scope->get_attr( subv, STRING_init_NUM );
-                for( int a = 0; ; ++a ) {
-                    if ( a == orig->attr_init.size() ) {
-                        if ( ti->_attributes[ i ].var )
-                            scope->apply( suin, 1, &ti->_attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD );
-                        else
-                            scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD );
-                        break;
-                    }
-                    AttrInit *ai = &orig->attr_init[ a ];
-                    if ( ai->name == ti->_attributes[ i ].name ) {
-                        Expr vu[ ai->nu ];
-                        for( int i = 0; i < ai->nu; ++i )
-                            vu[ i ] = scope->parse( ai->args[ i ].sf, ai->args[ i ].tok, "parsing init value" );
-                        Expr vn[ ai->nn ];
-                        for( int i = 0; i < ai->nn; ++i )
-                            vn[ i ] = scope->parse( ai->args[ i + ai->nu ].sf, ai->args[ i + ai->nu ].tok, "parsing init value" );
-                        scope->apply( suin, ai->nu, vu, ai->nn, ai->names.ptr(), vn, Scope::APPLY_MODE_STD );
-                        break;
-                    }
-                }
+        //                Expr subv = scope->get_attr( self, ti->_attributes[ i ].name );
+        //                Expr suin = scope->get_attr( subv, STRING_init_NUM );
+        //                for( int a = 0; ; ++a ) {
+        //                    if ( a == orig->attr_init.size() ) {
+        //                        if ( ti->_attributes[ i ].var )
+        //                            scope->apply( suin, 1, &ti->_attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD );
+        //                        else
+        //                            scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD );
+        //                        break;
+        //                    }
+        //                    AttrInit *ai = &orig->attr_init[ a ];
+        //                    if ( ai->name == ti->_attributes[ i ].name ) {
+        //                        Expr vu[ ai->nu ];
+        //                        for( int i = 0; i < ai->nu; ++i )
+        //                            vu[ i ] = scope->parse( ai->args[ i ].sf, ai->args[ i ].tok, "parsing init value" );
+        //                        Expr vn[ ai->nn ];
+        //                        for( int i = 0; i < ai->nn; ++i )
+        //                            vn[ i ] = scope->parse( ai->args[ i + ai->nu ].sf, ai->args[ i + ai->nu ].tok, "parsing init value" );
+        //                        scope->apply( suin, ai->nu, vu, ai->nn, ai->names.ptr(), vn, Scope::APPLY_MODE_STD );
+        //                        break;
+        //                    }
+        //                }
 
-                // ip->pop_sf();
-            }
-        }
+        //                // ip->pop_sf();
+        //            }
+        //        }
     }
 
     // new scope (with local static variables)
@@ -96,7 +97,7 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
     sop_of = flags & IR_IS_A_SOP ? scope->read_nstring( bin ) : -1;
 }
 
-Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Expr self ) {
+Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn ) {
     TrialDef *res = new TrialDef( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
@@ -107,10 +108,10 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
 
     TODO;
     res->scope = new Scope( &ip->main_scope, 0, name + "_" + sf->name + "_" + to_string( off ) );
-    if ( self ) {
-        res->scope->method = true;
-        res->scope->self = self;
-    }
+    //    if ( self ) {
+    //        res->scope->method = true;
+    //        res->scope->self = self;
+    //    }
 
 
     if ( pnu + pnn )

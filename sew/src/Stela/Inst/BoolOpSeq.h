@@ -30,6 +30,7 @@ public:
     bool operator!=( const BoolOpSeq &b ) const { return not operator==( b ); }
 
     bool always( bool b ) const { return or_seq.size() == 0 and val_if_not_or_seq == b; }
+    bool error();
 
     bool imply( const BoolOpSeq &b ) const; ///< val of b knowing this == true
     Vec<Item> common_terms() const;

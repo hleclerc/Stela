@@ -2,6 +2,7 @@
 #include "../System/UsualStrings.h"
 #include "../System/ReadFile.h"
 #include "../System/RaiiSave.h"
+#include "../System/AutoPtr.h"
 #include "../Ir/CallableFlags.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
@@ -220,8 +221,8 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         Expr lst = slice( l_type, f->get(), 0 )->get( cond );
         Type *vt = lst->type();
         int o = 0;
-        Vec<Callable *> surdefs;
-        Vec<Expr> catched_vars;
+        Vec<Callable *> ci;
+        // Vec<Expr> catched_vars;
         for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->type_ST->size() ) {
             Type *pt = ip->type_from_type_var( vt->parameters[ 0 ] );
             Expr callable = slice( pt, lst, o )->get( cond );
@@ -230,12 +231,10 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             SI64 cptr_val;
             if ( not cptr->get_val( ip->type_SI64, &cptr_val ) )
                 return ip->ret_error( "exp. cst" );
-            surdefs << reinterpret_cast<Callable *>( ST( cptr_val ) );
+            ci << reinterpret_cast<Callable *>( ST( cptr_val ) );
             // catched_var
-            catched_vars << slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 );
+            // catched_vars << slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 );
         }
-        PRINT( *surdefs[ 0 ] );
-        PRINT( catched_vars );
 
         // parm
         Vec<int> pn_names;
@@ -275,111 +274,102 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         int pnu = pu_args.size(), pnn = pn_args.size();
 
         // tests
-        std::sort( surdefs.begin(), surdefs.end(), CmpCallableInfobyPertinence() );
+        std::sort( ci.begin(), ci.end(), CmpCallableInfobyPertinence() );
 
-        TODO;
-//        int nb_ok = 0;
-//        double guaranted_pertinence = 0;
-//        bool   has_guaranted_pertinence = false;
-//        AutoPtr<Callable::Trial> trials[ nb_surdefs ];
-//        for( int i = 0; i < nb_surdefs; ++i ) {
-//            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
-//                for( int j = i; j < nb_surdefs; ++j )
-//                    trials[ j ] = new Callable::Trial( "Already a more pertinent solution" );
-//                break;
-//            }
+        int nb_ok = 0, nb_surdefs = ci.size();
+        double guaranted_pertinence = 0;
+        bool has_guaranted_pertinence = false;
+        AutoPtr<Callable::Trial> trials[ nb_surdefs ];
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
+                for( int j = i; j < nb_surdefs; ++j )
+                    trials[ j ] = new Callable::Trial( "Already a more pertinent solution" );
+                break;
+            }
 
-//            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self );
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr() );
 
-//            if ( trials[ i ]->ok() ) {
-//                if ( trials[ i ]->cond.always( true ) ) {
-//                    has_guaranted_pertinence = true;
-//                    guaranted_pertinence = ci[ i ]->pertinence;
-//                }
-//                ++nb_ok;
-//            }
-//        }
+            if ( trials[ i ]->ok() ) {
+                if ( trials[ i ]->cond.always( true ) ) {
+                    has_guaranted_pertinence = true;
+                    guaranted_pertinence = ci[ i ]->pertinence;
+                }
+                ++nb_ok;
+            }
+        }
 
-//        //
-//        for( int i = 0; i < nb_surdefs; ++i )
-//            if ( trials[ i ]->cond.error() )
-//                return ip->error_var();
+        //
+        for( int i = 0; i < nb_surdefs; ++i )
+            if ( trials[ i ]->cond.error() )
+                return ip->error_var();
 
-//        // no valid surdef ?
-//        if ( nb_ok == 0 ) {
-//            std::ostringstream ss;
-//            ss << "No matching surdef";
-//            //            if ( self ) {
-//            //                ss << " (looking for '" << *self.type;
-//            //                if ( lst_def.size() )
-//            //                    ss << "." << glob_nstr_cor.str( lst_def[ 0 ]->name );
-//            //                ss << "' with " << na << " argument";
-//            //                ss << ")";
-//            //            }
-//            ErrorList::Error &err = ip->error_msg( ss.str() );
-//            for( int i = 0; i < nb_surdefs; ++i )
-//                err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
-//            std::cerr << err;
-//            return ip->error_var();
-//        }
+        // no valid surdef ?
+        if ( nb_ok == 0 ) {
+            std::ostringstream ss;
+            ss << "No matching surdef";
+            //            if ( self ) {
+            //                ss << " (looking for '" << *self.type;
+            //                if ( lst_def.size() )
+            //                    ss << "." << glob_nstr_cor.str( lst_def[ 0 ]->name );
+            //                ss << "' with " << na << " argument";
+            //                ss << ")";
+            //            }
+            ErrorList::Error &err = ip->error_msg( ss.str() );
+            for( int i = 0; i < nb_surdefs; ++i )
+                err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
+            std::cerr << err;
+            return ip->error_var();
+        }
 
-//        // valid surdefs, but only with runtime conditions
-//        if ( not has_guaranted_pertinence ) {
-//            std::ostringstream ss;
-//            ss << "There is no failback surdefinition (only runtime conditions)";
-//            ErrorList::Error &err = ip->error_msg( ss.str() );
-//            for( int i = 0; i < nb_surdefs; ++i ) {
-//                if ( trials[ i ]->ok() )
-//                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "accepted" );
-//                else
-//                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
-//            }
-//            std::cerr << err;
-//            return ip->error_var();
-//        }
+        // valid surdefs, but only with runtime conditions
+        if ( not has_guaranted_pertinence ) {
+            std::ostringstream ss;
+            ss << "There is no failback surdefinition (only runtime conditions)";
+            ErrorList::Error &err = ip->error_msg( ss.str() );
+            for( int i = 0; i < nb_surdefs; ++i ) {
+                if ( trials[ i ]->ok() )
+                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "accepted" );
+                else
+                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+            }
+            std::cerr << err;
+            return ip->error_var();
+        }
 
-//        // ambiguous overload ?
-//        if ( nb_ok > 1 ) {
-//            double best_pertinence = -std::numeric_limits<double>::max();
-//            for( int i = 0; i < nb_surdefs; ++i )
-//                best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
-//            int nb_wp = 0;
-//            for( int i = 0; i < nb_surdefs; ++i )
-//                nb_wp += trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence;
-//            if ( nb_wp > 1 ) {
-//                std::ostringstream ss;
-//                ss << "Ambiguous overload";
-//                ErrorList::Error &err = ip->error_msg( ss.str() );
-//                for( int i = 0; i < nb_surdefs; ++i )
-//                    if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
-//                        err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "possibility" );
-//                std::cerr << err;
-//                return ip->error_var();
-//            }
-//        }
+        // ambiguous overload ?
+        if ( nb_ok > 1 ) {
+            double best_pertinence = -std::numeric_limits<double>::max();
+            for( int i = 0; i < nb_surdefs; ++i )
+                best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
+            int nb_wp = 0;
+            for( int i = 0; i < nb_surdefs; ++i )
+                nb_wp += trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence;
+            if ( nb_wp > 1 ) {
+                std::ostringstream ss;
+                ss << "Ambiguous overload";
+                ErrorList::Error &err = ip->error_msg( ss.str() );
+                for( int i = 0; i < nb_surdefs; ++i )
+                    if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
+                        err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "possibility" );
+                std::cerr << err;
+                return ip->error_var();
+            }
+        }
 
-//        Expr res;
-//        Expr cond = ip->cond_stack.back();
-//        for( int i = 0; i < nb_surdefs; ++i ) {
-//            if ( trials[ i ]->ok() ) {
-//                if ( trials[ i ]->cond.defined() )
-//                    ip->set_cond( op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_and_boolean() ) );
-//                else
-//                    ip->set_cond( cond );
+        Expr res;
+        BoolOpSeq cond = this->cond;
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            if ( trials[ i ]->ok() ) {
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am );
+                res->set( loc, cond and trials[ i ]->cond );
 
-//                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), l_self, am );
-//                res.set_val( loc, Rese(), ip->cur_cond() );
+                if ( trials[ i ]->cond.always( true ) )
+                    break;
+                cond = cond and not trials[ i ]->cond;
+            }
+        }
 
-//                ip->pop_cond();
-
-//                if ( trials[ i ]->cond.defined() )
-//                    cond = op( &ip->type_Bool, &ip->type_Bool, cond, &ip->type_Bool, op( &ip->type_Bool, &ip->type_Bool, trials[ i ]->cond.get_val(), Op_not_boolean() ), Op_and_boolean() );
-//                else
-//                    break;
-//            }
-//        }
-
-//        return res;
+        return res;
     }
 
     //

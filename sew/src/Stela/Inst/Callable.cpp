@@ -9,7 +9,7 @@ Callable::Trial::Trial( const char *reason ) : reason( reason ) {
 Callable::Trial::~Trial() {
 }
 
-Expr Callable::Trial::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Expr self, int apply_mode ) {
+Expr Callable::Trial::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode ) {
     ERROR( "weird... should not be here" );
     return ip->error_var();
 }

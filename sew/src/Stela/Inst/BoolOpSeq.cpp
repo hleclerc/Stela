@@ -59,6 +59,14 @@ void BoolOpSeq::write_to_stream( Stream &os ) const {
         os << ( val_if_not_or_seq ? "true" : "false" );
 }
 
+bool BoolOpSeq::error() {
+    for( int i = 0; i < or_seq.size(); ++i )
+        for( int j = 0; j < or_seq[ i ].size(); ++j )
+            if ( or_seq[ i ][ j ].expr.error() )
+                return true;
+    return false;
+}
+
 bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
     // val b knowing self
     if ( not b.or_seq.size() )
