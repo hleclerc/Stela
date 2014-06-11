@@ -7,6 +7,7 @@ bin/mi.py
 src/args.h
 src/Stela/Inst/Store.h
 src/Stela/Inst/Ip.h
+src/Stela/Inst/Slice.h
 src/Stela/Inst/DeclOp_Binary.h
 src/Stela/Inst/Type.h
 src/Stela/Inst/ReplBits.h
@@ -90,6 +91,7 @@ src/Stela/Inst/Sourcefile.cpp
 src/Stela/Inst/Class.cpp
 src/Stela/Inst/Callable.cpp
 src/Stela/Inst/Room.cpp
+src/Stela/Inst/Slice.cpp
 src/Stela/Inst/Ip.cpp
 src/Stela/Inst/Type.cpp
 src/Stela/Inst/Store.cpp

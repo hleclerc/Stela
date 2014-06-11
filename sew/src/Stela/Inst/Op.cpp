@@ -45,6 +45,8 @@ struct UOp : Op<TO> {
 
 template<class TO>
 static Expr _op( Expr a, TO ) {
+    if ( a.error() )
+        return ip->error_var();
     UOp<TO> *res = new UOp<TO>();
     res->add_inp( a );
     return res;
@@ -133,6 +135,8 @@ Expr _op_unk_cst( Expr a, Type *tb, TB *b, Op_mul o ) {
 //
 template<class TO>
 static Expr _op( Expr a, Expr b, TO op ) {
+    if ( a.error() or b.error() )
+        return ip->error_var();
     Type *ta = a->type();
     Type *tb = b->type();
     ASSERT( ta->aryth and tb->aryth, "..." );

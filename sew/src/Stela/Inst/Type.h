@@ -26,8 +26,10 @@ public:
     void write_to_stream( Stream &os );
     void write_to_stream( Stream &os, void *data, int len );
 
-    int size();
-    int sb();
+    Expr size( Inst *inst ); ///< size in bits
+    int  size(); ///< size in bits (-1 if depend on the actual data)
+    int  pod();  ///< plain old data
+    int  sb();   ///< size in bytes (-1 if depend on the actual data)
 
     void parse();
 
@@ -35,6 +37,8 @@ public:
     Class    *orig;
     bool      aryth;
     int       _len;
+    int       _pod;
+    bool      _parsed;
     Vec<Attr> _attributes; ///< dynamic and static attributes
 };
 

@@ -15,6 +15,8 @@ Expr syscall( Vec<Expr> inp ) {
     Syscall *res = new Syscall();
     ++Inst::cur_op_id;
     for( Expr i : inp ) {
+        if ( i.error() )
+            return ip->error_var();
         i->add_store_dep( res );
         res->add_inp( i );
     }

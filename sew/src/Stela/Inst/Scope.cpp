@@ -2,16 +2,19 @@
 #include "../System/UsualStrings.h"
 #include "../System/ReadFile.h"
 #include "../System/RaiiSave.h"
+#include "../Ir/CallableFlags.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
 #include "Sourcefile.h"
 #include <algorithm>
+#include "ReplBits.h"
 #include "Syscall.h"
 #include "Symbol.h"
 #include "Select.h"
 #include "Scope.h"
+#include "Slice.h"
 #include "Class.h"
 #include "Room.h"
 #include "Type.h"
@@ -115,46 +118,78 @@ Expr Scope::parse_BLOCK( BinStreamReader bin ) {
     return res;
 }
 
-Expr Scope::parse_CALLABLE( BinStreamReader bin, Type *type ) {
+Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
     int name = read_nstring( bin );
 
     // supporting variable
-    Callable *c;
-    switch( name ) {
-    #define DECL_BT( T ) case STRING_##T##_NUM: c = ip->class_##T; break;
-    #include "DeclBaseClass.h"
-    #include "DeclParmClass.h"
-    #undef DECL_BT
-    default:
-        if      ( type == ip->type_Def   ) c = new Def;
-        else if ( type == ip->type_Class ) c = new Class;
+    Callable *c = 0;
+    if ( base_class == ip->class_Class ) {
+        switch( name ) {
+        #define DECL_BT( T ) case STRING_##T##_NUM: c = ip->class_##T; break;
+        #include "DeclBaseClass.h"
+        #include "DeclParmClass.h"
+        #undef DECL_BT
+        default: break;
+        }
+    }
+    if ( not c ) {
+        if      ( base_class == ip->class_Def   ) c = new Def;
+        else if ( base_class == ip->class_Class ) c = new Class;
         else ERROR( "..." );
     }
 
-    // fill in
+    // fill in (read bin data)
     c->name = name;
     c->off  = off;
     c->sf   = sf;
     c->read_bin( this, bin );
 
-    SI64 ptr = (SI64)c;
-    Expr res = room( cst( type, 64, &ptr ) );
-    res->flags |= Inst::SURDEF;
-    res->flags |= Inst::CONST;
+    // get catched vars
+    Vec<Expr> catched_vars;
+    for( int i = 0; i < c->catched_vars.size(); ++i ) {
+        Callable::CatchedVar &cv = c->catched_vars[ i ];
+        Expr res = 125;
+        switch ( cv.type ) {
+        case IN_LOCAL_SCOPE : TODO;
+        case IN_STATIC_SCOPE: TODO;
+        case IN_CATCHED_VARS: TODO;
+        default: ERROR( "???" );
+        }
+        catched_vars << res;
+    }
+    Expr cva = ip->make_Varargs( catched_vars );
 
-    if ( parent )
-        local_vars << res;
-    else
-        ip->vars.add( name, res );
-    return ip->void_var();
+    // output type
+    // Def[ catched_vars_type ]
+    //   cpp_inst_ptr (inst in C++ of Def or Class)
+    //   catched_var_ptr
+    Vec<Expr> lt;
+    lt << ip->make_type_var( cva->type() );
+    Type *type = base_class->type_for( lt );
+    type->_len = 64 + ip->type_ST->size();
+    type->_pod = 1;
+
+    // output val
+    Expr val = cst( type, 64 + ip->type_ST->size() );
+
+    SI64 ptr = (SI64)c;
+    val = repl_bits( val,  0, cst( ip->type_ST, 64, &ptr ) );
+    val = repl_bits( val, 64, cva );
+
+    // output var
+    Expr res = room( val, Inst::SURDEF | Inst::CONST );
+
+    if ( parent ) local_vars << res;
+    else ip->vars.add( name, res );
+    return res;
 }
 
 Expr Scope::parse_DEF( BinStreamReader bin ) {
-    return parse_CALLABLE( bin, ip->type_Def );
+    return parse_CALLABLE( bin, ip->class_Def );
 }
 
 Expr Scope::parse_CLASS( BinStreamReader bin ) {
-    return parse_CALLABLE( bin, ip->type_Class );
+    return parse_CALLABLE( bin, ip->class_Class );
 }
 
 Expr Scope::parse_RETURN( BinStreamReader bin ) {
@@ -162,97 +197,87 @@ Expr Scope::parse_RETURN( BinStreamReader bin ) {
     return ip->error_var();
 }
 
-//struct CmpCallableInfobyPertinence {
-//    bool operator()( const Callable *a, const Callable *b ) const {
-//        return a->pertinence > b->pertinence;
-//    }
-//};
+struct CmpCallableInfobyPertinence {
+    bool operator()( const Callable *a, const Callable *b ) const {
+        return a->pertinence > b->pertinence;
+    }
+};
 
 Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_args, ApplyMode am ) {
-    TODO;
-    return 0;
-//    if ( f.error() )
-//        return ip->error_var();
-//    for( int i = 0; i < nu; ++i )
-//        if ( u_args[ i ].error() )
-//            return ip->error_var();
-//    for( int i = 0; i < nn; ++i )
-//        if ( n_args[ i ].error() )
-//            return ip->error_var();
+    if ( f.error() )
+        return ip->error_var();
+    for( int i = 0; i < nu; ++i )
+        if ( u_args[ i ].error() )
+            return ip->error_var();
+    for( int i = 0; i < nn; ++i )
+        if ( n_args[ i ].error() )
+            return ip->error_var();
 
-//    if ( f.type->orig == &ip->class_Callable ) {
-//        Expr sur_Expr = f.type->parameters[ 0 ];
-//        SI32 nb_surdefs = sur_var.get_val()->size() / ip->type_ST->size();
-//        Callable *ci[ nb_surdefs ];
-//        Expr inst_data = sur_var.get_val();
-//        Type *va_type = sur_var.type;
-//        for( SI32 n = 0, o = 0; va_type != &ip->type_VarargsItemEnd; ++n, o += 64 ) {
-//            if ( n >= nb_surdefs or va_type->orig != &ip->class_VarargsItemBeg ) {
-//                PRINT( sur_Expr );
-//                PRINT( inst_data );
-//                PRINT( inst_data->size() );
-//                return ip->ret_error( "bad Callable" );
-//            }
-//            // ptr
-//            SI64 d;
-//            Expr p = slice( inst_data, o, 64 );
-//            if ( not p->_get_val( 64 )->get_val( &d, 64 ) )
-//                return ip->ret_error( "expecting a known Callable ptr" );
-//            // type (Def, Class, ...)
-//            ci[ n ] = reinterpret_cast<Callable *>( ST( d ) );
-//            // next
-//            va_type = ip->type_from_type_var( va_type->parameters[ 2 ] );
-//        }
+    // SurdefList( ... )
+    Type *f_type = f->ptype();
+    if ( f_type->orig == ip->class_SurdefList ) {
+        Type *l_type = ip->type_from_type_var( f_type->parameters[ 0 ] );
+        Expr lst = slice( l_type, f->get(), 0 )->get( cond );
+        Type *vt = lst->type();
+        int o = 0;
+        Vec<Callable *> surdefs;
+        Vec<Expr> catched_vars;
+        for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->type_ST->size() ) {
+            Type *pt = ip->type_from_type_var( vt->parameters[ 0 ] );
+            Expr callable = slice( pt, lst, o )->get( cond );
+            // Callable *
+            Expr cptr = slice( ip->type_SI64, callable, 0 );
+            SI64 cptr_val;
+            if ( not cptr->get_val( ip->type_SI64, &cptr_val ) )
+                return ip->ret_error( "exp. cst" );
+            surdefs << reinterpret_cast<Callable *>( ST( cptr_val ) );
+            // catched_var
+            catched_vars << slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 );
+        }
+        PRINT( *surdefs[ 0 ] );
+        PRINT( catched_vars );
 
+        // parm
+        Vec<int> pn_names;
+        Vec<Expr> pu_args, pn_args;
+        Type *parm_type = ip->type_from_type_var( f_type->parameters[ 1 ] );
+        if ( parm_type != ip->type_Void ) {
+            TODO;
+            //            if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd ) {
+            //                PRINT( f );
+            //                PRINT( *parm_type );
+            //                TODO;
+            //                return ip->ret_error( "expecting a vararg type (or void) as third arg of a callable type" );
+            //            }
 
-//        // self
-//        Expr l_self;
-//        l_self.type = ip->type_from_type_var( f.type->parameters[ 1 ] );
-//        if ( l_self.type and l_self.type != &ip->type_Void ) {
-//            if ( l_self.error() )
-//                return ip->error_var();
-//            l_self.inst = slice( f.get_val(), 0, ip->type_ST->size() );
-//        }
+            //            int o = 0;
+            //            Expr vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
+            //            while ( parm_type->orig != &ip->class_VarargsItemEnd ) {
+            //                Expr p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
 
-//        // parm
-//        Vec<int> pn_names;
-//        Vec<Var> pu_args, pn_args;
-//        Type *parm_type = ip->type_from_type_var( f.type->parameters[ 2 ] );
-//        if ( parm_type != &ip->type_Void ) {
-//            if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd ) {
-//                PRINT( f );
-//                PRINT( *parm_type );
-//                TODO;
-//                return ip->ret_error( "expecting a vararg type (or void) as third arg of a callable type" );
-//            }
+            //                SI32 tn;
+            //                if ( not parm_type->parameters[ 1 ].get_val( tn ) )
+            //                    return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
+            //                if ( tn >= 0 ) {
+            //                    pn_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
+            //                    pn_names << tn;
+            //                } else {
+            //                    pu_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
+            //                }
 
-//            int o = 0;
-//            Expr vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
-//            while ( parm_type->orig != &ip->class_VarargsItemEnd ) {
-//                Expr p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
+            //                // iteration
+            //                ++o;
+            //                parm_type = ip->type_from_type_var( parm_type->parameters[ 2 ] );
+            //                if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd )
+            //                    return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
+            //            }
+        }
+        int pnu = pu_args.size(), pnn = pn_args.size();
 
-//                SI32 tn;
-//                if ( not parm_type->parameters[ 1 ].get_val( tn ) )
-//                    return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
-//                if ( tn >= 0 ) {
-//                    pn_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
-//                    pn_names << tn;
-//                } else {
-//                    pu_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
-//                }
+        // tests
+        std::sort( surdefs.begin(), surdefs.end(), CmpCallableInfobyPertinence() );
 
-//                // iteration
-//                ++o;
-//                parm_type = ip->type_from_type_var( parm_type->parameters[ 2 ] );
-//                if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd )
-//                    return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
-//            }
-//        }
-//        int pnu = pu_args.size(), pnn = pn_args.size();
-
-//        // tests
-//        std::sort( ci, ci + nb_surdefs, CmpCallableInfobyPertinence() );
-
+        TODO;
 //        int nb_ok = 0;
 //        double guaranted_pertinence = 0;
 //        bool   has_guaranted_pertinence = false;
@@ -355,34 +380,34 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
 //        }
 
 //        return res;
-//    }
+    }
 
-//    //
-//    if ( f.type == &ip->type_Type ) {
-//        TODO;
-////        TypeInfo *ti = ip->type_info( f.expr() ); ///< parse if necessary
+    //
+    if ( f_type == ip->type_Type ) {
+        TODO;
+//        TypeInfo *ti = ip->type_info( f.expr() ); ///< parse if necessary
 
-////        Expr ret;
-////        if ( ti->static_size_in_bits >= 0 )
-////            ret = Var( &ti->var, cst( 0, 0, ti->static_size_in_bits ) );
-////        else
-////            TODO; // res = undefined cst with unknown size
+//        Expr ret;
+//        if ( ti->static_size_in_bits >= 0 )
+//            ret = Var( &ti->var, cst( 0, 0, ti->static_size_in_bits ) );
+//        else
+//            TODO; // res = undefined cst with unknown size
 
-////        if ( am == APPLY_MODE_NEW )
-////            TODO;
+//        if ( am == APPLY_MODE_NEW )
+//            TODO;
 
-////        // call init
-////        if ( am != APPLY_MODE_PARTIAL_INST )
-////            apply( get_attr( ret, STRING_init_NUM, sf, off ), nu, u_args, nn, n_names, n_args, Scope::APPLY_MODE_STD, sf, off );
-////        return ret;
-//    }
+//        // call init
+//        if ( am != APPLY_MODE_PARTIAL_INST )
+//            apply( get_attr( ret, STRING_init_NUM, sf, off ), nu, u_args, nn, n_names, n_args, Scope::APPLY_MODE_STD, sf, off );
+//        return ret;
+    }
 
-//    // f.apply ...
-//    Expr applier = get_attr( f, STRING_apply_NUM );
-//    if ( applier.is_an_error() )
-//        return applier;
+    // f.apply ...
+    Expr applier = get_attr( f, STRING_apply_NUM );
+    if ( applier.error() )
+        return ip->error_var();
 
-//    return apply( applier, nu, u_args, nn, n_name, n_args, am );
+    return apply( applier, nu, u_args, nn, n_name, n_args, am );
 }
 
 Expr Scope::get_attr_rec( Expr self, int name ) {
@@ -427,16 +452,14 @@ void Scope::get_attr_rec( Vec<Expr> &res, Expr self, int name ) {
 //    //    }
 }
 
-Expr Scope::copy( Expr &Expr ) {
-    TODO;
-    return 0;
-//    // shortcut (for bootstrap)
-//    if ( var.type->pod() )
-//        return Var( var.type, var.get_val() );
-//    //
-//    Expr res( var.type );
-//    apply( get_attr( res, STRING_init_NUM ), 1, &Expr );
-//    return res;
+Expr Scope::copy( Expr &var ) {
+    // shortcut (for bootstrap)
+    if ( var->type()->pod() )
+        return room( var->get( cond ) );
+    //
+    Expr res = cst( var->type(), var->size() );
+    apply( get_attr( res, STRING_init_NUM ), 1, &var );
+    return res;
 }
 
 Expr Scope::get_attr( Expr self, int name ) {
@@ -509,7 +532,7 @@ Expr Scope::get_attr( Expr self, int name ) {
 //            if ( not ip->ext_method( lst[ i ] ) )
 //                lst.remove_unordered( i-- );
 
-//        return ip->make_Callable( lst, self );
+//        return ip->make_SurdefList( lst );
 //    }
 
 //    return res;
@@ -551,7 +574,7 @@ Expr Scope::parse_SELECT( BinStreamReader bin ) {
     }
 
     // shortcut for Callable
-    if ( f->type()->orig == ip->class_Callable ) {
+    if ( f->type()->orig == ip->class_SurdefList ) {
         TODO;
         return 0;
 //        // varargs to gather the arguments
@@ -576,7 +599,7 @@ Expr Scope::parse_SELECT( BinStreamReader bin ) {
 //        lt << f.type->parameters[ 1 ];
 //        lt << ip->make_type_var( va.type );
 
-//        Type *t_res = ip->class_Callable.type_for( lt );
+//        Type *t_res = ip->class_SurdefList.type_for( lt );
 //        t_res->_len = 2 * ip->type_ST->size();
 
 //        // new data
@@ -640,7 +663,7 @@ Expr Scope::find_var( int name ) {
     if ( res and res->is_surdef() ) {
         Vec<Expr> lst;
         find_var_clist( lst, name );
-        return ip->make_Callable( lst, self );
+        return ip->make_SurdefList( lst );
     }
     return res;
 }

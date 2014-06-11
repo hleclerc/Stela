@@ -28,6 +28,7 @@ public:
 
     virtual void set( Expr obj, const BoolOpSeq &cond ); ///< set pointed value
     virtual Expr get( const BoolOpSeq &cond ); ///< get pointed value
+    virtual Expr get(); ///< get pointed value
     virtual Expr simplified( const BoolOpSeq &cond );
     virtual bool same_cst( const Inst *inst ) const;
     virtual bool emas_cst( const Inst *inst ) const;
@@ -71,6 +72,7 @@ public:
     virtual int ext_disp_size() const;
 
     virtual Expr _simp_repl_bits( Expr off, Expr val );
+    virtual Expr _simp_slice( Type *dst, Expr off );
     virtual void _mk_store_dep( Inst *dst );
 
     Vec<Expr>           inp;

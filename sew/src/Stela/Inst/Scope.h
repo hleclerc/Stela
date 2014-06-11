@@ -4,6 +4,7 @@
 #include "../System/BinStreamReader.h"
 #include "NamedVarList.h"
 #include "BoolOpSeq.h"
+class Class;
 class Ip;
 
 /**
@@ -48,7 +49,7 @@ public:
     Expr copy( Expr &Expr );
 
 protected:
-    Expr parse_CALLABLE( BinStreamReader bin, Type *type );
+    Expr parse_CALLABLE( BinStreamReader bin, Class *base_class );
     void find_var_clist( Vec<Expr> &lst, int name );
     Expr find_first_var( int name );
     void get_attr_rec( Vec<Expr> &res, Expr self, int name );

@@ -11,7 +11,7 @@ class Expr {
 public:
     Expr( const Expr &obj );
     Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val ); ///< cst
+    #define DECL_BT( T ) Expr( T val ); ///< helper to make numerical constant
     #include "DeclArytTypes.h"
     #undef DECL_BT
     ~Expr();

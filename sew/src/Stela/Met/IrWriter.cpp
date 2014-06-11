@@ -1007,8 +1007,11 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     // block
     push_delayed_parse( block );
 
-    //
-    data << catched_vars.size();
+    // catched var data
+    int nc = 0;
+    for( CatchedVar cv : catched_vars )
+        nc += cv.l->num_scope and t->num_scope >= cv.l->num_scope;
+    data << nc;
     for( CatchedVar cv : catched_vars ) {
         if ( cv.l->num_scope and t->num_scope >= cv.l->num_scope ) {
             if ( cv.s >= 0 ) { // in catched vars of a parent callable

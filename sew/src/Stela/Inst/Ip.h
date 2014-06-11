@@ -26,17 +26,21 @@ public:
     Expr error_var();
     Expr void_var();
 
-    Vec<Expr> *get_static_vars( String path );
-    Expr reg_var( int name, Expr var );
+    Vec<Expr> *get_static_vars( String path ); ///<
+    Expr reg_var( int name, Expr var ); ///< in main scope
 
     void add_inc_path( String inc_path );
     void import( String file );
 
     SourceFile *new_sf( String file );
 
-    Expr make_Varargs( Vec<Expr> &v_args, Vec<int> &v_names );
-    Expr make_Callable( Vec<Expr> &lst, Expr self );
+    Expr make_Varargs( Vec<Expr> &lst, const Vec<int> &names = Vec<int>() );
+    Expr make_SurdefList( Vec<Expr> &surdefs );
     Expr make_type_var( Type *type );
+
+    Type *ptr_for( Type *type );
+    Type *make_Varargs_type( const Vec<Type *> &types, const Vec<int> &names, int o );
+    Type *type_from_type_var( Expr var );
 
     #define DECL_BT( T ) Type *type_##T;
     #include "DeclBaseClass.h"
@@ -50,6 +54,7 @@ public:
 
     std::map<String,SourceFile> sourcefiles;
     std::map<String,Vec<Expr> > static_vars;
+    std::map<Type *,Type *>     ptr_map;
     Vec<String>                 inc_paths;
     NamedVarList                vars;
 

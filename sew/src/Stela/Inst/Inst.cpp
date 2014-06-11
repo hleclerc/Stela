@@ -14,8 +14,6 @@ Inst::Inst() {
     op_id     = 0;
     op_mp     = 0;
 
-    flags     = 0;
-
     cpt_use   = 0;
 }
 
@@ -34,6 +32,10 @@ Expr Inst::get( const BoolOpSeq &cond ) {
     return ip->ret_error( "attempting to get the pointed value of an object that is not a pointer" );
 }
 
+Expr Inst::get() {
+    return get( BoolOpSeq() );
+}
+
 Expr Inst::simplified( const BoolOpSeq &cond ) {
     return this;
 }
@@ -42,22 +44,30 @@ bool Inst::same_cst( const Inst *inst ) const { return false; }
 bool Inst::emas_cst( const Inst *inst ) const { return false; }
 
 Expr Inst::size() {
-    if ( type()->size() >= 0 )
-        return type()->size();
-    TODO;
-    return 0;
+    return type()->size( this );
 }
 
 void Inst::write_to_stream( Stream &os, int prec ) {
+    //    Type *t = type();
+    //    if ( t and t != ip->type_Type ) {
+    //        os << *t;
+    //        os << "{";
+    //    }
     write_dot( os );
     if ( inp.size() ) {
         for( int i = 0; i < inp.size(); ++i )
             os << ( i ? "," : "(" ) << inp[ i ];
         os << ")";
     }
+    //    if ( t and t != ip->type_Type )
+    //        os << "}";
 }
 
 Type *Inst::ptype() {
+    Type *t = type();
+    if ( t->orig == ip->class_Ptr )
+        return ip->type_from_type_var( t->parameters[ 0 ] );
+    PRINT( *t );
     TODO;
     // ip->disp_error( "ptype() on a non pointer type" );
     return ip->type_Error;
@@ -234,6 +244,13 @@ int Inst::ext_disp_size() const {
 }
 
 Expr Inst::_simp_repl_bits( Expr off, Expr val ) {
+    return (Inst *)0;
+}
+
+Expr Inst::_simp_slice( Type *dst, Expr off ) {
+    SI32 voff;
+    if ( type() == dst and off->get_val( ip->type_SI32, &voff ) and voff == 0 )
+        return this;
     return (Inst *)0;
 }
 

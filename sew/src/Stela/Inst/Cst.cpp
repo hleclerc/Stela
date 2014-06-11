@@ -13,6 +13,11 @@ struct Cst : Inst {
             if ( out_type == ip->type_##T ) { os << *reinterpret_cast<T *>( data.ptr() ); return; }
         #include "DeclArytTypes.h"
         #undef DECL_BT
+        if ( out_type == ip->type_Type ) {
+            ST d = *reinterpret_cast<SI64 *>( data.ptr() );
+            os << *reinterpret_cast<Type *>( d );
+            return;
+        }
         out_type->write_to_stream( os, data.ptr(), len );
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
@@ -36,6 +41,8 @@ struct Cst : Inst {
         //if ( type == ip->type_Bool ) {
         //    return out_type->conv( dst, type, data.ptr() );
         //}
+        PRINT( *type );
+        PRINT( *out_type );
         TODO;
         return false;
     }
@@ -69,6 +76,21 @@ struct Cst : Inst {
         }
         return (Inst *)0;
     }
+    virtual Expr _simp_slice( Type *dst, Expr off ) {
+        SI32 voff;
+        if ( off->get_val( ip->type_SI32, &voff ) ) {
+            Cst *res = new Cst;
+            res->out_type = dst;
+            res->len = len - voff;
+            res->knwn.resize( ( res->len + 7 ) / 8 );
+            res->data.resize( ( res->len + 7 ) / 8 );
+            // vlen = std::min( vlen, SI32( len - voff ) );
+            memcpy_bit( res->data.ptr(), 0, data.ptr(), voff, res->len );
+            memcpy_bit( res->knwn.ptr(), 0, knwn.ptr(), voff, res->len );
+            return res;
+        }
+        return (Inst *)0;
+    }
 
     Type *out_type;
     Vec<PI8> data;
@@ -77,6 +99,12 @@ struct Cst : Inst {
 };
 
 Expr cst( Type *type, int len, void *data, void *knwn ) {
+    if ( len < 0 ) {
+        len = type->size();
+        if ( len < 0 )
+            return ip->ret_error( "type without static size" );
+    }
+
     Cst *res = new Cst;
     res->out_type = type;
     res->len = len;

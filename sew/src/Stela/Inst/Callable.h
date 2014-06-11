@@ -44,6 +44,7 @@ public:
 
     virtual void read_bin( Scope *scope, BinStreamReader &bin );
     virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Expr self ) = 0;
+    virtual void write_to_stream( Stream &os );
 
     int min_nb_args() const;
     int max_nb_args() const;

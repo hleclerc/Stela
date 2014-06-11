@@ -55,6 +55,10 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     }
 }
 
+void Callable::write_to_stream( Stream &os ) {
+    os << ip->str_cor.str( name );
+}
+
 int Callable::min_nb_args() const {
     return arg_names.size() - arg_defaults.size();
 }

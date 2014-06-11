@@ -96,7 +96,12 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, in
 }
 
 Expr Class::const_or_copy( Expr &var ) {
-    if ( var->type()->orig == ip->class_Callable ) {
+    if ( var->cpt_use == 1 )
+        var->flags |= Inst::CONST;
+    if ( var->flags & Inst::CONST )
+        return var;
+
+    if ( var->type()->orig == ip->class_SurdefList ) {
         Expr i = ip->main_scope.apply( var, 0, 0, 0, 0, 0, Scope::APPLY_MODE_PARTIAL_INST );
         Expr v = ip->make_type_var( i->type() );
         return const_or_copy( v );
@@ -108,14 +113,24 @@ Expr Class::const_or_copy( Expr &var ) {
     return res;
 }
 
+static bool all_eq( Vec<Expr> &a, Vec<Expr> &b ) {
+    if ( a.size() != b.size() )
+        return false;
+    for( int i = 0; i < a.size(); ++i )
+        if ( a[ i ]->get() != b[ i ]->get() )
+            return false;
+    return true;
+}
+
 Type *Class::type_for( Vec<Expr> &args ) {
     for( Type *t : types )
-        if ( t->parameters == args )
+        if ( all_eq( t->parameters, args ) )
             return t;
+
     Type *res = new Type( this );
     for( int i = 0; i < args.size(); ++i )
         res->parameters << const_or_copy( args[ i ] );
-
     types << res;
+
     return res;
 }
