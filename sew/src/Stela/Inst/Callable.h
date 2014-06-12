@@ -23,8 +23,8 @@ public:
     };
     struct CatchedVar {
         int type; ///< IN_...
+        int np;   ///< num parent (only for type IN_LOCAL or IN_STATIC)
         int ns;   ///< num in scope
-        int np;   ///< num parent
     };
     struct Trial {
         Trial( const char *reason = 0 );
@@ -70,6 +70,8 @@ public:
     Code            condition;
     Code            block;
     Vec<CatchedVar> catched_vars;
+
+    Inst           *var;
 };
 
 #endif // CALLABLE_H

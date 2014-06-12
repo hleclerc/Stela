@@ -91,7 +91,7 @@ public:
 
     template<class T>
     T get() {
-        return *( ptr++ );
+        return *( reinterpret_cast<const T *&>( ptr )++ );
     }
 
     const PI8 *ptr;

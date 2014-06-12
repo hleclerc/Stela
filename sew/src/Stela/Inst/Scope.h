@@ -4,6 +4,7 @@
 #include "../System/BinStreamReader.h"
 #include "NamedVarList.h"
 #include "BoolOpSeq.h"
+class Callable;
 class Class;
 class Ip;
 
@@ -35,9 +36,11 @@ public:
     Expr          cont; ///< pointer on Expr, continue or not variable
     BoolOpSeq     cond; ///< condition to execute instructions
 
+    Callable     *callable;
     Type         *class_scope;
     bool          do_not_execute_anything;
     bool          method;
+
 
     SI32          base_size;
     SI32          base_alig;
@@ -54,7 +57,10 @@ protected:
     Expr find_first_var( int name );
     void get_attr_rec( Vec<Expr> &res, Expr self, int name );
     Expr get_attr_rec( Expr self, int name );
-    Expr parse_VAR_IN__SCOPE( BinStreamReader bin, bool stat );
+    Expr _parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat );
+    Expr _parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin );
+    Expr get_catched_var_in__scope( int np, int ns, bool stat );
+    Expr get_catched_var_in_catched_vars( int s );
 
 
     template<class OP> Expr parse_una( BinStreamReader bin, OP o );

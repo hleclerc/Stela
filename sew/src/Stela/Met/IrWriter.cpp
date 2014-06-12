@@ -430,34 +430,47 @@ void IrWriter::parse_variable( const Lexem *l ) {
         data << IR_TOK_NULL_REF;
         push_offset( l );
     } else {
-        CatchedVar cv = find_needed_var( l );
-        //PRINT( *l );
-        //PRINT( cv.l->num_scope );
-        if ( cv and cv.l->num_scope ) {
-            if ( cv.s >= 0 ) {
-                // -> in catched vars of cv.l
-                TODO;
-            } else {
-                // -> in local or static scope
-                if ( cv.l->scope_type & Lexem::SCOPE_TYPE_CLASS )
-                    TODO;
-                data << ( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IR_TOK_VAR_IN_STATIC_SCOPE : IR_TOK_VAR_IN_LOCAL_SCOPE );
-                push_offset( l );
-                data << l->num_scope - cv.l->num_scope;
-                data << cv.l->num_in_scope;
-                return;
+        Vec<CatchedVar> cvl;
+        find_needed_var( cvl, l );
+        if ( cvl.size() ) {
+            int r = 0;
+            bool surdef = false;
+            for( CatchedVar cv : cvl ) {
+                if ( cv.l->num_scope ) {
+                    surdef |= cv.surdef;
+                    ++r;
+                }
             }
-            //            switch ( cv.l->scope_type ) {
-            //            case IN_CATCHED_VARS:
-            //                PRINT( l->num_scope );
-            //                PRINT( cv.l->num_scope );
-            //                PRINT( cv.s );
-            //                TODO;
-            //            case IN_LOCAL_SCOPE :
-            //            case IN_STATIC_SCOPE:
-            //                TODO;
-            //            default: ERROR( "???" );
-            //            }
+            if ( surdef ) {
+                data << IR_TOK_VAR_SET;
+                push_offset( l );
+                data << r;
+                push_nstring( l );
+            }
+            for( CatchedVar cv : cvl ) {
+                if ( cv.l->num_scope ) {
+                    if ( cv.s >= 0 ) {
+                        // -> in catched vars of cv.l
+                        data << IR_TOK_VAR_IN_CATCHED_VARS;
+                        if ( not surdef )
+                            push_offset( l );
+                        data << cv.s;
+                    } else {
+                        // -> in local or static scope
+                        if ( cv.l->scope_type & Lexem::SCOPE_TYPE_CLASS )
+                            TODO;
+                        data << ( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IR_TOK_VAR_IN_STATIC_SCOPE : IR_TOK_VAR_IN_LOCAL_SCOPE );
+                        if ( not surdef )
+                            push_offset( l );
+                        data << l->num_scope - cv.l->num_scope;
+                        data << cv.l->num_in_scope;
+                    }
+                    if ( not surdef )
+                        return;
+                }
+            }
+            if ( surdef )
+                return;
         }
 
         data << IR_TOK_VAR;
@@ -690,7 +703,7 @@ static bool is_a_method( const Lexem *t ) {
     return t and t->parent->type == STRING___class___NUM;
 }
 
-IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
+void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
     const Lexem *b = v;
     if ( b->prev )
         b = b->prev;
@@ -712,7 +725,7 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
         if ( a->type == STRING_assign_NUM or a->type == STRING_assign_type_NUM ) {
             // foo := ...
             if ( a->children[ 0 ]->same_str( v->beg, v->len ) )
-                return CatchedVar{ a->children[ 0 ], -1 };
+                cl << CatchedVar{ a->children[ 0 ], -1, false };
         } else if ( a->type == STRING___def___NUM or a->type == STRING___class___NUM ) {
             // def foo / class foo
             const Lexem *c = a->children[ 0 ];
@@ -729,11 +742,11 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
             // catched by the callable ?
             auto it = catched[ c ].find( String( v->beg, v->beg + v->len ) );
             if ( it != catched[ c ].end() )
-                return CatchedVar{ c, it->second.num };
+                cl << CatchedVar{ c, it->second.num, false };
 
             // name of the callable itself ?
             if ( c->same_str( v->beg, v->len ) )
-                return CatchedVar{ c, -1 };
+                cl << CatchedVar{ c, -1, true };
         }
 
         // in args ?
@@ -757,7 +770,7 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
                     if ( t->type == STRING_doubledot_NUM ) t = t->children[ 0 ];
 
                     if ( t->same_str( v->beg, v->len ) )
-                        return CatchedVar{ t, -1 };
+                        cl << CatchedVar{ t, -1, false };
                 }
             }
         }
@@ -771,7 +784,6 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
                     b = b->next;
         }
     }
-    return CatchedVar{ 0, -1 };
 }
 
 void IrWriter::get_needed_var_rec( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp ) {
@@ -801,12 +813,14 @@ void IrWriter::get_needed_var_rec( std::map<String,CatchedVarWithNum> &vars, con
 
             get_needed_var_rec( vars, b->children[ 1 ], onp );
         } else if ( b->type == Lexem::VARIABLE ) {
-            if ( CatchedVar var = find_needed_var( b ) ) {
-                if ( var.l->num_scope and var.l->num_scope <= onp ) {
+            Vec<CatchedVar> cl;
+            find_needed_var( cl, b );
+            if ( cl.size() ) {
+                if ( cl[ 0 ].l->num_scope and cl[ 0 ].l->num_scope <= onp ) {
                     String str( b->beg, b->beg + b->len );
                     if ( not vars.count( str ) ) {
                         int os = vars.size();
-                        vars[ str ] = CatchedVarWithNum{ var, os };
+                        vars[ str ] = CatchedVarWithNum{ cl, os };
                     }
                 }
             }
@@ -1031,16 +1045,19 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     // catched var data
     data << catched_vars.size();
     for( auto it : catched_vars ) {
-        CatchedVar cv = it.second.cv;
-        if ( cv.l->num_scope and t->num_scope >= cv.l->num_scope ) {
+        Vec<CatchedVar> &cl = it.second.cv;
+        if ( cl[ 0 ].surdef ) {
+            TODO;
+        } else {
+            CatchedVar cv = cl[ 0 ];
             if ( cv.s >= 0 ) { // in catched vars of a parent callable
                 data << PI8( IN_CATCHED_VARS );
                 data << cv.s;
             } else {
                 data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
+                data << t->num_scope - cv.l->num_scope; // nb parents
                 data << cv.l->num_in_scope;
             }
-            data << t->num_scope - cv.l->num_scope; // nb parents
         }
     }
 

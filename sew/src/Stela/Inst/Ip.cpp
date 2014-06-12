@@ -114,6 +114,10 @@ Type *Ip::make_Varargs_type( const Vec<Type *> &types, const Vec<int> &names, in
 
 
 Expr Ip::make_Varargs( Vec<Expr> &lst, const Vec<int> &names ) {
+    for( int i = 0; i < lst.size(); ++i )
+        if ( not lst[ i ] )
+            lst.remove( i );
+
     // type
     Vec<Type *> types;
     for( Expr &v : lst )

@@ -91,6 +91,7 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, in
     // call init
     if ( not cond.always( true ) )
         TODO;
+    // ns.callable = orig;
     if ( apply_mode == Scope::APPLY_MODE_STD )
         ip->main_scope.apply( ip->main_scope.get_attr( ret, STRING_init_NUM ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD );
 

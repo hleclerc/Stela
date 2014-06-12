@@ -537,6 +537,7 @@ base_token_types = string.split( """
     VAR_IN_LOCAL_SCOPE
     VAR_IN_STATIC_SCOPE
     VAR_IN_CATCHED_VARS
+    VAR_SET
     ASSIGN
     PUSH_IN_SCOPE
     REASSIGN

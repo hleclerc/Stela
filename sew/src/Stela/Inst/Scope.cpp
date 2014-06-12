@@ -35,6 +35,7 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
     static_vars = ( lip ? lip : ip )->get_static_vars( path );
     do_not_execute_anything = false;
     class_scope = 0;
+    callable = 0;
     method = false;
 
     if ( caller )
@@ -154,14 +155,12 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
     Vec<Expr> catched_vars;
     for( int i = 0; i < c->catched_vars.size(); ++i ) {
         Callable::CatchedVar &cv = c->catched_vars[ i ];
-        Expr res = 125;
         switch ( cv.type ) {
-        case IN_LOCAL_SCOPE : TODO;
-        case IN_STATIC_SCOPE: TODO;
-        case IN_CATCHED_VARS: TODO;
+        case IN_LOCAL_SCOPE : catched_vars << get_catched_var_in__scope( cv.np, cv.ns, 0 ); break;
+        case IN_STATIC_SCOPE: catched_vars << get_catched_var_in__scope( cv.np, cv.ns, 1 ); break;
+        case IN_CATCHED_VARS: catched_vars << get_catched_var_in_catched_vars( cv.ns ); break;
         default: ERROR( "???" );
         }
-        catched_vars << res;
     }
     Expr cva = ip->make_Varargs( catched_vars );
 
@@ -184,6 +183,7 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
 
     // output var
     Expr res = room( val, Inst::SURDEF | Inst::CONST );
+    c->var = res.inst;
 
     if ( parent ) local_vars << res;
     else ip->vars.add( name, res );
@@ -647,9 +647,24 @@ Expr Scope::parse_VAR( BinStreamReader bin ) {
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 
-Expr Scope::parse_VAR_IN__SCOPE( BinStreamReader bin, bool stat ) {
-    int np = bin.read_positive_integer();
-    int ns = bin.read_positive_integer();
+Expr Scope::parse_VAR_SET( BinStreamReader bin ) {
+    int n = bin.read_positive_integer();
+    int name = read_nstring( bin );
+    Vec<Expr> res;
+    for( int i = 0; i < n; ++i ) {
+         PI8 c = bin.get<PI8>();
+         switch ( c ) {
+         case IR_TOK_VAR_IN_LOCAL_SCOPE : res << _parse_VAR_IN__SCOPE( bin, 0 ); break;
+         case IR_TOK_VAR_IN_STATIC_SCOPE: res << _parse_VAR_IN__SCOPE( bin, 1 ); break;
+         case IR_TOK_VAR_IN_CATCHED_VARS: res << _parse_VAR_IN_CATCHED_VARS( bin ); break;
+         default: ERROR( "..." );
+         }
+    }
+    find_var_clist( res, name );
+    return ip->make_SurdefList( res );
+}
+
+Expr Scope::get_catched_var_in__scope( int np, int ns, bool stat ) {
     Scope *s = this;
     for( ; np; --np )
         s = s->parent;
@@ -665,17 +680,45 @@ Expr Scope::parse_VAR_IN__SCOPE( BinStreamReader bin, bool stat ) {
     return vl[ ns ];
 }
 
+Expr Scope::get_catched_var_in_catched_vars( int num ) {
+    for( Scope *s = this; s; s = s->parent ) {
+        if ( s->callable ) {
+            Expr f( s->callable->var->get() );
+            Expr v = slice( ip->type_ST, f, 64 )->get( cond );
+            int o = 0, n = 0;
+            for( Type *vt = ip->type_from_type_var( ip->type_from_type_var( f->type()->parameters[ 0 ] )->parameters[ 0 ] ); vt->orig == ip->class_VarargsItemBeg; o += ip->type_ST->size(), ++n ) {
+                if ( n == num ) {
+                    Type *tv = ip->type_from_type_var( vt->parameters[ 0 ] );
+                    return slice( tv, v, o );
+                }
+                vt = ip->type_from_type_var( vt->parameters[ 2 ] );
+            }
+            return ip->ret_error( "size of catched var list is too small" );
+        }
+    }
+    return ip->ret_error( "expecting a calling context" );
+}
+
+Expr Scope::_parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat ) {
+    int np = bin.read_positive_integer();
+    int ns = bin.read_positive_integer();
+    return get_catched_var_in__scope( np, ns, stat );
+}
+
+Expr Scope::_parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin ) {
+    return get_catched_var_in_catched_vars( bin.read_positive_integer() );
+}
+
 Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
-    return parse_VAR_IN__SCOPE( bin, false );
+    return _parse_VAR_IN__SCOPE( bin, false );
 }
 
 Expr Scope::parse_VAR_IN_STATIC_SCOPE( BinStreamReader bin ) {
-    return parse_VAR_IN__SCOPE( bin, true );
+    return _parse_VAR_IN__SCOPE( bin, true );
 }
 
 Expr Scope::parse_VAR_IN_CATCHED_VARS( BinStreamReader bin ) {
-    TODO;
-    return 0;
+    return _parse_VAR_IN_CATCHED_VARS( bin );
 }
 
 Expr Scope::find_first_var( int name ) {

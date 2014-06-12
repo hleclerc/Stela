@@ -27,6 +27,13 @@ struct Slice : Inst {
             return res;
         return inp[ 0 ]->_simp_slice( dst, add( off, inp[ 1 ] ) );
     }
+    virtual Expr get( const BoolOpSeq &cond ) {
+        int voff;
+        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
+            return inp[ 0 ]->get( cond );
+        TODO;
+        return 0;
+    }
 
     Type *out_type;
 };

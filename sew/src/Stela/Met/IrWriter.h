@@ -38,10 +38,11 @@ protected:
         operator bool() const { return l; }
         const Lexem *l; ///< var to be referenced (a callable if s >= 0)
         int          s; ///< used if l is a Callable (-> num of catched var of Callable l)
+        bool         surdef; ///< true if object may be surdefined (def or class)
     };
     struct CatchedVarWithNum {
-        CatchedVar cv;  ///< where to find the variable
-        int        num; ///< in catched vars
+        Vec<CatchedVar> cv;  ///< where to find the variable
+        int             num; ///< in catched vars
     };
 
 
@@ -86,7 +87,7 @@ protected:
     void push_nstring            ( int nstring_num );
     void output_list             ( const Lexem *l, int nb_dim, bool has_cd );
 
-    CatchedVar find_needed_var   ( const Lexem *v );
+    void find_needed_var         ( Vec<CatchedVar> &cl, const Lexem *v );
     void get_needed_var_rec      ( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp );
 
     BinStreamWriter data;

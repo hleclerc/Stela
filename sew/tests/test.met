@@ -1,6 +1,9 @@
+def add a, b
+    ___add a, b
+    
 def foo a
     def bar
-        1500
+        a + 50
     bar()
 
 ___info foo 150

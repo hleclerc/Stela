@@ -59,6 +59,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
     for( int i = 0; i < orig->arg_names.size(); ++i )
         path += "_" + to_string( *args[ i ]->type() );
     Scope ns( &ip->main_scope, caller, path );
+    ns.callable = orig;
     ns.cond = ns.cond and cond;
     ns.local_vars = args;
 
