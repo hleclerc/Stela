@@ -534,6 +534,9 @@ base_token_types = string.split( """
     PTR
     STRING
     VAR
+    VAR_IN_LOCAL_SCOPE
+    VAR_IN_STATIC_SCOPE
+    VAR_IN_CATCHED_VARS
     ASSIGN
     PUSH_IN_SCOPE
     REASSIGN

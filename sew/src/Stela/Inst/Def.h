@@ -10,8 +10,8 @@ public:
     struct TrialDef : Trial {
         TrialDef( Def *orig );
         virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode );
-        Scope *scope; ///< scope used to make the default values and check the condition
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller );
+        Vec<Expr> args; ///< def arguments
         Def *orig;
     };
 
@@ -24,7 +24,7 @@ public:
 
     Def();
     virtual void read_bin( Scope *scope, BinStreamReader &bin );
-    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn );
+    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller );
 
     // data
     Code return_type;

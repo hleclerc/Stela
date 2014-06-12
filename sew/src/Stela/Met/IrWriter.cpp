@@ -430,6 +430,35 @@ void IrWriter::parse_variable( const Lexem *l ) {
         data << IR_TOK_NULL_REF;
         push_offset( l );
     } else {
+        CatchedVar cv = find_needed_var( l );
+        PRINT( *l );
+        if ( cv.l->num_scope ) {
+            if ( cv.s >= 0 ) {
+                // -> in catched vars of cv.l
+                TODO;
+            } else {
+                // -> in local or static scope
+                if ( cv.l->scope_type & Lexem::SCOPE_TYPE_CLASS )
+                    TODO;
+                data << ( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IR_TOK_VAR_IN_STATIC_SCOPE : IR_TOK_VAR_IN_LOCAL_SCOPE );
+                push_offset( l );
+                data << l->num_scope - cv.l->num_scope;
+                data << cv.l->num_in_scope;
+                return;
+            }
+            //            switch ( cv.l->scope_type ) {
+            //            case IN_CATCHED_VARS:
+            //                PRINT( l->num_scope );
+            //                PRINT( cv.l->num_scope );
+            //                PRINT( cv.s );
+            //                TODO;
+            //            case IN_LOCAL_SCOPE :
+            //            case IN_STATIC_SCOPE:
+            //                TODO;
+            //            default: ERROR( "???" );
+            //            }
+        }
+
         data << IR_TOK_VAR;
         push_offset( l );
         push_nstring( l );

@@ -99,6 +99,7 @@ Expr Scope::parse( const PI8 *tok ) {
     BinStreamReader bin( tok );
     PI8 tva = bin.get<PI8>(); ///< token type
     off = bin.read_positive_integer(); ///< offset in sourcefile
+    auto rs = raii_save( ip->cur_scope, this );
 
     switch ( tva ) {
         #define DECL_IR_TOK( N ) case IR_TOK_##N: return parse_##N( bin );
@@ -287,7 +288,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
                 break;
             }
 
-            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr() );
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this );
 
             if ( trials[ i ]->ok() ) {
                 if ( trials[ i ]->cond.always( true ) ) {
@@ -356,11 +357,11 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             }
         }
 
-        Expr res;
+        Expr res = room();
         BoolOpSeq cond = this->cond;
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this );
                 res->set( loc, cond and trials[ i ]->cond );
 
                 if ( trials[ i ]->cond.always( true ) )
@@ -636,6 +637,29 @@ Expr Scope::parse_VAR( BinStreamReader bin ) {
     if ( Expr res = find_var( name ) )
         return res;
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
+}
+
+Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
+    int np = bin.read_positive_integer();
+    int ns = bin.read_positive_integer();
+    Scope *s = this;
+    for( ; np; --np )
+        s = s->parent;
+    if ( not s )
+        return ip->ret_error( "bad np" );
+    if ( ns >= s->local_vars.size() )
+        return ip->ret_error( "bad ns" );
+    return s->local_vars[ ns ];
+}
+
+Expr Scope::parse_VAR_IN_STATIC_SCOPE( BinStreamReader bin ) {
+    TODO;
+    return 0;
+}
+
+Expr Scope::parse_VAR_IN_CATCHED_VARS( BinStreamReader bin ) {
+    TODO;
+    return 0;
 }
 
 Expr Scope::find_first_var( int name ) {

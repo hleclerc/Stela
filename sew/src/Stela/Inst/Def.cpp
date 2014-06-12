@@ -10,10 +10,9 @@ Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
 }
 
 Def::TrialDef::~TrialDef() {
-    delete scope;
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
@@ -56,11 +55,11 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
     }
 
     // new scope (with local static variables)
-    String path = "Def_" + to_string( this );
-    TODO;
-    //for( int i = 0; i < orig->arg_names.size(); ++i )
-    //    path += "_" + to_string( *scope->find_var( orig->arg_names[ i ] ).type );
-    Scope ns( scope, 0, path );
+    String path = "Def_" + to_string( ip->str_cor.str( orig->name ) ) + "_" + orig->sf->name + "_" + to_string( orig->off );
+    for( int i = 0; i < orig->arg_names.size(); ++i )
+        path += "_" + to_string( *args[ i ]->type() );
+    Scope ns( &ip->main_scope, caller, path );
+    ns.local_vars = args;
 
     // inline call
     return ns.parse( orig->block.sf, orig->block.tok, "calling" );
@@ -97,7 +96,7 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
     sop_of = flags & IR_IS_A_SOP ? scope->read_nstring( bin ) : -1;
 }
 
-Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn ) {
+Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller ) {
     TrialDef *res = new TrialDef( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
@@ -106,13 +105,7 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
     if ( pnu + pnn + nu + nn < min_nb_args() ) return res->wr( "no enough arguments" );
     if ( pnu + pnn + nu + nn > max_nb_args() ) return res->wr( "To much arguments" );
 
-    TODO;
-    res->scope = new Scope( &ip->main_scope, 0, name + "_" + sf->name + "_" + to_string( off ) );
-    //    if ( self ) {
-    //        res->scope->method = true;
-    //        res->scope->self = self;
-    //    }
-
+    Scope scope( &ip->main_scope, caller, "TrialDef_" + ip->str_cor.str( name ) + "_" + sf->name + "_" + to_string( off ) );
 
     if ( pnu + pnn )
         TODO;
@@ -126,7 +119,7 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
         //            if ( o >= 0 ) {
         //                if ( arg_ok[ o ] )
         //                    ip->disp_error( "arg is already assigned", true );
-        //                res->scope->local_vars << vn[ i ];
+        //                scope.local_vars << vn[ i ];
         //                arg_ok[ o ] = true;
         //            } else {
         //                v_args  << vn   [ i ];
@@ -137,7 +130,7 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
         //        for( int i = 0; i < arg_names.size(); ++i ) {
         //            if ( arg_ok[ i ] )
         //                ip->disp_error( "arg is already assigned", true );
-        //            res->scope->local_vars << vu[ i ];
+        //            scope.local_vars << vu[ i ];
         //            arg_ok[ i ] = true;
         //        }
         //        for( int i = arg_names.size(); i < nu; ++i )
@@ -145,11 +138,15 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
 
 
         //        Expr varargs = ip->make_Varargs( v_args, v_names );
-        //        res->scope->reg_var( STRING_varargs_NUM, varargs );
+        //        scope.reg_var( STRING_varargs_NUM, varargs );
     } else {
         // unnamed args
         for( int i = 0; i < nu; ++i )
-            res->scope->local_vars << vu[ i ];
+            scope.local_vars << vu[ i ];
+        // basic check
+        for( int n = 0; n < nn; ++n )
+            if ( not arg_names.contains( names[ n ] ) )
+                return res->wr( "named argument that does not appear in def args" );
         // named args
         Vec<bool> used_arg( Size(), nn, false );
         for( int i = nu; i < arg_names.size(); ++i ) {
@@ -160,29 +157,24 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
                     int j = i - ( arg_names.size() - arg_defaults.size() );
                     if ( j < 0 )
                         return res->wr( "unspecified mandatory argument" );
-                    res->scope->local_vars << res->scope->parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
+                    scope.local_vars << scope.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
                     break;
                 }
                 if ( arg_name == names[ n ] ) {
-                    res->scope->local_vars << vn[ i ];
+                    scope.local_vars << vn[ n ];
                     used_arg[ n ] = true;
                     break;
                 }
             }
         }
-        for( int n = 0; n < nn; ++n ) {
-            if ( not used_arg[ n ] ) {
-                for( int m = 0; m < n; ++m )
-                    if ( names[ n ] == names[ m ] )
-                        ip->disp_error( "arg assigned twice", true );
-                return res->wr( "name=... does not appear in def args" );
-            }
-        }
+        for( int n = 0; n < nn; ++n )
+            if ( not used_arg[ n ] )
+                ip->disp_error( "arg assigned twice", true );
     }
 
     // arg constraints
     for( int i = 0; i < arg_constraints.size(); ++i ) {
-        Expr v = res->scope->local_vars[ i ];
+        Expr v = scope.local_vars[ i ];
         int n = v->type()->orig->name;
         if ( int t = arg_constraints[ i ].class_names.size() ) {
             for( int j = 0; ; ++j ) {
@@ -197,10 +189,11 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
     // condition
     if ( condition ) {
         TODO;
-        //res->cond = res->scope->parse( condition.sf, condition.tok, "evaluating condition" )->get( res->scope->cond );
+        //res->cond = scope.parse( condition.sf, condition.tok, "evaluating condition" )->get( scope.cond );
         if ( res->cond.always( false ) )
             return res->wr( "condition = false" );
     }
 
+    res->args = scope.local_vars;
     return res;
 }
