@@ -37,6 +37,10 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
     class_scope = 0;
     method = false;
 
+    if ( caller )
+        cond = caller->cond;
+    else if ( parent )
+        cond = parent->cond;
 
     base_size = 0;
     base_alig = 1;
@@ -357,20 +361,23 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             }
         }
 
-        Expr res = room();
-        BoolOpSeq cond = this->cond;
+        BoolOpSeq cond; // additional cond
+        Vec<std::pair<BoolOpSeq,Expr> > res;
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this );
-                res->set( loc, cond and trials[ i ]->cond );
+                BoolOpSeq loc_cond = cond and trials[ i ]->cond;
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond );
+                res << std::make_pair( loc_cond, loc );
 
                 if ( trials[ i ]->cond.always( true ) )
                     break;
                 cond = cond and not trials[ i ]->cond;
             }
         }
-
-        return res;
+        Expr res_expr = res.back().second;
+        for( int i = res.size() - 2; i >= 0; --i )
+            res_expr = select( res[ i ].first, res[ i ].second, res_expr );
+        return res_expr;
     }
 
     //
@@ -394,6 +401,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
     }
 
     // f.apply ...
+    PRINT( *f_type );
     Expr applier = get_attr( f, STRING_apply_NUM );
     if ( applier.error() )
         return ip->error_var();
@@ -639,7 +647,7 @@ Expr Scope::parse_VAR( BinStreamReader bin ) {
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 
-Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
+Expr Scope::parse_VAR_IN__SCOPE( BinStreamReader bin, bool stat ) {
     int np = bin.read_positive_integer();
     int ns = bin.read_positive_integer();
     Scope *s = this;
@@ -647,14 +655,22 @@ Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
         s = s->parent;
     if ( not s )
         return ip->ret_error( "bad np" );
-    if ( ns >= s->local_vars.size() )
+    Vec<Expr> &vl = stat ? *s->static_vars : s->local_vars;
+    if ( ns >= vl.size() ) {
+        PRINT( np );
+        PRINT( ns );
+        PRINT( stat );
         return ip->ret_error( "bad ns" );
-    return s->local_vars[ ns ];
+    }
+    return vl[ ns ];
+}
+
+Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
+    return parse_VAR_IN__SCOPE( bin, false );
 }
 
 Expr Scope::parse_VAR_IN_STATIC_SCOPE( BinStreamReader bin ) {
-    TODO;
-    return 0;
+    return parse_VAR_IN__SCOPE( bin, true );
 }
 
 Expr Scope::parse_VAR_IN_CATCHED_VARS( BinStreamReader bin ) {

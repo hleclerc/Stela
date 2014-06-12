@@ -431,8 +431,9 @@ void IrWriter::parse_variable( const Lexem *l ) {
         push_offset( l );
     } else {
         CatchedVar cv = find_needed_var( l );
-        PRINT( *l );
-        if ( cv.l->num_scope ) {
+        //PRINT( *l );
+        //PRINT( cv.l->num_scope );
+        if ( cv and cv.l->num_scope ) {
             if ( cv.s >= 0 ) {
                 // -> in catched vars of cv.l
                 TODO;
@@ -711,7 +712,7 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
         if ( a->type == STRING_assign_NUM or a->type == STRING_assign_type_NUM ) {
             // foo := ...
             if ( a->children[ 0 ]->same_str( v->beg, v->len ) )
-                return CatchedVar{ a->children[ 0 ], a->children[ 0 ], -1 };
+                return CatchedVar{ a->children[ 0 ], -1 };
         } else if ( a->type == STRING___def___NUM or a->type == STRING___class___NUM ) {
             // def foo / class foo
             const Lexem *c = a->children[ 0 ];
@@ -725,17 +726,14 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
             if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT )
                 c = c->children[ 0 ];
 
-            // catched var ?
-            int cpt = 0;
-            for( const CatchedVar &l : catched[ c ] )
-                if ( l.o->same_str( v->beg, v->len ) )
-                    return CatchedVar{ l.o, c, cpt };
-                else
-                    ++cpt;
+            // catched by the callable ?
+            auto it = catched[ c ].find( String( v->beg, v->beg + v->len ) );
+            if ( it != catched[ c ].end() )
+                return CatchedVar{ c, it->second.num };
 
-            // name of the callable ?
+            // name of the callable itself ?
             if ( c->same_str( v->beg, v->len ) )
-                return CatchedVar{ c, c, -1 };
+                return CatchedVar{ c, -1 };
         }
 
         // in args ?
@@ -759,7 +757,7 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
                     if ( t->type == STRING_doubledot_NUM ) t = t->children[ 0 ];
 
                     if ( t->same_str( v->beg, v->len ) )
-                        return CatchedVar{ t, t, -1 };
+                        return CatchedVar{ t, -1 };
                 }
             }
         }
@@ -773,21 +771,21 @@ IrWriter::CatchedVar IrWriter::find_needed_var( const Lexem *v ) {
                     b = b->next;
         }
     }
-    return CatchedVar{ 0, 0, -1 };
+    return CatchedVar{ 0, -1 };
 }
 
-void IrWriter::get_needed_var_rec( std::set<CatchedVar> &vars, const Lexem *b ) {
+void IrWriter::get_needed_var_rec( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp ) {
     for( ; b; b = b->next ) {
         if ( b->type == STRING_assign_NUM or b->type == STRING_assign_type_NUM ) {
             if ( b->children[ 1 ] )
-                get_needed_var_rec( vars, b->children[ 1 ] );
+                get_needed_var_rec( vars, b->children[ 1 ], onp );
         } else if ( b->type == STRING___def___NUM or b->type == STRING___class___NUM ) {
             const Lexem *c = b->children[ 0 ];
             while ( true ) {
-                if ( c->type == STRING___extends___NUM    ) { get_needed_var_rec( vars, c->children[ 1 ] ); c = c->children[ 0 ]; continue; }
-                if ( c->type == STRING___pertinence___NUM ) { get_needed_var_rec( vars, c->children[ 1 ] ); c = c->children[ 0 ]; continue; }
-                if ( c->type == STRING___when___NUM       ) { get_needed_var_rec( vars, c->children[ 1 ] ); c = c->children[ 0 ]; continue; }
-                if ( c->type == STRING_doubledot_NUM      ) { get_needed_var_rec( vars, c->children[ 1 ] ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___extends___NUM    ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___pertinence___NUM ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___when___NUM       ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING_doubledot_NUM      ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
                 break;
             }
 
@@ -796,20 +794,25 @@ void IrWriter::get_needed_var_rec( std::set<CatchedVar> &vars, const Lexem *b ) 
                 get_children_of_type( c->children[ 1 ], STRING_comma_NUM, tl );
                 for( int i = 0; i < tl.size(); ++i ) {
                     const Lexem *t = tl[ i ];
-                    if ( t->type == STRING_reassign_NUM  ) { get_needed_var_rec( vars, t->children[ 1 ] ); t = t->children[ 0 ]; }
-                    if ( t->type == STRING_doubledot_NUM ) { get_needed_var_rec( vars, t->children[ 1 ] ); t = t->children[ 0 ]; }
+                    if ( t->type == STRING_reassign_NUM  ) { get_needed_var_rec( vars, t->children[ 1 ], onp ); t = t->children[ 0 ]; }
+                    if ( t->type == STRING_doubledot_NUM ) { get_needed_var_rec( vars, t->children[ 1 ], onp ); t = t->children[ 0 ]; }
                 }
             }
 
-            get_needed_var_rec( vars, b->children[ 1 ] );
+            get_needed_var_rec( vars, b->children[ 1 ], onp );
         } else if ( b->type == Lexem::VARIABLE ) {
-            if ( CatchedVar var = find_needed_var( b ) )
-                vars.insert( var );
+            if ( CatchedVar var = find_needed_var( b ) ) {
+                if ( var.l->num_scope and var.l->num_scope <= onp ) {
+                    String str( b->beg, b->beg + b->len );
+                    if ( not vars.count( str ) ) {
+                        int os = vars.size();
+                        vars[ str ] = CatchedVarWithNum{ var, os };
+                    }
+                }
+            }
         } else {
-            if ( b->children[ 0 ] )
-                get_needed_var_rec( vars, b->children[ 0 ] );
-            if ( b->children[ 1 ] )
-                get_needed_var_rec( vars, b->children[ 1 ] );
+            if ( b->children[ 0 ] ) get_needed_var_rec( vars, b->children[ 0 ], onp );
+            if ( b->children[ 1 ] ) get_needed_var_rec( vars, b->children[ 1 ], onp );
         }
     }
 }
@@ -964,19 +967,8 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     }
 
     // variables to catch
-    std::set<CatchedVar> &catched_vars = catched[ name ];
-    get_needed_var_rec( catched_vars, block );
-
-    //    PRINT( *name );
-    //    for( CatchedVar cv : catched_vars )
-    //        if ( cv.l->num_scope and t->num_scope >= cv.l->num_scope ) {
-    //            std::cout << "    " << *cv.o
-    //                      << " -> scope_type=" << cv.l->scope_type
-    //                      << " np=" << t->num_scope - cv.l->num_scope
-    //                      << " ns=" << cv.l->num_in_scope
-    //                      << " s=" << cv.s << std::endl;
-    //            // add_error( "...", cv.l );
-    //        }
+    std::map<String,CatchedVarWithNum> &catched_vars = catched[ name ];
+    get_needed_var_rec( catched_vars, block, name->num_scope );
 
     // output --------------------------------------------------------------
     data << token_type;
@@ -1037,11 +1029,9 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     push_delayed_parse( block );
 
     // catched var data
-    int nc = 0;
-    for( CatchedVar cv : catched_vars )
-        nc += cv.l->num_scope and t->num_scope >= cv.l->num_scope;
-    data << nc;
-    for( CatchedVar cv : catched_vars ) {
+    data << catched_vars.size();
+    for( auto it : catched_vars ) {
+        CatchedVar cv = it.second.cv;
         if ( cv.l->num_scope and t->num_scope >= cv.l->num_scope ) {
             if ( cv.s >= 0 ) { // in catched vars of a parent callable
                 data << PI8( IN_CATCHED_VARS );

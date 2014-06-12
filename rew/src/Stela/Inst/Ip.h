@@ -39,7 +39,7 @@ public:
     Scope::VecNamedVar *get_static_scope( String path );
 
     void add_inc_path( String inc_path );
-    void import( String file );
+     void import( String file );
 
     SourceFile *new_sf( String file );
     int read_nstring( BinStreamReader &bin );

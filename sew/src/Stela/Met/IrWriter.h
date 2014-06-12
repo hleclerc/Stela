@@ -36,10 +36,12 @@ protected:
 
     struct CatchedVar {
         operator bool() const { return l; }
-        bool operator<( const CatchedVar &c ) const { return o < c.o; }
-        const Lexem *o; ///< where var is actually defined
-        const Lexem *l; ///< var to be referenced
+        const Lexem *l; ///< var to be referenced (a callable if s >= 0)
         int          s; ///< used if l is a Callable (-> num of catched var of Callable l)
+    };
+    struct CatchedVarWithNum {
+        CatchedVar cv;  ///< where to find the variable
+        int        num; ///< in catched vars
     };
 
 
@@ -85,7 +87,7 @@ protected:
     void output_list             ( const Lexem *l, int nb_dim, bool has_cd );
 
     CatchedVar find_needed_var   ( const Lexem *v );
-    void get_needed_var_rec      ( std::set<CatchedVar> &vars, const Lexem *b );
+    void get_needed_var_rec      ( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp );
 
     BinStreamWriter data;
     ErrorList &error_list;
@@ -94,7 +96,7 @@ protected:
     SplittedVec<DelayedParse,32> delayed_parse;
     SplittedVec<IntToReduce,32> int_to_reduce;
     std::map<std::string,int> nstrings;
-    std::map<const Lexem *,std::set<CatchedVar> > catched; ///< catched[ callable ] -> catched vars
+    std::map<const Lexem *,std::map<String,CatchedVarWithNum> > catched; ///< catched[ callable ] -> catched vars (name -> num in catched var...)
     bool static_inst, const_inst;
 };
 

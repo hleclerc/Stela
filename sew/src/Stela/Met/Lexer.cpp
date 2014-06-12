@@ -1080,8 +1080,11 @@ void Lexer::set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type 
             int oss = 0, osd = 0;
             if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT ) {
                 // name
-                c->children[ 0 ]->num_in_scope = nss++; // static
-                c->children[ 0 ]->scope_type = scope_type | Lexem::SCOPE_TYPE_STATIC;
+                //                c->children[ 0 ]->num_in_scope = nss++; // static
+                //                c->children[ 0 ]->scope_type = scope_type | Lexem::SCOPE_TYPE_STATIC;
+                //                c->children[ 0 ]->num_scope = np;
+                c->children[ 0 ]->num_in_scope = ( scope_type & Lexem::SCOPE_TYPE_STATIC ) ? nss++ : nsd++;
+                c->children[ 0 ]->scope_type = scope_type;
                 c->children[ 0 ]->num_scope = np;
 
                 // args
@@ -1098,8 +1101,8 @@ void Lexer::set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type 
                 }
             } else {
                 // name
-                c->num_in_scope = nss++;
-                c->scope_type = scope_type | Lexem::SCOPE_TYPE_STATIC;
+                c->num_in_scope = ( scope_type & Lexem::SCOPE_TYPE_STATIC ) ? nss++ : nsd++;
+                c->scope_type = scope_type;
                 c->num_scope = np;
             }
 

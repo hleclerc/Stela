@@ -80,7 +80,7 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
     return res;
 }
 
-Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller ) {
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond ) {
     Type *type = orig->type_for( args );
 
     // start with a unknown cst
@@ -89,6 +89,8 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, in
         TODO;
 
     // call init
+    if ( not cond.always( true ) )
+        TODO;
     if ( apply_mode == Scope::APPLY_MODE_STD )
         ip->main_scope.apply( ip->main_scope.get_attr( ret, STRING_init_NUM ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD );
 

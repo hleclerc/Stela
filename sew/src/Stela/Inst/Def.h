@@ -10,7 +10,7 @@ public:
     struct TrialDef : Trial {
         TrialDef( Def *orig );
         virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond );
         Vec<Expr> args; ///< def arguments
         Def *orig;
     };

@@ -54,6 +54,7 @@ protected:
     Expr find_first_var( int name );
     void get_attr_rec( Vec<Expr> &res, Expr self, int name );
     Expr get_attr_rec( Expr self, int name );
+    Expr parse_VAR_IN__SCOPE( BinStreamReader bin, bool stat );
 
 
     template<class OP> Expr parse_una( BinStreamReader bin, OP o );

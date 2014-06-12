@@ -12,7 +12,7 @@ Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
 Def::TrialDef::~TrialDef() {
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
@@ -59,6 +59,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
     for( int i = 0; i < orig->arg_names.size(); ++i )
         path += "_" + to_string( *args[ i ]->type() );
     Scope ns( &ip->main_scope, caller, path );
+    ns.cond = ns.cond and cond;
     ns.local_vars = args;
 
     // inline call
