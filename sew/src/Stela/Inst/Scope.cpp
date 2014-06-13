@@ -228,7 +228,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         Type *vt = lst->type();
         int o = 0;
         Vec<Callable *> ci;
-        // Vec<Expr> catched_vars;
+        Vec<Expr> catched_vars;
         for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->type_ST->size() ) {
             Type *pt = ip->type_from_type_var( vt->parameters[ 0 ] );
             Expr callable = slice( pt, lst, o )->get( cond );
@@ -239,7 +239,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
                 return ip->ret_error( "exp. cst" );
             ci << reinterpret_cast<Callable *>( ST( cptr_val ) );
             // catched_var
-            // catched_vars << slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 );
+            catched_vars << slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 );
         }
 
         // parm
@@ -367,7 +367,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
                 BoolOpSeq loc_cond = cond and trials[ i ]->cond;
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, catched_vars[ i ] );
                 res << std::make_pair( loc_cond, loc );
 
                 if ( trials[ i ]->cond.always( true ) )
@@ -480,9 +480,9 @@ Expr Scope::get_attr( Expr self, int name ) {
         }
     }
 
-    for( std::pair<int,Class::Code> &m : type->orig->attributes ) {
-        if ( m.first == name ) {
-            PRINT( "found" );
+    for( Class::Attribute &m : type->orig->attributes ) {
+        if ( m.name == name ) {
+            PRINT( "found attr" );
             return ip->error_var();
         }
     }

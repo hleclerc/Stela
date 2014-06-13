@@ -1,7 +1,8 @@
 #include "../System/UsualStrings.h"
 #include "../Ir/CallableFlags.h"
-#include "Type.h"
 #include "Class.h"
+#include "Slice.h"
+#include "Type.h"
 #include "Def.h"
 #include "Cst.h"
 #include "Ip.h"
@@ -12,14 +13,35 @@ Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
 Def::TrialDef::~TrialDef() {
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
+        // get self
+        Type *vt = catched_vars->ptype();
+        Expr self;
+        for( int i = 0, o = 0; ; ++i ) {
+            if ( i == orig->catched_vars.size() )
+                return ip->ret_error( "no self ??" );
+            if ( orig->catched_vars[ i ].type == IN_SELF ) {
+                Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
+                self = slice( ts, catched_vars->get( cond ), o );
+                break;
+            }
+            vt = ip->type_from_type_var( vt->parameters[ 2 ] );
+            o += ip->type_ST->size();
+        }
 
-
+        // init attributes
+        Type *self_type = self->ptype();
+        if ( self_type->orig->ancestors.size() )
+            TODO;
+        //for( int i = 0; i < self_type->orig->attributes.size(); ++i ) {
+        for( Class::Attribute &a : self_type->orig->attributes ) {
+            PRINT( ip->str_cor.str( a.name ) );
+        }
 
         TODO;
         //        Type *ti = self->type();

@@ -10,9 +10,13 @@ class Class : public Callable {
 public:
     struct TrialClass : Trial {
         TrialClass( Class *orig ) : orig( orig ) {}
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars );
         Vec<Expr> args;
         Class *orig;
+    };
+    struct Attribute {
+        SI32 name;
+        Code code;
     };
 
     Class();
@@ -27,7 +31,7 @@ public:
     Vec<Type *> types;
     Vec<Code> ancestors;
     Vec<std::pair<int,Vec<Code> > > methods; ///< surdef lists for each method name
-    Vec<std::pair<int,Code> > attributes;
+    Vec<Attribute> attributes;
 };
 
 #endif // CLASS_H

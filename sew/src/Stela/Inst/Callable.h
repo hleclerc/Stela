@@ -30,7 +30,7 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 

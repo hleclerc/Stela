@@ -40,7 +40,7 @@ void Class::read_bin( Scope *scope, BinStreamReader &bin ) {
     int nb_attributes = bin.read_positive_integer();
     for( int i = 0; i < nb_attributes; ++i ) {
         int n = scope->read_nstring( bin );
-        attributes << std::pair<int,Code>( n, Code{ sf, bin.read_offset() } );
+        attributes << Attribute{ n, Code{ sf, bin.read_offset() } };
     }
 }
 
@@ -106,7 +106,7 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
     return res;
 }
 
-Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond ) {
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars ) {
     Type *type = orig->type_for( args );
 
     // start with a unknown cst
