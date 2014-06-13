@@ -3,9 +3,10 @@ def add a, b
   
 # prop pour les classes de taille variable
 # -> on reconstruit le contenu de la classe à chaque init
-class A[]
+class A
     a := 10
     b := 20
+    def init
 
 i := A()
 # ___info i

@@ -984,6 +984,14 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     std::map<String,CatchedVarWithNum> &catched_vars = catched[ name ];
     get_needed_var_rec( catched_vars, block, name->num_scope );
 
+    if ( is_a_method( t ) ) {
+        if ( not catched_vars.count( "self" ) ) {
+            CatchedVarWithNum &cn = catched_vars[ "self" ];
+            cn.num = catched_vars.size() - 1;
+            cn.cv = CatchedVar{ 0, -2, false };
+        }
+    }
+
     // output --------------------------------------------------------------
     data << token_type;
     push_offset( t );
@@ -1053,6 +1061,8 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
             if ( cv.s >= 0 ) { // in catched vars of a parent callable
                 data << PI8( IN_CATCHED_VARS );
                 data << cv.s;
+            } else if ( cv.s == -2 ) { // self
+                data << PI8( IN_SELF );
             } else {
                 data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
                 data << t->num_scope - cv.l->num_scope; // nb parents
@@ -1115,6 +1125,69 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         data << inheritance.size();
         for( int i = 0; i < inheritance.size(); ++i )
             push_delayed_parse( inheritance[ i ] );
+
+        // methods
+        Vec<std::pair<int,const Lexem *> > methods;
+        for( const Lexem *l = block; l; l = l->next ) {
+            while ( true ) {
+                if ( l->type == STRING___virtual___NUM ) { l = l->children[ 0 ]; continue; }
+                if ( l->type == STRING___static___NUM  ) { l = l->children[ 0 ]; continue; }
+                break;
+            }
+
+            if ( l->type == STRING___def___NUM ) {
+                const Lexem *c = l->children[ 0 ];
+                while ( true ) {
+                    if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
+                    break;
+                }
+                if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT )
+                    c = c->children[ 0 ];
+
+                methods << std::make_pair( nstring( c->beg, c->beg + c->len ), l );
+            }
+        }
+
+        data << methods.size();
+        for( std::pair<int,const Lexem *> attr : methods ) {
+            push_nstring( attr.first );
+            push_delayed_parse( attr.second );
+        }
+
+        // attributes
+        Vec<std::pair<int,const Lexem *> > attributes;
+        for( const Lexem *l = block; l; l = l->next ) {
+            while ( true ) {
+                if ( l->type == STRING___virtual___NUM ) { l = l->children[ 0 ]; continue; }
+                if ( l->type == STRING___static___NUM  ) { l = l->children[ 0 ]; continue; }
+                break;
+            }
+
+            switch ( l->type ) {
+            case STRING_assign_NUM:
+            case STRING_assign_type_NUM:
+                attributes << std::make_pair( nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l );
+                break;
+            case STRING___class___NUM:
+                // PRINT( *l->children[ 0 ] );
+                TODO;
+                break;
+            case STRING___def___NUM:
+                break;
+            default:
+                add_error( "unexpected token (class block has a limited set of acceptable tokens)", l );
+                break;
+            }
+        }
+
+        data << attributes.size();
+        for( std::pair<int,const Lexem *> attr : attributes  ) {
+            push_nstring( attr.first );
+            push_delayed_parse( attr.second );
+        }
     }
 }
 

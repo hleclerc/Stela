@@ -18,6 +18,9 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
+
+
+
         TODO;
         //        Type *ti = self->type();
         //        ti->parse();

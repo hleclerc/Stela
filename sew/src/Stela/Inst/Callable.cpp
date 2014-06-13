@@ -50,8 +50,11 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     catched_vars.resize( bin.read_positive_integer() );
     for( CatchedVar &cv : catched_vars ) {
         cv.type = bin.read_positive_integer();
-        cv.np   = cv.type == IN_CATCHED_VARS ? 0 : int( bin.read_positive_integer() );
-        cv.ns   = bin.read_positive_integer();
+        if ( cv.type != IN_SELF ) {
+            if ( cv.type != IN_CATCHED_VARS )
+                cv.np = bin.read_positive_integer();
+            cv.ns = bin.read_positive_integer();
+        }
     }
 }
 

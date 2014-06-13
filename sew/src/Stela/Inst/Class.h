@@ -26,6 +26,8 @@ public:
 
     Vec<Type *> types;
     Vec<Code> ancestors;
+    Vec<std::pair<int,Vec<Code> > > methods; ///< surdef lists for each method name
+    Vec<std::pair<int,Code> > attributes;
 };
 
 #endif // CLASS_H

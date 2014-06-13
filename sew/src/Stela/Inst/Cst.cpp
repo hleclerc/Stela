@@ -53,9 +53,9 @@ struct Cst : Inst {
         const Cst *c = static_cast<const Cst *>( inst );
         return c->out_type == out_type and c->data == data and c->knwn == knwn and c->len == len;
     }
-    virtual Expr size() {
-        return len;
-    }
+    //virtual Expr size() {
+    //    return len;
+    //}
     virtual Expr _simp_repl_bits( Expr off, Expr val ) {
         if ( Cst *c = dcast( val.inst ) ) {
             SI32 voff;
@@ -99,26 +99,25 @@ struct Cst : Inst {
 };
 
 Expr cst( Type *type, int len, void *data, void *knwn ) {
-    if ( len < 0 ) {
+    if ( len < 0 )
         len = type->size();
-        if ( len < 0 )
-            return ip->ret_error( "type without static size" );
-    }
 
     Cst *res = new Cst;
     res->out_type = type;
     res->len = len;
 
-    int sb = ( len + 7 ) / 8;
-    if ( data )
-        res->data = Vec<PI8>( (PI8 *)data, (PI8 *)data + sb );
-    else
-        res->data.resize( sb, 0 );
+    if ( len >= 0 ) {
+        int sb = ( len + 7 ) / 8;
+        if ( data )
+            res->data = Vec<PI8>( (PI8 *)data, (PI8 *)data + sb );
+        else
+            res->data.resize( sb, 0 );
 
-    if ( knwn )
-        res->knwn = Vec<PI8>( (PI8 *)knwn, (PI8 *)knwn + sb );
-    else
-        res->knwn.resize( sb, 0 );;
+        if ( knwn )
+            res->knwn = Vec<PI8>( (PI8 *)knwn, (PI8 *)knwn + sb );
+        else
+            res->knwn.resize( sb, 0 );
+    }
 
     return res;
 }

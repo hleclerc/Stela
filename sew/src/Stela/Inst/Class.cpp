@@ -1,5 +1,6 @@
 #include "../Ir/CallableFlags.h"
 #include "Class.h"
+#include "Room.h"
 #include "Type.h"
 #include "Cst.h"
 #include "Ip.h"
@@ -16,6 +17,31 @@ void Class::read_bin( Scope *scope, BinStreamReader &bin ) {
 
     for( int i = 0, nb_anc = bin.read_positive_integer(); i < nb_anc; ++i )
         ancestors << Code( sf, bin.read_offset() );
+
+    int nb_methods = bin.read_positive_integer();
+    for( int i = 0; i < nb_methods; ++i ) {
+        int n = scope->read_nstring( bin );
+        Vec<Code> *v;
+        for( int j = 0; ; ++j ) {
+            if ( j == methods.size() ) {
+                std::pair<int,Vec<Code> > *p = methods.push_back();
+                v = &p->second;
+                p->first = n;
+                break;
+            }
+            if ( methods[ j ].first == n ) {
+                v = &methods[ j ].second;
+                break;
+            }
+        }
+        *v << Code{ sf, bin.read_offset() };
+    }
+
+    int nb_attributes = bin.read_positive_integer();
+    for( int i = 0; i < nb_attributes; ++i ) {
+        int n = scope->read_nstring( bin );
+        attributes << std::pair<int,Code>( n, Code{ sf, bin.read_offset() } );
+    }
 }
 
 Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller ) {
@@ -84,16 +110,28 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, in
     Type *type = orig->type_for( args );
 
     // start with a unknown cst
-    Expr ret( type );
+    Expr ret = room( cst( type ) );
+
+    Scope ns( &ip->main_scope, caller, "ClassInit_" + to_string( *type ) );
+    ns.cond = ns.cond and cond;
+    ns.class_scope = type;
+    ns.callable = orig;
+
+//    // get the methods
+//    for( std::pair<int,Code> method : orig->methods ) {
+//        Type::Attr *attr = type->methods.push_back();
+//        attr->sf   = method.second.sf;
+//        attr->name = method.first;
+//        attr->var  = ns.parse( method.second.sf, method.second.tok, "type parse" );
+//    }
+
+    //
     if ( apply_mode == Scope::APPLY_MODE_NEW )
         TODO;
 
     // call init
-    if ( not cond.always( true ) )
-        TODO;
-    // ns.callable = orig;
     if ( apply_mode == Scope::APPLY_MODE_STD )
-        ip->main_scope.apply( ip->main_scope.get_attr( ret, STRING_init_NUM ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD );
+        ns.apply( ns.get_attr( ret, STRING_init_NUM ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD );
 
     return ret;
 }

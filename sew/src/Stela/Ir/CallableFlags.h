@@ -16,7 +16,8 @@ enum CallableFlags {
     // for CatchedVar::type
     IN_CATCHED_VARS = 0,
     IN_STATIC_SCOPE = 1,
-    IN_LOCAL_SCOPE  = 2
+    IN_LOCAL_SCOPE  = 2,
+    IN_SELF         = 3
 };
 
 #endif // Stela_Ir_CallableFlags_H

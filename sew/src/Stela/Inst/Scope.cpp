@@ -159,6 +159,7 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
         case IN_LOCAL_SCOPE : catched_vars << get_catched_var_in__scope( cv.np, cv.ns, 0 ); break;
         case IN_STATIC_SCOPE: catched_vars << get_catched_var_in__scope( cv.np, cv.ns, 1 ); break;
         case IN_CATCHED_VARS: catched_vars << get_catched_var_in_catched_vars( cv.ns ); break;
+        case IN_SELF        : ASSERT( self, "..." ); catched_vars << self; break;
         default: ERROR( "???" );
         }
     }
@@ -462,10 +463,37 @@ Expr Scope::copy( Expr &var ) {
 }
 
 Expr Scope::get_attr( Expr self, int name ) {
+    if ( self.error() )
+        return ip->error_var();
+
+    Type *type = self->ptype();
+    for( std::pair<int,Vec<Class::Code> > &m : type->orig->methods ) {
+        if ( m.first == name ) {
+            Scope ns( &ip->main_scope, this, "preinit" );
+            ns.self = self;
+
+            Vec<Expr> lst;
+            for( int i = 0; i < m.second.size(); ++i )
+                lst << ns.parse( m.second[ i ].sf, m.second[ i ].tok, "method parsing" );
+            find_var_clist( lst, name );
+            return ip->make_SurdefList( lst );
+        }
+    }
+
+    for( std::pair<int,Class::Code> &m : type->orig->attributes ) {
+        if ( m.first == name ) {
+            PRINT( "found" );
+            return ip->error_var();
+        }
+    }
+
+    // not found ? -> search in global scope for def ...( self, ... )
+    Vec<Expr> lst;
+    find_var_clist( lst, name );
+    PRINT( lst );
+    PRINT( ip->str_cor.str( name ) );
     TODO;
     return 0;
-//    if ( self.error() )
-//        return ip->error_var();
 
 //    if ( not self.type->orig )
 //        return ip->ret_error( "Class " + to_string( *self.type ) + " has not been defined" );
