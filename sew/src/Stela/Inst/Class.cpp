@@ -39,8 +39,9 @@ void Class::read_bin( Scope *scope, BinStreamReader &bin ) {
 
     int nb_attributes = bin.read_positive_integer();
     for( int i = 0; i < nb_attributes; ++i ) {
+        int t = bin.read_positive_integer();
         int n = scope->read_nstring( bin );
-        attributes << Attribute{ n, Code{ sf, bin.read_offset() } };
+        attributes << Attribute{ t, n, Code{ sf, bin.read_offset() } };
     }
 }
 

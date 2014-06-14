@@ -412,9 +412,9 @@ void IrWriter::parse_variable( const Lexem *l ) {
     } else if ( l->eq( "false" ) ) {
         data << IR_TOK_FALSE;
         push_offset( l );
-    } else if ( l->eq( "self" ) ) {
-        data << IR_TOK_SELF;
-        push_offset( l );
+    //} else if ( l->eq( "self" ) ) {
+    //    data << IR_TOK_SELF;
+    //    push_offset( l );
     } else if ( l->eq( "this" ) ) {
         data << IR_TOK_THIS;
         push_offset( l );
@@ -1158,7 +1158,12 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         }
 
         // attributes
-        Vec<std::pair<int,const Lexem *> > attributes;
+        struct Attr {
+            int type;
+            int name;
+            const Lexem *code;
+        };
+        Vec<Attr> attributes;
         for( const Lexem *l = block; l; l = l->next ) {
             while ( true ) {
                 if ( l->type == STRING___virtual___NUM ) { l = l->children[ 0 ]; continue; }
@@ -1168,8 +1173,10 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
 
             switch ( l->type ) {
             case STRING_assign_NUM:
+                attributes << Attr{ CALLABLE_ATTR_VAL, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
+                break;
             case STRING_assign_type_NUM:
-                attributes << std::make_pair( nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l );
+                attributes << Attr{ CALLABLE_ATTR_TYPE, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
                 break;
             case STRING___class___NUM:
                 // PRINT( *l->children[ 0 ] );
@@ -1184,9 +1191,10 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         }
 
         data << attributes.size();
-        for( std::pair<int,const Lexem *> attr : attributes  ) {
-            push_nstring( attr.first );
-            push_delayed_parse( attr.second );
+        for( Attr &attr : attributes  ) {
+            data << attr.type;
+            push_nstring( attr.name );
+            push_delayed_parse( attr.code );
         }
     }
 }

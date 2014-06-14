@@ -6,6 +6,7 @@
 #include "Def.h"
 #include "Cst.h"
 #include "Ip.h"
+#include "Op.h"
 
 Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
 }
@@ -16,6 +17,15 @@ Def::TrialDef::~TrialDef() {
 Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
+
+    // new scope (with local static variables)
+    String path = "Def_" + to_string( ip->str_cor.str( orig->name ) ) + "_" + orig->sf->name + "_" + to_string( orig->off );
+    for( int i = 0; i < orig->arg_names.size(); ++i )
+        path += "_" + to_string( *args[ i ]->type() );
+    Scope ns( &ip->main_scope, caller, path );
+    ns.callable = orig;
+    ns.cond = ns.cond and cond;
+    ns.local_vars = args;
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
@@ -38,10 +48,15 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
         Type *self_type = self->ptype();
         if ( self_type->orig->ancestors.size() )
             TODO;
-        //for( int i = 0; i < self_type->orig->attributes.size(); ++i ) {
-        int o = 0;
+        Expr o = 0;
         for( Class::Attribute &a : self_type->orig->attributes ) {
+            Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
+            if ( a.type == CALLABLE_ATTR_TYPE )
+                TODO;
             PRINT( ip->str_cor.str( a.name ) );
+            ns.apply( ns.get_attr( add( self, o ), STRING_reassign_NUM ), 1, &val );
+
+            o = add( o, val->size() );
         }
 
         TODO;
@@ -79,15 +94,6 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
         //            }
         //        }
     }
-
-    // new scope (with local static variables)
-    String path = "Def_" + to_string( ip->str_cor.str( orig->name ) ) + "_" + orig->sf->name + "_" + to_string( orig->off );
-    for( int i = 0; i < orig->arg_names.size(); ++i )
-        path += "_" + to_string( *args[ i ]->type() );
-    Scope ns( &ip->main_scope, caller, path );
-    ns.callable = orig;
-    ns.cond = ns.cond and cond;
-    ns.local_vars = args;
 
     // inline call
     return ns.parse( orig->block.sf, orig->block.tok, "calling" );

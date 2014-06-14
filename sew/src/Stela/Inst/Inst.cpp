@@ -23,7 +23,8 @@ Inst::~Inst() {
 }
 
 void Inst::set( Expr obj, const BoolOpSeq &cond ) {
-    ip->disp_error( "attempting to set an object that is not a pointer" );
+    if ( type() != ip->type_Error )
+        ip->disp_error( "attempting to set an object that is not a pointer" );
 }
 
 Expr Inst::get( const BoolOpSeq &cond ) {

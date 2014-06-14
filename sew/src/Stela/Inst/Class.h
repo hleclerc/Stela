@@ -15,6 +15,7 @@ public:
         Class *orig;
     };
     struct Attribute {
+        SI32 type; ///< CALLABLE_ATTR_...
         SI32 name;
         Code code;
     };

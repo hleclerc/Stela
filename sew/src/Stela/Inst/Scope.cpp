@@ -1076,8 +1076,9 @@ Expr Scope::parse_VOID( BinStreamReader bin ) {
     return room( cst( ip->type_Void, 0, 0 ) );
 }
 Expr Scope::parse_SELF( BinStreamReader bin ) {
-    if ( self )
-        return self;
+    //if ( self )
+    //    return self;
+    ERROR( "desactivated" );
     return ip->ret_error( "not in an object" );
 }
 Expr Scope::parse_THIS( BinStreamReader bin ) {
@@ -1171,17 +1172,13 @@ Expr Scope::parse_set_RawRef_dependancy( BinStreamReader bin ) {
 }
 Expr Scope::parse_reassign_rec( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
-    if ( n == 1 ) {
-        if ( not self )
-            return ip->ret_error( "expecting a defined self" );
-        self->set( parse( bin.read_offset() ), cond );
-        return self;
-    }
+    if ( n == 1 )
+        return ip->ret_error( "2 args" );
     if ( n != 2 )
         return ip->ret_error( "expecting 1 or 2 args" );
     Expr dst = parse( bin.read_offset() );
     Expr src = parse( bin.read_offset() );
-    dst->set( src, cond );
+    dst->set( src->get( cond ), cond );
     return dst;
 }
 Expr Scope::parse_assign_rec( BinStreamReader bin ) {

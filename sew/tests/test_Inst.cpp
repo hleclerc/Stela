@@ -59,6 +59,7 @@ void test_ptr() {
     p->set( 23, BoolOpSeq() );
     PRINT( a );
     PRINT( p->get() );
+    PRINT( add( a, 0 ) );
     //PRINT( a );
 }
 
