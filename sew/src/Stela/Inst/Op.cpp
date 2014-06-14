@@ -1,4 +1,7 @@
+#include "../System/SameType.h"
 #include "../System/Math.h"
+#include "ReplBits.h"
+#include "Slice.h"
 #include "Type.h"
 #include "Conv.h"
 #include "Cst.h"
@@ -9,7 +12,7 @@ template<class TO>
 static Type *type_promote( Type *a, Type *b, TO ) {
     if ( TO::b )
         return ip->type_Bool;
-    if ( a == b )
+    if ( a == b or a->orig == ip->class_Ptr )
         return a;
     TODO;
     return 0;
@@ -66,6 +69,20 @@ template<class TO>
 struct BOp : Op<TO> {
     virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->inp[ 1 ]->type(), this->op ); }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new BOp<TO>; }
+    virtual void set( Expr obj, const BoolOpSeq &cond ) {
+        if ( this->flags & Inst::CONST )
+            return ip->disp_error( "attempting to modify a const value" );
+        if ( SameType<TO,Op_add>::res )
+            return this->inp[ 0 ]->set( repl_bits( this->inp[ 0 ]->get( cond ), this->inp[ 1 ]->simplified( cond ), obj->simplified( cond ) ), cond );
+        return Inst::set( obj, cond );
+    }
+    virtual Expr get( const BoolOpSeq &cond ) {
+        if ( SameType<TO,Op_add>::res ) {
+            Type *tr = this->inp[ 0 ]->ptype();
+            return slice( tr, this->inp[ 0 ]->get( cond ), this->inp[ 1 ] );
+        }
+        return Inst::get( cond );
+    }
 };
 
 #define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
@@ -139,9 +156,9 @@ static Expr _op( Expr a, Expr b, TO op ) {
         return ip->error_var();
     Type *ta = a->type();
     Type *tb = b->type();
-    ASSERT( ta->aryth and tb->aryth, "..." );
+    //ASSERT(  and tb->aryth, "..." );
     PI8 da[ ta->sb() ], db[ tb->sb() ];
-    if ( a->get_val( ta, da ) ) {
+    if ( ta->aryth and a->get_val( ta, da ) ) {
         if ( b->get_val( tb, db ) ) {
             #define DECL_BT( T ) if ( ta == ip->type_##T ) if ( Expr res = _op_cst_bin( reinterpret_cast<T *>( da ), tb, db, op ) ) return res;
             #include "DeclArytTypes.h"
@@ -164,7 +181,7 @@ static Expr _op( Expr a, Expr b, TO op ) {
 
 template<class TO>
 static Expr _gp( Expr a, Expr b, TO op ) {
-    if ( a->type()->aryth and b->type()->aryth )
+    if ( ( a->type()->aryth or a->type()->orig == ip->class_Ptr ) and b->type()->aryth )
         return _op( a, b, op );
     TODO;
     return 0;

@@ -29,6 +29,8 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     type_Type->_pod = 1;
 
     type_ST = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
+
+    sys_state = cst( type_Void );
 }
 
 Ip::~Ip() {

@@ -39,6 +39,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
         if ( self_type->orig->ancestors.size() )
             TODO;
         //for( int i = 0; i < self_type->orig->attributes.size(); ++i ) {
+        int o = 0;
         for( Class::Attribute &a : self_type->orig->attributes ) {
             PRINT( ip->str_cor.str( a.name ) );
         }

@@ -5,6 +5,7 @@
 #include <Stela/Inst/Expr.h>
 #include <Stela/Inst/Type.h>
 #include <Stela/Inst/Room.h>
+#include <Stela/Inst/Cst.h>
 #include <Stela/Inst/Op.h>
 #include <Stela/Inst/Ip.h>
 
@@ -48,9 +49,23 @@ void test_syscall() {
     Inst::display_graph( ip->sys_state );
 }
 
+void test_ptr() {
+    SI32 data[] = { 17, 18 };
+    Expr a = room( cst( ip->type_SI32, 64, data ) );
+    PRINT( a );
+    PRINT( add( a, 32 ) );
+    PRINT( *add( a, 32 )->type() );
+    Expr p = add( a, 32 );
+    p->set( 23, BoolOpSeq() );
+    PRINT( a );
+    PRINT( p->get() );
+    //PRINT( a );
+}
+
 int main() {
     Ip ip_inst;
     ip = &ip_inst;
 
-    test_syscall();
+    //test_syscall();
+    test_ptr();
 }
