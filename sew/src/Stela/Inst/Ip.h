@@ -46,6 +46,7 @@ public:
     #include "DeclBaseClass.h"
     #undef DECL_BT
     Type *type_ST;
+    Type *type_Ptr_SI32;
 
     #define DECL_BT( T ) Class *class_##T;
     #include "DeclParmClass.h"

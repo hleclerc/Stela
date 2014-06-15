@@ -46,19 +46,20 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
         // init attributes
         Type *self_type = self->ptype();
-        PRINT( *self->ptype() );
         if ( self_type->orig->ancestors.size() )
             TODO;
         Expr o = 0;
         for( Class::Attribute &a : self_type->orig->attributes ) {
             Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
-            if ( a.type == CALLABLE_ATTR_TYPE )
+            if ( a.type == CALLABLE_ATTR_TYPE ) // ~=
                 TODO;
             ns.apply( ns.get_attr( rcast( val->type(), add( self, o ) ), STRING_reassign_NUM ), 1, &val );
+            if ( not self_type->defined )
+                self_type->attr_ptr_types << val->type();
 
             o = add( o, val->size() );
         }
-        PRINT( *self->ptype() );
+        self_type->defined = true;
     }
 
     // inline call

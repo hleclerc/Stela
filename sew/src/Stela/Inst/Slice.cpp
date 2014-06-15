@@ -29,8 +29,15 @@ struct Slice : Inst {
     }
     virtual Expr get( const BoolOpSeq &cond ) {
         int voff;
-        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
-            return inp[ 0 ]->get( cond );
+        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 ) {
+            if ( out_type->orig != ip->class_Ptr ) {
+                PRINT( *out_type );
+                ERROR( "" );
+                return ip->ret_error( "expecting a ptr" );
+            }
+            Type *val_type = ip->type_from_type_var( out_type->parameters[ 0 ] );
+            return rcast( val_type, inp[ 0 ]->get( cond ) );
+        }
         TODO;
         return 0;
     }
@@ -55,5 +62,6 @@ Expr slice( Type *dst, Expr var, Expr off ) {
 }
 
 Expr rcast( Type *dst, Expr var ) {
+    ASSERT( dst != ip->type_SI64, "..." );
     return slice( dst, var, 0 );
 }

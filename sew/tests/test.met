@@ -17,4 +17,7 @@ class A
 i := A()
 ___info i
 ___info i.a
+___info i.b
+___disp i.a
+___disp i.b
 #___disp a + 50

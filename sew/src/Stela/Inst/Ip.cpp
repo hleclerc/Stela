@@ -24,6 +24,8 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
 
     type_SI32->_len = 32;
     type_SI64->_len = 64;
+    type_PI32->_len = 32;
+    type_PI64->_len = 64;
     type_Type->_len = 64;
 
     type_Type->_pod = 1;
@@ -31,6 +33,10 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     type_ST = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
 
     sys_state = cst( type_Void );
+
+
+    Vec<Expr> vs( make_type_var( type_SI32 ) );
+    type_Ptr_SI32 = class_Ptr->type_for( vs );
 }
 
 Ip::~Ip() {

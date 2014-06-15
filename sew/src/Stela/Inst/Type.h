@@ -19,11 +19,14 @@ public:
     int  pod();  ///< plain old data
     int  sb();   ///< size in bytes (-1 if depend on the actual data)
 
-    Vec<Expr> parameters;
-    Class    *orig;
-    bool      aryth;
-    int       _len;
-    int       _pod;
+    Vec<Expr>   parameters;
+    Class      *orig;
+    bool        aryth;
+    bool        defined; ///< false unless a first init is called
+    int         _len;
+    int         _pod;
+
+    Vec<Type *> attr_ptr_types;
 };
 
 #endif // TYPE_H

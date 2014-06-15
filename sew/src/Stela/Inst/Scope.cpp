@@ -482,14 +482,14 @@ Expr Scope::get_attr( Expr self, int name ) {
     }
 
     // attributes
+    int num_attr = 0;
     Expr o = 0;
     for( Class::Attribute &a : type->orig->attributes ) {
-        //Expr val = parse( a.code.sf, a.code.tok, "arg init" );
-        if ( a.name == name ) {
-            PRINT( self );
-            return ip->error_var();
-        }
-        // o = add( o, val->size() );
+        Expr val = rcast( type->attr_ptr_types[ num_attr ], add( self, o ) );
+        if ( a.name == name )
+            return val;
+        o = add( o, val->size() );
+        ++num_attr;
     }
 
     // not found ? -> search in global scope for def ...( self, ... )
@@ -718,7 +718,7 @@ Expr Scope::get_catched_var_in_catched_vars( int num ) {
     for( Scope *s = this; s; s = s->parent ) {
         if ( s->callable ) {
             Expr f( s->callable->var->get() );
-            Expr v = slice( ip->type_ST, f, 64 )->get( cond );
+            Expr v = slice( ip->type_Ptr_SI32, f, 64 )->get( cond );
             int o = 0, n = 0;
             for( Type *vt = ip->type_from_type_var( ip->type_from_type_var( f->type()->parameters[ 0 ] )->parameters[ 0 ] ); vt->orig == ip->class_VarargsItemBeg; o += ip->type_ST->size(), ++n ) {
                 if ( n == num ) {
@@ -1138,8 +1138,10 @@ Expr Scope::parse_info( BinStreamReader bin ) {
 }
 Expr Scope::parse_disp( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
-    for( int i = 0; i < n; ++i )
-        std::cout << ( i ? ", " : "" ) << parse( bin.read_offset() )->get( cond );
+    for( int i = 0; i < n; ++i ) {
+        Expr r = parse( bin.read_offset() )->get( cond );
+        std::cout << ( i ? ", " : "" ) << *r->type() << "{" << r << "}";
+    }
     std::cout << std::endl;
     return ip->void_var();
 }

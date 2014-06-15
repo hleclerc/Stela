@@ -6,6 +6,7 @@ Type::Type( Class *orig ) : orig( orig ) {
     _len    = -1;
     _pod    = -1;
     aryth   = false;
+    defined = false;
 }
 
 void Type::write_to_stream( Stream &os ) {
