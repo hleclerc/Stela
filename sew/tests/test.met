@@ -5,6 +5,8 @@ class SI32
     def reassign val
         ___reassign_rec self, val
 
+void := 1
+
 # prop pour les classes de taille variable
 # -> on reconstruit le contenu de la classe à chaque init
 class A
@@ -12,9 +14,7 @@ class A
     b := 20
     def init
 
-a := 10
-a = 20
-___info a
-#i := A()
-# ___info i
+i := A()
+___info i
+___info i.a
 #___disp a + 50

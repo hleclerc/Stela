@@ -3,7 +3,8 @@
 
 #include "Inst.h"
 
-Expr slice( Type *dst, Expr var, Expr off = 0 );
+Expr slice( Type *dst, Expr var, Expr off );
+Expr rcast( Type *dst, Expr var );
 
 #endif // STELA_INST_Slice_H
 

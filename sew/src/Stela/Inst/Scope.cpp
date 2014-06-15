@@ -466,6 +466,7 @@ Expr Scope::get_attr( Expr self, int name ) {
     if ( self.error() )
         return ip->error_var();
 
+    // methods
     Type *type = self->ptype();
     for( std::pair<int,Vec<Class::Code> > &m : type->orig->methods ) {
         if ( m.first == name ) {
@@ -480,17 +481,22 @@ Expr Scope::get_attr( Expr self, int name ) {
         }
     }
 
-    for( Class::Attribute &m : type->orig->attributes ) {
-        if ( m.name == name ) {
-            PRINT( "found attr" );
+    // attributes
+    Expr o = 0;
+    for( Class::Attribute &a : type->orig->attributes ) {
+        //Expr val = parse( a.code.sf, a.code.tok, "arg init" );
+        if ( a.name == name ) {
+            PRINT( self );
             return ip->error_var();
         }
+        // o = add( o, val->size() );
     }
 
     // not found ? -> search in global scope for def ...( self, ... )
     Vec<Expr> lst;
     find_var_clist( lst, name );
     PRINT( lst );
+    PRINT( *self->ptype() );
     PRINT( ip->str_cor.str( name ) );
     TODO;
     return 0;

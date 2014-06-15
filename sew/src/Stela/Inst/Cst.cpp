@@ -64,10 +64,13 @@ struct Cst : Inst {
                 if ( val->size()->get_val( ip->type_SI32, &vlen ) ) {
                     Cst *res = new Cst;
                     res->out_type = out_type;
-                    res->len = len;
-                    res->knwn = knwn;
-                    res->data = data;
-                    vlen = std::min( vlen, SI32( len - voff ) );
+                    res->len = std::max( len, voff + vlen );
+                    res->data.resize( res->sb() );
+                    res->knwn.resize( res->sb() );
+                    // old values
+                    memcpy( res->data.ptr(), data.ptr(), res->sb() );
+                    memcpy( res->knwn.ptr(), knwn.ptr(), res->sb() );
+                    // new (replaced) ones
                     memcpy_bit( res->data.ptr(), voff, c->data.ptr(), 0, vlen );
                     memset_bit( res->knwn.ptr(), voff, true, vlen );
                     return res;
@@ -90,6 +93,9 @@ struct Cst : Inst {
             return res;
         }
         return (Inst *)0;
+    }
+    int sb() const {
+        return ( len + 7 ) / 8;
     }
 
     Type *out_type;

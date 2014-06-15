@@ -46,6 +46,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
         // init attributes
         Type *self_type = self->ptype();
+        PRINT( *self->ptype() );
         if ( self_type->orig->ancestors.size() )
             TODO;
         Expr o = 0;
@@ -53,46 +54,11 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
             Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
             if ( a.type == CALLABLE_ATTR_TYPE )
                 TODO;
-            PRINT( ip->str_cor.str( a.name ) );
-            ns.apply( ns.get_attr( add( self, o ), STRING_reassign_NUM ), 1, &val );
+            ns.apply( ns.get_attr( rcast( val->type(), add( self, o ) ), STRING_reassign_NUM ), 1, &val );
 
             o = add( o, val->size() );
         }
-
-        TODO;
-        //        Type *ti = self->type();
-        //        ti->parse();
-        //        for( int i = 0; i < ti->_attributes.size(); ++i ) {
-        //            if ( ti->_attributes[ i ].dyn() ) {
-        //                // ip->push_sf( ti->_attributes[ i ].sf, "init attr" );
-        //                // ip->off = ti->_attributes[ i ].off;
-
-        //                Expr subv = scope->get_attr( self, ti->_attributes[ i ].name );
-        //                Expr suin = scope->get_attr( subv, STRING_init_NUM );
-        //                for( int a = 0; ; ++a ) {
-        //                    if ( a == orig->attr_init.size() ) {
-        //                        if ( ti->_attributes[ i ].var )
-        //                            scope->apply( suin, 1, &ti->_attributes[ i ].var, 0, 0, 0, Scope::APPLY_MODE_STD );
-        //                        else
-        //                            scope->apply( suin, 0, 0, 0, 0, 0, Scope::APPLY_MODE_STD );
-        //                        break;
-        //                    }
-        //                    AttrInit *ai = &orig->attr_init[ a ];
-        //                    if ( ai->name == ti->_attributes[ i ].name ) {
-        //                        Expr vu[ ai->nu ];
-        //                        for( int i = 0; i < ai->nu; ++i )
-        //                            vu[ i ] = scope->parse( ai->args[ i ].sf, ai->args[ i ].tok, "parsing init value" );
-        //                        Expr vn[ ai->nn ];
-        //                        for( int i = 0; i < ai->nn; ++i )
-        //                            vn[ i ] = scope->parse( ai->args[ i + ai->nu ].sf, ai->args[ i + ai->nu ].tok, "parsing init value" );
-        //                        scope->apply( suin, ai->nu, vu, ai->nn, ai->names.ptr(), vn, Scope::APPLY_MODE_STD );
-        //                        break;
-        //                    }
-        //                }
-
-        //                // ip->pop_sf();
-        //            }
-        //        }
+        PRINT( *self->ptype() );
     }
 
     // inline call

@@ -2,6 +2,7 @@
 #include "BoolOpSeq.h"
 #include "Select.h"
 #include "Store.h"
+#include "Slice.h"
 #include "Room.h"
 #include "Type.h"
 #include "Ip.h"
@@ -29,7 +30,7 @@ struct Room : Inst {
         //            is->changed[ this ] = this->val;
         //    }
         //}
-        val = select( cond, obj->simplified( cond ), val->simplified( not cond ) );
+        val = select( cond, rcast( ptype(), obj->simplified( cond ) ), val->simplified( not cond ) );
     }
     virtual Expr get( const BoolOpSeq &cond ) {
         return val->simplified( cond );

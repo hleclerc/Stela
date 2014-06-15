@@ -34,6 +34,12 @@ struct Slice : Inst {
         TODO;
         return 0;
     }
+    virtual void set( Expr obj, const BoolOpSeq &cond ) {
+        int voff;
+        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
+            return inp[ 0 ]->set( obj, cond );
+        TODO;
+    }
 
     Type *out_type;
 };
@@ -48,3 +54,6 @@ Expr slice( Type *dst, Expr var, Expr off ) {
     return res;
 }
 
+Expr rcast( Type *dst, Expr var ) {
+    return slice( dst, var, 0 );
+}

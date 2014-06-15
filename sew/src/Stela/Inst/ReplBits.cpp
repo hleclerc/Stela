@@ -32,7 +32,7 @@ Expr repl_bits( Expr src, Expr off, Expr val ) {
     SI32 voff;
     // replace all the bits (but keep the same type)
     if ( off->get_val( ip->type_SI32, &voff ) and voff == 0 and src->size() == val->size() )
-        return slice( src->type(), val );
+        return rcast( src->type(), val );
     //
     SI32 vlen;
     if ( val->size()->get_val( ip->type_SI32, &vlen ) and vlen == 0 )
