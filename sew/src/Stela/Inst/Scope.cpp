@@ -37,6 +37,7 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
     class_scope = 0;
     callable = 0;
     method = false;
+    disp_tok = false;
 
     if ( caller )
         cond = caller->cond;
@@ -107,7 +108,7 @@ Expr Scope::parse( const PI8 *tok ) {
     auto rs = raii_save( ip->cur_scope, this );
 
     switch ( tva ) {
-        #define DECL_IR_TOK( N ) case IR_TOK_##N: return parse_##N( bin );
+        #define DECL_IR_TOK( N ) case IR_TOK_##N: if ( disp_tok ) std::cout << #N "\n"; return parse_##N( bin );
         #include "../Ir/Decl.h"
         #undef DECL_IR_TOK
         default: return ip->ret_error( "Unknown token type" );
@@ -462,6 +463,16 @@ Expr Scope::copy( Expr &var ) {
     return res;
 }
 
+static void keep_only_method_surdef( Vec<Expr> &lst ) {
+    for( int i = 0; i < lst.size(); ++i ) {
+        PRINT( *lst[ i ]->type() );
+        if ( lst[ i ]->type()->orig == ip->class_Def ) {
+            continue;
+        }
+        lst.remove( i );
+    }
+}
+
 Expr Scope::get_attr( Expr self, int name ) {
     if ( self.error() )
         return ip->error_var();
@@ -474,27 +485,34 @@ Expr Scope::get_attr( Expr self, int name ) {
             ns.self = self;
 
             Vec<Expr> lst;
+            find_var_clist( lst, name );
+            keep_only_method_surdef( lst );
             for( int i = 0; i < m.second.size(); ++i )
                 lst << ns.parse( m.second[ i ].sf, m.second[ i ].tok, "method parsing" );
-            find_var_clist( lst, name );
+            SI64 p;
+            PRINT( slice( ip->type_SI64, lst[ 0 ]->get(), 0 )->get_val( ip->type_SI64, &p ) );
+            PRINT( ip->str_cor.str( reinterpret_cast<Callable *>( p )->name ) );
             return ip->make_SurdefList( lst );
         }
     }
 
     // attributes
-    int num_attr = 0;
-    Expr o = 0;
+    type->parse();
     for( Class::Attribute &a : type->orig->attributes ) {
-        Expr val = rcast( type->attr_ptr_types[ num_attr ], add( self, o ) );
-        if ( a.name == name )
-            return val;
-        o = add( o, val->size() );
-        ++num_attr;
+        if ( a.name == name ) {
+            Type::Attr &at = type->attributes[ a.num ];
+            if ( at.off >= 0 )
+                return rcast( at.get_ptr_type(), add( self, at.off ) );
+            return at.val;
+        }
     }
 
     // not found ? -> search in global scope for def ...( self, ... )
     Vec<Expr> lst;
     find_var_clist( lst, name );
+    keep_only_method_surdef( lst );
+    if ( lst.size() == 0 )
+        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self->type() ) + "' or in parent scopes" );
     PRINT( lst );
     PRINT( *self->ptype() );
     PRINT( ip->str_cor.str( name ) );

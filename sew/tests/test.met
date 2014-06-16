@@ -2,8 +2,16 @@ def add a, b
     ___add a, b
 
 class SI32
-    def reassign val
-        ___reassign_rec self, val
+    ___set_base_size 32
+    ___set_base_alig 32
+    # def init
+    def inot val
+        ___info val
+        #___reassign_rec self, val
+    # def reassign val
+        # ___reassign_rec self, val
+    def inut val
+        ___info val
 
 void := 1
 
@@ -13,13 +21,12 @@ class A
     a := 10
     b := 20
     def init
+        pouet
 
-i := A()
-___info i
-___info i.a
-___info i.b
-___disp i.a
-# i.a = 45
-___disp i.a
-___disp i.b
+        
+a := 53.inot 43
+# a 17
+# i := SI32 13
+# ___info i
+# ___info i.a
 #___disp a + 50

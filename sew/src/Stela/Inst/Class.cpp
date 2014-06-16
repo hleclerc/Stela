@@ -19,29 +19,20 @@ void Class::read_bin( Scope *scope, BinStreamReader &bin ) {
         ancestors << Code( sf, bin.read_offset() );
 
     int nb_methods = bin.read_positive_integer();
+    std::map<int,Vec<Code> > mm;
     for( int i = 0; i < nb_methods; ++i ) {
         int n = scope->read_nstring( bin );
-        Vec<Code> *v;
-        for( int j = 0; ; ++j ) {
-            if ( j == methods.size() ) {
-                std::pair<int,Vec<Code> > *p = methods.push_back();
-                v = &p->second;
-                p->first = n;
-                break;
-            }
-            if ( methods[ j ].first == n ) {
-                v = &methods[ j ].second;
-                break;
-            }
-        }
-        *v << Code{ sf, bin.read_offset() };
+        mm[ n ] << Code{ sf, bin.read_offset() };
     }
+    for( auto i : mm )
+        methods << std::pair<int,Vec<Code> >( i.first, i.second );
 
     int nb_attributes = bin.read_positive_integer();
-    for( int i = 0; i < nb_attributes; ++i ) {
+    for( int i = 0, num = 0; i < nb_attributes; ++i ) {
         int t = bin.read_positive_integer();
         int n = scope->read_nstring( bin );
-        attributes << Attribute{ t, n, Code{ sf, bin.read_offset() } };
+        attributes << Attribute{ t, n, Code{ sf, bin.read_offset() }, num };
+        num += not bool( t & ( CALLABLE_ATTR_BASE_ALIG | CALLABLE_ATTR_BASE_SIZE ) );
     }
 }
 

@@ -18,18 +18,13 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-    #define DECL_BT( T ) type_##T->aryth = true; type_##T->_pod = true;
+#define DECL_BT( T ) type_##T->aryth = true; type_##T->_pod = true; type_##T->_len = SizeofIf<T,true>::val; type_##T->_ali = type_##T->_len;
     #include "DeclArytTypes.h"
     #undef DECL_BT
 
-    type_SI32->_len = 32;
-    type_SI64->_len = 64;
-    type_PI32->_len = 32;
-    type_PI64->_len = 64;
-    type_Type->_len = 64;
-
-    type_Type->_pod = 1;
-    type_Void->_len = 0;
+    type_Type ->_len = 64; type_Type ->_ali = 32; type_Type ->_pod = 1;
+    type_Void ->_len =  0; type_Void ->_ali =  1; type_Void ->_pod = 1;
+    type_Error->_len =  0; type_Error->_ali =  1; type_Error->_pod = 1;
 
     type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
     ptr_size = 8 * sizeof( void * );

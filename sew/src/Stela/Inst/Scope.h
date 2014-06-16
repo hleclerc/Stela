@@ -41,6 +41,8 @@ public:
     bool          do_not_execute_anything;
     bool          method;
 
+    bool          disp_tok;
+
 
     SI32          base_size;
     SI32          base_alig;

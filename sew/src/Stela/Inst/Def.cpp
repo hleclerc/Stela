@@ -51,17 +51,13 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
         if ( self_type->orig->ancestors.size() )
             TODO;
-        Expr o = 0;
-        for( Class::Attribute &a : self_type->orig->attributes ) {
-            TODO;
-//            Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
-//            if ( a.type == CALLABLE_ATTR_TYPE ) // ~=
-//                TODO;
-//            ns.apply( ns.get_attr( rcast( val->type(), add( self, o ) ), STRING_reassign_NUM ), 1, &val );
-//            if ( not self_type->defined )
-//                self_type->attr_ptr_types << val->type();
-
-//            o = add( o, val->size() );
+        for( Type::Attr &a : self_type->attributes ) {
+            if ( a.off >= 0 ) {
+                if ( a.type )
+                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
+                else
+                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ) );
+            }
         }
     }
 

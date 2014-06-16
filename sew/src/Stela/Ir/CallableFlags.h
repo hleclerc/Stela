@@ -20,8 +20,10 @@ enum CallableFlags {
     IN_SELF         = 3,
 
     // for Callable::Attribute
-    CALLABLE_ATTR_VAL  = 0,
-    CALLABLE_ATTR_TYPE = 1
+    CALLABLE_ATTR_TYPE      = 1,
+    CALLABLE_ATTR_STATIC    = 2,
+    CALLABLE_ATTR_BASE_SIZE = 4,
+    CALLABLE_ATTR_BASE_ALIG = 8
 };
 
 #endif // Stela_Ir_CallableFlags_H

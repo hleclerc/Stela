@@ -1165,26 +1165,39 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         };
         Vec<Attr> attributes;
         for( const Lexem *l = block; l; l = l->next ) {
+            bool stat = false;
             while ( true ) {
                 if ( l->type == STRING___virtual___NUM ) { l = l->children[ 0 ]; continue; }
-                if ( l->type == STRING___static___NUM  ) { l = l->children[ 0 ]; continue; }
+                if ( l->type == STRING___static___NUM  ) { l = l->children[ 0 ]; stat = true; continue; }
                 break;
             }
 
             switch ( l->type ) {
             case STRING_assign_NUM:
-                attributes << Attr{ CALLABLE_ATTR_VAL, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
+                attributes << Attr{ CALLABLE_ATTR_STATIC * stat, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
                 break;
             case STRING_assign_type_NUM:
-                attributes << Attr{ CALLABLE_ATTR_TYPE, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
+                attributes << Attr{ CALLABLE_ATTR_STATIC * stat + CALLABLE_ATTR_TYPE, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
                 break;
             case STRING___class___NUM:
                 // PRINT( *l->children[ 0 ] );
                 TODO;
                 break;
+            case Lexem::APPLY:
+                if ( l->children[ 0 ]->eq( "___set_base_size" ) ) {
+                    attributes << Attr{ CALLABLE_ATTR_BASE_SIZE, 0, l->children[ 1 ] };
+                    break;
+                }
+                if ( l->children[ 0 ]->eq( "___set_base_alig" ) ) {
+                    attributes << Attr{ CALLABLE_ATTR_BASE_ALIG, 0, l->children[ 1 ] };
+                    break;
+                }
+                add_error( "unexpected token (class block has a limited set of acceptable tokens)", l );
+                break;
             case STRING___def___NUM:
                 break;
             default:
+                PRINT( l );
                 add_error( "unexpected token (class block has a limited set of acceptable tokens)", l );
                 break;
             }

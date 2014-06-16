@@ -9,6 +9,13 @@ class Class;
 */
 class Type {
 public:
+    struct Attr {
+        Type *get_type();
+        Type *get_ptr_type();
+        int  off;
+        Expr val;
+        bool type; ///< for ~= defs
+    };
     Type( Class *orig );
 
     void write_to_stream( Stream &os );
@@ -16,6 +23,7 @@ public:
     void parse();
 
     int  size(); ///< size in bits
+    int  alig(); ///< alignement in bits
     int  pod();  ///< plain old data
     int  sb();   ///< size in bytes
 
@@ -24,9 +32,10 @@ public:
     bool        aryth;
     bool        _parsed;
     int         _len;
+    int         _ali;
     int         _pod;
 
-    Vec<Type *> attr_ptr_types;
+    Vec<Attr>   attributes;
 };
 
 #endif // TYPE_H

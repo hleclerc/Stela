@@ -18,6 +18,7 @@ public:
         SI32 type; ///< CALLABLE_ATTR_...
         SI32 name;
         Code code;
+        int  num;
     };
 
     Class();
@@ -29,8 +30,8 @@ public:
 
     static Expr const_or_copy( Expr &Expr );
 
-    Vec<Type *> types;
-    Vec<Code> ancestors;
+    Vec<Type *>    types;
+    Vec<Code>      ancestors;
     Vec<std::pair<int,Vec<Code> > > methods; ///< surdef lists for each method name
     Vec<Attribute> attributes;
 };
