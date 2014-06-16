@@ -172,11 +172,11 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
     Vec<Expr> lt;
     lt << ip->make_type_var( cva->type() );
     Type *type = base_class->type_for( lt );
-    type->_len = 64 + ip->type_ST->size();
+    type->_len = 64 + ip->ptr_size;
     type->_pod = 1;
 
     // output val
-    Expr val = cst( type, 64 + ip->type_ST->size() );
+    Expr val = cst( type, 64 + ip->ptr_size );
 
     SI64 ptr = (SI64)c;
     val = repl_bits( val,  0, cst( ip->type_ST, 64, &ptr ) );
@@ -229,7 +229,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         int o = 0;
         Vec<Callable *> ci;
         Vec<Expr> catched_vars;
-        for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->type_ST->size() ) {
+        for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->ptr_size ) {
             Type *pt = ip->type_from_type_var( vt->parameters[ 0 ] );
             Expr callable = slice( pt, lst, o )->get( cond );
             // Callable *
@@ -720,7 +720,7 @@ Expr Scope::get_catched_var_in_catched_vars( int num ) {
             Expr f( s->callable->var->get() );
             Expr v = slice( ip->type_Ptr_SI32, f, 64 )->get( cond );
             int o = 0, n = 0;
-            for( Type *vt = ip->type_from_type_var( ip->type_from_type_var( f->type()->parameters[ 0 ] )->parameters[ 0 ] ); vt->orig == ip->class_VarargsItemBeg; o += ip->type_ST->size(), ++n ) {
+            for( Type *vt = ip->type_from_type_var( ip->type_from_type_var( f->type()->parameters[ 0 ] )->parameters[ 0 ] ); vt->orig == ip->class_VarargsItemBeg; o += ip->ptr_size, ++n ) {
                 if ( n == num ) {
                     Type *tv = ip->type_from_type_var( vt->parameters[ 0 ] );
                     return slice( tv, v, o );

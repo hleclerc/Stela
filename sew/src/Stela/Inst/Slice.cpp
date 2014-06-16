@@ -19,7 +19,6 @@ struct Slice : Inst {
     }
 
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Slice( out_type ); }
-    virtual Expr size() { return out_type->size( this ); }
     virtual Type *type() { return out_type; }
 
     virtual Expr _simp_slice( Type *dst, Expr off ) {

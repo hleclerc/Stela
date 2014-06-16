@@ -1,5 +1,6 @@
 #include "Uninitialized.h"
 #include "BoolOpSeq.h"
+#include "ReplBits.h"
 #include "Select.h"
 #include "Store.h"
 #include "Slice.h"
@@ -30,7 +31,7 @@ struct Room : Inst {
         //            is->changed[ this ] = this->val;
         //    }
         //}
-        val = select( cond, rcast( ptype(), obj->simplified( cond ) ), val->simplified( not cond ) );
+        val = select( cond, repl_bits( val->simplified( cond ), 0, obj->simplified( cond ) ), val->simplified( not cond ) );
     }
     virtual Expr get( const BoolOpSeq &cond ) {
         return val->simplified( cond );

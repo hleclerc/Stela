@@ -13,16 +13,16 @@ public:
 
     void write_to_stream( Stream &os );
     void write_to_stream( Stream &os, void *data, int len );
+    void parse();
 
-    Expr size( Inst *inst ); ///< size in bits
-    int  size(); ///< size in bits (-1 if depend on the actual data)
+    int  size(); ///< size in bits
     int  pod();  ///< plain old data
-    int  sb();   ///< size in bytes (-1 if depend on the actual data)
+    int  sb();   ///< size in bytes
 
     Vec<Expr>   parameters;
     Class      *orig;
     bool        aryth;
-    bool        defined; ///< false unless a first init is called
+    bool        _parsed;
     int         _len;
     int         _pod;
 

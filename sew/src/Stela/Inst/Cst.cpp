@@ -32,8 +32,6 @@ struct Cst : Inst {
         return out_type;
     }
     virtual bool get_val( Type *type, void *dst ) const {
-        if ( type->size() < 0 )
-            return false;
         if ( type == out_type ) {
             memcpy( dst, data.ptr(), data.size() );
             return true;
@@ -53,28 +51,23 @@ struct Cst : Inst {
         const Cst *c = static_cast<const Cst *>( inst );
         return c->out_type == out_type and c->data == data and c->knwn == knwn and c->len == len;
     }
-    //virtual Expr size() {
-    //    return len;
-    //}
     virtual Expr _simp_repl_bits( Expr off, Expr val ) {
         if ( Cst *c = dcast( val.inst ) ) {
             SI32 voff;
             if ( off->get_val( ip->type_SI32, &voff ) ) {
-                SI32 vlen;
-                if ( val->size()->get_val( ip->type_SI32, &vlen ) ) {
-                    Cst *res = new Cst;
-                    res->out_type = out_type;
-                    res->len = std::max( len, voff + vlen );
-                    res->data.resize( res->sb() );
-                    res->knwn.resize( res->sb() );
-                    // old values
-                    memcpy( res->data.ptr(), data.ptr(), res->sb() );
-                    memcpy( res->knwn.ptr(), knwn.ptr(), res->sb() );
-                    // new (replaced) ones
-                    memcpy_bit( res->data.ptr(), voff, c->data.ptr(), 0, vlen );
-                    memset_bit( res->knwn.ptr(), voff, true, vlen );
-                    return res;
-                }
+                SI32 vlen = val->size();
+                Cst *res = new Cst;
+                res->out_type = out_type;
+                res->len = std::max( len, voff + vlen );
+                res->data.resize( res->sb() );
+                res->knwn.resize( res->sb() );
+                // old values
+                memcpy( res->data.ptr(), data.ptr(), res->sb() );
+                memcpy( res->knwn.ptr(), knwn.ptr(), res->sb() );
+                // new (replaced) ones
+                memcpy_bit( res->data.ptr(), voff, c->data.ptr(), 0, vlen );
+                memset_bit( res->knwn.ptr(), voff, true, vlen );
+                return res;
             }
         }
         return (Inst *)0;
@@ -105,9 +98,6 @@ struct Cst : Inst {
 };
 
 Expr cst( Type *type, int len, void *data, void *knwn ) {
-    if ( len < 0 )
-        len = type->size();
-
     Cst *res = new Cst;
     res->out_type = type;
     res->len = len;

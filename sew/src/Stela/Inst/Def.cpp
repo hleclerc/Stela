@@ -37,29 +37,32 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
                 return ip->ret_error( "no self ??" );
             if ( orig->catched_vars[ i ].type == IN_SELF ) {
                 Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
+                catched_vars->write_dot( std::cout );
                 self = slice( ts, catched_vars->get( cond ), o );
                 break;
             }
             vt = ip->type_from_type_var( vt->parameters[ 2 ] );
-            o += ip->type_ST->size();
+            o += ip->ptr_size;
         }
 
         // init attributes
         Type *self_type = self->ptype();
+        self_type->parse();
+
         if ( self_type->orig->ancestors.size() )
             TODO;
         Expr o = 0;
         for( Class::Attribute &a : self_type->orig->attributes ) {
-            Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
-            if ( a.type == CALLABLE_ATTR_TYPE ) // ~=
-                TODO;
-            ns.apply( ns.get_attr( rcast( val->type(), add( self, o ) ), STRING_reassign_NUM ), 1, &val );
-            if ( not self_type->defined )
-                self_type->attr_ptr_types << val->type();
+            TODO;
+//            Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
+//            if ( a.type == CALLABLE_ATTR_TYPE ) // ~=
+//                TODO;
+//            ns.apply( ns.get_attr( rcast( val->type(), add( self, o ) ), STRING_reassign_NUM ), 1, &val );
+//            if ( not self_type->defined )
+//                self_type->attr_ptr_types << val->type();
 
-            o = add( o, val->size() );
+//            o = add( o, val->size() );
         }
-        self_type->defined = true;
     }
 
     // inline call

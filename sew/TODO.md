@@ -1,6 +1,8 @@
 À quoi servent les types ?
 * actuellement à stocker Class *orig + les paramètres. Si le type des attributs ne dépend pas du contexte, on peut les stocker dans le Type *
 
+
+
 Prop pour les classes de taille variable
 
 class A

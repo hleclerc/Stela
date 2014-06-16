@@ -32,7 +32,7 @@ public:
     virtual Expr simplified( const BoolOpSeq &cond );
     virtual bool same_cst( const Inst *inst ) const;
     virtual bool emas_cst( const Inst *inst ) const;
-    virtual Expr size();
+    virtual SI32 size();
 
     void add_dep( const Expr &val );
     void add_inp( const Expr &val );

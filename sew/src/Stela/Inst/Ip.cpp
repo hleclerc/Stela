@@ -29,8 +29,10 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     type_Type->_len = 64;
 
     type_Type->_pod = 1;
+    type_Void->_len = 0;
 
-    type_ST = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
+    type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
+    ptr_size = 8 * sizeof( void * );
 
     sys_state = cst( type_Void );
 
@@ -131,13 +133,13 @@ Expr Ip::make_Varargs( Vec<Expr> &lst, const Vec<int> &names ) {
     for( Expr &v : lst )
         types << v->type();
     Type *type = make_Varargs_type( types, names, 0 );
-    type->_len = lst.size() * type_ST->size();
+    type->_len = lst.size() * ptr_size;
     type->_pod = 1;
 
     // data
     Expr res( cst( type ) );
     for( int i = 0; i < lst.size(); ++i )
-        res = repl_bits( res, i * type_ST->size(), lst[ i ] );
+        res = repl_bits( res, i * ptr_size, lst[ i ] );
     return room( res );
 }
 
@@ -151,7 +153,7 @@ Expr Ip::make_SurdefList( Vec<Expr> &surdefs ) {
     lt << make_type_var( vs->type() ); // Ptr[VarargItem[...]]
     lt << make_type_var( type_Void );
     Type *type = class_SurdefList->type_for( lt );
-    type->_len = type_ST->size();
+    type->_len = ptr_size;
     type->_pod = 1;
 
     // data
@@ -181,7 +183,7 @@ Type *Ip::ptr_for( Type *type ) {
 
     Vec<Expr> tl = make_type_var( type );
     Type *res = class_Ptr->type_for( tl );
-    res->_len = type_ST->size();
+    res->_len = ptr_size;
     res->_pod = 1;
 
     ptr_map[ type ] = res;
