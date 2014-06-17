@@ -68,7 +68,6 @@ public:
     Vec<ArgCst>     arg_constraints; ///< class names
     Code            comp_pert;
     Code            condition;
-    Code            block;
     Vec<CatchedVar> catched_vars;
 
     Inst           *var;

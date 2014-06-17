@@ -27,12 +27,13 @@ public:
     virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller );
 
     // data
-    Code return_type;
+    Code          block;
+    Code          return_type;
     Vec<AttrInit> attr_init; ///< if init
 
-    int get_of;
-    int set_of;
-    int sop_of;
+    int           get_of;
+    int           set_of;
+    int           sop_of;
 };
 
 #endif // DEF_H

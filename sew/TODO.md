@@ -1,8 +1,14 @@
 À quoi servent les types ?
 * actuellement à stocker Class *orig + les paramètres. Si le type des attributs ne dépend pas du contexte, on peut les stocker dans le Type *
 
+Attention:
+class A
+  def f
+    class B
+       def g
+          self... # <- quand on parse B, on demande à catcher le self de f alors que c'esr inutile
 
-
+          
 Prop pour les classes de taille variable
 
 class A

@@ -740,6 +740,13 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
                 c = c->children[ 0 ];
 
             // catched by the callable ?
+            //            if ( is_a_method( c ) ) {
+            //                if ( not catched[ c ].count( "self" ) ) {
+            //                    int n = catched[ c ].size();
+            //                    catched[ c ][ "self "] = CatchedVarWithNum{ CatchedVar{ 0, -2, false }, n };
+            //                }
+            //            }
+
             auto it = catched[ c ].find( String( v->beg, v->beg + v->len ) );
             if ( it != catched[ c ].end() )
                 cl << CatchedVar{ c, it->second.num, false };
@@ -982,6 +989,9 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
 
     // variables to catch
     std::map<String,CatchedVarWithNum> &catched_vars = catched[ name ];
+    PRINT( *name );
+    PRINT( name );
+    PRINT( catched_vars.size() );
     get_needed_var_rec( catched_vars, block, name->num_scope );
 
     if ( is_a_method( t ) ) {
@@ -1047,9 +1057,6 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     if ( condition )
         push_delayed_parse( condition );
 
-    // block
-    push_delayed_parse( block );
-
     // catched var data
     data << catched_vars.size();
     for( auto it : catched_vars ) {
@@ -1057,8 +1064,13 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         if ( cl[ 0 ].surdef ) {
             TODO;
         } else {
+            //PRINT( *name );
+            //PRINT( cl.size() );
+            //            PRINT( cl[ 0 ].surdef );
             CatchedVar cv = cl[ 0 ];
             if ( cv.s >= 0 ) { // in catched vars of a parent callable
+                //PRINT( *cv.l );
+                //PRINT( cv.s );
                 data << PI8( IN_CATCHED_VARS );
                 data << cv.s;
             } else if ( cv.s == -2 ) { // self
@@ -1072,6 +1084,9 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     }
 
     if ( token_type == IR_TOK_DEF ) {
+        // block
+        push_delayed_parse( block );
+
         // return type
         if ( return_type ) {
             if ( name->eq( "init" ) ) {
@@ -1154,7 +1169,7 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         data << methods.size();
         for( std::pair<int,const Lexem *> attr : methods ) {
             push_nstring( attr.first );
-            push_delayed_parse( attr.second );
+            push_delayed_parse( attr.second, false );
         }
 
         // attributes

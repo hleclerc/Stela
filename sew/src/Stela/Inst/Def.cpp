@@ -71,6 +71,8 @@ Def::Def() {
 void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
     Callable::read_bin( scope, bin );
 
+    block = Code( sf, bin.read_offset() );
+
     if ( flags & IR_HAS_RETURN_TYPE ) {
         if ( name == STRING_init_NUM ) {
             int nb_args = bin.read_positive_integer();

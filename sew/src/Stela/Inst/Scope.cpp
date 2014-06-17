@@ -128,6 +128,8 @@ Expr Scope::parse_BLOCK( BinStreamReader bin ) {
 
 Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
     int name = read_nstring( bin );
+    if ( disp_tok )
+        std::cout << "name=" << ip->str_cor.str( name ) << std::endl;
 
     // supporting variable
     Callable *c = 0;
@@ -489,9 +491,6 @@ Expr Scope::get_attr( Expr self, int name ) {
             keep_only_method_surdef( lst );
             for( int i = 0; i < m.second.size(); ++i )
                 lst << ns.parse( m.second[ i ].sf, m.second[ i ].tok, "method parsing" );
-            SI64 p;
-            PRINT( slice( ip->type_SI64, lst[ 0 ]->get(), 0 )->get_val( ip->type_SI64, &p ) );
-            PRINT( ip->str_cor.str( reinterpret_cast<Callable *>( p )->name ) );
             return ip->make_SurdefList( lst );
         }
     }
@@ -748,7 +747,7 @@ Expr Scope::get_catched_var_in_catched_vars( int num ) {
             return ip->ret_error( "size of catched var list is too small" );
         }
     }
-    return ip->ret_error( "expecting a calling context" );
+    return ip->ret_error( "expecting a calling context (a scope that has a callable *)" );
 }
 
 Expr Scope::_parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat ) {
