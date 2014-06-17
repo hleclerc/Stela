@@ -37,7 +37,6 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
                 return ip->ret_error( "no self ??" );
             if ( orig->catched_vars[ i ].type == IN_SELF ) {
                 Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
-                catched_vars->write_dot( std::cout );
                 self = slice( ts, catched_vars->get( cond ), o );
                 break;
             }
@@ -47,16 +46,16 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
         // init attributes
         Type *self_type = self->ptype();
-        self_type->parse();
+        // self_type->parse();
 
         if ( self_type->orig->ancestors.size() )
             TODO;
         for( Type::Attr &a : self_type->attributes ) {
             if ( a.off >= 0 ) {
                 if ( a.type )
-                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
-                else
                     ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ) );
+                else
+                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
             }
         }
     }

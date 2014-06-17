@@ -18,12 +18,16 @@ void := 1
 class A
     a := 10
     b := 20
-    # def init
-        # pouet
+    def init
+        #
 
         
-a := A()
-___info a
+i := A()
+___info i
+___info i.a
+___info i.b
+___disp i.a
+___disp i.b
 # a.inut 30
 # a 17
 # i := SI32 13

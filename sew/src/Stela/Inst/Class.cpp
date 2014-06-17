@@ -102,20 +102,12 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, in
     Type *type = orig->type_for( args );
 
     // start with a unknown cst
-    Expr ret = room( cst( type ) );
+    Expr ret = room( cst( type, type->size() ) );
 
     Scope ns( &ip->main_scope, caller, "ClassInit_" + to_string( *type ) );
     ns.cond = ns.cond and cond;
     ns.class_scope = type;
     ns.callable = orig;
-
-//    // get the methods
-//    for( std::pair<int,Code> method : orig->methods ) {
-//        Type::Attr *attr = type->methods.push_back();
-//        attr->sf   = method.second.sf;
-//        attr->name = method.first;
-//        attr->var  = ns.parse( method.second.sf, method.second.tok, "type parse" );
-//    }
 
     //
     if ( apply_mode == Scope::APPLY_MODE_NEW )
