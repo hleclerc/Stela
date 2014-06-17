@@ -61,6 +61,5 @@ Expr slice( Type *dst, Expr var, Expr off ) {
 }
 
 Expr rcast( Type *dst, Expr var ) {
-    ASSERT( dst != ip->type_SI64, "..." );
     return slice( dst, var, 0 );
 }

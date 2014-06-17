@@ -36,6 +36,7 @@ public:
     int         _pod;
 
     Vec<Attr>   attributes;
+    Vec<Type *> ancestors;
 };
 
 #endif // TYPE_H

@@ -465,11 +465,14 @@ Expr Scope::copy( Expr &var ) {
     return res;
 }
 
-static void keep_only_method_surdef( Vec<Expr> &lst ) {
+static void keep_only_method_surdef( Vec<Expr> &lst, const BoolOpSeq &cond ) {
     for( int i = 0; i < lst.size(); ++i ) {
-        PRINT( *lst[ i ]->type() );
-        if ( lst[ i ]->type()->orig == ip->class_Def ) {
-            continue;
+        if ( lst[ i ]->ptype()->orig == ip->class_Def ) {
+            SI64 p;
+            if ( not rcast( ip->type_SI64, lst[ i ]->get( cond ) )->get_val( ip->type_SI64, &p ) )
+                return ip->disp_error( "weird Def" );
+            if ( reinterpret_cast<Def *>( ST( p ) )->self_as_arg() )
+                continue;
         }
         lst.remove( i );
     }
@@ -489,7 +492,9 @@ Expr Scope::get_attr( Expr self, int name ) {
 
             Vec<Expr> lst;
             find_var_clist( lst, name );
-            keep_only_method_surdef( lst );
+            keep_only_method_surdef( lst, cond );
+            if ( type->ancestors.size() )
+                TODO;
             for( int i = 0; i < m.second.size(); ++i )
                 lst << ns.parse( m.second[ i ].sf, m.second[ i ].tok, "method parsing" );
             return ip->make_SurdefList( lst );
@@ -510,17 +515,15 @@ Expr Scope::get_attr( Expr self, int name ) {
     // not found ? -> search in global scope for def ...( self, ... )
     Vec<Expr> lst;
     find_var_clist( lst, name );
-    keep_only_method_surdef( lst );
+    keep_only_method_surdef( lst, cond );
     if ( lst.size() == 0 )
-        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self->type() ) + "' or in parent scopes" );
-    PRINT( lst );
-    PRINT( *self->ptype() );
-    PRINT( ip->str_cor.str( name ) );
-    TODO;
-    return 0;
+        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self->type() ) + "' (or surdef with self as arg in parent scopes)" );
+    // add self in
+    //    for( Expr &e : lst ) {
+    //        SI64 p
+    //    }
 
-//    if ( not self.type->orig )
-//        return ip->ret_error( "Class " + to_string( *self.type ) + " has not been defined" );
+    return ip->make_SurdefList( lst );
 
 //    if ( self.type->orig == &ip->class_GetSetSopInst )
 //        TODO;

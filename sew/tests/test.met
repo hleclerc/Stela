@@ -13,13 +13,12 @@ class SI32
 
 void := 1
 
-# prop pour les classes de taille variable
-# -> on reconstruit le contenu de la classe à chaque init
+def init self
+    # nothing to do
+    
 class A
     a := 10
     b := 20
-    def init
-        #
 
         
 i := A()
@@ -28,9 +27,3 @@ ___info i.a
 ___info i.b
 ___disp i.a
 ___disp i.b
-# a.inut 30
-# a 17
-# i := SI32 13
-# ___info i
-# ___info i.a
-#___disp a + 50

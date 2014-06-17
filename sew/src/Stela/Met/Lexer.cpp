@@ -1096,8 +1096,9 @@ void Lexer::set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type 
                     if ( t->type == STRING_doubledot_NUM ) t = t->children[ 0 ];
 
                     t->num_scope = np + 1;
-                    t->num_in_scope = osd++;
-                    t->scope_type = 0;
+                    if ( i or not t->eq( "self" ) )
+                        t->num_in_scope = osd++;
+                    t->scope_type = 0; // dyn
                 }
             } else {
                 // name
