@@ -739,26 +739,14 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
             if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT )
                 c = c->children[ 0 ];
 
-            // catched by the callable ?
-            //            if ( is_a_method( c ) ) {
-            //                if ( not catched[ c ].count( "self" ) ) {
-            //                    int n = catched[ c ].size();
-            //                    catched[ c ][ "self "] = CatchedVarWithNum{ CatchedVar{ 0, -2, false }, n };
-            //                }
-            //            }
-
-            auto it = catched[ c ].find( String( v->beg, v->beg + v->len ) );
-            if ( it != catched[ c ].end() )
-                cl << CatchedVar{ c, it->second.num, false };
-
             // name of the callable itself ?
             if ( c->same_str( v->beg, v->len ) )
                 cl << CatchedVar{ c, -1, true };
         }
 
-        // in args ?
+        // in args or catched vars ?
         if ( b->parent and ( b->parent->type == STRING___def___NUM or b->parent->type == STRING___class___NUM ) ) {
-            const Lexem *c = b->parent->children[ 0 ];
+            const Lexem *t = b->parent, *c = t->children[ 0 ];
 
             while ( true ) {
                 if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
@@ -768,6 +756,7 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
                 break;
             }
 
+            // in args ?
             if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT ) {
                 SplittedVec<const Lexem *,8> tl;
                 get_children_of_type( c->children[ 1 ], STRING_comma_NUM, tl );
@@ -779,7 +768,17 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
                     if ( t->same_str( v->beg, v->len ) )
                         cl << CatchedVar{ t, -1, false };
                 }
+                c = c->children[ 0 ];
             }
+
+            // in catched vars ?
+            auto it = catched[ t ].find( String( v->beg, v->beg + v->len ) );
+            if ( it != catched[ t ].end() )
+                cl << CatchedVar{ t, it->second.num, false };
+
+            // looking for self, in "def ..." that is a method ?
+            if ( v->eq( "self" ) and is_a_method( t ) )
+                cl << CatchedVar{ t, -2, false };
         }
 
         if ( b->prev )
@@ -988,10 +987,7 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     }
 
     // variables to catch
-    std::map<String,CatchedVarWithNum> &catched_vars = catched[ name ];
-    PRINT( *name );
-    PRINT( name );
-    PRINT( catched_vars.size() );
+    std::map<String,CatchedVarWithNum> &catched_vars = catched[ t ];
     get_needed_var_rec( catched_vars, block, name->num_scope );
 
     if ( is_a_method( t ) ) {
@@ -1064,13 +1060,8 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         if ( cl[ 0 ].surdef ) {
             TODO;
         } else {
-            //PRINT( *name );
-            //PRINT( cl.size() );
-            //            PRINT( cl[ 0 ].surdef );
             CatchedVar cv = cl[ 0 ];
             if ( cv.s >= 0 ) { // in catched vars of a parent callable
-                //PRINT( *cv.l );
-                //PRINT( cv.s );
                 data << PI8( IN_CATCHED_VARS );
                 data << cv.s;
             } else if ( cv.s == -2 ) { // self

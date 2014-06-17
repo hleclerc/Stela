@@ -484,6 +484,7 @@ Expr Scope::get_attr( Expr self, int name ) {
     for( std::pair<int,Vec<Class::Code> > &m : type->orig->methods ) {
         if ( m.first == name ) {
             Scope ns( &ip->main_scope, this, "preinit" );
+            ns.callable = type->orig;
             ns.self = self;
 
             Vec<Expr> lst;
