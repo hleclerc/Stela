@@ -144,17 +144,19 @@ struct CC_SeqItemBlock : CC_SeqItem {
     CC_SeqItemBlock( CC_SeqItemBlock *parent ) : parent( parent ), cur_seq( 0 ) {}
     virtual ~CC_SeqItemBlock() {}
     virtual void write( Codegen_C *cc ) {
-        if ( parent ) {
+        if ( not cond.always( true ) ) {
             cond.write_to_stream( cc, cc->on.write_beg() << "if ( ", -1 );
             cc->on.write_end( " ) {" );
             cc->on.nsp += 4;
         }
 
-        for( int i = 0; i < seq[ 0 ].size(); ++i ) {
-            seq[ 0 ][ i ]->write( cc );
+        if ( not cond.always( false ) ) {
+            for( int i = 0; i < seq[ 0 ].size(); ++i ) {
+                seq[ 0 ][ i ]->write( cc );
+            }
         }
 
-        if ( parent ) {
+        if ( not cond.always( true ) ) {
             if ( seq[ 1 ].size() ) {
                 cc->on.nsp -= 4;
                 cc->on << "} else {";
@@ -209,8 +211,6 @@ void Codegen_C::make_code() {
     cond_stack << true;
     ++Inst::cur_op_id;
     while ( front.size() ) {
-        PRINT( cond_stack );
-
         Expr inst;
         // try to find an instruction with the same condition set or an inst the is not going to write anything
         BoolOpSeq cur_cond = anded( cond_stack );
@@ -235,7 +235,7 @@ void Codegen_C::make_code() {
 
                 BoolOpSeq poped; // the last cond
                 if ( cond.always( true ) ) {
-                    nb_close += trial_cond_stack.size();
+                    nb_close = trial_cond_stack.size() - 1;
                     trial_cond_stack.resize( 1 );
                 } else {
                     while ( not cond.imply( anded( trial_cond_stack ) ) ) {
@@ -249,9 +249,11 @@ void Codegen_C::make_code() {
                 if ( nc.imply( not poped ) ) {
                     trial_cond_stack << not poped;
                     nc = nc - not poped;
+                    --nb_close;
                     ++nb_else;
                 }
-                trial_cond_stack << nc;
+                if ( nc.or_seq.size() )
+                    trial_cond_stack << nc;
 
                 int score = nb_close * 10000 + nb_else + 2 * nc.nb_sub_conds();
                 if ( best_score > score ) {
@@ -266,10 +268,6 @@ void Codegen_C::make_code() {
             inst = front[ best_index ];
             cond_stack = best_cond_stack;
             front.remove_unordered( best_index );
-
-            PRINT( best_nb_close );
-            PRINT( best_nb_else );
-            PRINT( best_nc );
 
             for( ; best_nb_close; --best_nb_close )
                 cur_block = cur_block->parent;

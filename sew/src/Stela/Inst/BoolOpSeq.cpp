@@ -68,12 +68,12 @@ bool BoolOpSeq::error() {
 }
 
 bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
-    // val b knowing self
-    if ( not b.or_seq.size() )
-        return b.val_if_not_or_seq;
     // true =?> a or b: no
     if ( not or_seq.size() )
         return false;
+    // val b knowing self
+    if ( not b.or_seq.size() )
+        return b.val_if_not_or_seq;
 
     // ( a and b ) or c =?> b or c
     // a_0 or a_1 =?> b_0 or b1
