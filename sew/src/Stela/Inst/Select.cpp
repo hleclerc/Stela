@@ -84,6 +84,7 @@ struct SelectDep : Select {
 };
 
 Expr select( const BoolOpSeq &cond, Expr ok, Expr ko ) {
+    if ( not ko ) return ok;
     if ( cond.always( true  ) ) return ok;
     if ( cond.always( false ) ) return ko;
     if ( ok == ko ) return ok;

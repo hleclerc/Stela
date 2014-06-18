@@ -209,6 +209,8 @@ void Codegen_C::make_code() {
     cond_stack << true;
     ++Inst::cur_op_id;
     while ( front.size() ) {
+        PRINT( cond_stack );
+
         Expr inst;
         // try to find an instruction with the same condition set or an inst the is not going to write anything
         BoolOpSeq cur_cond = anded( cond_stack );
@@ -265,14 +267,19 @@ void Codegen_C::make_code() {
             cond_stack = best_cond_stack;
             front.remove_unordered( best_index );
 
+            PRINT( best_nb_close );
+            PRINT( best_nb_else );
+            PRINT( best_nc );
+
             for( ; best_nb_close; --best_nb_close )
                 cur_block = cur_block->parent;
             if ( best_nb_else )
                 cur_block->cur_seq = 1;
-            if ( best_nb_else or best_nc.or_seq.size() ) {
+            if ( best_nc.or_seq.size() ) {
                 CC_SeqItemBlock *new_block = new CC_SeqItemBlock( cur_block );
                 cur_block->seq[ cur_block->cur_seq ] << new_block;
                 new_block->cond = best_nc;
+                cur_block = new_block;
             }
         }
 

@@ -890,7 +890,7 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
     }
 
     // simplified expression
-    BoolOpSeq expr = *cond_if->get( cond );
+    BoolOpSeq expr( cond_if->get( cond ), true );
 
     //
     const PI8 *ok = bin.read_offset();
@@ -913,14 +913,14 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
     if ( ok ) {
         Scope if_scope( this, 0, "if_" + to_string( ok ) );
         if_scope.cond = expr;
-        res_ok = if_scope.parse( ok );
+        res_ok = if_scope.parse( sf, ok, "if" );
     }
 
     Expr res_ko;
     if ( ko ) {
         Scope fi_scope( this, 0, "fi_" + to_string( ko ) );
         fi_scope.cond = not expr;
-        res_ko = fi_scope.parse( ko );
+        res_ko = fi_scope.parse( sf, ko, "fi" );
     }
 
     return select( expr, res_ok, res_ko );
