@@ -14,7 +14,7 @@ BoolOpSeq::BoolOpSeq( bool pos ) : val_if_not_or_seq( pos ) {
 }
 
 void BoolOpSeq::write_to_stream( Codegen_C *cc, Stream &os, int prec ) const {
-    TODO;
+    write_to_stream( os );
     //    if ( PREC_or_boolean <= prec )
     //        os << "(";
     //    int lprec = 0;

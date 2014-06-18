@@ -18,7 +18,7 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-#define DECL_BT( T ) type_##T->aryth = true; type_##T->_pod = true; type_##T->_len = SizeofIf<T,true>::val; type_##T->_ali = type_##T->_len;
+    #define DECL_BT( T ) type_##T->aryth = true; type_##T->_pod = true; type_##T->_len = SizeofIf<T,true>::val; type_##T->_ali = type_##T->_len;
     #include "DeclArytTypes.h"
     #undef DECL_BT
 

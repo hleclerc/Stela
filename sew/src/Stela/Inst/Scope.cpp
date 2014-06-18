@@ -29,6 +29,7 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
     if ( parent ) {
         path = parent->path + "/";
         self = parent->self;
+        sf   = parent->sf;
     }
     path += name;
 
@@ -898,12 +899,12 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
     // known value
     if ( expr.always( true ) ) {
         Scope if_scope( this, 0, "if_" + to_string( ok ) );
-        return if_scope.parse( ok );
+        return if_scope.parse( sf, ok, "if" );
     }
     if ( expr.always( false ) ) {
         if ( ko ) {
             Scope if_scope( this, 0, "fi_" + to_string( ko ) );
-            return if_scope.parse( ko );
+            return if_scope.parse( sf, ko, "fi" );
         }
         return ip->void_var();
     }
@@ -1168,8 +1169,14 @@ Expr Scope::parse_disp( BinStreamReader bin ) {
     std::cout << std::endl;
     return ip->void_var();
 }
+
+#define CHECK_PRIM_ARGS( N ) \
+    int n = bin.read_positive_integer(); \
+    if ( n != N ) \
+        return ip->ret_error( "Expecting " #N " operand" );
+
 Expr Scope::parse_rand( BinStreamReader bin ) {
-    return symbol( ip->type_Bool, "rand()" );
+    return room( symbol( ip->type_Bool, "rand()" ) );
 }
 Expr Scope::parse_syscall( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
@@ -1178,11 +1185,6 @@ Expr Scope::parse_syscall( BinStreamReader bin ) {
         inp << parse( bin.read_offset() )->get( cond );
     return syscall( inp );
 }
-
-#define CHECK_PRIM_ARGS( N ) \
-    int n = bin.read_positive_integer(); \
-    if ( n != N ) \
-        return ip->ret_error( "Expecting " #N " operand" );
 
 Expr Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );

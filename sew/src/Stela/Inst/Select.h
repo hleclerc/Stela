@@ -4,6 +4,7 @@
 #include "Inst.h"
 
 Expr select( const BoolOpSeq &cond, Expr ok, Expr ko );
+Expr select_dep( const BoolOpSeq &cond, Expr ok, Expr ko );
 
 #endif // STELA_INST_Select_H
 

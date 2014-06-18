@@ -1,3 +1,4 @@
+#include "../System/AssignIfNeq.h"
 #include "BoolOpSeq.h"
 #include <fstream>
 #include "Type.h"
@@ -19,7 +20,7 @@ Inst::Inst() {
 
 Inst::~Inst() {
     rem_ref_to_this();
-    // delete when;
+    delete when;
 }
 
 void Inst::set( Expr obj, const BoolOpSeq &cond ) {
@@ -128,6 +129,7 @@ void Inst::mark_children() {
         e->mark_children();
 }
 
+
 void Inst::clone( Vec<Expr> &created ) const {
     if ( op_id == cur_op_id )
         return;
@@ -197,8 +199,8 @@ void Inst::write_graph_rec( Vec<Inst *> ext_buf, Stream &os ) {
     std::ostringstream ss;
     write_dot( ss );
 
-    //if ( when )
-    //    when->write_to_stream( ss << "\n" );
+    if ( when )
+        when->write_to_stream( ss << "\n" );
     //if ( IIC( this )->out_reg )
     //    IIC( this )->out_reg->write_to_stream( ss << " " );
 
@@ -285,6 +287,18 @@ bool Inst::is_const() const {
 
 bool Inst::get_val( Type *type, void *data ) const {
     return false;
+}
+
+void Inst::update_when( const BoolOpSeq &cond ) {
+    if ( not when )
+        when = new BoolOpSeq( cond );
+    else if ( not assign_if_neq( *when, *when or cond ) )
+        return;
+
+    for( Expr inst : inp )
+        inst->update_when( cond );
+    for( Expr inst : dep )
+        inst->update_when( cond );
 }
 
 Inst::operator BoolOpSeq() const {

@@ -4,8 +4,6 @@ def add a, b
 class SI32
     ___set_base_size 32
     ___set_base_alig 32
-    def init
-        #
     def init val
         ___reassign_rec self, val
     def reassign val
@@ -16,14 +14,14 @@ void := 1
 def init self
     # nothing to do
     
-class A
-    a := 10
-    b := 20
+# class A
+    # a := 10
+    # b := 20
 
         
-i := A()
-___info i
-___info i.a
-___info i.b
-___disp i.a
-___disp i.b
+a := 10
+if ___rand()
+    a = 20
+    # a # .reassign
+# a = ___rand()
+___syscall a

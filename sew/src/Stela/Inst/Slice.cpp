@@ -13,7 +13,7 @@ struct Slice : Inst {
     virtual void write_to_stream( Stream &os, int prec ) {
         int voff;
         if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
-            os << "rcast[" << *out_type << "]( " << inp[ 0 ] << ")";
+            os << "rcast[" << *out_type << "](" << inp[ 0 ] << ")";
         else
             Inst::write_to_stream( os, prec );
     }

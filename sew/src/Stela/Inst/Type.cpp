@@ -41,6 +41,8 @@ void Type::write_to_stream( Stream &os ) {
 }
 
 void Type::write_to_stream( Stream &os, void *data, int len ) {
+    if ( len == 0 )
+        os << "void";
     int sb = ( len + 7 ) / 8;
     const char *c = "0123456789ABCDEF";
     for( int i = 0; i < std::min( sb, 4 ); ++i )

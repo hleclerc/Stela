@@ -1,9 +1,9 @@
 /**
   main file for the stela interpreter / compiler
 */
+#include <Stela/Codegen/Codegen_C.h>
 #include <Stela/System/InstallDir.h>
 #include <Stela/System/ReadFile.h>
-// #include <Stela/Inst/Codegen_C.h>
 #include <Stela/Met/IrWriter.h>
 #include <Stela/Met/Lexer.h>
 #include <Stela/Inst/Ip.h>
@@ -62,15 +62,13 @@ int main( int argc, char **argv ) {
         ip->main_scope.import( input_files[ i ] );
 
     // compile
-    //    Codegen_C cr;
-    //    cr.disp_inst_graph_wo_phi = disp_inst_g_wo_phi;
-    //    cr.disp_inst_graph = disp_inst_g;
-    //    cr << ip->sys_state.get_val();
+    Codegen_C cr;
+    cr.disp_inst_graph_wo_phi = disp_inst_g_wo_phi;
+    cr.disp_inst_graph = disp_inst_g;
+    cr << ip->sys_state;
 
-    //    std::ofstream out_file( "out.cpp" );
-    //    cr.write_to( out_file );
-    PRINT( disp_inst_g_wo_phi );
-    PRINT( disp_inst_g );
+    std::ofstream out_file( "out.cpp" );
+    cr.write_to( out_file );
 
     return ip->error_list;
 }

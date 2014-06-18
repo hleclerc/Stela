@@ -65,6 +65,9 @@ public:
     virtual bool get_val( Type *type, void *data ) const;
     virtual operator BoolOpSeq() const;
 
+    // codegen
+    virtual void update_when( const BoolOpSeq &cond );
+
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
     virtual void write_graph_rec( Vec<Inst *> ext_buf, Stream &os );

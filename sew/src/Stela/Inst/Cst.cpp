@@ -18,6 +18,14 @@ struct Cst : Inst {
             os << *reinterpret_cast<Type *>( d );
             return;
         }
+        if ( out_type == ip->type_Void ) {
+            os << "void";
+            return;
+        }
+        if ( out_type == ip->type_Error ) {
+            os << "error";
+            return;
+        }
         out_type->write_to_stream( os, data.ptr(), len );
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
