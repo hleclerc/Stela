@@ -10,7 +10,7 @@ class Class : public Callable {
 public:
     struct TrialClass : Trial {
         TrialClass( Class *orig ) : orig( orig ) {}
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self );
         Vec<Expr> args;
         Class *orig;
     };
@@ -24,7 +24,7 @@ public:
     Class();
     void write_to_stream( Stream &os );
     virtual void read_bin( Scope *scope, BinStreamReader &bin );
-    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller );
+    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self );
 
     Type *type_for( Vec<Expr> &args );
 

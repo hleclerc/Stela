@@ -138,22 +138,29 @@ Expr Ip::make_Varargs( Vec<Expr> &lst, const Vec<int> &names ) {
     return room( res );
 }
 
-Expr Ip::make_SurdefList( Vec<Expr> &surdefs ) {
-    // SurdefList[ surdef_type, parm_type ]
+Expr Ip::make_SurdefList( Vec<Expr> &surdefs, Expr self ) {
+    // SurdefList[ surdef_type, parm_type, self_type ]
     //   c ~= surdef_type (-> Ptr[Vararg[...]])
     //   p ~= parm_type (-> Void or Ptr[Vararg[...]])
+    //   s ~= self_type (-> Void or Ptr[Vararg[...]])
     Expr vs = make_Varargs( surdefs );
 
     Vec<Expr> lt;
     lt << make_type_var( vs->type() ); // Ptr[VarargItem[...]]
     lt << make_type_var( type_Void );
+    if ( self )
+        lt << make_type_var( self->type() );
+    else
+        lt << make_type_var( type_Void );
     Type *type = class_SurdefList->type_for( lt );
-    type->_len = ptr_size;
+    type->_len = ptr_size + bool( self ) * ptr_size;
     type->_pod = 1;
 
     // data
     Expr res = cst( type );
     res = repl_bits( res, 0, vs );
+    if ( self )
+        res = repl_bits( res, ptr_size, self );
     return room( res );
 }
 

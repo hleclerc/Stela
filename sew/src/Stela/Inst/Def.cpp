@@ -14,7 +14,7 @@ Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
 Def::TrialDef::~TrialDef() {
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr _self ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
@@ -33,8 +33,12 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
         Type *vt = catched_vars->ptype();
         Expr self;
         for( int i = 0, o = 0; ; ++i ) {
-            if ( i == orig->catched_vars.size() )
-                return ip->ret_error( "no self ??" );
+            if ( i == orig->catched_vars.size() ) {
+                if ( not _self )
+                    return ip->ret_error( "no self ??" );
+                self = _self;
+                break;
+            }
             if ( orig->catched_vars[ i ].type == IN_SELF ) {
                 Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
                 self = slice( ts, catched_vars->get( cond ), o );
@@ -97,7 +101,7 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
     sop_of = flags & IR_IS_A_SOP ? scope->read_nstring( bin ) : -1;
 }
 
-Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller ) {
+Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self ) {
     TrialDef *res = new TrialDef( this );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );

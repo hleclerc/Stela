@@ -30,7 +30,7 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 
@@ -43,7 +43,7 @@ public:
     virtual ~Callable();
 
     virtual void read_bin( Scope *scope, BinStreamReader &bin );
-    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller ) = 0;
+    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self ) = 0;
     virtual void write_to_stream( Stream &os );
 
     int min_nb_args() const;

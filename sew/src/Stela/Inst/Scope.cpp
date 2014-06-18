@@ -282,6 +282,12 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         }
         int pnu = pu_args.size(), pnn = pn_args.size();
 
+        // self
+        Type *self_type = ip->type_from_type_var( f_type->parameters[ 2 ] );
+        Expr self_ptr;
+        if ( self_type != ip->type_Void )
+            self_ptr = slice( self_type, f->get( cond ), ip->ptr_size + bool( ip->ptr_size ) * ( parm_type != ip->type_Void ) );
+
         // tests
         std::sort( ci.begin(), ci.end(), CmpCallableInfobyPertinence() );
 
@@ -296,7 +302,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
                 break;
             }
 
-            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this );
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
 
             if ( trials[ i ]->ok() ) {
                 if ( trials[ i ]->cond.always( true ) ) {
@@ -370,7 +376,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
                 BoolOpSeq loc_cond = cond and trials[ i ]->cond;
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, catched_vars[ i ] );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, catched_vars[ i ], self_ptr );
                 res << std::make_pair( loc_cond, loc );
 
                 if ( trials[ i ]->cond.always( true ) )
@@ -497,7 +503,7 @@ Expr Scope::get_attr( Expr self, int name ) {
                 TODO;
             for( int i = 0; i < m.second.size(); ++i )
                 lst << ns.parse( m.second[ i ].sf, m.second[ i ].tok, "method parsing" );
-            return ip->make_SurdefList( lst );
+            return ip->make_SurdefList( lst, self );
         }
     }
 
@@ -518,12 +524,8 @@ Expr Scope::get_attr( Expr self, int name ) {
     keep_only_method_surdef( lst, cond );
     if ( lst.size() == 0 )
         return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self->type() ) + "' (or surdef with self as arg in parent scopes)" );
-    // add self in
-    //    for( Expr &e : lst ) {
-    //        SI64 p
-    //    }
 
-    return ip->make_SurdefList( lst );
+    return ip->make_SurdefList( lst, self );
 
 //    if ( self.type->orig == &ip->class_GetSetSopInst )
 //        TODO;

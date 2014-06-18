@@ -35,7 +35,7 @@ public:
     SourceFile *new_sf( String file );
 
     Expr make_Varargs( Vec<Expr> &lst, const Vec<int> &names = Vec<int>() );
-    Expr make_SurdefList( Vec<Expr> &surdefs );
+    Expr make_SurdefList( Vec<Expr> &surdefs, Expr self = Expr() );
     Expr make_type_var( Type *type );
 
     Type *ptr_for( Type *type );
