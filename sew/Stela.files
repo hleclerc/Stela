@@ -128,3 +128,7 @@ src/Stela/Codegen/Codegen.h
 src/Stela/Codegen/Codegen.cpp
 src/Stela/Codegen/Codegen_C.h
 src/Stela/Codegen/Codegen_C.cpp
+src/Stela/Inst/CppRegConstraint.h
+src/Stela/Inst/CppRegConstraint.cpp
+src/Stela/Codegen/CppOutReg.h
+src/Stela/Codegen/CppOutReg.cpp

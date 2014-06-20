@@ -1,3 +1,4 @@
+#include "../Inst/CppRegConstraint.h"
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
 #include "Codegen_C.h"
@@ -24,6 +25,10 @@ void Codegen_C::add_prel( String data ) {
 
 void Codegen_C::add_type( Type *type ) {
     types.insert( type );
+}
+
+CppOutReg *Codegen_C::new_out_reg( Type *type ) {
+    return out_regs.push_back( type, out_regs.size() );
 }
 
 void Codegen_C::write_to( Stream &out ) {
@@ -128,14 +133,24 @@ static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
 struct CC_SeqItem {
     virtual ~CC_SeqItem() {}
     virtual void write( Codegen_C *cc ) = 0;
+    virtual void get_constraints( CppRegConstraint &reg_constraints ) = 0;
+    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) = 0;
 };
+
 struct CC_SeqItemExpr : CC_SeqItem {
     CC_SeqItemExpr( Expr expr ) : expr( expr ) {}
     virtual ~CC_SeqItemExpr() {}
     virtual void write( Codegen_C *cc ) {
-        cc->on.write_beg();
-        expr->write_dot( *cc->os );
-        cc->on.write_end();
+        expr->write( cc, -1 );
+    }
+    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
+        expr->get_constraints( reg_constraints );
+    }
+    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
+        if ( expr->need_a_register() ) {
+            expr->out_reg = cc->new_out_reg( expr->type() );
+            expr->new_reg = true;
+        }
     }
     Expr expr;
 };
@@ -171,6 +186,19 @@ struct CC_SeqItemBlock : CC_SeqItem {
             cc->on << "}";
         }
     }
+
+    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
+        for( int i = 0; i < 2; ++i )
+            for( int n = 0; n < seq[ i ].size(); ++n )
+                seq[ i ][ n ]->get_constraints( reg_constraints );
+    }
+
+    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
+        for( int i = 0; i < 2; ++i )
+            for( int n = 0; n < seq[ i ].size(); ++n )
+                seq[ i ][ n ]->assign_reg( cc, reg_constraints );
+    }
+
     SplittedVec<AutoPtr<CC_SeqItem>,8> seq[ 2 ];
     CC_SeqItemBlock *parent;
     BoolOpSeq cond;
@@ -294,6 +322,12 @@ void Codegen_C::make_code() {
         }
     }
 
+    // main_block.write( this );
+    CppRegConstraint reg_constraints;
+    main_block.get_constraints( reg_constraints );
+    main_block.assign_reg( this, reg_constraints );
+
+    PRINT( reg_constraints );
     main_block.write( this );
 }
 

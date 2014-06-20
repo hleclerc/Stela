@@ -3,7 +3,10 @@
 
 #include "../System/Vec.h"
 #include "Expr.h"
+class CppRegConstraint;
+class CppOutReg;
 class BoolOpSeq;
+class Codegen_C;
 class Type;
 
 /**
@@ -66,7 +69,10 @@ public:
     virtual operator BoolOpSeq() const;
 
     // codegen
+    virtual void get_constraints( CppRegConstraint &reg_constraints );
     virtual void update_when( const BoolOpSeq &cond );
+    virtual void write( Codegen_C *cc, int prec );
+    virtual bool need_a_register();
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -84,6 +90,8 @@ public:
     mutable Vec<Parent> par; ///< parents
     mutable Inst       *ext_par;
     BoolOpSeq          *when; ///< used for code generation (to know when needed)
+    CppOutReg          *out_reg;
+    bool                new_reg;
 
     int                 flags;
 

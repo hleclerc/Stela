@@ -1,4 +1,5 @@
 #include "../System/AssignIfNeq.h"
+#include "CppRegConstraint.h"
 #include "BoolOpSeq.h"
 #include "Select.h"
 #include "Ip.h"
@@ -45,6 +46,15 @@ struct Select : Inst {
         for( Expr inst : dep )
             inst->update_when( cond );
     }
+    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
+        reg_constraints.add( CppRegConstraint::COMPULSORY, inp[ 0 ], -1, inp[ 1 ], -1 );
+    }
+    virtual bool need_a_register() {
+        return false;
+    }
+    virtual void write( Codegen_C *cc, int prec ) {
+    }
+
     Vec<Vec<Bool> > pos;
 };
 

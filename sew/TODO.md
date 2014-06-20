@@ -1,12 +1,18 @@
 À quoi servent les types ?
 * actuellement à stocker Class *orig + les paramètres. Si le type des attributs ne dépend pas du contexte, on peut les stocker dans le Type *
 
+Gestion des registres
+* contraintes sur les points d'arrivée et de départ ()
+* contraintes sur la non cohabitation de Rx_{n} et Rx_{m} si n != m (avec n et m des instructions)
+* prop : une liste constraints_to_solve, qu'on peut traiter off-line
+    * Inst *, int num
+
 Attention:
 class A
   def f
     class B
        def g
-          self... # <- quand on parse B, on demande à catcher le self de f alors que c'esr inutile
+          self... # <- quand on parse B, on demande à catcher le self de f alors que c'est inutile
 
           
 Prop pour les classes de taille variable
