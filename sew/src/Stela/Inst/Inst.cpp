@@ -1,4 +1,5 @@
 #include "../System/AssignIfNeq.h"
+#include "../Codegen/Codegen_C.h"
 #include "BoolOpSeq.h"
 #include <fstream>
 #include "Type.h"
@@ -10,12 +11,14 @@ PI64 Inst::cur_op_id = 0;
 Inst::Inst() {
     ext_par   = 0;
     when      = 0;
+    out_reg   = 0;
 
     op_id_vis = 0;
     op_id     = 0;
     op_mp     = 0;
 
     cpt_use   = 0;
+
 }
 
 Inst::~Inst() {
@@ -299,6 +302,21 @@ void Inst::update_when( const BoolOpSeq &cond ) {
         inst->update_when( cond );
     for( Expr inst : dep )
         inst->update_when( cond );
+}
+
+void Inst::get_constraints( CppRegConstraint &reg_constraints ) {
+}
+
+bool Inst::need_a_register() {
+    return true;
+}
+
+void Inst::write( Codegen_C *cc, int prec ) {
+    cc->on.write_beg();
+    if ( out_reg )
+        out_reg->write( cc, new_reg ) << " = ";
+    write_dot( *cc->os );
+    cc->on.write_end();
 }
 
 Inst::operator BoolOpSeq() const {

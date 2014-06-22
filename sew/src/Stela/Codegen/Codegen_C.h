@@ -3,6 +3,7 @@
 
 #include "../System/SplittedVec.h"
 #include "../System/StreamSep.h"
+#include "CppOutReg.h"
 #include "Codegen.h"
 #include <set>
 
@@ -19,6 +20,8 @@ public:
     void add_prel( String data );
     void add_type( Type *type );
 
+    CppOutReg *new_out_reg( Type *type );
+
     StreamSepMaker<std::ostringstream> on;
     std::ostringstream main_os;
     std::ostringstream *os;
@@ -31,6 +34,7 @@ public:
 
 protected:
     void make_code();
+    SplittedVec<CppOutReg,32> out_regs;
 };
 
 #endif // CODEGEN_C_H

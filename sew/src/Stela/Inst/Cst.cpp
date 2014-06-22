@@ -98,6 +98,9 @@ struct Cst : Inst {
     int sb() const {
         return ( len + 7 ) / 8;
     }
+    virtual bool need_a_register() {
+        return len;
+    }
 
     Type *out_type;
     Vec<PI8> data;
