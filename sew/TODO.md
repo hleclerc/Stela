@@ -1,6 +1,12 @@
 À quoi servent les types ?
 * actuellement à stocker Class *orig + les paramètres. Si le type des attributs ne dépend pas du contexte, on peut les stocker dans le Type *
 
+Gestion des registres
+* on pourrait ajouter des instructions pour sauver des registres (ex: save)
+* si 
+* 
+* 
+
 Attention:
 class A
   def f
