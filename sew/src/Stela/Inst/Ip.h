@@ -6,6 +6,7 @@
 #include "Sourcefile.h"
 #include "Scope.h"
 #include <map>
+class IpSnapshot;
 class Class;
 class Type;
 class Expr;
@@ -67,6 +68,7 @@ public:
 
     Scope                       main_scope;
     Scope                      *cur_scope;
+    IpSnapshot                 *cur_ip_snapshot;
 };
 
 extern Ip *ip;

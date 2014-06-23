@@ -134,3 +134,5 @@ src/Stela/Codegen/CppOutReg.h
 src/Stela/Codegen/CppOutReg.cpp
 src/Stela/Codegen/CC_SeqItem.h
 src/Stela/Codegen/CC_SeqItem.cpp
+src/Stela/Inst/IpSnapshot.h
+src/Stela/Inst/IpSnapshot.cpp

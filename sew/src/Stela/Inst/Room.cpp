@@ -1,4 +1,5 @@
 #include "Uninitialized.h"
+#include "IpSnapshot.h"
 #include "BoolOpSeq.h"
 #include "ReplBits.h"
 #include "Select.h"
@@ -11,7 +12,7 @@
 /**
 */
 struct Room : Inst {
-    Room() {}
+    Room() : creation_date( IpSnapshot::cur_date ) {}
     virtual void write_dot( Stream &os ) { os << "&"; }
     virtual void write_to_stream( Stream &os, int prec = -1 ) {
         //Type *t = type();
@@ -25,12 +26,11 @@ struct Room : Inst {
     virtual void set( Expr obj, const BoolOpSeq &cond ) {
         if ( flags & CONST )
             return ip->disp_error( "attempting to modify a const value" );
-        //for( IpSnapshot *is : ip->snapshots ) {
-        //    if ( date < is->date ) {
-        //        if ( not is->changed.count( this ) )
-        //            is->changed[ this ] = this->val;
-        //    }
-        //}
+        if ( IpSnapshot *is = ip->cur_ip_snapshot ) {
+            PRINT( creation_date < is->date );
+            if ( creation_date < is->date and not is->rooms.count( this ) )
+                is->rooms[ this ] = val;
+        }
         val = select( cond, repl_bits( val->simplified( cond ), 0, obj->simplified( cond ) ), val->simplified( not cond ) );
     }
     virtual Expr get( const BoolOpSeq &cond ) {
@@ -50,6 +50,7 @@ struct Room : Inst {
     }
 
     Vec<Expr> future_dep;
+    int creation_date;
     Expr val;
 };
 

@@ -9,6 +9,7 @@
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
 #include "Sourcefile.h"
+#include "IpSnapshot.h"
 #include <algorithm>
 #include "ReplBits.h"
 #include "Syscall.h"
@@ -26,13 +27,14 @@
 #include "Ip.h"
 
 Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
-    parent( parent ), caller( caller ) {
+    parent( parent ), caller( caller ), creation_date( IpSnapshot::cur_date ) {
     if ( parent ) {
         path = parent->path + "/";
         self = parent->self;
-        sf   = parent->sf;
     }
     path += name;
+
+    sf = caller ? caller->sf : ( parent ? parent->sf : 0 );
 
     static_vars = ( lip ? lip : ip )->get_static_vars( path );
     do_not_execute_anything = false;
@@ -45,9 +47,6 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
         cond = caller->cond;
     else if ( parent )
         cond = parent->cond;
-
-    base_size = 0;
-    base_alig = 1;
 
     sf     = 0;
     off    = 0;
@@ -933,45 +932,53 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
 }
 
 Expr Scope::parse_WHILE( BinStreamReader bin ) {
-    TODO;
-    return 0;
-//    const PI8 *tok = bin.read_offset();
+    const PI8 *cnd = bin.read_offset();
+    const PI8 *tok = bin.read_offset();
 
-//    // stop condition
-//    // created before nsv_date because we want to use set(...) to update it
-//    // nevertheless, for each iteration where unknown are added, it has to start at true
-//    Expr cont_var( &ip->type_Bool, cst( true ) );
+    // stop condition
+    // created before nsv_date because we want to use set(...) to update it
+    // nevertheless, for each iteration where unknown are added, it has to start at true
+    Expr cont_var( true );
 
-//    IpSnapshot nsv;
-//    ip->snapshots << &nsv;
+    IpSnapshot nsv, *old_nsv = ip->cur_ip_snapshot;
+    ip->cur_ip_snapshot = &nsv;
 
-//    // we repeat until there are no external modified values
-//    int ne = ip->error_list.size();
-//    std::map<Expr,Expr> unknowns;
-//    for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.changed.size(), ++cpt ) {
-//        if ( cpt == 100 )
-//            return ip->ret_error( "infinite loop during while parse" );
+    // we repeat until there are no external modified values
+    int ne = ip->error_list.size();
+    //    std::map<Expr,Expr> unknowns;
+    for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.rooms.size(), ++cpt ) {
+        if ( cpt == 100 )
+            return ip->ret_error( "infinite loop during while parse" );
 
-//        Scope wh_scope( this, "while_" + to_string( ip->off ) );
-//        wh_scope.cont = cont_var;
-//        wh_scope.parse( tok );
+        Scope wh_scope( this, 0, "while_" + to_string( tok ) );
+        wh_scope.cont = cont_var;
+        wh_scope.parse( sf, tok, "while" );
 
-//        if ( ne != ip->error_list.size() )
-//            return ip->error_var();
+        if ( ne != ip->error_list.size() )
+            return ip->error_var();
 
-//        // if no new modified variables
-//        if ( old_nsv_size == nsv.changed.size() )
-//            break;
+        PRINT( nsv.rooms.size() );
+        for( auto &it : nsv.rooms ) {
+            std::cout << it.first->get( cond ) << " " << it.second << "\n";
+            //Expr unk = unknown_inst( it.second->size(), cpt );
+            //unknowns[ it.first ] = unk;
+            //const_cast<Expr &>( it.first )->_set_val( unk, unk->size(), Rese(), Expr() );
+        }
+        exit( 0 );
 
-//        // replace each modified variable to a new unknown variables
-//        // (to avoid simplifications during the next round)
-//        for( auto &it : nsv.changed ) {
-//            Expr unk = unknown_inst( it.second->size(), cpt );
-//            unknowns[ it.first ] = unk;
-//            const_cast<Expr &>( it.first )->_set_val( unk, unk->size(), Rese(), Expr() );
-//        }
-//        cont_var.set_val( Var( &ip->type_Bool, cst( true ) ), Rese(), Expr() );
-//    }
+        // if no new modified variables
+        if ( old_nsv_size == nsv.rooms.size() )
+            break;
+
+        // replace each modified variable to a new unknown variables
+        // (to avoid simplifications during the next round)
+        //        for( auto &it : nsv.changed ) {
+        //            Expr unk = unknown_inst( it.second->size(), cpt );
+        //            unknowns[ it.first ] = unk;
+        //            const_cast<Expr &>( it.first )->_set_val( unk, unk->size(), Rese(), Expr() );
+        //        }
+        cont_var = Expr( true );
+    }
 
 //    // extract the cont_Expr from nsv (we don't want to output it twice)
 //    nsv.changed.erase( cont_var.inst );
@@ -1043,9 +1050,10 @@ Expr Scope::parse_WHILE( BinStreamReader bin ) {
 //        BREAK( rb.count, rb.cond );
 
 
-//    ip->snapshots.pop_back();
-//    return ip->void_var();
-//}
+    ip->cur_ip_snapshot = old_nsv;
+    return ip->void_var();
+}
+
 //void Scope::BREAK( int n, Expr cond ) {
 ////    Expr c = cst( true );
 ////    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
@@ -1067,7 +1075,7 @@ Expr Scope::parse_WHILE( BinStreamReader bin ) {
 ////            c = op( bt_Bool, bt_Bool, c, bt_Bool, s->cond, Op_and_boolean() );
 ////    }
 //    return ip->disp_error( "nothing to break" );
-}
+//}
 
 Expr Scope::parse_BREAK( BinStreamReader bin ) {
 //    int n = bin.read_positive_integer();
@@ -1198,11 +1206,12 @@ Expr Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
     Expr b = parse( bin.read_offset() );
     if ( a.error() or b.error() )
         return ip->void_var();
-    if ( a->get_val( ip->type_SI32, &base_size ) == false or b->get_val( ip->type_SI32, &base_alig ) == false ) {
-        PRINT( a );
-        PRINT( b );
-        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 known values" );
-    }
+    TODO;
+    //    if ( a->get_val( ip->type_SI32, &base_size ) == false or b->get_val( ip->type_SI32, &base_alig ) == false ) {
+    //        PRINT( a );
+    //        PRINT( b );
+    //        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 known values" );
+    //    }
     return ip->void_var();
 }
 Expr Scope::parse_set_RawRef_dependancy( BinStreamReader bin ) {

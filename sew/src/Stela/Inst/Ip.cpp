@@ -8,7 +8,7 @@
 
 Ip *ip;
 
-Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
+Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ), cur_ip_snapshot( 0 ) {
     #define DECL_BT( T ) class_##T = new Class; class_##T->name = STRING_##T##_NUM;
     #include "DeclParmClass.h"
     #include "DeclBaseClass.h"

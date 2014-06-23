@@ -473,7 +473,7 @@ void IrWriter::parse_variable( const Lexem *l ) {
                 return;
         }
 
-        data << IR_TOK_VAR;
+        data << PI8( IR_TOK_VAR );
         push_offset( l );
         push_nstring( l );
     }
@@ -537,12 +537,14 @@ void IrWriter::parse_while( const Lexem *l ) {
     data << IR_TOK_WHILE;
     push_offset( l );
 
-    if ( l->children[ 0 ]->type == STRING___else___NUM ) {
-        push_delayed_parse( child_if_block( l->children[ 0 ]->children[ 0 ] ) ); // ok
-        push_delayed_parse( child_if_block( l->children[ 0 ]->children[ 1 ] ) ); // ko
+    push_delayed_parse( child_if_block( l->children[ 0 ] ) ); // condition
+
+    if ( l->children[ 1 ]->type == STRING___else___NUM ) {
+        push_delayed_parse( child_if_block( l->children[ 1 ]->children[ 0 ] ) ); // ok
+        push_delayed_parse( child_if_block( l->children[ 1 ]->children[ 1 ] ) ); // ko
     } else {
-        push_delayed_parse( child_if_block( l->children[ 0 ] ) ); // ok
-        push_delayed_parse(                  0                 ); // ko
+        push_delayed_parse( child_if_block( l->children[ 1 ] ) ); // ok
+        push_delayed_parse(                                  0 ); // ko
     }
 }
 

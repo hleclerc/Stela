@@ -14,11 +14,7 @@ void := 1
 def init self
     # nothing to do
     
-# class A
-    # a := 10
-    # b := 20
-
 a := 10
-if ___rand()
-    a = 20 + SI32( ___rand() )
-___syscall a
+while true
+    a = 1
+# ___syscall a

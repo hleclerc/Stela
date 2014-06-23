@@ -42,10 +42,7 @@ public:
     bool          method;
 
     bool          disp_tok;
-
-
-    SI32          base_size;
-    SI32          base_alig;
+    int           creation_date;
 
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, int *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
