@@ -18,12 +18,7 @@ def init self
     # a := 10
     # b := 20
 
-a := SI32 ___rand()
+a := 10
+if ___rand()
+    a = 20 + SI32( ___rand() )
 ___syscall a
-
-# a := 10
-# if ___rand()
-    # a = 20 + SI32( ___rand() )
-    # a # .reassign
-# a = ___rand()
-# ___syscall a

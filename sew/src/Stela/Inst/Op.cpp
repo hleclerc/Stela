@@ -1,3 +1,5 @@
+#include "../Codegen/Codegen_C.h"
+//#include "../Codegen/CppOutReg.h"
 #include "../System/SameType.h"
 #include "../System/Math.h"
 #include "ReplBits.h"
@@ -83,6 +85,18 @@ struct BOp : Op<TO> {
         }
         return Inst::get( cond );
     }
+    virtual void write( Codegen_C *cc, int prec ) {
+        cc->on.write_beg();
+        this->out_reg->write( cc, this->new_reg ) << " = ";
+        if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }
+        cc->write_out( this->inp[ 0 ] );
+        if ( not TO::is_oper ) *cc->os << ", ";
+        else { *cc->os << " "; to.write_oper( *cc->os ); *cc->os << " "; }
+        cc->write_out( this->inp[ 1 ] );
+        if ( not TO::is_oper ) *cc->os << " )";
+        cc->on.write_end( ";" );
+    }
+    TO to;
 };
 
 #define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \

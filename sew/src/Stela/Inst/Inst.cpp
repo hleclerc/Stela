@@ -308,7 +308,7 @@ void Inst::get_constraints( CppRegConstraint &reg_constraints ) {
 }
 
 bool Inst::need_a_register() {
-    return true;
+    return has_inp_parent();
 }
 
 void Inst::write( Codegen_C *cc, int prec ) {

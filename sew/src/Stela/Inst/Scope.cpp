@@ -1318,7 +1318,7 @@ template<class OP>
 Expr Scope::parse_una( BinStreamReader bin, OP o ) {
     CHECK_PRIM_ARGS( 1 );
     Expr a = parse( bin.read_offset() );
-    return op( a->get( cond ), o );
+    return room( op( a->get( cond ), o ) );
 }
 
 template<class OP>
@@ -1326,7 +1326,7 @@ Expr Scope::parse_bin( BinStreamReader bin, OP o ) {
     CHECK_PRIM_ARGS( 2 );
     Expr a = parse( bin.read_offset() );
     Expr b = parse( bin.read_offset() );
-    return op( a->get( cond ), b->get( cond ), o );
+    return room( op( a->get( cond ), b->get( cond ), o ) );
 }
 
 #define DECL_IR_TOK( N ) Expr Scope::parse_##N( BinStreamReader bin ) { return parse_una( bin, Op_##N() ); }

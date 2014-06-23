@@ -1,7 +1,8 @@
-// #include "InstInfo_C.h"
+#include "../Codegen/Codegen_C.h"
 #include "BoolOpSeq.h"
 #include <algorithm>
 #include "Ip.h"
+#include "Op.h"
 
 BoolOpSeq::BoolOpSeq( Expr expr, bool pos ) {
     if ( expr->get_val( ip->type_Bool, &val_if_not_or_seq ) )
@@ -14,32 +15,31 @@ BoolOpSeq::BoolOpSeq( bool pos ) : val_if_not_or_seq( pos ) {
 }
 
 void BoolOpSeq::write_to_stream( Codegen_C *cc, Stream &os, int prec ) const {
-    write_to_stream( os );
-    //    if ( PREC_or_boolean <= prec )
-    //        os << "(";
+    if ( PREC_or_boolean <= prec )
+        os << "(";
     //    int lprec = 0;
-    //    if ( or_seq.size() ) {
-    //        for( int i = 0; i < or_seq.size(); ++i ) {
-    //            if ( i )
-    //                *cc->os << " or ";
-    //            if ( or_seq.size() > 1 )
-    //                lprec = PREC_or_boolean;
-    //            for( int j = 0; j < or_seq[ i ].size(); ++j ) {
-    //                if ( j )
-    //                    *cc->os << " and ";
-    //                if ( or_seq[ i ].size() > 1 )
-    //                    lprec = PREC_and_boolean;
-    //                if ( not or_seq[ i ][ j ].pos ) {
-    //                    *cc->os << "not ";
-    //                    lprec = PREC_not_boolean;
-    //                }
-    //                *cc->os << cc->code( or_seq[ i ][ j ].expr, lprec );
-    //            }
-    //        }
-    //    } else
-    //        *cc->os << ( val_if_not_or_seq ? "true" : "false" );
-    //    if ( PREC_or_boolean <= prec )
-    //        os << ")";
+    if ( or_seq.size() ) {
+        for( int i = 0; i < or_seq.size(); ++i ) {
+            if ( i )
+                *cc->os << " or ";
+            //            if ( or_seq.size() > 1 )
+            //                lprec = PREC_or_boolean;
+            for( int j = 0; j < or_seq[ i ].size(); ++j ) {
+                if ( j )
+                    *cc->os << " and ";
+                //                if ( or_seq[ i ].size() > 1 )
+                //                    lprec = PREC_and_boolean;
+                if ( not or_seq[ i ][ j ].pos ) {
+                    *cc->os << "not ";
+                    //                    lprec = PREC_not_boolean;
+                }
+                cc->write_out( or_seq[ i ][ j ].expr );
+            }
+        }
+    } else
+        *cc->os << ( val_if_not_or_seq ? "true" : "false" );
+    if ( PREC_or_boolean <= prec )
+        os << ")";
 }
 
 void BoolOpSeq::write_to_stream( Stream &os ) const {

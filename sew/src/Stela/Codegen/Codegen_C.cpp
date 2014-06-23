@@ -1,6 +1,7 @@
 #include "../Inst/CppRegConstraint.h"
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
+#include "../Inst/Type.h"
 #include "CC_SeqItem.h"
 #include "Codegen_C.h"
 #include <limits>
@@ -30,6 +31,17 @@ void Codegen_C::add_type( Type *type ) {
 
 CppOutReg *Codegen_C::new_out_reg( Type *type ) {
     return out_regs.push_back( type, out_regs.size() );
+}
+
+void Codegen_C::write_out( Expr expr ) {
+    if ( expr->out_reg )
+        *os << "R" << expr->out_reg->num;
+    else
+        *os << "no_out_reg";
+}
+
+void Codegen_C::write( Type *type ) {
+    *os << *type;
 }
 
 void Codegen_C::write_to( Stream &out ) {
@@ -261,7 +273,7 @@ void Codegen_C::make_code() {
         anc->reg_to_decl << &reg;
     }
 
-    // PRINT( reg_constraints );
+    PRINT( reg_constraints );
     main_block.write( this );
 }
 

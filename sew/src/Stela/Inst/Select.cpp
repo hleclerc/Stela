@@ -47,10 +47,8 @@ struct Select : Inst {
             inst->update_when( cond );
     }
     virtual void get_constraints( CppRegConstraint &reg_constraints ) {
-        reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ], -1, inp[ 1 ], -1 );
-    }
-    virtual bool need_a_register() {
-        return false;
+        reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ], inp[ 1 ] );
+        reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ],     this );
     }
     virtual void write( Codegen_C *cc, int prec ) {
     }
@@ -90,6 +88,8 @@ struct SelectDep : Select {
         dep[ 1 ]->update_when( cond and not bos );
         for( int i = 2; i < dep.size(); ++i )
             dep[ i ]->update_when( cond );
+    }
+    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
     }
 };
 
