@@ -8,13 +8,16 @@
 #include "../Ir/Numbers.h"
 #include "../Met/IrWriter.h"
 #include "../Met/Lexer.h"
+#include "UnknownInst.h"
 #include "Sourcefile.h"
 #include "IpSnapshot.h"
 #include <algorithm>
 #include "ReplBits.h"
 #include "Syscall.h"
+#include "GetNout.h"
 #include "Symbol.h"
 #include "Select.h"
+#include "While.h"
 #include "Scope.h"
 #include "Slice.h"
 #include "Class.h"
@@ -934,123 +937,105 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
 Expr Scope::parse_WHILE( BinStreamReader bin ) {
     const PI8 *cnd = bin.read_offset();
     const PI8 *tok = bin.read_offset();
+    PRINT( (int*)cnd );
 
-    // stop condition
-    // created before nsv_date because we want to use set(...) to update it
-    // nevertheless, for each iteration where unknown are added, it has to start at true
-    Expr cont_var( true );
-
+    // watch modified variables
     IpSnapshot nsv, *old_nsv = ip->cur_ip_snapshot;
     ip->cur_ip_snapshot = &nsv;
 
     // we repeat until there are no external modified values
+    BoolOpSeq cont_var;
     int ne = ip->error_list.size();
-    //    std::map<Expr,Expr> unknowns;
+    std::map<Expr,Expr> unknowns;
     for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.rooms.size(), ++cpt ) {
         if ( cpt == 100 )
             return ip->ret_error( "infinite loop during while parse" );
 
         Scope wh_scope( this, 0, "while_" + to_string( tok ) );
-        wh_scope.cont = cont_var;
         wh_scope.parse( sf, tok, "while" );
 
         if ( ne != ip->error_list.size() )
             return ip->error_var();
 
-        PRINT( nsv.rooms.size() );
-        for( auto &it : nsv.rooms ) {
-            std::cout << it.first->get( cond ) << " " << it.second << "\n";
-            //Expr unk = unknown_inst( it.second->size(), cpt );
-            //unknowns[ it.first ] = unk;
-            //const_cast<Expr &>( it.first )->_set_val( unk, unk->size(), Rese(), Expr() );
-        }
-        exit( 0 );
-
         // if no new modified variables
-        if ( old_nsv_size == nsv.rooms.size() )
+        if ( old_nsv_size == nsv.rooms.size() ) {
+            cont_var = wh_scope.cont;
             break;
+        }
 
         // replace each modified variable to a new unknown variables
         // (to avoid simplifications during the next round)
-        //        for( auto &it : nsv.changed ) {
-        //            Expr unk = unknown_inst( it.second->size(), cpt );
-        //            unknowns[ it.first ] = unk;
-        //            const_cast<Expr &>( it.first )->_set_val( unk, unk->size(), Rese(), Expr() );
-        //        }
-        cont_var = Expr( true );
+        for( std::pair<Inst *const,Expr> &it : nsv.rooms ) {
+            Expr unk = unknown_inst( it.second->type(), cpt );
+            unknowns[ it.first ] = unk;
+            const_cast<Inst *>( it.first )->set( unk, BoolOpSeq() );
+        }
+
+        // reset all modified conds
+        for( std::pair<Scope * const,BoolOpSeq> &it : nsv.conds )
+            it.first->cond = it.second;
     }
 
-//    // extract the cont_Expr from nsv (we don't want to output it twice)
-//    nsv.changed.erase( cont_var.inst );
+    // corr table (output number -> input number)
+    // -> find if Unknown inst are used to compute the outputs
+    ++Inst::cur_op_id;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+        const_cast<Inst *>( it.first )->get( cond )->mark_children();
+    int cpt = 0;
+    Vec<int> corr;
+    Vec<Type *> inp_types;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms ) {
+        if ( unknowns[ it.first ]->op_id == Inst::cur_op_id ) {
+            corr << cpt++;
+            inp_types << it.second->type();
+        } else
+            corr << -1;
+    }
 
-//    // corr table (output number -> input number)
-//    // -> find if Unknown inst are used to compute the outputs
-//    ++Inst::cur_op_id;
-//    for( auto it : nsv.changed )
-//        const_cast<Expr &>( it.first )->_get_val()->mark_children();
-//    int cpt = 0;
-//    Vec<int> corr;
-//    Vec<int> inp_sizes;
-//    for( auto it : nsv.changed ) {
-//        if ( unknowns[ it.first ]->op_id == Inst::cur_op_id ) {
-//            corr << cpt++;
-//            inp_sizes << it.second->size();
-//        } else
-//            corr << -1;
-//    }
+    // prepare a while inp (for initial values of variables modified in the loop)
+    Expr winp = while_inp( inp_types );
 
-//    // prepare a while inp (for initial values of variables modified in the loop)
-//    Expr winp = while_inp( inp_sizes );
+    // set winp[...] as initial values of modified variables
+    cpt = 0;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms ) {
+        int num_inp = corr[ cpt++ ];
+        if ( num_inp >= 0 )
+            const_cast<Inst *>( it.first )->set( get_nout( winp, num_inp ), BoolOpSeq() );
+        else
+            const_cast<Inst *>( it.first )->set( it.second, BoolOpSeq() );
+    }
 
-//    // set winp[...] as initial values of modified variables
-//    cpt = 0;
-//    for( auto &it : nsv.changed ) {
-//        int num_inp = corr[ cpt++ ];
-//        if ( num_inp >= 0 )
-//            const_cast<Expr &>( it.first )->_set_val( get_nout( winp, num_inp ), Rese(), Expr() );
-//        else
-//            const_cast<Expr &>( it.first )->_set_val( it.second, Rese(), Expr() );
-//    }
+    // relaunch the while inst
+    Scope wh_scope( this, 0, "while_" + to_string( tok ) );
+    wh_scope.parse( sf, tok, "while" );
 
-//    // and set cont_Expr to true (initial condition)
-//    cont_var.set_val( Var( &ip->type_Bool, cst( true ) ), Rese(), Expr() );
+    // make the while instruction
+    Vec<Expr> out_exprs;
+    Vec<Vec<Bool> > out_pos;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+        out_exprs << const_cast<Inst *>( it.first )->get( cond );
+    cont_var.get_out( out_exprs, out_pos );
+    Expr wout = while_out( out_exprs, out_pos );
 
-
-//    // relaunch the while inst
-//    Scope wh_scope( this, "while_" + to_string( ip->off ) );
-//    wh_scope.cont = cont_var;
-//    wh_scope.parse( tok );
-
-//    // make the while instruction
-//    Vec<Expr> out_exprs;
-//    for( auto it : nsv.changed )
-//        out_exprs << const_cast<Expr &>( it.first )->_get_val();
-//    out_exprs << cont_var.get_val();
-//    Expr wout = while_out( out_exprs );
-
-//    cpt = 0;
-//    Vec<Expr> inp_exprs;
-//    for( auto it : nsv.changed )
-//        if ( corr[ cpt++ ] >= 0 )
-//            inp_exprs << simplified( it.second );
-//    Expr wins = while_inst( inp_exprs, winp, wout, corr );
-
-//    // replace changed variable by while_inst outputs
-//    {
-//        auto rs = raii_save( ip->snapshots );
-//        ip->snapshots.resize( 0 );
-
-//        int cpt = 0;
-//        for( auto it : nsv.changed )
-//            const_cast<Expr &>( it.first )->_set_val( get_nout( wins, cpt++ ) );
-//    }
-
-//    // break(s) to transmit ?
-//    for( RemBreak rb : wh_scope.rem_breaks )
-//        BREAK( rb.count, rb.cond );
-
+    cpt = 0;
+    Vec<Expr> inp_exprs;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+        if ( corr[ cpt++ ] >= 0 )
+            inp_exprs << it.second->simplified( cond );
+    Expr wins = while_inst( inp_exprs, winp, wout, corr );
 
     ip->cur_ip_snapshot = old_nsv;
+
+    // replace changed variable by while_inst outputs
+    cpt = 0;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+        const_cast<Inst *>( it.first )->set( get_nout( wins, cpt++ ), cond );
+
+    //    // break(s) to transmit ?
+    //    for( RemBreak rb : wh_scope.rem_breaks )
+    //        BREAK( rb.count, rb.cond );
+
+
     return ip->void_var();
 }
 

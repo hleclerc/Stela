@@ -33,7 +33,7 @@ public:
     const char   *reason; ///< reading context
 
     Expr          self; ///< pointer on Expr, to point out object to be worked on
-    Expr          cont; ///< pointer on Expr, continue or not variable
+    BoolOpSeq     cont; ///< continue or not variable
     BoolOpSeq     cond; ///< condition to execute instructions
 
     Callable     *callable;

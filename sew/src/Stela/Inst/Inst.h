@@ -47,6 +47,8 @@ public:
 
     virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) = 0;
+    virtual Type *type( int nout ); ///
+    virtual Type *ptype( int nout );
     virtual Type *type() = 0;
     virtual Type *ptype();
 
@@ -76,7 +78,7 @@ public:
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
-    virtual void write_graph_rec( Vec<Inst *> ext_buf, Stream &os );
+    virtual void write_graph_rec( Vec<Inst *> &ext_buf, Stream &os );
     virtual void write_sub_graph_rec( Stream &os );
     virtual int ext_disp_size() const;
 

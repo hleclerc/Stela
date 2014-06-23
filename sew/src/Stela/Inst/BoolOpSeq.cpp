@@ -108,6 +108,16 @@ int BoolOpSeq::nb_sub_conds() const {
     return res;
 }
 
+void BoolOpSeq::get_out( Vec<Expr> &exprs, Vec<Vec<Bool> > &pos ) {
+    for( int i = 0; i < or_seq.size(); ++i ) {
+        Vec<Bool> *p = pos.push_back();
+        for( int j = 0; j < or_seq[ i ].size(); ++j ) {
+            exprs << or_seq[ i ][ j ].expr;
+            *p << or_seq[ i ][ j ].pos;
+        }
+    }
+}
+
 static bool eq_excepted( const Vec<BoolOpSeq::Item> &a, const Vec<BoolOpSeq::Item> &b, int &index ) {
     if ( a.size() != b.size() )
         return false;

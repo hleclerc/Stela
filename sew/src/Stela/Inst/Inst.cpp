@@ -69,6 +69,18 @@ void Inst::write_to_stream( Stream &os, int prec ) {
     //        os << "}";
 }
 
+Type *Inst::type( int nout ) {
+    PRINT( *this );
+    ERROR( "..." );
+    return 0;
+}
+
+Type *Inst::ptype( int nout ) {
+    ERROR( "..." );
+    return 0;
+}
+
+
 Type *Inst::ptype() {
     Type *t = type();
     if ( t->orig == ip->class_Ptr )
@@ -193,7 +205,7 @@ void Inst::write_sub_graph_rec( Stream &os ) {
     os << "    }\n";
 }
 
-void Inst::write_graph_rec( Vec<Inst *> ext_buf, Stream &os ) {
+void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
     if ( op_id_vis == cur_op_id )
         return;
     op_id_vis = cur_op_id;

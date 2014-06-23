@@ -36,6 +36,7 @@ public:
     Vec<Item> common_terms() const;
 
     int nb_sub_conds() const;
+    void get_out( Vec<Expr> &exprs, Vec<Vec<Bool> > &pos );
 
     Vec<Vec<Item> > or_seq; // ( c0 and c1 ) or ( c2 and c3 and ... ) or ...
     bool val_if_not_or_seq;

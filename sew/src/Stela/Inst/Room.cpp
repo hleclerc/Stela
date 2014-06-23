@@ -27,7 +27,6 @@ struct Room : Inst {
         if ( flags & CONST )
             return ip->disp_error( "attempting to modify a const value" );
         if ( IpSnapshot *is = ip->cur_ip_snapshot ) {
-            PRINT( creation_date < is->date );
             if ( creation_date < is->date and not is->rooms.count( this ) )
                 is->rooms[ this ] = val;
         }

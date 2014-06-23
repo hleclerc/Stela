@@ -14,7 +14,9 @@ void := 1
 def init self
     # nothing to do
     
-a := 10
+a := 100
 while true
-    a = 1
-# ___syscall a
+    a = a + 1
+___info a
+___disp a
+___syscall a
