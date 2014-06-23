@@ -18,6 +18,7 @@
 #include "Slice.h"
 #include "Class.h"
 #include "Room.h"
+#include "Conv.h"
 #include "Type.h"
 #include "Def.h"
 #include "Cst.h"
@@ -1216,7 +1217,12 @@ Expr Scope::parse_reassign_rec( BinStreamReader bin ) {
         return ip->ret_error( "expecting 1 or 2 args" );
     Expr dst = parse( bin.read_offset() );
     Expr src = parse( bin.read_offset() );
-    dst->set( src->get( cond ), cond );
+    Type *dt = dst->ptype();
+    Type *st = src->ptype();
+    if ( dt != st )
+        dst->set( conv( dt, src->get( cond ) ), cond );
+    else
+        dst->set( src->get( cond ), cond );
     return dst;
 }
 Expr Scope::parse_assign_rec( BinStreamReader bin ) {
