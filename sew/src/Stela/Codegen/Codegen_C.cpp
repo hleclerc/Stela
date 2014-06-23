@@ -1,6 +1,7 @@
 #include "../Inst/CppRegConstraint.h"
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
+#include "CC_SeqItem.h"
 #include "Codegen_C.h"
 #include <limits>
 
@@ -130,80 +131,6 @@ static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
     return res;
 }
 
-struct CC_SeqItem {
-    virtual ~CC_SeqItem() {}
-    virtual void write( Codegen_C *cc ) = 0;
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) = 0;
-    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) = 0;
-};
-
-struct CC_SeqItemExpr : CC_SeqItem {
-    CC_SeqItemExpr( Expr expr ) : expr( expr ) {}
-    virtual ~CC_SeqItemExpr() {}
-    virtual void write( Codegen_C *cc ) {
-        expr->write( cc, -1 );
-    }
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
-        expr->get_constraints( reg_constraints );
-    }
-    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
-        if ( expr->need_a_register() ) {
-            expr->out_reg = cc->new_out_reg( expr->type() );
-            expr->new_reg = true;
-        }
-    }
-    Expr expr;
-};
-
-struct CC_SeqItemBlock : CC_SeqItem {
-    CC_SeqItemBlock( CC_SeqItemBlock *parent ) : parent( parent ), cur_seq( 0 ) {}
-    virtual ~CC_SeqItemBlock() {}
-    virtual void write( Codegen_C *cc ) {
-        if ( not cond.always( true ) ) {
-            cond.write_to_stream( cc, cc->on.write_beg() << "if ( ", -1 );
-            cc->on.write_end( " ) {" );
-            cc->on.nsp += 4;
-        }
-
-        if ( not cond.always( false ) ) {
-            for( int i = 0; i < seq[ 0 ].size(); ++i ) {
-                seq[ 0 ][ i ]->write( cc );
-            }
-        }
-
-        if ( not cond.always( true ) ) {
-            if ( seq[ 1 ].size() ) {
-                cc->on.nsp -= 4;
-                cc->on << "} else {";
-                cc->on.nsp += 4;
-
-                for( int i = 0; i < seq[ 1 ].size(); ++i ) {
-                    seq[ 1 ][ i ]->write( cc );
-                }
-            }
-
-            cc->on.nsp -= 4;
-            cc->on << "}";
-        }
-    }
-
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
-        for( int i = 0; i < 2; ++i )
-            for( int n = 0; n < seq[ i ].size(); ++n )
-                seq[ i ][ n ]->get_constraints( reg_constraints );
-    }
-
-    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
-        for( int i = 0; i < 2; ++i )
-            for( int n = 0; n < seq[ i ].size(); ++n )
-                seq[ i ][ n ]->assign_reg( cc, reg_constraints );
-    }
-
-    SplittedVec<AutoPtr<CC_SeqItem>,8> seq[ 2 ];
-    CC_SeqItemBlock *parent;
-    BoolOpSeq cond;
-    int cur_seq;
-};
 
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
@@ -232,7 +159,7 @@ void Codegen_C::make_code() {
     for( Expr inst : front )
         inst->op_id = Inst::cur_op_id;
 
-    CC_SeqItemBlock main_block( 0 );
+    CC_SeqItemBlock main_block;
     CC_SeqItemBlock *cur_block = &main_block;
 
     Vec<BoolOpSeq> cond_stack;
@@ -298,18 +225,18 @@ void Codegen_C::make_code() {
             front.remove_unordered( best_index );
 
             for( ; best_nb_close; --best_nb_close )
-                cur_block = cur_block->parent;
+                cur_block = cur_block->parent_block;
             if ( best_nb_else )
-                cur_block->cur_seq = 1;
+                cur_block = cur_block->sibling;
             if ( best_nc.or_seq.size() ) {
-                CC_SeqItemBlock *new_block = new CC_SeqItemBlock( cur_block );
-                cur_block->seq[ cur_block->cur_seq ] << new_block;
+                CC_SeqItemIf *new_block = new CC_SeqItemIf( cur_block );
+                cur_block->seq << new_block;
                 new_block->cond = best_nc;
-                cur_block = new_block;
+                cur_block = &new_block->seq[ 0 ];
             }
         }
 
-        cur_block->seq[ cur_block->cur_seq ] << new CC_SeqItemExpr( inst );
+        cur_block->seq << new CC_SeqItemExpr( inst, cur_block );
         inst->op_id = Inst::cur_op_id; // say that it's done
         cur_cond = inst->when;
 
@@ -322,12 +249,19 @@ void Codegen_C::make_code() {
         }
     }
 
-    // main_block.write( this );
+    // get reg for each output
     CppRegConstraint reg_constraints;
     main_block.get_constraints( reg_constraints );
     main_block.assign_reg( this, reg_constraints );
 
-    PRINT( reg_constraints );
+    // set decl places for out_regs
+    for( int n = 0; n < out_regs.size(); ++n ) {
+        CppOutReg &reg = out_regs[ n ];
+        CC_SeqItemBlock *anc = reg.common_provenance_ancestor();
+        anc->reg_to_decl << &reg;
+    }
+
+    // PRINT( reg_constraints );
     main_block.write( this );
 }
 

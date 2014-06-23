@@ -43,3 +43,50 @@ void CppRegConstraint::write_to_stream( Stream &os ) const {
         os << " (level=" << c.second.level << ")";
     }
 }
+
+const CppRegConstraint::PlugWithLevel *CppRegConstraint::get_out_constraint( Expr expr ) {
+    auto res = constraints.find( Plug{ expr, -1 } );
+    return res != constraints.end() ? &res->second : 0;
+}
+
+const CppRegConstraint::PlugWithLevel *CppRegConstraint::get_inp_constraint( Expr expr, int ninp ) {
+    auto res = constraints.find( Plug{ expr, ninp } );
+    return res != constraints.end() ? &res->second : 0;
+}
+
+CppOutReg *CppRegConstraint::compulsory_reg( Expr expr ) {
+    // to avoid an infinite loop
+    if ( expr->op_id == Inst::cur_op_id )
+        return 0;
+    expr->op_id = Inst::cur_op_id;
+
+    if ( expr->out_reg )
+        return expr->out_reg;
+
+    // output constraint ?
+    const PlugWithLevel *c = get_out_constraint( expr );
+    if ( c ) {
+        if ( c->equ ) {
+            if ( CppOutReg *res = compulsory_reg( c->ninp >= 0 ? c->expr->inp[ c->ninp ] : c->expr ) )
+                return res;
+        } else
+            TODO;
+    }
+
+    // input constraint ?
+    for( Inst::Parent &p : expr->par ) {
+        const PlugWithLevel *c = get_inp_constraint( p.inst, p.ninp );
+        if ( c ) {
+            if ( c->equ ) {
+                if ( CppOutReg *res = compulsory_reg( c->ninp >= 0 ? c->expr->inp[ c->ninp ] : c->expr ) )
+                    return res;
+            } else
+                TODO;
+        }
+    }
+    return 0;
+}
+
+
+
+

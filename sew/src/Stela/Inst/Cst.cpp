@@ -101,6 +101,10 @@ struct Cst : Inst {
     virtual bool need_a_register() {
         return len;
     }
+    virtual void write( Codegen_C *cc, int prec ) {
+        if ( len )
+            Inst::write( cc, prec );
+    }
 
     Type *out_type;
     Vec<PI8> data;

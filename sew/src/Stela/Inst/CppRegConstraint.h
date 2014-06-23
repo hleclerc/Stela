@@ -23,6 +23,11 @@ struct CppRegConstraint {
     void add( SI32 level, Expr expr_0, SI32 ninp_0, Expr expr_1, SI32 ninp_1, bool equ );
     void write_to_stream( Stream &os ) const;
 
+    const PlugWithLevel *get_out_constraint( Expr expr );
+    const PlugWithLevel *get_inp_constraint( Expr expr, int ninp );
+
+    CppOutReg *compulsory_reg( Expr expr );
+
     std::map<Plug,PlugWithLevel> constraints;
 };
 
