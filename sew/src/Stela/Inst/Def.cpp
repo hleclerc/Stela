@@ -14,60 +14,6 @@ Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
 Def::TrialDef::~TrialDef() {
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr _self ) {
-    if ( apply_mode != Scope::APPLY_MODE_STD )
-        TODO;
-
-    // new scope (with local static variables)
-    String path = "Def_" + to_string( ip->str_cor.str( orig->name ) ) + "_" + orig->sf->name + "_" + to_string( orig->off );
-    for( int i = 0; i < orig->arg_names.size(); ++i )
-        path += "_" + to_string( *args[ i ]->type() );
-    Scope ns( &ip->main_scope, caller, path );
-    ns.callable = orig;
-    ns.cond = ns.cond and cond;
-    ns.local_vars = args;
-
-    // particular case
-    if ( orig->name == STRING_init_NUM ) {
-        // get self
-        Type *vt = catched_vars->ptype();
-        Expr self;
-        for( int i = 0, o = 0; ; ++i ) {
-            if ( i == orig->catched_vars.size() ) {
-                if ( not _self )
-                    return ip->ret_error( "no self ??" );
-                self = _self;
-                break;
-            }
-            if ( orig->catched_vars[ i ].type == IN_SELF ) {
-                Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
-                self = slice( ts, catched_vars->get( cond ), o );
-                break;
-            }
-            vt = ip->type_from_type_var( vt->parameters[ 2 ] );
-            o += ip->ptr_size;
-        }
-
-        // init attributes
-        Type *self_type = self->ptype();
-        // self_type->parse();
-
-        if ( self_type->orig->ancestors.size() )
-            TODO;
-        for( Type::Attr &a : self_type->attributes ) {
-            if ( a.off >= 0 ) {
-                if ( a.type )
-                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ) );
-                else
-                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
-            }
-        }
-    }
-
-    // inline call
-    return ns.parse( orig->block.sf, orig->block.tok, "calling" );
-}
-
 Def::Def() {
 }
 
@@ -201,4 +147,58 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
 
     res->args = scope.local_vars;
     return res;
+}
+
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr _self ) {
+    if ( apply_mode != Scope::APPLY_MODE_STD )
+        TODO;
+
+    // new scope (with local static variables)
+    String path = "Def_" + to_string( ip->str_cor.str( orig->name ) ) + "_" + orig->sf->name + "_" + to_string( orig->off );
+    for( int i = 0; i < orig->arg_names.size(); ++i )
+        path += "_" + to_string( *args[ i ]->type() );
+    Scope ns( &ip->main_scope, caller, path );
+    ns.callable = orig;
+    ns.cond = ns.cond and cond;
+    ns.local_vars = args;
+
+    // particular case
+    if ( orig->name == STRING_init_NUM ) {
+        // get self
+        Type *vt = catched_vars->ptype();
+        Expr self;
+        for( int i = 0, o = 0; ; ++i ) {
+            if ( i == orig->catched_vars.size() ) {
+                if ( not _self )
+                    return ip->ret_error( "no self ??" );
+                self = _self;
+                break;
+            }
+            if ( orig->catched_vars[ i ].type == IN_SELF ) {
+                Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
+                self = slice( ts, catched_vars->get( cond ), o );
+                break;
+            }
+            vt = ip->type_from_type_var( vt->parameters[ 2 ] );
+            o += ip->ptr_size;
+        }
+
+        // init attributes
+        Type *self_type = self->ptype();
+        // self_type->parse();
+
+        if ( self_type->orig->ancestors.size() )
+            TODO;
+        for( Type::Attr &a : self_type->attributes ) {
+            if ( a.off >= 0 ) {
+                if ( a.type )
+                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ) );
+                else
+                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
+            }
+        }
+    }
+
+    // inline call
+    return ns.parse( orig->block.sf, orig->block.tok, "calling" );
 }

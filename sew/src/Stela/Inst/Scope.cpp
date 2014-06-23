@@ -208,11 +208,17 @@ Expr Scope::parse_RETURN( BinStreamReader bin ) {
     return ip->error_var();
 }
 
+struct CallableAndCatchedVars {
+    Callable *ca;
+    Expr      cv;
+};
+
 struct CmpCallableInfobyPertinence {
-    bool operator()( const Callable *a, const Callable *b ) const {
-        return a->pertinence > b->pertinence;
+    bool operator()( const CallableAndCatchedVars &a, const CallableAndCatchedVars &b ) const {
+        return a.ca->pertinence > b.ca->pertinence;
     }
 };
+
 
 Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_args, ApplyMode am ) {
     if ( f.error() )
@@ -231,8 +237,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         Expr lst = slice( l_type, f->get(), 0 )->get( cond );
         Type *vt = lst->type();
         int o = 0;
-        Vec<Callable *> ci;
-        Vec<Expr> catched_vars;
+        Vec<CallableAndCatchedVars> ci;
         for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->ptr_size ) {
             Type *pt = ip->type_from_type_var( vt->parameters[ 0 ] );
             Expr callable = slice( pt, lst, o )->get( cond );
@@ -241,9 +246,8 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             SI64 cptr_val;
             if ( not cptr->get_val( ip->type_SI64, &cptr_val ) )
                 return ip->ret_error( "exp. cst" );
-            ci << reinterpret_cast<Callable *>( ST( cptr_val ) );
-            // catched_var
-            catched_vars << slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 );
+            ci << CallableAndCatchedVars{ reinterpret_cast<Callable *>( ST( cptr_val ) ),
+                  slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 ) };
         }
 
         // parm
@@ -297,18 +301,18 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         bool has_guaranted_pertinence = false;
         AutoPtr<Callable::Trial> trials[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
-            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
+            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ].ca->pertinence ) {
                 for( int j = i; j < nb_surdefs; ++j )
                     trials[ j ] = new Callable::Trial( "Already a more pertinent solution" );
                 break;
             }
 
-            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
+            trials[ i ] = ci[ i ].ca->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
 
             if ( trials[ i ]->ok() ) {
                 if ( trials[ i ]->cond.always( true ) ) {
                     has_guaranted_pertinence = true;
-                    guaranted_pertinence = ci[ i ]->pertinence;
+                    guaranted_pertinence = ci[ i ].ca->pertinence;
                 }
                 ++nb_ok;
             }
@@ -332,7 +336,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             //            }
             ErrorList::Error &err = ip->error_msg( ss.str() );
             for( int i = 0; i < nb_surdefs; ++i )
-                err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
+                err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
             std::cerr << err;
             return ip->error_var();
         }
@@ -344,9 +348,9 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             ErrorList::Error &err = ip->error_msg( ss.str() );
             for( int i = 0; i < nb_surdefs; ++i ) {
                 if ( trials[ i ]->ok() )
-                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "accepted" );
+                    err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, "accepted" );
                 else
-                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+                    err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
             }
             std::cerr << err;
             return ip->error_var();
@@ -356,17 +360,17 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         if ( nb_ok > 1 ) {
             double best_pertinence = -std::numeric_limits<double>::max();
             for( int i = 0; i < nb_surdefs; ++i )
-                best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
+                best_pertinence = std::max( best_pertinence, ci[ i ].ca->pertinence );
             int nb_wp = 0;
             for( int i = 0; i < nb_surdefs; ++i )
-                nb_wp += trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence;
+                nb_wp += trials[ i ]->ok() and ci[ i ].ca->pertinence == best_pertinence;
             if ( nb_wp > 1 ) {
                 std::ostringstream ss;
                 ss << "Ambiguous overload";
                 ErrorList::Error &err = ip->error_msg( ss.str() );
                 for( int i = 0; i < nb_surdefs; ++i )
-                    if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
-                        err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "possibility" );
+                    if ( trials[ i ]->ok() and ci[ i ].ca->pertinence == best_pertinence )
+                        err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, "possibility" );
                 std::cerr << err;
                 return ip->error_var();
             }
@@ -377,7 +381,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
                 BoolOpSeq loc_cond = cond and trials[ i ]->cond;
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, catched_vars[ i ], self_ptr );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, ci[ i ].cv, self_ptr );
                 res << std::make_pair( loc_cond, loc );
 
                 if ( trials[ i ]->cond.always( true ) )
@@ -742,7 +746,8 @@ Expr Scope::get_catched_var_in_catched_vars( int num ) {
     for( Scope *s = this; s; s = s->parent ) {
         if ( s->callable ) {
             Expr f( s->callable->var->get() );
-            Expr v = slice( ip->type_Ptr_SI32, f, 64 )->get( cond );
+            Type *p = ip->type_from_type_var( f->type()->parameters[ 0 ] );
+            Expr v = slice( p, f, 64 )->get( cond );
             int o = 0, n = 0;
             for( Type *vt = ip->type_from_type_var( ip->type_from_type_var( f->type()->parameters[ 0 ] )->parameters[ 0 ] ); vt->orig == ip->class_VarargsItemBeg; o += ip->ptr_size, ++n ) {
                 if ( n == num ) {

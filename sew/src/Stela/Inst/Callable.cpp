@@ -26,7 +26,7 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     flags = bin.read_positive_integer();
     nargs = bin.read_positive_integer();
     dargs = bin.read_positive_integer();
-    pertinence = flags & IR_HAS_COMPUTED_PERT ? 0 : FP64( bin.read_positive_integer() ) / FP64( bin.read_positive_integer() );
+    pertinence = ( flags & IR_HAS_COMPUTED_PERT ) ? 0 : FP64( bin.read_positive_integer() ) / FP64( bin.read_positive_integer() );
     if ( flags & IR_NEG_PERT )
         pertinence = - pertinence;
     for( int i = 0; i < nargs; ++i ) {

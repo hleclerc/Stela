@@ -14,7 +14,7 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ) {
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-    #define DECL_BT( T ) type_##T = new Type( class_##T );
+    #define DECL_BT( T ) type_##T = new Type( class_##T ); class_##T->types << type_##T;
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
