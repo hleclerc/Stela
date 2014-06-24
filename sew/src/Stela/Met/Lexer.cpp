@@ -49,7 +49,7 @@ void Lexer::parse( const char *beg, const char *src ) {
     remove_comma_dots();                        if ( error_list ) return;
     assemble_op( 0, lif - 1 );                  if ( error_list ) return;
     update_else_order();                        if ( error_list ) return;
-    //remove_while_conds();                       if ( error_list ) return;
+    remove_while_conds();                       if ( error_list ) return;
     set_num_scope();                            if ( error_list ) return;
 }
 

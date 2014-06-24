@@ -243,9 +243,8 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
             b->parent = cur_block;
             ne->ext[ e ] = b;
 
-            PI64 old_op_id = Inst::cur_op_id;
+            Inst::cur_op_id -= 3;
             scheduling( b, inst->ext[ e ] );
-            Inst::cur_op_id = old_op_id;
         }
 
         // parents

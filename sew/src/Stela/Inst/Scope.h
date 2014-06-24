@@ -33,8 +33,10 @@ public:
     const char   *reason; ///< reading context
 
     Expr          self; ///< pointer on Expr, to point out object to be worked on
-    BoolOpSeq     cont; ///< continue or not variable
+    BoolOpSeq    *cont; ///< continue or not variable
     BoolOpSeq     cond; ///< condition to execute instructions
+    Scope        *for_def_scope;
+    Scope        *for_block;
 
     Callable     *callable;
     Type         *class_scope;
@@ -60,7 +62,13 @@ protected:
     Expr _parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin );
     Expr get_catched_var_in__scope( int np, int ns, bool stat );
     Expr get_catched_var_in_catched_vars( int s );
+    void BREAK( int n, BoolOpSeq cond );
 
+    struct RemBreak {
+        int       count;
+        BoolOpSeq cond;
+    };
+    Vec<RemBreak>  rem_breaks;
 
     template<class OP> Expr parse_una( BinStreamReader bin, OP o );
     template<class OP> Expr parse_bin( BinStreamReader bin, OP o );

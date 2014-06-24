@@ -1,6 +1,13 @@
 def add a, b
     ___add a, b
 
+def not_boolean v
+    ___not_boolean v
+    
+def inferior a, b
+    ___info a, b
+    ___inf a, b
+    
 class SI32
     ___set_base_size 32
     ___set_base_alig 32
@@ -15,6 +22,6 @@ def init self
     # nothing to do
     
 a := 100
-while true
+while a < 200
     a = a + 1
 ___syscall a

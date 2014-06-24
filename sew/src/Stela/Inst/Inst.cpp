@@ -340,7 +340,7 @@ void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     if ( out_reg )
         out_reg->write( cc, new_reg ) << " = ";
     write_dot( *cc->os );
-    cc->on.write_end();
+    cc->on.write_end( ";" );
 }
 
 Inst::operator BoolOpSeq() const {

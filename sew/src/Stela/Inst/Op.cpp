@@ -45,6 +45,17 @@ template<class TO>
 struct UOp : Op<TO> {
     virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->op ); }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new UOp<TO>; }
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        cc->on.write_beg();
+        this->out_reg->write( cc, this->new_reg ) << " = ";
+        to.write_oper( *cc->os );
+        if ( not TO::is_oper ) *cc->os << "( ";
+        else *cc->os << " ";
+        cc->write_out( this->inp[ 0 ] );
+        if ( not TO::is_oper ) *cc->os << " )";
+        cc->on.write_end( ";" );
+    }
+    TO to;
 };
 
 

@@ -41,10 +41,13 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
 
     static_vars = ( lip ? lip : ip )->get_static_vars( path );
     do_not_execute_anything = false;
-    class_scope = 0;
-    callable = 0;
-    method = false;
-    disp_tok = false;
+    class_scope   = 0;
+    callable      = 0;
+    method        = false;
+    disp_tok      = false;
+    cont          = 0;
+    for_def_scope = 0;
+    for_block     = 0;
 
     if ( caller )
         cond = caller->cond;
@@ -935,16 +938,13 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
 }
 
 Expr Scope::parse_WHILE( BinStreamReader bin ) {
-    const PI8 *cnd = bin.read_offset();
     const PI8 *tok = bin.read_offset();
-    PRINT( (int*)cnd );
 
     // watch modified variables
     IpSnapshot nsv, *old_nsv = ip->cur_ip_snapshot;
     ip->cur_ip_snapshot = &nsv;
 
     // we repeat until there are no external modified values
-    BoolOpSeq cont_var;
     int ne = ip->error_list.size();
     std::map<Expr,Expr> unknowns;
     for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.rooms.size(), ++cpt ) {
@@ -952,16 +952,15 @@ Expr Scope::parse_WHILE( BinStreamReader bin ) {
             return ip->ret_error( "infinite loop during while parse" );
 
         Scope wh_scope( this, 0, "while_" + to_string( tok ) );
+        BoolOpSeq cont_var; wh_scope.cont = &cont_var;
         wh_scope.parse( sf, tok, "while" );
 
         if ( ne != ip->error_list.size() )
             return ip->error_var();
 
         // if no new modified variables
-        if ( old_nsv_size == nsv.rooms.size() ) {
-            cont_var = wh_scope.cont;
+        if ( old_nsv_size == nsv.rooms.size() )
             break;
-        }
 
         // replace each modified variable to a new unknown variables
         // (to avoid simplifications during the next round)
@@ -1007,6 +1006,7 @@ Expr Scope::parse_WHILE( BinStreamReader bin ) {
 
     // relaunch the while inst
     Scope wh_scope( this, 0, "while_" + to_string( tok ) );
+    BoolOpSeq cont_var; wh_scope.cont = &cont_var;
     wh_scope.parse( sf, tok, "while" );
 
     // make the while instruction
@@ -1031,61 +1031,56 @@ Expr Scope::parse_WHILE( BinStreamReader bin ) {
     for( std::pair<Inst *const,Expr> &it : nsv.rooms )
         const_cast<Inst *>( it.first )->set( get_nout( wins, cpt++ ), cond );
 
-    //    // break(s) to transmit ?
-    //    for( RemBreak rb : wh_scope.rem_breaks )
-    //        BREAK( rb.count, rb.cond );
+    // break(s) to transmit ?
+    for( RemBreak rb : wh_scope.rem_breaks )
+        BREAK( rb.count, rb.cond );
 
 
     return ip->void_var();
 }
 
-//void Scope::BREAK( int n, Expr cond ) {
-////    Expr c = cst( true );
-////    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
-////        // found a for or a while ?
-////        // (for_block = true for surrounding scope)
-////        // (for_def_scope != 0 from ___bloc_exec call)
-////        if ( s->cont.defined() or s->for_block ) {
-////            if ( s->cont.defined() )
-////                s->cont.set_val( Var( &ip->type_Bool, cst( false ) ) );
-////            if ( n > 1 )
-////                s->rem_breaks << RemBreak{ n - 1, c };
-////            if ( s->cond.defined() )
-////                s->cond = op( &ip->type_Bool, &ip->type_Bool, s->cond, &ip->type_Bool, op( &ip->type_Bool, &ip->type_Bool, c, Op_not_boolean() ), Op_and_boolean() );
-////            else
-////                s->cond = op( &ip->type_Bool, c, Op_not_boolean() );
-////    ²        return;
-////        }
-////        if ( s->cond )
-////            c = op( bt_Bool, bt_Bool, c, bt_Bool, s->cond, Op_and_boolean() );
-////    }
-//    return ip->disp_error( "nothing to break" );
-//}
+void Scope::BREAK( int n, BoolOpSeq cond ) {
+    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+        s->cond = s->cond and not cond;
+        // found a for or a while ?
+        // (for_block = true for surrounding scope)
+        // (for_def_scope != 0 from ___bloc_exec call)
+        if ( s->cont or s->for_block ) {
+            if ( s->cont )
+                *s->cont = *s->cont and not cond;
+            if ( n > 1 )
+                s->rem_breaks << RemBreak{ n - 1, cond };
+            return;
+        }
+    }
+    return ip->disp_error( "nothing to break" );
+}
 
 Expr Scope::parse_BREAK( BinStreamReader bin ) {
-//    int n = bin.read_positive_integer();
-//    if ( not n )
-//        n = 1;
+    int n = bin.read_positive_integer();
+    if ( not n )
+        n = 1;
 
-//    // if we are breaking from a for, update n accordingly
-//    for( Scope *s = this; s; s = s->parent ) {
-//        // -> parsing from a while
-//        if ( s->cont.defined() )
-//            break;
-//        // -> parsing from a for
-//        if ( Scope *f = s->for_def_scope ) {
-//            f = f->for_surrounding_scope; // f points to the surrounding for scope
-//            for( Scope *s = this; s != f; s = s->parent ) {
-//                if ( not s )
-//                    return ip->ret_error( "Impossible to find the surrounding for scope" );
-//                n += s->cont.defined() or s->for_block;
-//            }
-//            break;
-//        }
-//    }
+    // if we are breaking from a for, update n accordingly
+    for( Scope *s = this; s; s = s->parent ) {
+        // -> parsing from a while
+        if ( s->cont )
+            break;
+        // -> parsing from a for
+        if ( Scope *f = s->for_def_scope ) {
+            TODO;
+            //            f = f->for_surrounding_scope; // f points to the surrounding for scope
+            //            for( Scope *s = this; s != f; s = s->parent ) {
+            //                if ( not s )
+            //                    return ip->ret_error( "Impossible to find the surrounding for scope" );
+            //                n += s->cont or s->for_block;
+            //            }
+            break;
+        }
+    }
 
-//    //
-//    BREAK( n );
+    //
+    BREAK( n, cond );
     return ip->void_var();
 }
 
