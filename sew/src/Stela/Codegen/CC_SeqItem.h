@@ -18,15 +18,6 @@ struct CC_SeqItem {
     CC_SeqItem *parent;
 };
 
-struct CC_SeqItemExpr : CC_SeqItem {
-    CC_SeqItemExpr( Expr expr, CC_SeqItemBlock *parent );
-    virtual ~CC_SeqItemExpr();
-    virtual void write( Codegen_C *cc );
-    virtual void get_constraints( CppRegConstraint &reg_constraints );
-    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints );
-    Expr expr;
-};
-
 struct CC_SeqItemBlock : CC_SeqItem {
     CC_SeqItemBlock();
     virtual ~CC_SeqItemBlock();
@@ -50,6 +41,16 @@ struct CC_SeqItemIf : CC_SeqItem {
     CC_SeqItemBlock seq[ 2 ];
     BoolOpSeq cond;
     int cur_seq;
+};
+
+struct CC_SeqItemExpr : CC_SeqItem {
+    CC_SeqItemExpr( Expr expr, CC_SeqItemBlock *parent );
+    virtual ~CC_SeqItemExpr();
+    virtual void write( Codegen_C *cc );
+    virtual void get_constraints( CppRegConstraint &reg_constraints );
+    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints );
+    Vec<AutoPtr<CC_SeqItemBlock> > ext;
+    Expr expr;
 };
 
 #endif // CC_SEQITEM_H

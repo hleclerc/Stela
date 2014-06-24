@@ -101,9 +101,9 @@ struct Cst : Inst {
     virtual bool need_a_register() {
         return len;
     }
-    virtual void write( Codegen_C *cc, int prec ) {
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         if ( len )
-            Inst::write( cc, prec );
+            Inst::write( cc, b );
     }
 
     Type *out_type;

@@ -4,6 +4,7 @@
 #include "../System/Vec.h"
 #include "Expr.h"
 class CppRegConstraint;
+class CC_SeqItemBlock;
 class CppOutReg;
 class BoolOpSeq;
 class Codegen_C;
@@ -53,6 +54,8 @@ public:
     virtual Type *ptype();
 
     void rem_ref_to_this();
+    Inst *find_par_for_nout( int nout );
+    virtual int pointing_to_nout();
 
     void mark_children();
 
@@ -73,7 +76,7 @@ public:
     // codegen
     virtual void get_constraints( CppRegConstraint &reg_constraints );
     virtual void update_when( const BoolOpSeq &cond );
-    virtual void write( Codegen_C *cc, int prec );
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b );
     virtual bool need_a_register();
 
     // display

@@ -143,26 +143,12 @@ static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
     return res;
 }
 
-
-void Codegen_C::make_code() {
-    // a clone of the whole hierarchy
-    ++Inst::cur_op_id;
-    Vec<Expr> out, created;
-    for( Expr inst : fresh )
-        out << cloned( inst, created );
-
-    if ( disp_inst_graph )
-        Inst::display_graph( out );
-
+void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
     // update inst->when
     for( Expr inst : out )
         inst->update_when( BoolOpSeq( true ) );
 
-    // replication of inlined instructions
-
-    //
-
-    // scheduling
+    // get the front
     ++Inst::cur_op_id;
     Vec<Expr> front;
     for( Expr inst : out )
@@ -170,9 +156,6 @@ void Codegen_C::make_code() {
     ++Inst::cur_op_id;
     for( Expr inst : front )
         inst->op_id = Inst::cur_op_id;
-
-    CC_SeqItemBlock main_block;
-    CC_SeqItemBlock *cur_block = &main_block;
 
     Vec<BoolOpSeq> cond_stack;
     cond_stack << true;
@@ -248,9 +231,22 @@ void Codegen_C::make_code() {
             }
         }
 
-        cur_block->seq << new CC_SeqItemExpr( inst, cur_block );
+        CC_SeqItemExpr *ne = new CC_SeqItemExpr( inst, cur_block );
         inst->op_id = Inst::cur_op_id; // say that it's done
         cur_cond = inst->when;
+        cur_block->seq << ne;
+
+        ne->ext.resize( inst->ext_disp_size() );
+        for( int e = 0; e < inst->ext_disp_size(); ++e ) {
+            CC_SeqItemBlock *b = new CC_SeqItemBlock;
+            b->parent_block = cur_block;
+            b->parent = cur_block;
+            ne->ext[ e ] = b;
+
+            PI64 old_op_id = Inst::cur_op_id;
+            scheduling( b, inst->ext[ e ] );
+            Inst::cur_op_id = old_op_id;
+        }
 
         // parents
         for( Inst::Parent &p : inst->par ) {
@@ -260,20 +256,37 @@ void Codegen_C::make_code() {
             }
         }
     }
+}
+
+void Codegen_C::make_code() {
+    // a clone of the whole hierarchy
+    ++Inst::cur_op_id;
+    Vec<Expr> out, created;
+    for( Expr inst : fresh )
+        out << cloned( inst, created );
+
+    if ( disp_inst_graph )
+        Inst::display_graph( out );
+
+    // replication of inlined instructions
+
+    // scheduling (-> list of SeqItem)
+    CC_SeqItemBlock main_block;
+    scheduling( &main_block, out );
 
     // get reg for each output
     CppRegConstraint reg_constraints;
     main_block.get_constraints( reg_constraints );
     main_block.assign_reg( this, reg_constraints );
 
-    // set decl places for out_regs
+    // specify where the registers have to be declared
     for( int n = 0; n < out_regs.size(); ++n ) {
         CppOutReg &reg = out_regs[ n ];
         CC_SeqItemBlock *anc = reg.common_provenance_ancestor();
         anc->reg_to_decl << &reg;
     }
 
-    PRINT( reg_constraints );
+    // PRINT( reg_constraints );
     main_block.write( this );
 }
 

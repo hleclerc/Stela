@@ -36,6 +36,7 @@ public:
 
 protected:
     void make_code();
+    void scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out );
     SplittedVec<CppOutReg,32> out_regs;
 };
 

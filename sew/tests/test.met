@@ -17,6 +17,4 @@ def init self
 a := 100
 while true
     a = a + 1
-___info a
-___disp a
 ___syscall a

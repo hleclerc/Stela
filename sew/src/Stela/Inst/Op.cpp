@@ -85,7 +85,7 @@ struct BOp : Op<TO> {
         }
         return Inst::get( cond );
     }
-    virtual void write( Codegen_C *cc, int prec ) {
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         cc->on.write_beg();
         this->out_reg->write( cc, this->new_reg ) << " = ";
         if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }

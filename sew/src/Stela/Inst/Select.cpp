@@ -50,7 +50,7 @@ struct Select : Inst {
         reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ], inp[ 1 ] );
         reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ],     this );
     }
-    virtual void write( Codegen_C *cc, int prec ) {
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }
 
     Vec<Vec<Bool> > pos;

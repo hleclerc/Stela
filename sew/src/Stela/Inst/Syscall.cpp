@@ -9,7 +9,7 @@ struct Syscall : Inst {
     virtual void write_dot( Stream &os ) { os << "Syscall"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Syscall(); }
     virtual Type *type() { return ip->type_ST; }
-    virtual void write( Codegen_C *cc, int prec ) {
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         cc->on.write_beg();
         if ( out_reg )
             out_reg->write( cc, new_reg ) << " = ";

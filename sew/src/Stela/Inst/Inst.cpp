@@ -12,6 +12,7 @@ Inst::Inst() {
     ext_par   = 0;
     when      = 0;
     out_reg   = 0;
+    new_reg   = false;
 
     op_id_vis = 0;
     op_id     = 0;
@@ -132,6 +133,17 @@ void Inst::rem_ref_to_this() {
         dep[ num ]->par.remove_first_unordered( Parent{ this, TPAR_DEP } );
     for( int num = 0; num < ext.size(); ++num )
         ext[ num ]->ext_par = 0;
+}
+
+int Inst::pointing_to_nout() {
+    return -1;
+}
+
+Inst *Inst::find_par_for_nout( int nout ) {
+    for( Parent &p : par )
+        if ( p.ninp == 0 and p.inst->pointing_to_nout() == nout )
+            return p.inst;
+    return 0;
 }
 
 void Inst::mark_children() {
@@ -323,7 +335,7 @@ bool Inst::need_a_register() {
     return has_inp_parent();
 }
 
-void Inst::write( Codegen_C *cc, int prec ) {
+void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     cc->on.write_beg();
     if ( out_reg )
         out_reg->write( cc, new_reg ) << " = ";
