@@ -36,6 +36,9 @@ struct Op : Inst {
         TODO;
         return BoolOpSeq();
     }
+    virtual int op_num() const {
+        return TO::op_id;
+    }
     TO op;
 };
 
@@ -55,14 +58,26 @@ struct UOp : Op<TO> {
         if ( not TO::is_oper ) *cc->os << " )";
         cc->on.write_end( ";" );
     }
+    virtual operator BoolOpSeq() const {
+        if ( SameType<TO,Op_not_boolean>::res )
+            return not this->inp[ 0 ]->operator BoolOpSeq();
+        return Inst::operator BoolOpSeq();
+    }
     TO to;
 };
 
 
 template<class TO>
-static Expr _op( Expr a, TO ) {
+static Expr _simp_op( Expr a, TO to ) {
+    return Expr();
+}
+
+template<class TO>
+static Expr _op( Expr a, TO to ) {
     if ( a.error() )
         return ip->error_var();
+    if ( Expr res = _simp_op( a, to ) )
+        return res;
     UOp<TO> *res = new UOp<TO>();
     res->add_inp( a );
     return res;
@@ -107,6 +122,7 @@ struct BOp : Op<TO> {
         if ( not TO::is_oper ) *cc->os << " )";
         cc->on.write_end( ";" );
     }
+
     TO to;
 };
 

@@ -316,6 +316,10 @@ bool Inst::get_val( Type *type, void *data ) const {
     return false;
 }
 
+int Inst::op_num() const {
+    return -1;
+}
+
 void Inst::update_when( const BoolOpSeq &cond ) {
     if ( not when )
         when = new BoolOpSeq( cond );

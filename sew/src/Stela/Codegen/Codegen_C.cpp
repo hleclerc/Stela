@@ -157,6 +157,8 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
     for( Expr inst : front )
         inst->op_id = Inst::cur_op_id;
 
+    // go to the roots
+    Vec<CC_SeqItemExpr *> seq_expr;
     Vec<BoolOpSeq> cond_stack;
     cond_stack << true;
     ++Inst::cur_op_id;
@@ -231,21 +233,12 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
             }
         }
 
+        // the new CC_SeqItemExpr
         CC_SeqItemExpr *ne = new CC_SeqItemExpr( inst, cur_block );
         inst->op_id = Inst::cur_op_id; // say that it's done
         cur_cond = inst->when;
         cur_block->seq << ne;
-
-        ne->ext.resize( inst->ext_disp_size() );
-        for( int e = 0; e < inst->ext_disp_size(); ++e ) {
-            CC_SeqItemBlock *b = new CC_SeqItemBlock;
-            b->parent_block = cur_block;
-            b->parent = cur_block;
-            ne->ext[ e ] = b;
-
-            Inst::cur_op_id -= 3;
-            scheduling( b, inst->ext[ e ] );
-        }
+        seq_expr << ne;
 
         // parents
         for( Inst::Parent &p : inst->par ) {
@@ -255,7 +248,31 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
             }
         }
     }
+
+    // schedule sub block (ext instructions)
+    for( CC_SeqItemExpr *ne : seq_expr ) {
+        int s = ne->expr->ext_disp_size();
+        ne->ext.resize( s );
+        for( int e = 0; e < s; ++e ) {
+            CC_SeqItemBlock *b = new CC_SeqItemBlock;
+            b->parent_block = ne->parent_block;
+            b->parent = ne;
+            ne->ext[ e ] = b;
+
+            scheduling( b, ne->expr->ext[ e ] );
+        }
+    }
 }
+
+//void simplifications( Vec<Expr> &created, Vec<Expr> &out ) {
+//    for( Expr &e : created ) {
+//        if ( e->op_num() == ID_OP_not_boolean ) {
+//            if ( e->inp[ 0 ]->op_num() == ID_OP_inf ) {
+
+//            }
+//        }
+//    }
+//}
 
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
@@ -264,6 +281,10 @@ void Codegen_C::make_code() {
     for( Expr inst : fresh )
         out << cloned( inst, created );
 
+    // simplifications
+    //    simplifications( created, out );
+
+    // display
     if ( disp_inst_graph )
         Inst::display_graph( out );
 

@@ -42,6 +42,7 @@ struct WhileInst : Inst {
     virtual Type *type() { return ip->type_Void; }
     virtual int ext_disp_size() const { return 1; }
     virtual bool need_a_register() { return false; }
+
     virtual void get_constraints( CppRegConstraint &reg_constraints ) {
         for( int nout = 0; nout < corr.size(); ++nout ) {
             int ninp = corr[ nout ];
@@ -65,6 +66,17 @@ struct WhileInst : Inst {
         }
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        //
+        BoolOpSeq cont;
+        WhileOut *wout = static_cast<WhileOut *>( ext[ 0 ].inst );
+        for( int i = 0, o = corr.size(); i < wout->pos.size(); ++i ) {
+            Vec<BoolOpSeq::Item> *s = cont.or_seq.push_back();
+            for( int j = 0; j < wout->pos[ i ].size(); ++j, ++o )
+                *s << BoolOpSeq::Item{ wout->inp[ o ], wout->pos[ i ][ j ] };
+        }
+        PRINT( cont );
+
+        //
         cc->on << "while ( true ) {";
         cc->on.nsp += 4;
         b[ 0 ]->write( cc );
