@@ -32,10 +32,6 @@ static Type *type_promote( Type *a, TO ) {
 template<class TO>
 struct Op : Inst {
     virtual void write_dot( Stream &os ) { os << op; }
-    virtual operator BoolOpSeq() const {
-        TODO;
-        return BoolOpSeq();
-    }
     virtual int op_num() const {
         return TO::op_id;
     }
@@ -58,7 +54,7 @@ struct UOp : Op<TO> {
         if ( not TO::is_oper ) *cc->os << " )";
         cc->on.write_end( ";" );
     }
-    virtual operator BoolOpSeq() const {
+    virtual operator BoolOpSeq() {
         if ( SameType<TO,Op_not_boolean>::res )
             return not this->inp[ 0 ]->operator BoolOpSeq();
         return Inst::operator BoolOpSeq();

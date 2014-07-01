@@ -65,8 +65,38 @@ struct WhileInst : Inst {
                                 inp[ ninp ], p );
         }
     }
+
+    virtual void add_break_and_continue_internal( CC_SeqItemBlock **b ) {
+        Vec<std::pair<BoolOpSeq,CC_SeqItemBlock *> > seq;
+        BoolOpSeq cont = get_cont(), cond = True();
+        b[ 0 ]->get_seq_of_sub_blocks( seq, cond );
+
+        for( int i = 0; i < seq.size(); ++i ) {
+            bool has_something_to_execute = false;
+            const BoolOpSeq &ci = seq[ i ].first;
+            CC_SeqItemBlock *bi = seq[ i ].second;
+            for( int j = i + 1; j < seq.size(); ++j ) {
+                const BoolOpSeq &cj = seq[ j ].first;
+                CC_SeqItemBlock *bj = seq[ j ].second;
+                if ( not ci.imply( not cj ) ) {
+                    has_something_to_execute = true;
+                    break;
+                }
+            }
+            if ( not has_something_to_execute ) {
+                bi->seq << new CC_SeqItemContinueOrBreak( true, bi );
+            }
+        }
+    }
+
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
-        //
+        cc->on << "while ( true ) {";
+        cc->on.nsp += 4;
+        b[ 0 ]->write( cc );
+        cc->on.nsp -= 4;
+        cc->on << "}";
+    }
+    BoolOpSeq get_cont() {
         BoolOpSeq cont;
         WhileOut *wout = static_cast<WhileOut *>( ext[ 0 ].inst );
         for( int i = 0, o = corr.size(); i < wout->pos.size(); ++i ) {
@@ -74,15 +104,9 @@ struct WhileInst : Inst {
             for( int j = 0; j < wout->pos[ i ].size(); ++j, ++o )
                 *s << BoolOpSeq::Item{ wout->inp[ o ], wout->pos[ i ][ j ] };
         }
-        PRINT( cont );
-
-        //
-        cc->on << "while ( true ) {";
-        cc->on.nsp += 4;
-        b[ 0 ]->write( cc );
-        cc->on.nsp -= 4;
-        cc->on << "}";
+        return cont;
     }
+
     Vec<int> corr; // output number -> input number or -1
 };
 

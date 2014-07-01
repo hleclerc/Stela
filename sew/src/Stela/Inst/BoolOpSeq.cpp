@@ -11,8 +11,15 @@ BoolOpSeq::BoolOpSeq( Expr expr, bool pos ) {
         or_seq.push_back()->push_back( Item{ expr, pos } );
 }
 
-BoolOpSeq::BoolOpSeq( bool pos ) : val_if_not_or_seq( pos ) {
+BoolOpSeq::BoolOpSeq( False ) : val_if_not_or_seq( false ) {
 }
+
+BoolOpSeq::BoolOpSeq( True ) : val_if_not_or_seq( true ) {
+}
+
+BoolOpSeq::BoolOpSeq() : val_if_not_or_seq( true ) {
+}
+
 
 void BoolOpSeq::write_to_stream( Codegen_C *cc, Stream &os, int prec ) const {
     if ( PREC_or_boolean <= prec )
@@ -208,9 +215,9 @@ bool BoolOpSeq::simplify_and_seq( Vec<Item> &and_seq ) {
 
 BoolOpSeq operator&&( const BoolOpSeq &a, const BoolOpSeq &b ) {
     if ( not a.or_seq.size() )
-        return a.val_if_not_or_seq ? b : BoolOpSeq( false );
+        return a.val_if_not_or_seq ? b : BoolOpSeq( False() );
     if ( not b.or_seq.size() )
-        return b.val_if_not_or_seq ? a : BoolOpSeq( false );
+        return b.val_if_not_or_seq ? a : BoolOpSeq( False() );
     //
     BoolOpSeq res;
     for( int i = 0; i < a.or_seq.size(); ++i ) {
@@ -227,9 +234,9 @@ BoolOpSeq operator&&( const BoolOpSeq &a, const BoolOpSeq &b ) {
 
 BoolOpSeq operator||( const BoolOpSeq &a, const BoolOpSeq &b ) {
     if ( not a.or_seq.size() )
-        return a.val_if_not_or_seq ? BoolOpSeq( true ) : b;
+        return a.val_if_not_or_seq ? BoolOpSeq() : b;
     if ( not b.or_seq.size() )
-        return b.val_if_not_or_seq ? BoolOpSeq( true ) : a;
+        return b.val_if_not_or_seq ? BoolOpSeq() : a;
     //
     BoolOpSeq res;
     res.or_seq.append( a.or_seq );
@@ -271,6 +278,6 @@ BoolOpSeq operator!( const BoolOpSeq &a ) {
         push_not_rec( res, a, Vec<int>() );
         return res;
     }
-    return BoolOpSeq( not a.val_if_not_or_seq );
+    return a.val_if_not_or_seq ? BoolOpSeq( False() ) : BoolOpSeq( True() );
 }
 

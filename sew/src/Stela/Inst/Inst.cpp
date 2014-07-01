@@ -335,6 +335,10 @@ void Inst::update_when( const BoolOpSeq &cond ) {
 void Inst::get_constraints( CppRegConstraint &reg_constraints ) {
 }
 
+void Inst::add_break_and_continue_internal( CC_SeqItemBlock **b ) {
+    ASSERT( ext.size() == 0, "inst with ext should have an add_break_and_continue_internal method" );
+}
+
 bool Inst::need_a_register() {
     return has_inp_parent();
 }
@@ -347,6 +351,6 @@ void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     cc->on.write_end( ";" );
 }
 
-Inst::operator BoolOpSeq() const {
+Inst::operator BoolOpSeq() {
     return BoolOpSeq( this, true );
 }

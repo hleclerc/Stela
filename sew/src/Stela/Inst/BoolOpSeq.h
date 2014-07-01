@@ -20,7 +20,9 @@ public:
     };
 
     BoolOpSeq( Expr expr, bool pos );
-    BoolOpSeq( bool pos = true );
+    BoolOpSeq( False );
+    BoolOpSeq( True );
+    BoolOpSeq();
 
     void write_to_stream( Codegen_C *cc, Stream &os, int prec ) const;
     void write_to_stream( Stream &os ) const;

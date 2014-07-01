@@ -71,13 +71,14 @@ public:
     virtual bool is_const() const;
 
     virtual bool get_val( Type *type, void *data ) const;
-    virtual operator BoolOpSeq() const;
+    virtual operator BoolOpSeq();
     virtual int op_num() const; ///< only for Op<>
 
     // codegen
     virtual void get_constraints( CppRegConstraint &reg_constraints );
     virtual void update_when( const BoolOpSeq &cond );
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b );
+    virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
     virtual bool need_a_register();
 
     // display

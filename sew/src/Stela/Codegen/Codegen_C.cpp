@@ -146,7 +146,7 @@ static BoolOpSeq anded( const Vec<BoolOpSeq> &cond_stack ) {
 void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
     // update inst->when
     for( Expr inst : out )
-        inst->update_when( BoolOpSeq( true ) );
+        inst->update_when( BoolOpSeq() );
 
     // get the front
     ++Inst::cur_op_id;
@@ -160,7 +160,7 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
     // go to the roots
     Vec<CC_SeqItemExpr *> seq_expr;
     Vec<BoolOpSeq> cond_stack;
-    cond_stack << true;
+    cond_stack << BoolOpSeq();
     ++Inst::cur_op_id;
     while ( front.size() ) {
         Expr inst;
@@ -236,7 +236,7 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
         // the new CC_SeqItemExpr
         CC_SeqItemExpr *ne = new CC_SeqItemExpr( inst, cur_block );
         inst->op_id = Inst::cur_op_id; // say that it's done
-        cur_cond = inst->when;
+        cur_cond = *inst->when;
         cur_block->seq << ne;
         seq_expr << ne;
 
@@ -249,8 +249,9 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
         }
     }
 
-    // schedule sub block (ext instructions)
+    // delayed operation (ext blocks)
     for( CC_SeqItemExpr *ne : seq_expr ) {
+        // schedule sub block (ext instructions)
         int s = ne->expr->ext_disp_size();
         ne->ext.resize( s );
         for( int e = 0; e < s; ++e ) {
@@ -261,7 +262,15 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
 
             scheduling( b, ne->expr->ext[ e ] );
         }
+
+        // add internal break or continue if necessary
+        CC_SeqItemBlock *b[ s ];
+        for( int i = 0; i < s; ++i )
+            b[ i ] = ne->ext[ i ].ptr();
+        ne->expr->add_break_and_continue_internal( b );
     }
+
+
 }
 
 //void simplifications( Vec<Expr> &created, Vec<Expr> &out ) {
@@ -306,7 +315,7 @@ void Codegen_C::make_code() {
         anc->reg_to_decl << &reg;
     }
 
-    // PRINT( reg_constraints );
+    // write the code
     main_block.write( this );
 }
 

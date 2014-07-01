@@ -8,12 +8,19 @@ CC_SeqItem::CC_SeqItem( CC_SeqItem *parent, CC_SeqItemBlock *parent_block ) : pa
 }
 CC_SeqItem::~CC_SeqItem() {
 }
+void CC_SeqItem::get_seq_of_sub_blocks( Vec<std::pair<BoolOpSeq,CC_SeqItemBlock *> > &res, const BoolOpSeq &cond ) {
+}
 
 
 
 CC_SeqItemBlock::CC_SeqItemBlock() : CC_SeqItem( 0, 0 ), sibling( 0 ) {
 }
 CC_SeqItemBlock::~CC_SeqItemBlock() {
+}
+void CC_SeqItemBlock::get_seq_of_sub_blocks( Vec<std::pair<BoolOpSeq,CC_SeqItemBlock *> > &res, const BoolOpSeq &cond ) {
+    res << std::pair<BoolOpSeq,CC_SeqItemBlock *>( cond, this );
+    for( int i = 0; i < seq.size(); ++i )
+        seq[ i ]->get_seq_of_sub_blocks( res, cond );
 }
 void CC_SeqItemBlock::write( Codegen_C *cc ) {
     std::map<Type *,Vec<CppOutReg *> > by_type;
@@ -48,7 +55,9 @@ CC_SeqItemIf::CC_SeqItemIf( CC_SeqItemBlock *parent ) : CC_SeqItem( parent, pare
     }
     seq[ 0 ].sibling = &seq[ 1 ];
 }
-CC_SeqItemIf::~CC_SeqItemIf() {
+void CC_SeqItemIf::get_seq_of_sub_blocks( Vec<std::pair<BoolOpSeq,CC_SeqItemBlock *> > &res, const BoolOpSeq &cond ) {
+    seq[ 0 ].get_seq_of_sub_blocks( res, cond and this->cond );
+    seq[ 1 ].get_seq_of_sub_blocks( res, cond and not this->cond );
 }
 void CC_SeqItemIf::write( Codegen_C *cc ) {
     if ( not cond.always( true ) ) {
@@ -57,9 +66,8 @@ void CC_SeqItemIf::write( Codegen_C *cc ) {
         cc->on.nsp += 4;
     }
 
-    if ( not cond.always( false ) ) {
+    if ( not cond.always( false ) )
         seq[ 0 ].write( cc );
-    }
 
     if ( not cond.always( true ) ) {
         if ( seq[ 1 ].seq.size() ) {
@@ -75,6 +83,7 @@ void CC_SeqItemIf::write( Codegen_C *cc ) {
     }
 }
 
+
 void CC_SeqItemIf::get_constraints( CppRegConstraint &reg_constraints ) {
     for( int i = 0; i < 2; ++i )
         seq[ i ].get_constraints( reg_constraints );
@@ -86,9 +95,7 @@ void CC_SeqItemIf::assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints 
 }
 
 
-CC_SeqItemExpr::CC_SeqItemExpr( Expr expr, CC_SeqItemBlock *parent ) : CC_SeqItem( parent, parent ), expr( expr ) {
-}
-CC_SeqItemExpr::~CC_SeqItemExpr() {
+CC_SeqItemExpr::CC_SeqItemExpr( Expr expr, CC_SeqItemBlock *parent_block ) : CC_SeqItem( parent_block, parent_block ), expr( expr ) {
 }
 void CC_SeqItemExpr::write( Codegen_C *cc ) {
     CC_SeqItemBlock *b[ ext.size() ];
@@ -115,3 +122,15 @@ void CC_SeqItemExpr::assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraint
     for( AutoPtr<CC_SeqItemBlock> &b : ext )
         b->assign_reg( cc, reg_constraints );
 }
+
+
+CC_SeqItemContinueOrBreak::CC_SeqItemContinueOrBreak( bool cont, CC_SeqItemBlock *parent_block ) : CC_SeqItem( parent_block, parent_block ), cont( cont ) {
+}
+void CC_SeqItemContinueOrBreak::CC_SeqItemContinueOrBreak::write( Codegen_C *cc ) {
+    cc->on << ( cont ? "continue;" : "break;" );
+}
+void CC_SeqItemContinueOrBreak::get_constraints( CppRegConstraint &reg_constraints ) {
+}
+void CC_SeqItemContinueOrBreak::assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
+}
+

@@ -30,7 +30,7 @@
 #include "Ip.h"
 
 Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
-    parent( parent ), caller( caller ), creation_date( IpSnapshot::cur_date ) {
+    parent( parent ), caller( caller ), cond( True() ), creation_date( IpSnapshot::cur_date ) {
     if ( parent ) {
         path = parent->path + "/";
         self = parent->self;
@@ -901,7 +901,7 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
     }
 
     // simplified expression
-    BoolOpSeq expr( cond_if->get( cond ), true );
+    BoolOpSeq expr( *cond_if->get( cond ) );
 
     //
     const PI8 *ok = bin.read_offset();

@@ -23,7 +23,7 @@ struct Select : Inst {
         return this;
     }
     BoolOpSeq get_bos() {
-        BoolOpSeq res;
+        BoolOpSeq res = True();
         for( int i = 0, o = 2; i < pos.size(); ++i ) {
             Vec<BoolOpSeq::Item> *v = res.or_seq.push_back();
             for( int j = 0; j < pos[ i ].size(); ++j, ++o )
