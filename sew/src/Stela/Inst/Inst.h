@@ -79,6 +79,7 @@ public:
     virtual void update_when( const BoolOpSeq &cond );
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b );
     virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
+    virtual bool will_write_code() const;
     virtual bool need_a_register();
 
     // display

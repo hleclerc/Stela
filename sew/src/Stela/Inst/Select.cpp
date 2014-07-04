@@ -52,6 +52,9 @@ struct Select : Inst {
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }
+    virtual bool will_write_code() const {
+        return false;
+    }
 
     Vec<Vec<Bool> > pos;
 };

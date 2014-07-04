@@ -2,7 +2,8 @@
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
 #include "../Inst/Type.h"
-#include "CC_SeqItem.h"
+#include "CC_SeqItemExpr.h"
+#include "CC_SeqItemIf.h"
 #include "Codegen_C.h"
 #include <limits>
 
@@ -257,7 +258,6 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
         for( int e = 0; e < s; ++e ) {
             CC_SeqItemBlock *b = new CC_SeqItemBlock;
             b->parent_block = ne->parent_block;
-            b->parent = ne;
             ne->ext[ e ] = b;
 
             scheduling( b, ne->expr->ext[ e ] );

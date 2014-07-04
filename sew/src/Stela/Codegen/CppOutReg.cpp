@@ -1,5 +1,6 @@
 #include "../Inst/Type.h"
-#include "CC_SeqItem.h"
+
+#include "CC_SeqItemBlock.h"
 #include "CppOutReg.h"
 #include "Codegen_C.h"
 

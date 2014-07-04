@@ -1,4 +1,5 @@
-#include "../Codegen/CC_SeqItem.h"
+#include "../Codegen/CC_SeqItemContinueOrBreak.h"
+#include "../Codegen/CC_SeqItemIf.h"
 #include "../Codegen/Codegen_C.h"
 #include "CppRegConstraint.h"
 #include "While.h"
@@ -15,6 +16,7 @@ struct WhileInp : Inst {
     virtual Type *type() { return ip->type_Void; }
     virtual bool need_a_register() { return false; }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {}
+    virtual bool will_write_code() const { return false; }
     Vec<Type *> types;
 };
 
@@ -28,6 +30,7 @@ struct WhileOut : Inst {
     virtual Type *type() { return ip->type_Void; }
     virtual bool need_a_register() { return false; }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {}
+    virtual bool will_write_code() const { return false; }
     Vec<Vec<bool> > pos;
 };
 
@@ -67,24 +70,29 @@ struct WhileInst : Inst {
     }
 
     virtual void add_break_and_continue_internal( CC_SeqItemBlock **b ) {
-        Vec<std::pair<BoolOpSeq,CC_SeqItemBlock *> > seq;
-        BoolOpSeq cont = get_cont(), cond = True();
-        b[ 0 ]->get_seq_of_sub_blocks( seq, cond );
+        Vec<CC_SeqItemBlock *> seq;
+        BoolOpSeq cont = get_cont(), need_a_break = not cont, cond = True();
+        b[ 0 ]->get_glo_cond_and_seq_of_sub_blocks( seq, cond );
 
         for( int i = 0; i < seq.size(); ++i ) {
-            bool has_something_to_execute = false;
-            const BoolOpSeq &ci = seq[ i ].first;
-            CC_SeqItemBlock *bi = seq[ i ].second;
-            for( int j = i + 1; j < seq.size(); ++j ) {
-                const BoolOpSeq &cj = seq[ j ].first;
-                CC_SeqItemBlock *bj = seq[ j ].second;
-                if ( not ci.imply( not cj ) ) {
-                    has_something_to_execute = true;
-                    break;
+            if ( not seq[ i ]->parent )
+                continue; // the main block
+            int nb_evicted_blocks = 0;
+            if ( not seq[ i ]->parent->ch_followed_by_something_to_execute( nb_evicted_blocks, seq[ i ], seq[ i ]->glo_cond ) ) {
+                if ( seq[ i ]->glo_cond.imply( need_a_break ) ) {
+                    seq[ i ]->seq << new CC_SeqItemContinueOrBreak( false, seq[ i ] );
+                    need_a_break = need_a_break - seq[ i ]->glo_cond; // no need to test seq[ i ]->glo_cond (already done)
+                } else if ( nb_evicted_blocks ) {
+                    if ( not seq[ i ]->glo_cond.imply( not need_a_break ) ) {
+                        // if ( rem_to_test ) break;
+                        CC_SeqItemIf *ci = new CC_SeqItemIf( seq[ i ] );
+                        ci->cond = need_a_break;
+                        ci->seq[ 0 ].seq << new CC_SeqItemContinueOrBreak( false, &ci->seq[ 0 ] );
+                        seq[ i ]->seq << ci;
+                    }
+                    // continue;
+                    seq[ i ]->seq << new CC_SeqItemContinueOrBreak( true, seq[ i ] );
                 }
-            }
-            if ( not has_something_to_execute ) {
-                bi->seq << new CC_SeqItemContinueOrBreak( true, bi );
             }
         }
     }

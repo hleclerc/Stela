@@ -142,3 +142,11 @@ src/Stela/Met/IrWriter.cpp
 src/Stela/Met/TypeChar.h.py
 tests/test_Inst.cpp
 tests/test.met
+src/Stela/Codegen/CC_SeqItemBlock.h
+src/Stela/Codegen/CC_SeqItemBlock.cpp
+src/Stela/Codegen/CC_SeqItemIf.h
+src/Stela/Codegen/CC_SeqItemIf.cpp
+src/Stela/Codegen/CC_SeqItemExpr.h
+src/Stela/Codegen/CC_SeqItemExpr.cpp
+src/Stela/Codegen/CC_SeqItemContinueOrBreak.h
+src/Stela/Codegen/CC_SeqItemContinueOrBreak.cpp

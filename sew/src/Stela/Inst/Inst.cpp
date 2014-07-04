@@ -339,6 +339,10 @@ void Inst::add_break_and_continue_internal( CC_SeqItemBlock **b ) {
     ASSERT( ext.size() == 0, "inst with ext should have an add_break_and_continue_internal method" );
 }
 
+bool Inst::will_write_code() const {
+    return true;
+}
+
 bool Inst::need_a_register() {
     return has_inp_parent();
 }
