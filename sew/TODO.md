@@ -1,21 +1,9 @@
-À quoi servent les types ?
-* actuellement à stocker Class *orig + les paramètres. Si le type des attributs ne dépend pas du contexte, on peut les stocker dans le Type *
+Boucles for:
+* block doit contenir liste de variables capturées
 
-Gestion des registres
-* contraintes sur les points d'arrivée et de départ ()
-* contraintes sur la non cohabitation de Rx_{n} et Rx_{m} si n != m (avec n et m des instructions)
-* prop : une liste constraints_to_solve, qu'on peut traiter off-line
-    * Inst *, int num
 
-Attention:
-class A
-  def f
-    class B
-       def g
-          self... # <- quand on parse B, on demande à catcher le self de f alors que c'est inutile
-
-          
-Prop pour les classes de taille variable
+for a in A()
+    block
 
 class A
     size := 0
@@ -26,7 +14,7 @@ class A
 
 -> l'initialisation se fait... sans connaître la taille.
     Prop 1: cst() de taille inconnue puis on assigne en calculant les offsets au fur et à mesure
-    On complète la taille pendant la génération de code
+    On complète lat taille pendant la génération de code
 
 Prop pour parse/find des méthodes:
 * on met systématiquement self dans les variables catchées...

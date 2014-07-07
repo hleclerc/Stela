@@ -621,6 +621,10 @@ void IrWriter::parse_for( const Lexem *l ) {
     SplittedVec<const Lexem *,8> ch;
     get_children_of_type( l->children[ 0 ]->children[ 1 ], STRING_comma_NUM, ch );
 
+    // catched vars
+    std::map<String,CatchedVarWithNum> catched_vars;
+    get_needed_var_rec( catched_vars, l->children[ 1 ], l->num_scope );
+
     //
     data << IR_TOK_FOR;
     push_offset( l );
@@ -636,7 +640,31 @@ void IrWriter::parse_for( const Lexem *l ) {
     for( int i = 0; i < ch.size(); ++i )
         push_delayed_parse( ch[ i ] );
 
+    out_catched_vars( catched_vars, l->num_scope );
+
     push_delayed_parse( child_if_block( l->children[ 1 ] ) );
+}
+
+void IrWriter::out_catched_vars( std::map<String,CatchedVarWithNum> &catched_vars, int num_scope ) {
+    data << catched_vars.size();
+    for( auto it : catched_vars ) {
+        Vec<CatchedVar> &cl = it.second.cv;
+        if ( cl[ 0 ].surdef ) {
+            TODO;
+        } else {
+            CatchedVar cv = cl[ 0 ];
+            if ( cv.s >= 0 ) { // in catched vars of a parent callable
+                data << PI8( IN_CATCHED_VARS );
+                data << cv.s;
+            } else if ( cv.s == -2 ) { // self
+            data << PI8( IN_SELF );
+            } else {
+                data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
+                data << num_scope - cv.l->num_scope; // nb parents
+                data << cv.l->num_in_scope;
+            }
+        }
+    }
 }
 
 void IrWriter::parse_import( const Lexem *l ) {
@@ -1058,26 +1086,9 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         push_delayed_parse( condition );
 
     // catched var data
-    data << catched_vars.size();
-    for( auto it : catched_vars ) {
-        Vec<CatchedVar> &cl = it.second.cv;
-        if ( cl[ 0 ].surdef ) {
-            TODO;
-        } else {
-            CatchedVar cv = cl[ 0 ];
-            if ( cv.s >= 0 ) { // in catched vars of a parent callable
-                data << PI8( IN_CATCHED_VARS );
-                data << cv.s;
-            } else if ( cv.s == -2 ) { // self
-                data << PI8( IN_SELF );
-            } else {
-                data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
-                data << t->num_scope - cv.l->num_scope; // nb parents
-                data << cv.l->num_in_scope;
-            }
-        }
-    }
+    out_catched_vars( catched_vars, t->num_scope );
 
+    //
     if ( token_type == IR_TOK_DEF ) {
         // block
         push_delayed_parse( block );

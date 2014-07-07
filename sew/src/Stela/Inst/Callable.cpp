@@ -46,6 +46,10 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     if ( flags & IR_HAS_CONDITION )
         condition = Code( sf, bin.read_offset() );
 
+    read_catched_vars( catched_vars, bin );
+}
+
+void Callable::read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin ) {
     catched_vars.resize( bin.read_positive_integer() );
     for( CatchedVar &cv : catched_vars ) {
         cv.type = bin.read_positive_integer();

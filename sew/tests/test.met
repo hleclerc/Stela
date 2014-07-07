@@ -5,7 +5,6 @@ def not_boolean v
     ___not_boolean v
     
 def inferior a, b
-    ___info a, b
     ___inf a, b
     
 class SI32
@@ -36,10 +35,10 @@ def range a, b
 class A[ T, U ]
     a := 10
     
-r := 0 .. 10
-___disp r.beg
-___disp r.inc
-___disp r.end
-
+def foor
+    croute := 2
+    for i in 0 .. 10
+        ___info croute + i
+foor()
 # for a in 0 .. 10
     # ___syscall a

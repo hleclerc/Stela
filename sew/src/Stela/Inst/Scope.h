@@ -4,7 +4,7 @@
 #include "../System/BinStreamReader.h"
 #include "NamedVarList.h"
 #include "BoolOpSeq.h"
-class Callable;
+#include "Callable.h"
 class Class;
 class Ip;
 
@@ -63,6 +63,7 @@ protected:
     Expr get_catched_var_in__scope( int np, int ns, bool stat );
     Expr get_catched_var_in_catched_vars( int s );
     void BREAK( int n, BoolOpSeq cond );
+    Expr get_catched_var( Callable::CatchedVar &cv );
 
     struct RemBreak {
         int       count;

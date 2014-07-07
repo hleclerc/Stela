@@ -133,6 +133,17 @@ Expr Scope::parse_BLOCK( BinStreamReader bin ) {
     return res;
 }
 
+Expr Scope::get_catched_var( Callable::CatchedVar &cv ) {
+    switch ( cv.type ) {
+    case IN_LOCAL_SCOPE : return get_catched_var_in__scope( cv.np, cv.ns, 0 );
+    case IN_STATIC_SCOPE: return get_catched_var_in__scope( cv.np, cv.ns, 1 );
+    case IN_CATCHED_VARS: return get_catched_var_in_catched_vars( cv.ns );
+    case IN_SELF        : ASSERT( self, "..." ); return self;
+    default: ERROR( "???" );
+    }
+    return 0;
+}
+
 Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
     int name = read_nstring( bin );
     if ( disp_tok )
@@ -163,16 +174,8 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
 
     // get catched vars
     Vec<Expr> catched_vars;
-    for( int i = 0; i < c->catched_vars.size(); ++i ) {
-        Callable::CatchedVar &cv = c->catched_vars[ i ];
-        switch ( cv.type ) {
-        case IN_LOCAL_SCOPE : catched_vars << get_catched_var_in__scope( cv.np, cv.ns, 0 ); break;
-        case IN_STATIC_SCOPE: catched_vars << get_catched_var_in__scope( cv.np, cv.ns, 1 ); break;
-        case IN_CATCHED_VARS: catched_vars << get_catched_var_in_catched_vars( cv.ns ); break;
-        case IN_SELF        : ASSERT( self, "..." ); catched_vars << self; break;
-        default: ERROR( "???" );
-        }
-    }
+    for( Callable::CatchedVar &cv : c->catched_vars )
+        catched_vars << get_catched_var( cv );
     Expr cva = ip->make_Varargs( catched_vars );
 
     // output type
@@ -1111,6 +1114,26 @@ Expr Scope::parse_THIS( BinStreamReader bin ) {
     // return Var( ip->class_Ptr.type_for( lt ), self.ptr().get_val() );
 }
 Expr Scope::parse_FOR( BinStreamReader bin ) {
+    int nn = bin.read_positive_integer();
+    int names[ nn ];
+    for( int i = 0; i < nn; ++i )
+        names[ i ] = read_nstring( bin );
+
+    int nc = bin.read_positive_integer();
+    Expr vals[ nc ];
+    for( int i = 0; i < nc; ++i )
+        vals[ i ] = parse( sf, bin.read_offset(), "for rhs" );
+
+    Vec<Callable::CatchedVar> catched_vars;
+    Callable::read_catched_vars( catched_vars, bin );
+    PRINT( catched_vars.size() );
+
+    Vec<Expr> catched_vals;
+    for( Callable::CatchedVar &cv : catched_vars )
+        catched_vals << get_catched_var( cv );
+    PRINT( catched_vals );
+
+
     TODO;
     return ip->error_var();
 }

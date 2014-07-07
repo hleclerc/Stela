@@ -89,6 +89,7 @@ protected:
 
     void find_needed_var         ( Vec<CatchedVar> &cl, const Lexem *v );
     void get_needed_var_rec      ( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp );
+    void out_catched_vars        ( std::map<String,CatchedVarWithNum> &catched_vars, int num_scope );
 
     BinStreamWriter data;
     ErrorList &error_list;
