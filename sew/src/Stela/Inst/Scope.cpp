@@ -401,26 +401,17 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
 
     //
     if ( f_type == ip->type_Type ) {
-        TODO;
-//        TypeInfo *ti = ip->type_info( f.expr() ); ///< parse if necessary
+        Expr res = room( cst( ip->type_from_type_var( f ) ) );
+        if ( am == APPLY_MODE_NEW )
+            TODO;
 
-//        Expr ret;
-//        if ( ti->static_size_in_bits >= 0 )
-//            ret = Var( &ti->var, cst( 0, 0, ti->static_size_in_bits ) );
-//        else
-//            TODO; // res = undefined cst with unknown size
-
-//        if ( am == APPLY_MODE_NEW )
-//            TODO;
-
-//        // call init
-//        if ( am != APPLY_MODE_PARTIAL_INST )
-//            apply( get_attr( ret, STRING_init_NUM, sf, off ), nu, u_args, nn, n_names, n_args, Scope::APPLY_MODE_STD, sf, off );
-//        return ret;
+        // call init
+        if ( am != APPLY_MODE_PARTIAL_INST )
+            apply( get_attr( res, STRING_init_NUM ), nu, u_args, nn, n_name, n_args, Scope::APPLY_MODE_STD );
+        return res;
     }
 
     // f.apply ...
-    PRINT( *f_type );
     Expr applier = get_attr( f, STRING_apply_NUM );
     if ( applier.error() )
         return ip->error_var();
@@ -522,10 +513,15 @@ Expr Scope::get_attr( Expr self, int name ) {
         if ( a.name == name ) {
             Type::Attr &at = type->attributes[ a.num ];
             if ( at.off >= 0 )
-                return rcast( at.get_ptr_type(), add( self, at.off ) );
+                return rcast( at.type ? at.val->type() : at.get_ptr_type(), add( self, at.off ) );
             return at.val;
         }
     }
+
+    // template parameters
+    for( int i = 0; i < type->orig->arg_names.size(); ++i )
+        if ( type->orig->arg_names[ i ] == name )
+            return type->parameters[ i ];
 
     // not found ? -> search in global scope for def ...( self, ... )
     Vec<Expr> lst;
@@ -818,8 +814,7 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
 
     //
     if ( flags & IR_ASSIGN_TYPE )
-        TODO;
-        // Expr = apply( var, 0, 0, 0, 0, 0, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD, sf, off );
+        var = apply( var, 0, 0, 0, 0, 0, APPLY_MODE_STD );
 
     //if ( ( flags & IR_ASSIGN_REF ) == 0 and var.referenced_more_than_one_time() )
     //    Expr = copy( var, sf, off );

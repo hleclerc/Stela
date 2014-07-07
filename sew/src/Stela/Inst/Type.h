@@ -14,6 +14,7 @@ public:
         Type *get_ptr_type();
         int  off;
         Expr val;
+        int  name;
         bool type; ///< for ~= defs
     };
     Type( Class *orig );

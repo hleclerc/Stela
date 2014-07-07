@@ -189,13 +189,40 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
         if ( self_type->orig->ancestors.size() )
             TODO;
+
+        Vec<Bool> initialised_args( Size(), self_type->attributes.size(), false );
+        for( AttrInit &d : orig->attr_init ) {
+            for( int i = 0; ; ++i ) {
+                if ( i == self_type->attributes.size() )
+                    return ip->ret_error( "no attribute " + ip->str_cor.str( d.name ) + " in class" );
+
+                Type::Attr &a = self_type->attributes[ i ];
+                if ( d.name == a.name ) {
+                    // parse args
+                    Vec<Expr> args;
+                    int nu = d.args.size() - d.names.size();
+                    for( Code &c : d.args )
+                        args << ns.parse( c.sf, c.tok, "starts_with" );
+
+                    //
+                    ns.apply(  ns.get_attr( rcast( a.type ? a.val->type() : a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
+                    initialised_args[ i ] = true;
+                    break;
+                }
+            }
+        }
+
+        int cpt = 0;
         for( Type::Attr &a : self_type->attributes ) {
             if ( a.off >= 0 ) {
-                if ( a.type )
-                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ) );
-                else
-                    ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
+                if ( not initialised_args[ cpt ] ) {
+                    if ( a.type )
+                        ns.apply( ns.get_attr( rcast( a.val->type(), add( self, a.off ) ), STRING_init_NUM ) );
+                    else
+                        ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
+                }
             }
+            ++cpt;
         }
     }
 

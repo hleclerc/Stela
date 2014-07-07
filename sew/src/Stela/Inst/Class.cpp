@@ -71,8 +71,8 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
                     break;
                 }
                 if ( arg_name == pnames[ n ] ) {
-                    scope.local_vars << pvn[ i ];
-                    res->args << pvn[ i ];
+                    scope.local_vars << pvn[ n ];
+                    res->args << pvn[ n ];
                     used_arg[ n ] = true;
                     break;
                 }

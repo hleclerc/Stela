@@ -106,9 +106,11 @@ void Type::parse() {
         _len = ceil( _len, _ali );
 
         bool stat = a.type & CALLABLE_ATTR_STATIC;
-        attributes << Attr{ stat ? -1 : _len, val, a.type == CALLABLE_ATTR_TYPE };
+        attributes << Attr{ stat ? -1 : _len, val, a.name, a.type == CALLABLE_ATTR_TYPE };
 
-        _ali = ppcm( _ali, val->ptype()->alig() );
-        _len += val->ptype()->size();
+        if ( not stat ) {
+            _ali = ppcm( _ali, val->ptype()->alig() );
+            _len += val->ptype()->size();
+        }
     }
 }
