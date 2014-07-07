@@ -84,13 +84,13 @@ struct WhileInst : Inst {
                     need_a_break = need_a_break - seq[ i ]->glo_cond; // no need to test seq[ i ]->glo_cond (already done)
                 } else if ( nb_evicted_blocks ) {
                     if ( not seq[ i ]->glo_cond.imply( not need_a_break ) ) {
-                        // if ( rem_to_test ) break;
+                        // -> if ( rem_to_test ) break;
                         CC_SeqItemIf *ci = new CC_SeqItemIf( seq[ i ] );
                         ci->cond = need_a_break;
                         ci->seq[ 0 ].seq << new CC_SeqItemContinueOrBreak( false, &ci->seq[ 0 ] );
                         seq[ i ]->seq << ci;
                     }
-                    // continue;
+                    // -> continue;
                     seq[ i ]->seq << new CC_SeqItemContinueOrBreak( true, seq[ i ] );
                 }
             }

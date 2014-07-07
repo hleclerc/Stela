@@ -2,21 +2,21 @@
 #include "UsualStrings.h"
 #include "NstringHash.h"
 #include <string.h>
-static const char *operators_met_name[] = { ";","label","import","try","catch","transient","virtual","inline","static","property","const","class","def","extends","pertinence","when","else","while","for","if","return","return_n","throw","infon","info","?","",",","=",":=","~=","|=","^=","&=","%=","<<=",">>=","/=","*=","-=","+=","//=","+++=","=>","ref","new","<<<<","<<<","<<",">>","or","and","xor","not","inst_of","in","not_inst_of","not_in","!=","==",">=","<=",">","<","+++","..","...","+","-","","%","*",":",":.","/","//","\\","^","~","'","--","++","","","&","@","$","::","->",".",".?","->?","","" };
-static const char *operators_cpp_name[] = { "comma_dot","__label__","__import__","__try__","__catch__","__transient__","__virtual__","__inline__","__static__","__property__","__const__","__class__","__def__","__extends__","__pertinence__","__when__","__else__","__while__","__for__","__if__","__return__","__return_n__","__throw__","__infon__","__info__","__alternative__","comma_in_par","comma","reassign","assign","assign_type","self_or","self_xor","self_and","self_mod","self_shift_left","self_shift_right","self_div","self_mul","self_sub","self_add","self_div_int","self_concatenate","lambda","__ref__","__new__","shift_left_long_str","shift_left_then_endl","shift_left","shift_right","__or__","__and__","__xor___","not_boolean","__inst_of__","__in__","__not_inst_of__","__not_in__","not_equal","equal","superior_equal","inferior_equal","superior","inferior","concatenate","range","triple_dots","add","sub","neg","mod","mul","doubledot","doubledotdot","div","div_int","ml_div","pow","not_bitwise","trans","pre_dec","pre_inc","post_dec","post_inc","pointer_on","pointed_value","calc_name","doubledoubledot","get_attr_ptr","get_attr","get_attr_ask","get_attr_ptr_ask","__string_assembly__","tensorial_product" };
-static int         operators_behavior[] = { 0,16,2,2,16,2,2,2,2,2,2,16,16,3,3,3,3,16,16,16,2,16,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,1,3,6,2,3,3,3,3,3,3,3,3,2,1,2,2,1,1,2,2,2,3,3,3,3,3,3,3 };
+static const char *operators_met_name[] = { ";","label","import","try","catch","transient","virtual","inline","static","property","const","class","def","extends","pertinence","when","starts_with","else","while","for","if","return","return_n","throw","infon","info","?","",",","=",":=","~=","|=","^=","&=","%=","<<=",">>=","/=","*=","-=","+=","//=","+++=","=>","ref","new","<<<<","<<<","<<",">>","or","and","xor","not","inst_of","in","not_inst_of","not_in","!=","==",">=","<=",">","<","+++","..","...","+","-","","%","*",":",":.","/","//","\\","^","~","'","--","++","","","&","@","$","::","->",".",".?","->?","","" };
+static const char *operators_cpp_name[] = { "comma_dot","__label__","__import__","__try__","__catch__","__transient__","__virtual__","__inline__","__static__","__property__","__const__","__class__","__def__","__extends__","__pertinence__","__when__","__starts_with__","__else__","__while__","__for__","__if__","__return__","__return_n__","__throw__","__infon__","__info__","__alternative__","comma_in_par","comma","reassign","assign","assign_type","self_or","self_xor","self_and","self_mod","self_shift_left","self_shift_right","self_div","self_mul","self_sub","self_add","self_div_int","self_concatenate","lambda","__ref__","__new__","shift_left_long_str","shift_left_then_endl","shift_left","shift_right","__or__","__and__","__xor___","not_boolean","__inst_of__","__in__","__not_inst_of__","__not_in__","not_equal","equal","superior_equal","inferior_equal","superior","inferior","concatenate","range","triple_dots","add","sub","neg","mod","mul","doubledot","doubledotdot","div","div_int","ml_div","pow","not_bitwise","trans","pre_dec","pre_inc","post_dec","post_inc","pointer_on","pointed_value","calc_name","doubledoubledot","get_attr_ptr","get_attr","get_attr_ask","get_attr_ptr_ask","__string_assembly__","tensorial_product" };
+static int         operators_behavior[] = { 0,16,2,2,16,2,2,2,2,2,2,16,16,3,3,3,3,3,16,16,16,2,16,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,3,3,1,3,6,2,3,3,3,3,3,3,3,3,2,1,2,2,1,1,2,2,2,3,3,3,3,3,3,3 };
 const char *get_operators_met_name( int n ) { return operators_met_name[ n ]; }
 const char *get_operators_cpp_name( int n ) { return operators_cpp_name[ n ]; }
 int         get_operators_behavior( int n ) { return operators_behavior[ n ]; }
 int num_operator_le( const char *beg, int len ) {
-    static const int tab[] = { -1,51,-1,-1,-1,-1,54,17,-1,-1,-1,-1,-1,55,-1,-1,-1,-1,11,44,-1,-1,-1,-1,8,-1,-1,-1,-1,10,-1,-1,-1,12,-1,-1,-1,-1,-1,-1,24,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,50,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,53,5,-1,-1,-1,-1,57,45,-1,56,2,-1,-1,-1,-1,-1,-1,-1,4,-1,-1,-1,-1,-1,52,22,3,23,-1,-1,19,-1,-1,-1,-1,-1,-1,-1,13,-1,21,-1,18,-1,-1,-1,-1,-1,-1,-1,-1,15,9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,14,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,20,-1,-1,16,-1,-1,-1,-1 };
+    static const int tab[] = { -1,52,-1,-1,-1,-1,55,18,-1,-1,-1,-1,-1,56,-1,-1,-1,-1,11,45,-1,-1,-1,-1,8,-1,-1,-1,-1,10,-1,-1,-1,12,-1,-1,-1,-1,-1,-1,25,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,51,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,54,5,-1,-1,-1,-1,58,46,-1,57,2,-1,-1,-1,-1,-1,-1,-1,4,-1,-1,-1,-1,-1,53,23,3,24,-1,-1,20,-1,-1,-1,-1,-1,-1,-1,13,-1,22,-1,19,-1,-1,-1,-1,-1,-1,-1,-1,15,9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,16,-1,-1,14,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,21,-1,-1,17,-1,-1,-1,-1 };
     int n = tab[ nstring_hash( beg, len ) % 168 ];
     if ( n >= 0 and strncmp( beg, operators_met_name[ n ], len ) == 0 )
         return n;
     return -1;
 }
 int num_operator_op( const char *beg, int len ) {
-    static const int tab[] = { -1,-1,48,60,-1,-1,73,41,-1,-1,62,35,-1,31,27,-1,-1,-1,-1,-1,-1,-1,91,-1,-1,-1,-1,79,-1,-1,46,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,37,-1,-1,-1,-1,-1,-1,74,-1,61,49,-1,-1,38,-1,90,63,-1,-1,36,71,-1,-1,-1,-1,-1,34,-1,-1,-1,-1,-1,47,70,-1,-1,-1,-1,65,-1,-1,-1,-1,-1,-1,-1,-1,-1,39,32,-1,25,-1,-1,-1,68,77,29,-1,-1,-1,-1,-1,-1,72,-1,-1,-1,-1,-1,81,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,42,-1,-1,-1,-1,-1,-1,-1,59,-1,-1,-1,40,88,-1,28,-1,-1,-1,67,76,-1,-1,-1,-1,33,-1,-1,-1,-1,-1,-1,84,-1,-1,-1,80,-1,58,-1,87,-1,-1,-1,-1,-1,-1,-1,-1,-1,85,-1,66,30,89,-1,-1,43,-1,64,78,-1,-1,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,86,-1,-1,-1,-1,-1,75,-1 };
+    static const int tab[] = { -1,-1,49,61,-1,-1,74,42,-1,-1,63,36,-1,32,28,-1,-1,-1,-1,-1,-1,-1,92,-1,-1,-1,-1,80,-1,-1,47,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,38,-1,-1,-1,-1,-1,-1,75,-1,62,50,-1,-1,39,-1,91,64,-1,-1,37,72,-1,-1,-1,-1,-1,35,-1,-1,-1,-1,-1,48,71,-1,-1,-1,-1,66,-1,-1,-1,-1,-1,-1,-1,-1,-1,40,33,-1,26,-1,-1,-1,69,78,30,-1,-1,-1,-1,-1,-1,73,-1,-1,-1,-1,-1,82,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,43,-1,-1,-1,-1,-1,-1,-1,60,-1,-1,-1,41,89,-1,29,-1,-1,-1,68,77,-1,-1,-1,-1,34,-1,-1,-1,-1,-1,-1,85,-1,-1,-1,81,-1,59,-1,88,-1,-1,-1,-1,-1,-1,-1,-1,-1,86,-1,67,31,90,-1,-1,44,-1,65,79,-1,-1,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,87,-1,-1,-1,-1,-1,76,-1 };
     int n = tab[ nstring_hash( beg, len ) % 214 ];
     if ( n >= 0 and strncmp( beg, operators_met_name[ n ], len ) == 0 )
         return n;
@@ -40,6 +40,7 @@ const char *usual_strings_str[] = {
     "__extends__",
     "__pertinence__",
     "__when__",
+    "__starts_with__",
     "__else__",
     "__while__",
     "__for__",
@@ -242,6 +243,7 @@ int usual_strings_len[] = {
     11,
     14,
     8,
+    15,
     8,
     9,
     7,
@@ -444,6 +446,7 @@ int usual_strings_val[] = {
     311191,
     457853,
     203034,
+    485470,
     206979,
     264065,
     203437,
@@ -641,6 +644,7 @@ int usual_strings_nb_args[] = {
     1,
     1,
     1,
+    2,
     2,
     2,
     2,

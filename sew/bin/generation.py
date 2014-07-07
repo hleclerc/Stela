@@ -56,6 +56,7 @@ class Operators:
             O( "extends"    , "__extends__"           , Need2args  , 2  ),
             O( "pertinence" , "__pertinence__"        , Need2args  , 2  ),
             O( "when"       , "__when__"              , Need2args  , 2  ),
+            O( "starts_with" , "__starts_with__"      , Need2args  , 2  ),
 
             #
             O( "else"       , "__else__"              , Need2args  , 4  ),

@@ -1070,10 +1070,11 @@ void Lexer::set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type 
         } else if ( b->type == STRING___def___NUM or b->type == STRING___class___NUM ) {
             Lexem *c = b->children[ 0 ];
             while ( true ) {
-                if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
-                if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
-                if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
-                if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___extends___NUM     ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { set_num_scope( c->children[ 1 ], np + 1, nss, nsd, 0 ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___pertinence___NUM  ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___when___NUM        ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING_doubledot_NUM       ) { c = c->children[ 0 ]; continue; }
                 break;
             }
 

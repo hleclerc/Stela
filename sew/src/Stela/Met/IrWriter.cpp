@@ -731,6 +731,7 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
             const Lexem *c = a->children[ 0 ];
             while ( true ) {
                 if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
@@ -750,6 +751,7 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
 
             while ( true ) {
                 if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
@@ -801,6 +803,7 @@ void IrWriter::get_needed_var_rec( std::map<String,CatchedVarWithNum> &vars, con
             const Lexem *c = b->children[ 0 ];
             while ( true ) {
                 if ( c->type == STRING___extends___NUM    ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING___pertinence___NUM ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING___when___NUM       ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
                 if ( c->type == STRING_doubledot_NUM      ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
@@ -849,7 +852,7 @@ void IrWriter::get_needed_var_rec( std::map<String,CatchedVarWithNum> &vars, con
  */
 void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     // parsed data
-    SplittedVec<const Lexem *,2> inheritance;
+    SplittedVec<const Lexem *,2> inheritance, starts_with;
     SplittedVec<Argument,8> arguments;
     bool self_as_arg, varargs, abstract;
     int default_pertinence_num, default_pertinence_den;
@@ -870,10 +873,11 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     condition   = 0;
     return_type = 0;
     while ( true ) {
-        if ( c->type == STRING___extends___NUM    ) { get_children_of_type( c->children[ 1 ], STRING_comma_NUM, inheritance ); c = c->children[ 0 ]; continue; }
-        if ( c->type == STRING___pertinence___NUM ) { pertinence  = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
-        if ( c->type == STRING___when___NUM       ) { condition   = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
-        if ( c->type == STRING_doubledot_NUM      ) { return_type = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___extends___NUM     ) { get_children_of_type( c->children[ 1 ], STRING_comma_NUM, inheritance ); c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___starts_with___NUM ) { get_children_of_type( c->children[ 1 ], STRING_comma_NUM, starts_with ); c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___pertinence___NUM  ) { pertinence  = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___when___NUM        ) { condition   = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING_doubledot_NUM       ) { return_type = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
         break;
     }
 
@@ -1079,49 +1083,48 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         push_delayed_parse( block );
 
         // return type
-        if ( return_type ) {
-            if ( name->eq( "init" ) ) {
-                SplittedVec<const Lexem *,16> cha;
-                get_children_of_type( return_type, STRING___and___NUM, cha );
-                data << cha.size();
+        if ( return_type )
+            push_delayed_parse( return_type );
 
-                for( int i = 0; i < cha.size(); ++i ) {
-                    SplittedVec<const Lexem *,16> ch;
-                    int nb_unnamed_children = 0;
-                    int nb_named_children = 0;
-                    const Lexem *l = cha[ i ];
+        if ( name->eq( "init" ) ) {
+            data << starts_with.size();
 
-                    if ( l->children[ 1 ] ) {
-                        get_children_of_type( next_if_CR( l->children[ 1 ] ), STRING_comma_NUM, ch );
-                        for( ; nb_unnamed_children < ch.size() and ch[ nb_unnamed_children ]->type != STRING_reassign_NUM; ++nb_unnamed_children )
-                            ;
-                        for( int i = nb_unnamed_children; i < ch.size(); ++i, ++nb_named_children )
-                            if ( ch[ i ]->type != STRING_reassign_NUM )
-                                return add_error( "after a named argument, all arguments must be named", ch[ i ] );
-                    }
+            for( int i = 0; i < starts_with.size(); ++i ) {
+                SplittedVec<const Lexem *,16> ch;
+                int nb_unnamed_children = 0;
+                int nb_named_children = 0;
+                const Lexem *l = starts_with[ i ];
 
-                    const Lexem *f = l->children[ 0 ] ? l->children[ 0 ] : l;
-
-                    // argument
-                    if ( f->type != Lexem::VARIABLE )
-                        return add_error( "expecting attribute name", ch[ i ] );
-                    push_nstring( f );
-
-                    // unnamed arguments
-                    data << nb_unnamed_children;
-                    for( int i = 0; i < nb_unnamed_children; ++i )
-                        push_delayed_parse( ch[ i ] );
-
-                    // named arguments
-                    data << nb_named_children;
-                    for( int i = 0; i < nb_named_children; ++i ) {
-                        push_nstring( ch[ nb_unnamed_children + i ]->children[ 0 ] );
-                        push_delayed_parse( ch[ nb_unnamed_children + i ]->children[ 1 ] );
-                    }
+                if ( l->children[ 1 ] ) {
+                    get_children_of_type( next_if_CR( l->children[ 1 ] ), STRING_comma_NUM, ch );
+                    for( ; nb_unnamed_children < ch.size() and ch[ nb_unnamed_children ]->type != STRING_reassign_NUM; ++nb_unnamed_children )
+                        ;
+                    for( int i = nb_unnamed_children; i < ch.size(); ++i, ++nb_named_children )
+                        if ( ch[ i ]->type != STRING_reassign_NUM )
+                            return add_error( "after a named argument, all arguments must be named", ch[ i ] );
                 }
-            } else
-                push_delayed_parse( return_type );
+
+                const Lexem *f = l->children[ 0 ] ? l->children[ 0 ] : l;
+
+                // argument
+                if ( f->type != Lexem::VARIABLE )
+                    return add_error( "expecting attribute name", ch[ i ] );
+                push_nstring( f );
+
+                // unnamed arguments
+                data << nb_unnamed_children;
+                for( int i = 0; i < nb_unnamed_children; ++i )
+                    push_delayed_parse( ch[ i ] );
+
+                // named arguments
+                data << nb_named_children;
+                for( int i = 0; i < nb_named_children; ++i ) {
+                    push_nstring( ch[ nb_unnamed_children + i ]->children[ 0 ] );
+                    push_delayed_parse( ch[ nb_unnamed_children + i ]->children[ 1 ] );
+                }
+            }
         }
+
         // get set sop
         if ( get_len ) push_nstring( nstring( get_beg, get_beg + get_len ) );
         if ( set_len ) push_nstring( nstring( set_beg, set_beg + set_len ) );
@@ -1145,6 +1148,7 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
                 const Lexem *c = l->children[ 0 ];
                 while ( true ) {
                     if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING___starts_with___NUM ) { c = c->children[ 0 ]; continue; }
                     if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
                     if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
                     if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }

@@ -35,7 +35,6 @@ void Inst::set( Expr obj, const BoolOpSeq &cond ) {
 Expr Inst::get( const BoolOpSeq &cond ) {
     if ( type() == ip->type_Error )
         return ip->error_var();
-    ERROR( "..." );
     return ip->ret_error( "attempting to get the pointed value of an object that is not a pointer" );
 }
 

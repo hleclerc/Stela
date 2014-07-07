@@ -61,6 +61,7 @@
       <item> while </item>
       <item> while_ws </item>
       <item> when </item>
+      <item> starts_with </item>
       <item> extends </item>
       <item> inst_of </item>
       <item> pertinence </item>

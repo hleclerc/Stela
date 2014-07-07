@@ -29,7 +29,7 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ), cur_ip_snapsh
     type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
     ptr_size = 8 * sizeof( void * );
 
-    sys_state = cst( type_Void );
+    sys_state = room( cst( type_ST ) );
 
 
     Vec<Expr> vs( make_type_var( type_SI32 ) );

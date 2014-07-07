@@ -1,4 +1,5 @@
 #include "../Codegen/Codegen_C.h"
+#include "IpSnapshot.h"
 #include "Syscall.h"
 #include "Ip.h"
 
@@ -25,7 +26,7 @@ struct Syscall : Inst {
 
 };
 
-Expr syscall( Vec<Expr> inp ) {
+Expr syscall( Vec<Expr> inp, const BoolOpSeq &cond ) {
     Syscall *res = new Syscall();
     ++Inst::cur_op_id;
     for( Expr i : inp ) {
@@ -34,8 +35,9 @@ Expr syscall( Vec<Expr> inp ) {
         i->add_store_dep( res );
         res->add_inp( i );
     }
-    res->add_dep( ip->sys_state );
-    ip->sys_state = res;
+    res->add_dep( ip->sys_state->get( cond ) );
+
+    ip->sys_state->set( res, cond );
     return res;
 }
 

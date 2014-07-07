@@ -261,35 +261,33 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         Vec<Expr> pu_args, pn_args;
         Type *parm_type = ip->type_from_type_var( f_type->parameters[ 1 ] );
         if ( parm_type != ip->type_Void ) {
-            TODO;
-            //            if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd ) {
-            //                PRINT( f );
-            //                PRINT( *parm_type );
-            //                TODO;
-            //                return ip->ret_error( "expecting a vararg type (or void) as third arg of a callable type" );
-            //            }
+            Expr parm_val = slice( parm_type, f->get( cond ), 1 * ip->ptr_size )->get( cond );
+            Type *pt = parm_val->type();
+            if ( pt->orig != ip->class_VarargsItemBeg and pt->orig != ip->class_VarargsItemEnd ) {
+                return ip->ret_error( "expecting a vararg type (or void) as third arg of a callable type" );
+            }
 
-            //            int o = 0;
-            //            Expr vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
-            //            while ( parm_type->orig != &ip->class_VarargsItemEnd ) {
-            //                Expr p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
+            int o = 0;
+            //Expr vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
+            while ( pt->orig != ip->class_VarargsItemEnd ) {
+                //Expr p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
 
-            //                SI32 tn;
-            //                if ( not parm_type->parameters[ 1 ].get_val( tn ) )
-            //                    return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
-            //                if ( tn >= 0 ) {
-            //                    pn_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
-            //                    pn_names << tn;
-            //                } else {
-            //                    pu_args << Var( Ref(), ip->type_from_type_var( parm_type->parameters[ 0 ] ), p_arg.get_val() );
-            //                }
+                SI32 tn;
+                if ( not pt->parameters[ 1 ]->get( cond )->get_val( ip->type_SI32, &tn ) )
+                    return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
+                if ( tn >= 0 ) {
+                    pn_args << slice( ip->type_from_type_var( pt->parameters[ 0 ] ), parm_val, o * ip->ptr_size );
+                    pn_names << tn;
+                } else {
+                    pu_args << slice( ip->type_from_type_var( pt->parameters[ 0 ] ), parm_val, o * ip->ptr_size );
+                }
 
-            //                // iteration
-            //                ++o;
-            //                parm_type = ip->type_from_type_var( parm_type->parameters[ 2 ] );
-            //                if ( parm_type->orig != &ip->class_VarargsItemBeg and parm_type->orig != &ip->class_VarargsItemEnd )
-            //                    return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
-            //            }
+                // iteration
+                ++o;
+                pt = ip->type_from_type_var( pt->parameters[ 2 ] );
+                if ( pt->orig != ip->class_VarargsItemBeg and pt->orig != ip->class_VarargsItemEnd )
+                    return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
+            }
         }
         int pnu = pu_args.size(), pnn = pn_args.size();
 
@@ -297,7 +295,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         Type *self_type = ip->type_from_type_var( f_type->parameters[ 2 ] );
         Expr self_ptr;
         if ( self_type != ip->type_Void )
-            self_ptr = slice( self_type, f->get( cond ), ip->ptr_size + bool( ip->ptr_size ) * ( parm_type != ip->type_Void ) );
+            self_ptr = slice( self_type, f->get( cond ), ip->ptr_size * ( parm_type != ip->type_Void ) + ip->ptr_size );
 
         // tests
         std::sort( ci.begin(), ci.end(), CmpCallableInfobyPertinence() );
@@ -641,39 +639,42 @@ Expr Scope::parse_SELECT( BinStreamReader bin ) {
     }
 
     // shortcut for Callable
-    if ( f->type()->orig == ip->class_SurdefList ) {
-        TODO;
-        return 0;
-//        // varargs to gather the arguments
-//        Vec<Var> vs;
-//        Vec<int> ns;
+    Type *f_type = f->ptype();
+    if ( f_type->orig == ip->class_SurdefList ) {
+        // check
+        Type *parm_type = ip->type_from_type_var( f_type->parameters[ 1 ] );
+        if ( parm_type != ip->type_Void )
+            TODO;
 
-//        Type *t = ip->type_from_type_var( f.type->parameters[ 2 ] );
-//        if ( t != &ip->type_Void )
-//            TODO;
+        Expr f_val = f->get( cond );
+        Type *tp_0 = ip->type_from_type_var( f_type->parameters[ 0 ] );
+        Type *tp_2 = ip->type_from_type_var( f_type->parameters[ 2 ] );
 
-//        for( int i = 0; i < nn; ++i ) {
-//            vs << n_args[ i ];
-//            ns << n_name[ i ];
-//        }
-//        for( int i = 0; i < nu; ++i )
-//            vs << u_args[ i ];
-//        Expr va = ip->make_Varargs( vs, ns );
+        // varargs format
+        Vec<int> n;
+        Vec<Expr> v;
+        for( int i = 0; i < nu; ++i )
+            v << u_args[ i ];
 
-//        // new type
-//        Vec<Var> lt;
-//        lt << f.type->parameters[ 0 ];
-//        lt << f.type->parameters[ 1 ];
-//        lt << ip->make_type_var( va.type );
+        for( int i = 0; i < nn; ++i ) {
+            n << n_name[ i ];
+            v << n_args[ i ];
+        }
 
-//        Type *t_res = ip->class_SurdefList.type_for( lt );
-//        t_res->_len = 2 * ip->type_ST->size();
+        Expr varg = ip->make_Varargs( v, n );
 
-//        // new data
-//        Expr res( t_res, f.get_val() );
-//        res.set_val( ip->type_ST->size(), va.ptr(), Rese(), Expr() );
+        Vec<Expr> lt;
+        lt << f_type->parameters[ 0 ]; // Ptr[VarargItem[...]]
+        lt << ip->make_type_var( varg->type() );
+        lt << f_type->parameters[ 2 ];
+        Type *res_type = ip->class_SurdefList->type_for( lt );
 
-//        return res;
+        Expr res = cst( res_type );
+        res = repl_bits( res, 0 * ip->ptr_size, slice( tp_0, f_val, 0 ) );
+        res = repl_bits( res, 1 * ip->ptr_size, varg );
+        if ( f_type->parameters[ 2 ] != ip->type_Void )
+            res = repl_bits( res, 2 * ip->ptr_size, slice( tp_2, f_val, 1 * ip->ptr_size ) );
+        return room( res );
     }
 
     //
@@ -1177,7 +1178,7 @@ Expr Scope::parse_syscall( BinStreamReader bin ) {
     Vec<Expr> inp( Rese(), n );
     for( int i = 0; i < n; ++i )
         inp << parse( bin.read_offset() )->get( cond );
-    return syscall( inp );
+    return syscall( inp, cond );
 }
 
 Expr Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
@@ -1253,8 +1254,9 @@ Expr Scope::parse_alig_of( BinStreamReader bin ) {
 //    return ip->ret_error( "Expecting a type variable" );
 }
 Expr Scope::parse_typeof( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 1 );
+    Expr a = parse( bin.read_offset() );
+    return ip->make_type_var( a->get( cond )->type() );
 }
 Expr Scope::parse_address( BinStreamReader bin ) {
     TODO;

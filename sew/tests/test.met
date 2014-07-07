@@ -21,7 +21,27 @@ void := 1
 def init self
     # nothing to do
     
-a := 100
-while a < 200
-    a = a + 1
-___syscall a
+def typeof val
+    ___typeof val
+
+class Range[ TB, TE, TI ]
+    beg ~= TB
+    end ~= TE
+    inc ~= TI
+    def init( b, e, i ) starts_with beg( b ), end( e ), inc( i )
+    
+def range a, b
+    ___disp Range[ SI32, SI32, SI32 ]
+    # ___disp Range[ typeof( a ), typeof( b ), typeof( a ) ]
+    # Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
+
+class A[ T, U ]
+    a := 10
+    
+i := A[ 20, 39 ]()
+___disp i.a
+___disp i.T
+# r := 0 .. 10
+# ___info r
+# for a in 0 .. 10
+    # ___syscall a

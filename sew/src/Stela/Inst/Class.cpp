@@ -46,14 +46,16 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
     if ( pnu + pnn > max_nb_args() ) return res->wr( "To much arguments" );
 
     Scope scope = Scope( &ip->main_scope, 0, "trial_class_" + to_string( name ) );
-    res->args.resize( arg_names.size() );
+    // res->args.resize( arg_names.size() );
 
     if ( has_varargs() ) {
         TODO;
     } else {
         // unnamed args
-        for( int i = 0; i < pnu; ++i )
+        for( int i = 0; i < pnu; ++i ) {
             scope.local_vars << pvu[ i ];
+            res->args << pvu[ i ];
+        }
         // named args
         Vec<bool> used_arg( Size(), pnn, false );
         for( int i = pnu; i < arg_names.size(); ++i ) {
@@ -65,10 +67,12 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
                     if ( j < 0 )
                         return res->wr( "unspecified mandatory argument" );
                     scope.local_vars << scope.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
+                    res->args << scope.local_vars.back();
                     break;
                 }
                 if ( arg_name == pnames[ n ] ) {
                     scope.local_vars << pvn[ i ];
+                    res->args << pvn[ i ];
                     used_arg[ n ] = true;
                     break;
                 }

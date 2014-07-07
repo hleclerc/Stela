@@ -12,7 +12,7 @@ class IpSnapshot {
 public:
     IpSnapshot();
 
-    std::map<Inst  *,Expr     > rooms;
+    std::map<Inst  *,Expr     > rooms; ///< contains variables, sys_state
     std::map<Scope *,BoolOpSeq> conds;
     int date;
 

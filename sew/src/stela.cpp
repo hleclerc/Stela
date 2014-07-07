@@ -65,7 +65,7 @@ int main( int argc, char **argv ) {
     Codegen_C cr;
     cr.disp_inst_graph_wo_phi = disp_inst_g_wo_phi;
     cr.disp_inst_graph = disp_inst_g;
-    cr << ip->sys_state;
+    cr << ip->sys_state->get();
 
     std::ofstream out_file( "out.cpp" );
     cr.write_to( out_file );

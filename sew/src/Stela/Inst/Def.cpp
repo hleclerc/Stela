@@ -22,24 +22,24 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
 
     block = Code( sf, bin.read_offset() );
 
-    if ( flags & IR_HAS_RETURN_TYPE ) {
-        if ( name == STRING_init_NUM ) {
-            int nb_args = bin.read_positive_integer();
-            attr_init.reserve( nb_args );
-            for( int n = 0; n < nb_args; ++n ) {
-                AttrInit *ai = attr_init.push_back();
-                ai->name = scope->read_nstring( bin );
-                ai->nu = bin.read_positive_integer();
-                for( int i = 0; i < ai->nu; ++i )
-                    ai->args.push_back( sf, bin.read_offset() );
-                ai->nn = bin.read_positive_integer();
-                for( int i = 0; i < ai->nn; ++i ) {
-                    ai->args.push_back( sf, bin.read_offset() );
-                    ai->names.push_back( scope->read_nstring( bin ) );
-                }
+    if ( flags & IR_HAS_RETURN_TYPE )
+        return_type = Code( sf, bin.read_offset() );
+
+    if ( name == STRING_init_NUM ) {
+        int nb_args = bin.read_positive_integer();
+        attr_init.reserve( nb_args );
+        for( int n = 0; n < nb_args; ++n ) {
+            AttrInit *ai = attr_init.push_back();
+            ai->name = scope->read_nstring( bin );
+            ai->nu = bin.read_positive_integer();
+            for( int i = 0; i < ai->nu; ++i )
+                ai->args.push_back( sf, bin.read_offset() );
+            ai->nn = bin.read_positive_integer();
+            for( int i = 0; i < ai->nn; ++i ) {
+                ai->args.push_back( sf, bin.read_offset() );
+                ai->names.push_back( scope->read_nstring( bin ) );
             }
-        } else
-            return_type = Code( sf, bin.read_offset() );
+        }
     }
 
     get_of = flags & IR_IS_A_GET ? scope->read_nstring( bin ) : -1;
