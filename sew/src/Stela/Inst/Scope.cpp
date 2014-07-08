@@ -46,7 +46,7 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
     method        = false;
     disp_tok      = false;
     cont          = 0;
-    for_def_scope = 0;
+    for_scope     = 0;
     for_block     = 0;
 
     if ( caller )
@@ -129,7 +129,7 @@ int Scope::read_nstring( BinStreamReader &bin ) {
 Expr Scope::parse_BLOCK( BinStreamReader bin ) {
     Expr res;
     while ( const PI8 *tok = bin.read_offset() )
-        res = parse( tok );
+        res = parse( sf, tok, "block" );
     return res;
 }
 
@@ -603,38 +603,38 @@ Expr Scope::get_attr( Expr self, int name ) {
 }
 
 Expr Scope::parse_APPLY( BinStreamReader bin ) {
-    Expr f = parse( bin.read_offset() );
+    Expr f = parse( sf, bin.read_offset(), "lhs" );
 
     int nu = bin.read_positive_integer();
     Expr u_args[ nu ];
     for( int i = 0; i < nu; ++i )
-        u_args[ i ] = parse( bin.read_offset() );
+        u_args[ i ] = parse( sf, bin.read_offset(), "arg" );
 
     int nn = bin.read_positive_integer();
     int n_name[ nn ];
     Expr n_args[ nn ];
     for( int i = 0; i < nn; ++i ) {
         n_name[ i ] = read_nstring( bin );
-        n_args[ i ] = parse( bin.read_offset() );
+        n_args[ i ] = parse( sf, bin.read_offset(), "arg" );
     }
 
     return apply( f, nu, u_args, nn, n_name, n_args, APPLY_MODE_STD );
 }
 
 Expr Scope::parse_SELECT( BinStreamReader bin ) {
-    Expr f = parse( bin.read_offset() );
+    Expr f = parse( sf, bin.read_offset(), "rhs" );
 
     int nu = bin.read_positive_integer();
     Expr u_args[ nu ];
     for( int i = 0; i < nu; ++i )
-        u_args[ i ] = parse( bin.read_offset() );
+        u_args[ i ] = parse( sf, bin.read_offset(), "arg" );
 
     int nn = bin.read_positive_integer();
     int n_name[ nn ];
     Expr n_args[ nn ];
     for( int i = 0; i < nn; ++i ) {
         n_name[ i ] = read_nstring(  bin );
-        n_args[ i ] = parse( bin.read_offset() );
+        n_args[ i ] = parse( sf, bin.read_offset(), "arg" );
     }
 
     // shortcut for Callable
@@ -748,21 +748,29 @@ Expr Scope::get_catched_var_in__scope( int np, int ns, bool stat ) {
     return vl[ ns ];
 }
 
+Expr Scope::get_catched_var_in_catched_list( Expr v, int num ) {
+    int o = 0, n = 0;
+    for( Type *vt = v->type(); vt->orig == ip->class_VarargsItemBeg; o += ip->ptr_size, ++n ) {
+        if ( n == num ) {
+            Type *tv = ip->type_from_type_var( vt->parameters[ 0 ] );
+            return slice( tv, v, o );
+        }
+        vt = ip->type_from_type_var( vt->parameters[ 2 ] );
+    }
+    return ip->ret_error( "size of catched var list is too small" );
+}
+
 Expr Scope::get_catched_var_in_catched_vars( int num ) {
     for( Scope *s = this; s; s = s->parent ) {
+        if ( s->catched_vars ) {
+            Expr v = s->catched_vars->get( cond );
+            return get_catched_var_in_catched_list( v, num );
+        }
         if ( s->callable ) {
-            Expr f( s->callable->var->get() );
+            Expr  f = s->callable->var->get( cond );
             Type *p = ip->type_from_type_var( f->type()->parameters[ 0 ] );
-            Expr v = slice( p, f, 64 )->get( cond );
-            int o = 0, n = 0;
-            for( Type *vt = ip->type_from_type_var( ip->type_from_type_var( f->type()->parameters[ 0 ] )->parameters[ 0 ] ); vt->orig == ip->class_VarargsItemBeg; o += ip->ptr_size, ++n ) {
-                if ( n == num ) {
-                    Type *tv = ip->type_from_type_var( vt->parameters[ 0 ] );
-                    return slice( tv, v, o );
-                }
-                vt = ip->type_from_type_var( vt->parameters[ 2 ] );
-            }
-            return ip->ret_error( "size of catched var list is too small" );
+            Expr  v = slice( p, f, 64 )->get( cond );
+            return get_catched_var_in_catched_list( v, num );
         }
     }
     return ip->ret_error( "expecting a calling context (a scope that has a callable *)" );
@@ -813,7 +821,7 @@ Expr Scope::find_var( int name ) {
 Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
     int name = read_nstring( bin );
     int flags = bin.read_positive_integer();
-    Expr var = parse( bin.read_offset() );
+    Expr var = parse( sf, bin.read_offset(), "rhs" );
 
     //
     if ( flags & IR_ASSIGN_TYPE )
@@ -835,7 +843,7 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
 
 Expr Scope::parse_PUSH_IN_SCOPE( BinStreamReader bin ) {
     int flags = bin.read_positive_integer();
-    Expr var = parse( bin.read_offset() );
+    Expr var = parse( sf, bin.read_offset(), "lhs to push" );
 
     //
     if ( flags & IR_ASSIGN_TYPE )
@@ -858,12 +866,12 @@ Expr Scope::parse_PUSH_IN_SCOPE( BinStreamReader bin ) {
 }
 
 Expr Scope::parse_REASSIGN( BinStreamReader bin ) {
-    Expr a = parse( bin.read_offset() );
-    Expr b = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "rhs" );
+    Expr b = parse( sf, bin.read_offset(), "lhs" );
     return apply( get_attr( a, STRING_reassign_NUM ), 1, &b, 0, 0, 0, APPLY_MODE_STD );
 }
 Expr Scope::parse_GET_ATTR( BinStreamReader bin ) {
-    Expr self = parse( bin.read_offset() );
+    Expr self = parse( sf, bin.read_offset(), "rhs" );
     int attr = read_nstring( bin );
     if ( self.error())
         return ip->error_var();
@@ -888,7 +896,7 @@ Expr Scope::parse_GET_ATTR_PA( BinStreamReader bin ) {
     return ip->error_var();
 }
 Expr Scope::parse_IF( BinStreamReader bin ) {
-    Expr cond_if = parse( bin.read_offset() );
+    Expr cond_if = parse( sf, bin.read_offset(), "cond" );
     if ( cond_if.error() )
         return cond_if;
 
@@ -1066,7 +1074,7 @@ Expr Scope::parse_BREAK( BinStreamReader bin ) {
         if ( s->cont )
             break;
         // -> parsing from a for
-        if ( Scope *f = s->for_def_scope ) {
+        if ( s->for_scope ) {
             TODO;
             //            f = f->for_surrounding_scope; // f points to the surrounding for scope
             //            for( Scope *s = this; s != f; s = s->parent ) {
@@ -1114,6 +1122,7 @@ Expr Scope::parse_THIS( BinStreamReader bin ) {
     // return Var( ip->class_Ptr.type_for( lt ), self.ptr().get_val() );
 }
 Expr Scope::parse_FOR( BinStreamReader bin ) {
+    // read
     int nn = bin.read_positive_integer();
     int names[ nn ];
     for( int i = 0; i < nn; ++i )
@@ -1126,16 +1135,34 @@ Expr Scope::parse_FOR( BinStreamReader bin ) {
 
     Vec<Callable::CatchedVar> catched_vars;
     Callable::read_catched_vars( catched_vars, bin );
-    PRINT( catched_vars.size() );
 
+    const PI8 *tok = bin.read_offset();
+
+    // block expr
     Vec<Expr> catched_vals;
     for( Callable::CatchedVar &cv : catched_vars )
         catched_vals << get_catched_var( cv );
-    PRINT( catched_vals );
+    Expr cv = ip->make_Varargs( catched_vals );
 
+    Vec<Expr> expr_names;
+    for( int i = 0; i < nn; ++i )
+        expr_names << names[ i ];
 
-    TODO;
-    return ip->error_var();
+    Vec<Expr> lt;
+    lt << room( ST( sf  ) );
+    lt << room( ST( tok ) );
+    lt << ip->make_type_var( cv->type() );
+    lt << ip->make_Varargs( expr_names );
+
+    Type *block_type = ip->class_Block->type_for( lt );
+    Expr block = cst( block_type );
+    block = repl_bits( block, 0, cv );
+    block = room( block );
+
+    // exec
+    if ( nc != 1 )
+        TODO;
+    return apply( get_attr( vals[ 0 ], STRING___for___NUM ), 1, &block );
 }
 Expr Scope::parse_IMPORT( BinStreamReader bin ) {
     TODO;
@@ -1169,14 +1196,14 @@ Expr Scope::parse_OR( BinStreamReader bin ) {
 Expr Scope::parse_info( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     for( int i = 0; i < n; ++i )
-        std::cout << ( i ? ", " : "" ) << parse( bin.read_offset() );
+        std::cout << ( i ? ", " : "" ) << parse( sf, bin.read_offset(), "info" );
     std::cout << std::endl;
     return ip->void_var();
 }
 Expr Scope::parse_disp( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     for( int i = 0; i < n; ++i ) {
-        Expr r = parse( bin.read_offset() )->get( cond );
+        Expr r = parse( sf, bin.read_offset(), "disp" )->get( cond );
         std::cout << ( i ? ", " : "" ) << *r->type() << "{" << r << "}";
     }
     std::cout << std::endl;
@@ -1195,14 +1222,14 @@ Expr Scope::parse_syscall( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
     Vec<Expr> inp( Rese(), n );
     for( int i = 0; i < n; ++i )
-        inp << parse( bin.read_offset() )->get( cond );
+        inp << parse( sf, bin.read_offset(), "arg" )->get( cond );
     return syscall( inp, cond );
 }
 
 Expr Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
-    Expr a = parse( bin.read_offset() );
-    Expr b = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "bs" );
+    Expr b = parse( sf, bin.read_offset(), "ba" );
     if ( a.error() or b.error() )
         return ip->void_var();
     TODO;
@@ -1223,8 +1250,8 @@ Expr Scope::parse_reassign_rec( BinStreamReader bin ) {
         return ip->ret_error( "2 args" );
     if ( n != 2 )
         return ip->ret_error( "expecting 1 or 2 args" );
-    Expr dst = parse( bin.read_offset() );
-    Expr src = parse( bin.read_offset() );
+    Expr dst = parse( sf, bin.read_offset(), "rhs" );
+    Expr src = parse( sf, bin.read_offset(), "lhs" );
     Type *dt = dst->ptype();
     Type *st = src->ptype();
     if ( dt != st )
@@ -1255,7 +1282,7 @@ Expr Scope::parse_ptr_alig( BinStreamReader bin ) {
 }
 Expr Scope::parse_size_of( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-    Expr T = parse( bin.read_offset() );
+    Expr T = parse( sf, bin.read_offset(), "sizeof" );
     TODO;
     return 0;
 //    if ( Type *t = ip->type_from_type_var( T ) )
@@ -1264,7 +1291,7 @@ Expr Scope::parse_size_of( BinStreamReader bin ) {
 }
 Expr Scope::parse_alig_of( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-    Expr T = parse( bin.read_offset() );
+    Expr T = parse( sf, bin.read_offset(), "aligof" );
     TODO;
     return 0;
 //    if ( Type *t = ip->type_from_type_var( T ) )
@@ -1273,7 +1300,7 @@ Expr Scope::parse_alig_of( BinStreamReader bin ) {
 }
 Expr Scope::parse_typeof( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-    Expr a = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "typeof" );
     return ip->make_type_var( a->get( cond )->type() );
 }
 Expr Scope::parse_address( BinStreamReader bin ) {
@@ -1286,8 +1313,8 @@ Expr Scope::parse_get_slice( BinStreamReader bin ) {
 }
 Expr Scope::parse_pointed_value( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
-    Expr a = parse( bin.read_offset() );
-    Expr T = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "a" );
+    Expr T = parse( sf, bin.read_offset(), "T" );
     TODO;
     return 0;
 //    Type *type = ip->type_from_type_var( T );
@@ -1297,14 +1324,24 @@ Expr Scope::parse_pointed_value( BinStreamReader bin ) {
 }
 Expr Scope::parse_pointer_on( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-    Expr a = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "a" );
     TODO;
     return 0;
-//    return a.ptr();
 }
 Expr Scope::parse_block_exec( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 2 );
+    Expr blk = parse( sf, bin.read_offset(), "blk" )->get( cond );
+    Expr val = parse( sf, bin.read_offset(), "val" );
+    Type *blkt = blk->type();
+    SourceFile *nsf; if ( not blkt->parameters[ 0 ]->get()->get_val( ip->type_ST, &nsf ) ) return ip->ret_error( "expecting a ST" );
+    const PI8  *tok; if ( not blkt->parameters[ 1 ]->get()->get_val( ip->type_ST, &tok ) ) return ip->ret_error( "expecting a ST" );
+
+    // catched +
+    Scope ns( 0, this, "for" );
+    ns.local_vars << val;
+    ns.catched_vars = slice( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk, 0 );
+
+    return ns.parse( nsf, tok, "for block" );
 }
 Expr Scope::parse_get_argc( BinStreamReader bin ) {
     TODO;
@@ -1326,15 +1363,15 @@ Expr Scope::parse_inst_of( BinStreamReader bin ) {
 template<class OP>
 Expr Scope::parse_una( BinStreamReader bin, OP o ) {
     CHECK_PRIM_ARGS( 1 );
-    Expr a = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "rhs" );
     return room( op( a->get( cond ), o ) );
 }
 
 template<class OP>
 Expr Scope::parse_bin( BinStreamReader bin, OP o ) {
     CHECK_PRIM_ARGS( 2 );
-    Expr a = parse( bin.read_offset() );
-    Expr b = parse( bin.read_offset() );
+    Expr a = parse( sf, bin.read_offset(), "rhs" );
+    Expr b = parse( sf, bin.read_offset(), "lhs" );
     return room( op( a->get( cond ), b->get( cond ), o ) );
 }
 

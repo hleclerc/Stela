@@ -1067,6 +1067,21 @@ void Lexer::set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type 
                 set_num_scope( b->children[ 0 ]->children[ 1 ], np + 2, oss = 0, osd = 0, 0 ); // ko
             } else
                 set_num_scope( b->children[ 0 ], np + 2, oss = 0, osd = 0, 0 ); // ok
+        } else if ( b->type == STRING___for___NUM ) {
+            Lexem *c = b->children[ 0 ];
+            int oss = 0, osd = 0;
+
+            // args
+            SplittedVec<Lexem *,8> tl;
+            get_children_of_type( c->children[ 0 ], STRING_comma_NUM, tl );
+            for( int i = 0; i < tl.size(); ++i ) {
+                Lexem *t = tl[ i ];
+                t->num_scope = np + 1;
+                t->num_in_scope = osd++;
+                t->scope_type = 0; // dyn
+            }
+
+            set_num_scope( b->children[ 1 ], np + 1, osd, oss, 0 ); // block
         } else if ( b->type == STRING___def___NUM or b->type == STRING___class___NUM ) {
             Lexem *c = b->children[ 0 ];
             while ( true ) {

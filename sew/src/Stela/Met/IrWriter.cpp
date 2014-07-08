@@ -622,7 +622,7 @@ void IrWriter::parse_for( const Lexem *l ) {
     get_children_of_type( l->children[ 0 ]->children[ 1 ], STRING_comma_NUM, ch );
 
     // catched vars
-    std::map<String,CatchedVarWithNum> catched_vars;
+    std::map<String,CatchedVarWithNum> &catched_vars = catched[ l ];
     get_needed_var_rec( catched_vars, l->children[ 1 ], l->num_scope );
 
     //
@@ -773,7 +773,30 @@ void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
                 cl << CatchedVar{ c, -1, true };
         }
 
-        // in args or catched vars ?
+        // in args or catched vars of a for ?
+        if ( b->parent and b->parent->type == STRING___for___NUM ) {
+            const Lexem *t = b->parent, *c = t->children[ 0 ];
+
+            // in args ?
+            SplittedVec<const Lexem *,8> tl;
+            get_children_of_type( c->children[ 0 ], STRING_comma_NUM, tl );
+            for( int i = 0; i < tl.size(); ++i ) {
+                const Lexem *t = tl[ i ];
+                if ( t->same_str( v->beg, v->len ) )
+                    cl << CatchedVar{ t, -1, false };
+            }
+
+            // in catched vars ?
+            auto it = catched[ t ].find( String( v->beg, v->beg + v->len ) );
+            if ( it != catched[ t ].end() )
+                cl << CatchedVar{ t, it->second.num, false };
+
+            // looking for self
+            if ( v->eq( "self" ) )
+                cl << CatchedVar{ t, -2, false };
+        }
+
+        // in args or catched vars of a callable ?
         if ( b->parent and ( b->parent->type == STRING___def___NUM or b->parent->type == STRING___class___NUM ) ) {
             const Lexem *t = b->parent, *c = t->children[ 0 ];
 

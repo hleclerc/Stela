@@ -27,6 +27,7 @@ public:
 
     Vec<Expr>    *static_vars;
     Vec<Expr>     local_vars;
+    Expr          catched_vars;
 
     SourceFile   *sf;     ///< reading context
     SI32          off;    ///< reading context
@@ -35,7 +36,7 @@ public:
     Expr          self; ///< pointer on Expr, to point out object to be worked on
     BoolOpSeq    *cont; ///< continue or not variable
     BoolOpSeq     cond; ///< condition to execute instructions
-    Scope        *for_def_scope;
+    bool          for_scope;
     Scope        *for_block;
 
     Callable     *callable;
@@ -64,6 +65,7 @@ protected:
     Expr get_catched_var_in_catched_vars( int s );
     void BREAK( int n, BoolOpSeq cond );
     Expr get_catched_var( Callable::CatchedVar &cv );
+    Expr get_catched_var_in_catched_list( Expr v, int num );
 
     struct RemBreak {
         int       count;

@@ -17,6 +17,14 @@ class SI32
 
 void := 1
 
+class Ptr[ T ]
+    adress := 0l
+
+class Block[ sourcefile, tok, catched_vars_type, names ]
+    catched_vars ~= catched_vars_type
+    def apply val
+        ___block_exec self, val
+
 def init self
     # nothing to do
     
@@ -28,6 +36,9 @@ class Range[ TB, TE, TI ]
     end ~= TE
     inc ~= TI
     def init( b, e, i ) starts_with beg( b ), end( e ), inc( i )
+        #
+    def __for__ block
+        block 117
     
 def range a, b
     Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
@@ -37,8 +48,11 @@ class A[ T, U ]
     
 def foor
     croute := 2
-    for i in 0 .. 10
-        ___info croute + i
+    # for i in 0 .. 10
+        # ___info croute + i
+    def s
+        croute + 4
+    ___info s()
 foor()
 # for a in 0 .. 10
     # ___syscall a
