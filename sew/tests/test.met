@@ -38,21 +38,21 @@ class Range[ TB, TE, TI ]
     def init( b, e, i ) starts_with beg( b ), end( e ), inc( i )
         #
     def __for__ block
-        block 117
+        cur := beg
+        # while cur < end
+            # block cur
+            # cur += inc
     
 def range a, b
     Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
 
-class A[ T, U ]
-    a := 10
-    
-def foor
-    croute := 2
-    # for i in 0 .. 10
-        # ___info croute + i
-    def s
-        croute + 4
-    ___info s()
-foor()
+class A
+    aaa := 10
+    # bbb := 10
+    def pouet
+        cur := aaa
+
 # for a in 0 .. 10
-    # ___syscall a
+    # ___info a
+a := A()
+a.pouet()

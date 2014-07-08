@@ -657,11 +657,17 @@ void IrWriter::out_catched_vars( std::map<String,CatchedVarWithNum> &catched_var
                 data << PI8( IN_CATCHED_VARS );
                 data << cv.s;
             } else if ( cv.s == -2 ) { // self
-            data << PI8( IN_SELF );
+                data << PI8( IN_SELF );
             } else {
-                data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
-                data << num_scope - cv.l->num_scope; // nb parents
-                data << cv.l->num_in_scope;
+                if ( cv.l->attribute ) {
+                    data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_ATTR : IN_LOCAL_ATTR );
+                    data << 0;
+                    data << cv.l->num_in_scope;
+                } else {
+                    data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
+                    data << num_scope - cv.l->num_scope; // nb parents
+                    data << cv.l->num_in_scope;
+                }
             }
         }
     }

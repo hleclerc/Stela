@@ -60,6 +60,7 @@ public:
     int  num_in_scope; ///< num in the current scope
     int  num_scope;    ///< num in the scope hierarchy
     int  scope_type;   ///<
+    bool attribute;    ///< true for class attributes
 };
 
 inline int is_in_main_block( const Lexem *t ) { while( t->prev ) t = t->prev; return not t->parent; }

@@ -62,6 +62,7 @@ protected:
     Expr _parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat );
     Expr _parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin );
     Expr get_catched_var_in__scope( int np, int ns, bool stat );
+    Expr get_catched_var_in_attr( int ns, bool stat );
     Expr get_catched_var_in_catched_vars( int s );
     void BREAK( int n, BoolOpSeq cond );
     Expr get_catched_var( Callable::CatchedVar &cv );

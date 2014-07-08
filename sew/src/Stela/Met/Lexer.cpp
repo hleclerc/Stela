@@ -51,6 +51,7 @@ void Lexer::parse( const char *beg, const char *src ) {
     update_else_order();                        if ( error_list ) return;
     remove_while_conds();                       if ( error_list ) return;
     set_num_scope();                            if ( error_list ) return;
+    set_attribute();                            if ( error_list ) return;
 }
 
 void Lexer::display() {
@@ -1033,6 +1034,21 @@ void Lexer::remove_while_conds() {
         b->parent = 0;
 
         lex->children[ 1 ] = 0;
+    }
+}
+
+void Lexer::set_attribute() {
+    for( Lexem *lex = first_of_type[ STRING___class___NUM + Lexem::NB_BASE_TYPE ]; lex; lex = lex->sibling ) {
+        for( Lexem *b = child_if_block( lex->children[ 1 ] ); b; b = b->next ) {
+            while ( true ) {
+                if ( b->type == STRING___static___NUM ) { b = b->children[ 0 ]; continue; }
+                if ( b->type == STRING___const___NUM  ) { b = b->children[ 0 ]; continue; }
+                break;
+            }
+
+            if ( b->type == STRING_assign_NUM or b->type == STRING_assign_type_NUM )
+                b->children[ 0 ]->attribute = true;
+        }
     }
 }
 

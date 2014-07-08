@@ -18,6 +18,8 @@ enum CallableFlags {
     IN_STATIC_SCOPE = 1,
     IN_LOCAL_SCOPE  = 2,
     IN_SELF         = 3,
+    IN_STATIC_ATTR  = 4,
+    IN_LOCAL_ATTR   = 5,
 
     // for Callable::Attribute
     CALLABLE_ATTR_TYPE      = 1,

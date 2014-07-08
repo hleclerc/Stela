@@ -42,6 +42,7 @@ protected:
     void update_else_order();
     void remove_while_conds();
     void set_num_scope();
+    void set_attribute();
 
     void set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type );
 

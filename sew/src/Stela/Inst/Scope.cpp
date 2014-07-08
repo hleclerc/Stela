@@ -139,6 +139,8 @@ Expr Scope::get_catched_var( Callable::CatchedVar &cv ) {
     case IN_STATIC_SCOPE: return get_catched_var_in__scope( cv.np, cv.ns, 1 );
     case IN_CATCHED_VARS: return get_catched_var_in_catched_vars( cv.ns );
     case IN_SELF        : ASSERT( self, "..." ); return self;
+    case IN_LOCAL_ATTR  : return get_catched_var_in_attr( cv.ns, 0 );
+    case IN_STATIC_ATTR : return get_catched_var_in_attr( cv.ns, 1 );
     default: ERROR( "???" );
     }
     return 0;
@@ -732,18 +734,23 @@ Expr Scope::parse_VAR_SET( BinStreamReader bin ) {
     return ip->make_SurdefList( res );
 }
 
+Expr Scope::get_catched_var_in_attr( int ns, bool stat ) {
+    PRINT( self );
+    TODO;
+    return 0;
+}
+
 Expr Scope::get_catched_var_in__scope( int np, int ns, bool stat ) {
     Scope *s = this;
     for( ; np; --np )
         s = s->parent;
     if ( not s )
-        return ip->ret_error( "bad np" );
+        return ip->ret_error( "bad np (not enough scopes)" );
     Vec<Expr> &vl = stat ? *s->static_vars : s->local_vars;
     if ( ns >= vl.size() ) {
-        PRINT( np );
         PRINT( ns );
         PRINT( stat );
-        return ip->ret_error( "bad ns" );
+        return ip->ret_error( "bad ns (size of local or static vars is not high enough)" );
     }
     return vl[ ns ];
 }
