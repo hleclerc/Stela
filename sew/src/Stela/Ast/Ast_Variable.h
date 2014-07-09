@@ -8,6 +8,8 @@
 class Ast_Variable : public Ast {
 public:
     Ast_Variable( int off, String str );
+
+    virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:

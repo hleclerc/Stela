@@ -56,6 +56,9 @@ void Ast::write_to( AstWriter *aw ) const {
 void Ast::_get_info( AstWriter *aw ) const {
 }
 
+void Ast::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+}
+
 
 struct AstMaker {
     AstMaker() {

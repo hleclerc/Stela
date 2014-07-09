@@ -2,6 +2,7 @@
 #define AST_H
 
 #include "../System/Stream.h"
+#include <set>
 class ErrorList;
 class AstWriter;
 class Lexem;
@@ -12,9 +13,9 @@ public:
     Ast( int off );
     virtual ~Ast();
 
+    virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const = 0;
     void write_to( AstWriter *aw ) const;
-    virtual void get_potentially_needed_ext_vars(  );
 
 protected:
     virtual void _get_info( AstWriter *aw ) const;

@@ -5,6 +5,16 @@
 Ast_While::Ast_While( int off ) : Ast( off ) {
 }
 
+void Ast_While::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    std::set<String> oavail = avail;
+    ok->get_potentially_needed_ext_vars( res, oavail );
+
+    if ( ko ) {
+        std::set<String> kavail = avail;
+        ko->get_potentially_needed_ext_vars( res, kavail );
+    }
+}
+
 void Ast_While::write_to_stream( Stream &os, int nsp ) const {
     os << "while";
 

@@ -13,6 +13,8 @@ public:
     typedef SplittedVec<AutoPtr<Ast>,4> DVT;
 
     Ast_Callable( int off );
+
+    virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
     virtual void write_callable_type( Stream &os ) const = 0;
 

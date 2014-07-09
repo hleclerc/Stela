@@ -6,6 +6,16 @@
 Ast_Def::Ast_Def( int off ) : Ast_Callable( off ) {
 }
 
+void Ast_Def::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    Ast_Callable::get_potentially_needed_ext_vars( res, avail );
+    if ( return_type )
+        return_type->get_potentially_needed_ext_vars( res, avail );
+    for( int i = 0; i < starts_with.size(); ++i ) {
+        const StartsWith_Item &sw = starts_with[ i ];
+        for( int i = 0; i < sw.args.size(); ++i )
+            sw.args[ i ]->get_potentially_needed_ext_vars( res, avail );
+    }
+}
 
 void Ast_Def::_get_info( AstWriter *aw ) const {
     Ast_Callable::_get_info( aw );

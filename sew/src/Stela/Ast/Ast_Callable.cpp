@@ -6,6 +6,26 @@
 Ast_Callable::Ast_Callable( int off ) : Ast( off ) {
 }
 
+void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    std::set<String> navail = avail;
+
+    // arguments
+    for( int i = 0, b = arguments.size() - default_values.size(); i < arguments.size(); ++i ) {
+        navail.insert( arguments[ i ] );
+        if ( i >= b )
+            default_values[ i - b ]->get_potentially_needed_ext_vars( res, navail );
+    }
+
+    // cond, ...
+    if ( condition )
+        condition->get_potentially_needed_ext_vars( res, navail );
+    if ( pertinence )
+        pertinence->get_potentially_needed_ext_vars( res, navail );
+
+    // block
+    block->get_potentially_needed_ext_vars( res, navail );
+}
+
 void Ast_Callable::write_to_stream( Stream &os, int nsp ) const {
     write_callable_type( os );
     os << " " << name << "(";
@@ -67,6 +87,7 @@ void Ast_Callable::_get_info( AstWriter *aw ) const {
         aw->push_delayed_parse( condition.ptr() );
 
     // catched var data
+    PRINT( name );
     aw->push_potential_catched_vars_from( this );
 
     // block

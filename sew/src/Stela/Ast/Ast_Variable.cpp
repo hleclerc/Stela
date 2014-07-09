@@ -5,6 +5,11 @@
 Ast_Variable::Ast_Variable( int off, String str ) : Ast( off ), str( str ) {
 }
 
+void Ast_Variable::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    if ( not avail.count( str ) )
+        res.insert( str );
+}
+
 void Ast_Variable::write_to_stream( Stream &os, int nsp ) const {
     os << str;
 }
@@ -89,7 +94,7 @@ void Ast_Variable::write_to_stream( Stream &os, int nsp ) const {
 //}
 
 void Ast_Variable::_get_info( AstWriter *aw ) const {
-    TODO;
+    aw->push_nstring( str );
 }
 
 PI8 Ast_Variable::_tok_number() const {

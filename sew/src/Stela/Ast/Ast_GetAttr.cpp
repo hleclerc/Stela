@@ -5,6 +5,10 @@
 Ast_GetAttr::Ast_GetAttr( int off ) : Ast( off ) {
 }
 
+void Ast_GetAttr::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    obj->get_potentially_needed_ext_vars( res, avail );
+}
+
 void Ast_GetAttr::write_to_stream( Stream &os, int nsp ) const {
     obj->write_to_stream( os, nsp + 6 );
 

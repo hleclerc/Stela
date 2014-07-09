@@ -19,7 +19,7 @@ public:
     // helpers
     void push_nstring ( const String &str );
     void push_delayed_parse( const Ast *l );
-    void push_potential_catched_vars_from( const Ast *l );
+    void push_potential_catched_vars_from( const Ast *l, std::set<String> avail = std::set<String>() );
 
     // output
     BinStreamWriter data;

@@ -15,7 +15,7 @@ void Ast_Number::write_to_stream( Stream &os, int nsp ) const {
 
 
 void Ast_Number::_get_info( AstWriter *aw ) const {
-    TODO;
+    aw->data << atoi( str.c_str() );
 }
 
 PI8 Ast_Number::_tok_number() const {

@@ -5,6 +5,10 @@
 Ast_Return::Ast_Return( int off ) : Ast( off ) {
 }
 
+void Ast_Return::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    val->get_potentially_needed_ext_vars( res, avail );
+}
+
 void Ast_Return::write_to_stream( Stream &os, int nsp ) const {
     os << "return ";
     val->write_to_stream( os, nsp + 2 );

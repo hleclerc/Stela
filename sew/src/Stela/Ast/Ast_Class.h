@@ -8,6 +8,8 @@
 class Ast_Class : public Ast_Callable {
 public:
     Ast_Class( int off );
+
+    virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_callable_type( Stream &os ) const { os << "class"; }
 
 protected:

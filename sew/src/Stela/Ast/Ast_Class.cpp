@@ -5,6 +5,12 @@
 Ast_Class::Ast_Class( int off ) : Ast_Callable( off ) {
 }
 
+void Ast_Class::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    Ast_Callable::get_potentially_needed_ext_vars( res, avail );
+    for( int i = 0; i < inheritance.size(); ++i )
+        inheritance[ i ]->get_potentially_needed_ext_vars( res, avail );
+}
+
 void Ast_Class::_get_info( AstWriter *aw ) const {
     // extends
     aw->data << inheritance.size();

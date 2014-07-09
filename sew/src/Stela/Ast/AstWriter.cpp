@@ -56,8 +56,13 @@ void AstWriter::push_delayed_parse( const Ast *l ) {
     }
 }
 
-void AstWriter::push_potential_catched_vars_from( const Ast *l ) {
-    TODO;
+void AstWriter::push_potential_catched_vars_from( const Ast *l, std::set<String> avail ) {
+    std::set<String> pot_needed;
+    l->get_potentially_needed_ext_vars( pot_needed, avail );
+
+    data << pot_needed.size();
+    for( String s : pot_needed )
+        push_nstring( s );
 }
 
 void AstWriter::int_reduction() {
