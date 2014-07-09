@@ -16,17 +16,22 @@ public:
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
     virtual void write_callable_type( Stream &os ) const = 0;
 
+protected:
+    friend class AstMaker;
+
+    virtual void _get_info( AstWriter *aw ) const;
+    virtual int  _spec_flags() const = 0;
+
     String            name;
     bool              self_as_arg;
     bool              abstract;
     bool              varargs;
-    AutoPtr<Ast>      return_type;
     AutoPtr<Ast>      pertinence;
     AutoPtr<Ast>      condition;
     int               def_pert_num;
     int               def_pert_den;
     Vec<String>       arguments;
-    Vec<Vec<String> > arg_constraints;
+    Vec<Vec<String> > arg_constraints; ///< same size than arguments
     DVT               default_values;
     AutoPtr<Ast>      block;
 };

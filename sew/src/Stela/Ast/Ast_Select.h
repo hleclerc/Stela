@@ -9,6 +9,9 @@ class Ast_Select : public Ast_Call {
 public:
     Ast_Select( int off );
     virtual void write_name( Stream &os ) const { os << "select"; }
+
+protected:
+    virtual PI8  _tok_number() const;
 };
 
 #endif // STELA_AST_Select_H

@@ -9,6 +9,9 @@ class Ast_New : public Ast_Call {
 public:
     Ast_New( int off );
     virtual void write_name( Stream &os ) const { os << "new"; }
+
+protected:
+    virtual PI8  _tok_number() const;
 };
 
 #endif // STELA_AST_New_H

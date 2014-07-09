@@ -14,6 +14,12 @@ class Ast_NAME : public Ast {
 public:
     Ast_NAME( int off );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
+    
+protected:
+    friend class AstMaker;
+    
+    virtual void _get_info( AstWriter *aw ) const;
+    virtual PI8  _tok_number() const;
 };
 
 #endif // STELA_AST_NAME_H
@@ -26,6 +32,14 @@ Ast_NAME::Ast_NAME( int off ) : Ast( off ) {
 
 void Ast_NAME::write_to_stream( Stream &os, int nsp ) const {
     os << "NAME";
+}
+
+void Ast_NAME::_get_info( AstWriter *aw ) const {
+    TODO;
+}
+
+PI8 Ast_NAME::_tok_number() const {
+    return IR_TOK_NAME;
 }
 """ )
 

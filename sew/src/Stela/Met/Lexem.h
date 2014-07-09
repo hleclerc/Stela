@@ -42,7 +42,7 @@ public:
     bool   same_str( const char *p, int len ) const;
     const char *end() const { return beg + len; }
     String str() const { return String( beg, beg + len ); }
-    int off() const { return src - beg_src; }
+    int off() const { return beg - beg_src; }
 
     int type; /// >0 => operator. <=0 => @see enum
     int num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar

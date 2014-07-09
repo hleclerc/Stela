@@ -1,4 +1,5 @@
 #include <Stela/System/ReadFile.h>
+#include <Stela/Ast/AstWriter.h>
 #include <Stela/Met/Lexer.h>
 #include <Stela/Ast/Ast.h>
 
@@ -15,4 +16,7 @@ int main() {
     //
     Ast *ast = make_ast( error_list, l.root(), true );
     PRINTN( *ast );
+
+    AstWriter aw( ast );
+    PRINT( aw.size_of_binary_data() );
 }

@@ -1,3 +1,5 @@
+#include "../Ir/Numbers.h"
+#include "AstWriter.h"
 #include "Ast_Number.h"
 
 Ast_Number::Ast_Number( int off ) : Ast( off ) {
@@ -11,3 +13,11 @@ void Ast_Number::write_to_stream( Stream &os, int nsp ) const {
     if ( p ) os << 'p';
 }
 
+
+void Ast_Number::_get_info( AstWriter *aw ) const {
+    TODO;
+}
+
+PI8 Ast_Number::_tok_number() const {
+    return IR_TOK_SI32;
+}

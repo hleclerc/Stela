@@ -1,26 +1,26 @@
-#ifndef STELA_AST_If_H
-#define STELA_AST_If_H
+#ifndef STELA_AST_Primitive_H
+#define STELA_AST_Primitive_H
 
+#include "../System/SplittedVec.h"
 #include "../System/AutoPtr.h"
 #include "Ast.h"
 
 /**
 */
-class Ast_If : public Ast {
+class Ast_Primitive : public Ast {
 public:
-    Ast_If( int off );
+    Ast_Primitive( int off );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
-
+    
 protected:
     friend class AstMaker;
-
+    
     virtual void _get_info( AstWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-    AutoPtr<Ast> cond;
-    AutoPtr<Ast> ok;
-    AutoPtr<Ast> ko;
+    SplittedVec<AutoPtr<Ast>,4 > args;
+    int tok_number;
 };
 
-#endif // STELA_AST_If_H
+#endif // STELA_AST_Primitive_H
 

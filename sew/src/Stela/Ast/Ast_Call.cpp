@@ -1,3 +1,5 @@
+#include "../Ir/Numbers.h"
+#include "AstWriter.h"
 #include "Ast_Call.h"
 
 Ast_Call::Ast_Call( int off ) : Ast( off ) {
@@ -14,3 +16,6 @@ void Ast_Call::write_to_stream( Stream &os, int nsp ) const {
     }
 }
 
+void Ast_Call::_get_info( AstWriter *aw ) const {
+    TODO;
+}

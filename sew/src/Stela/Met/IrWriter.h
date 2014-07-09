@@ -1,19 +1,18 @@
-#ifndef IRWRITER_H
-#define IRWRITER_H
+#ifndef Ast_WRITER_H
+#define Ast_WRITER_H
 
 #include "../System/BinStreamWriter.h"
 #include "../System/ErrorList.h"
 #include <map>
 #include <set>
-struct Lexem;
+class Ast;
 
 /**
 */
-class IrWriter {
+class AstWriter {
 public:
-    IrWriter( ErrorList &error_list );
-
-    void parse( const Lexem *root );
+    AstWriter( ErrorList &error_list );
+    void parse( Ast *root );
 
     ST   size_of_binary_data(); ///< may be called to reserve the size for ptr for copy_to( ptr );
     void copy_binary_data_to( PI8 *ptr );
@@ -24,8 +23,7 @@ protected:
     struct DelayedParse {
         OffsetType  *offset;
         int          old_size;
-        const Lexem *l;
-        bool         want_siblings;
+        Ast         *l;
     };
 
     struct IntToReduce {
@@ -33,18 +31,6 @@ protected:
         ST   pos; // offset in data (assuming 64 bits before the reduction)
         Type type;
     };
-
-    struct CatchedVar {
-        operator bool() const { return l; }
-        const Lexem *l; ///< var to be referenced (a callable if s >= 0)
-        int          s; ///< used if l is a Callable (-> num of catched var of Callable l)
-        bool         surdef; ///< true if object may be surdefined (def or class)
-    };
-    struct CatchedVarWithNum {
-        Vec<CatchedVar> cv;  ///< where to find the variable
-        int             num; ///< in catched vars
-    };
-
 
     void parse_lexem_and_siblings( const Lexem *l );
     void parse_lexem             ( const Lexem *l ); ///< individual lexem
@@ -102,4 +88,4 @@ protected:
     bool static_inst, const_inst;
 };
 
-#endif // IRWRITER_H
+#endif // Ast_WRITER_H

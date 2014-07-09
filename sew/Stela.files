@@ -69,6 +69,8 @@ src/Stela/Ast/Ast_GetAttr.h
 src/Stela/Ast/Ast_Break.h
 src/Stela/Ast/Ast_Return.h
 src/Stela/Ast/Ast_Import.h
+src/Stela/Ast/Ast_Primitive.h
+src/Stela/Ast/AstWriter.h
 src/Stela/Ast/Ast_New.h
 src/Stela/Ast/Ast_For.h
 src/Stela/Ast/Ast_Call.h
@@ -159,7 +161,9 @@ src/Stela/Ast/Ast_For.cpp
 src/Stela/Ast/Ast_String.cpp
 src/Stela/Ast/Ast_Void.cpp
 src/Stela/Ast/Ast_Callable.cpp
+src/Stela/Ast/Ast_Primitive.cpp
 src/Stela/Ast/Ast_Continue.cpp
+src/Stela/Ast/AstWriter.cpp
 src/Stela/Ast/Ast_NdList.cpp
 src/Stela/Ast/Ast_New.cpp
 src/Stela/Ast/Ast_ChBeBa.cpp

@@ -56,4 +56,8 @@
     # # ___info a
 # a := A()
 # a.pouet()
-a = n
+def foo
+    a := 10
+    def bar
+        toto
+

@@ -1,3 +1,5 @@
+#include "../Ir/Numbers.h"
+#include "AstWriter.h"
 #include "Ast_Continue.h"
 
 Ast_Continue::Ast_Continue( int off ) : Ast( off ) {
@@ -8,3 +10,11 @@ void Ast_Continue::write_to_stream( Stream &os, int nsp ) const {
     os << "Continue";
 }
 
+
+void Ast_Continue::_get_info( AstWriter *aw ) const {
+    TODO;
+}
+
+PI8 Ast_Continue::_tok_number() const {
+    return IR_TOK_CONTINUE;
+}

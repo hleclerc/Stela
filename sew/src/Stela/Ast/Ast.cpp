@@ -3,7 +3,9 @@
 #include "../System/ErrorList.h"
 #include "../System/RaiiSave.h"
 #include "../System/Assert.h"
+#include "../Ir/Numbers.h"
 #include "../Met/Lexem.h"
+#include "Ast_Primitive.h"
 #include "Ast_Continue.h"
 #include "Ast_Variable.h"
 #include "Ast_GetAttr.h"
@@ -26,11 +28,34 @@
 #include "Ast_For.h"
 #include "Ast_If.h"
 
-Ast::Ast( int off ) : off( off ) {
+#include "AstWriter.h"
+
+Ast::Ast( int off ) : _off( off ) {
 }
 
 Ast::~Ast() {
 }
+
+void Ast::write_to( AstWriter *aw ) const {
+    int old_delayed_parse_size = aw->delayed_parse.size();
+
+    // write inst
+    aw->data << _tok_number();
+    aw->data << _off;
+    _get_info( aw );
+
+    // write instruction needed for inst
+    while ( aw->delayed_parse.size() > old_delayed_parse_size ) {
+        AstWriter::DelayedParse dp = aw->delayed_parse.pop_back_val();
+        *dp.offset = aw->data.size() - dp.old_size;
+
+        dp.l->write_to( aw );
+    }
+}
+
+void Ast::_get_info( AstWriter *aw ) const {
+}
+
 
 struct AstMaker {
     AstMaker() {
@@ -160,6 +185,15 @@ struct AstMaker {
         return res;
     }
 
+    static int num_primitive( const String &str ) {
+        #define DECL_IR_TOK( PN ) if ( str == "___" #PN ) return IR_TOK_##PN;
+        #include "../Ir/Decl_Primitives.h"
+        #include "../Ir/Decl_Operations.h"
+        #undef DECL_IR_TOK
+
+        return -1;
+    }
+
     Ast *make_ast_apply( const Lexem *l, Ast_Call *res ) {
         // get nb_..._children and ch list
         SplittedVec<const Lexem *,16> ch;
@@ -194,6 +228,22 @@ struct AstMaker {
                 nres->n = ch[ 0 ]->to_int();
             }
             return nres;
+        }
+
+
+        // primitive ?
+        if ( f->type == Lexem::VARIABLE ) {
+            int np = num_primitive( f->str() );
+            if ( np >= 0 ) {
+                if ( nb_named_children )
+                    return add_error( "a primitive do not accept named children", f, res );
+                delete res;
+
+                Ast_Primitive *nres = new Ast_Primitive( f->off() );
+                for( int i = 0; i < nb_unnamed_children; ++i )
+                    nres->args << make_ast_single( ch[ i ] );
+                return nres;
+            }
         }
 
         // function
@@ -389,7 +439,6 @@ struct AstMaker {
         res->self_as_arg  = self_as_arg;
         res->varargs      = varargs;
         res->abstract     = abstract;
-        res->return_type  = make_ast_single( return_type );
         res->pertinence   = make_ast_single( pertinence  );
         res->condition    = make_ast_single( condition   );
         res->def_pert_num = default_pertinence_num;
@@ -641,7 +690,6 @@ struct AstMaker {
         case STRING___and___NUM         : return make_ast_and     ( l );
         case STRING___or___NUM          : return make_ast_or      ( l );
         case STRING___else___NUM        : return make_ast_or      ( l );
-         //    case STRING_reassign_NUM        : return make_ast_reassign( l );
         default:
             return make_ast_call_op( l );
         }
