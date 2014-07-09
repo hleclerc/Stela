@@ -2,7 +2,7 @@ MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: exe
+all: test_Ast
 
 exe: std
 	
@@ -44,6 +44,9 @@ grag: ext/PrepArg
 
 test_%:
 	${MC} tests/$@.cpp
+
+gest_%:
+	${MC} --gdb tests/test_$*.cpp
 
 vg:
 	${MC} --exec-using "valgrind --num-callers=24 --db-attach=yes" src/stela.cpp ${SRC}

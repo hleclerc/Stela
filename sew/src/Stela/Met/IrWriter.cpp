@@ -455,6 +455,11 @@ void IrWriter::parse_variable( const Lexem *l ) {
                         if ( not surdef )
                             push_offset( l );
                         data << cv.s;
+                    } else if ( cv.l->attribute ) {
+                        data << IR_TOK_VAR_IN_ATTR;
+                        if ( not surdef )
+                            push_offset( l );
+                        push_nstring( cv.l );
                     } else {
                         // -> in local or static scope
                         if ( cv.l->scope_type & Lexem::SCOPE_TYPE_CLASS )
@@ -646,6 +651,22 @@ void IrWriter::parse_for( const Lexem *l ) {
 }
 
 void IrWriter::out_catched_vars( std::map<String,CatchedVarWithNum> &catched_vars, int num_scope ) {
+    //
+    bool need_self = false;
+    Vec<String> keys_to_rm;
+    for( auto it : catched_vars ) {
+        Vec<CatchedVar> &cl = it.second.cv;
+        if ( cl[ 0 ].l->attribute ) {
+            need_self = true;
+            keys_to_rm << it.first;
+        }
+    }
+    for( String &s : keys_to_rm )
+        catched_vars.erase( s );
+    if ( need_self and not catched_vars.count( "self" ) )
+        catched_vars[ "self" ] = CatchedVarWithNum{ CatchedVar{ 0, -2, false }, int( catched_vars.size() ) };
+
+    //
     data << catched_vars.size();
     for( auto it : catched_vars ) {
         Vec<CatchedVar> &cl = it.second.cv;
@@ -660,9 +681,9 @@ void IrWriter::out_catched_vars( std::map<String,CatchedVarWithNum> &catched_var
                 data << PI8( IN_SELF );
             } else {
                 if ( cv.l->attribute ) {
-                    data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_ATTR : IN_LOCAL_ATTR );
-                    data << 0;
-                    data << cv.l->num_in_scope;
+                    ERROR( "weird" );
+                    data << PI8( IN_ATTR );
+                    push_nstring( cv.l );
                 } else {
                     data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
                     data << num_scope - cv.l->num_scope; // nb parents

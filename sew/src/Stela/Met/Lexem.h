@@ -2,6 +2,7 @@
 #define LEXEM_H
 
 #include "../System/TypeConfig.h"
+#include "../System/Stream.h"
 
 /** */
 class Lexem {
@@ -39,6 +40,9 @@ public:
     bool   eq( const char *p ) const;
     bool   begin_with( const char *p ) const;
     bool   same_str( const char *p, int len ) const;
+    const char *end() const { return beg + len; }
+    String str() const { return String( beg, beg + len ); }
+    int off() const { return src - beg_src; }
 
     int type; /// >0 => operator. <=0 => @see enum
     int num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar

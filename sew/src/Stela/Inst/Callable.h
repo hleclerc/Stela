@@ -52,7 +52,7 @@ public:
     bool has_varargs() const;
     bool self_as_arg() const;
 
-    static void read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin );
+    static void read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin, Scope *scope );
 
     // provenance
     SourceFile     *sf;

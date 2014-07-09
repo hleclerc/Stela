@@ -46,14 +46,16 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     if ( flags & IR_HAS_CONDITION )
         condition = Code( sf, bin.read_offset() );
 
-    read_catched_vars( catched_vars, bin );
+    read_catched_vars( catched_vars, bin, scope );
 }
 
-void Callable::read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin ) {
+void Callable::read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin, Scope *scope ) {
     catched_vars.resize( bin.read_positive_integer() );
     for( CatchedVar &cv : catched_vars ) {
         cv.type = bin.read_positive_integer();
-        if ( cv.type != IN_SELF ) {
+        if ( cv.type == IN_ATTR ) {
+            cv.ns = scope->read_nstring( bin );
+        } else if ( cv.type != IN_SELF ) {
             if ( cv.type != IN_CATCHED_VARS )
                 cv.np = bin.read_positive_integer();
             cv.ns = bin.read_positive_integer();

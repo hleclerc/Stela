@@ -177,7 +177,7 @@ public:
         }
     }
 
-    T operator[]( ST index ) const {
+    const T &operator[]( ST index ) const {
         ASSERT_IF_DEBUG( index >= 0 );
         for( const Item *i = &first; i; i = i->next ) {
             ST s = i->cur - i->ptr();

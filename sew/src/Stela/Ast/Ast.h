@@ -1,0 +1,20 @@
+#ifndef AST_H
+#define AST_H
+
+#include "../System/Stream.h"
+class ErrorList;
+class Lexem;
+
+/***/
+class Ast {
+public:
+    Ast( int off );
+    virtual ~Ast();
+
+    virtual void write_to_stream( Stream &os, int nsp = 0 ) const = 0;
+    int off; ///< offset in sourcefile
+};
+
+Ast *make_ast( ErrorList &e, const Lexem *l, bool sibling );
+
+#endif // AST_H

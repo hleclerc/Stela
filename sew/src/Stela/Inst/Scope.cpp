@@ -139,8 +139,7 @@ Expr Scope::get_catched_var( Callable::CatchedVar &cv ) {
     case IN_STATIC_SCOPE: return get_catched_var_in__scope( cv.np, cv.ns, 1 );
     case IN_CATCHED_VARS: return get_catched_var_in_catched_vars( cv.ns );
     case IN_SELF        : ASSERT( self, "..." ); return self;
-    case IN_LOCAL_ATTR  : return get_catched_var_in_attr( cv.ns, 0 );
-    case IN_STATIC_ATTR : return get_catched_var_in_attr( cv.ns, 1 );
+    case IN_ATTR        : return get_catched_var_in_attr( cv.ns );
     default: ERROR( "???" );
     }
     return 0;
@@ -724,9 +723,10 @@ Expr Scope::parse_VAR_SET( BinStreamReader bin ) {
     for( int i = 0; i < n; ++i ) {
          PI8 c = bin.get<PI8>();
          switch ( c ) {
-         case IR_TOK_VAR_IN_LOCAL_SCOPE : res << _parse_VAR_IN__SCOPE( bin, 0 ); break;
-         case IR_TOK_VAR_IN_STATIC_SCOPE: res << _parse_VAR_IN__SCOPE( bin, 1 ); break;
-         case IR_TOK_VAR_IN_CATCHED_VARS: res << _parse_VAR_IN_CATCHED_VARS( bin ); break;
+         case IR_TOK_VAR_IN_LOCAL_SCOPE : res << _parse_VAR_IN__SCOPE      ( bin, 0 ); break;
+         case IR_TOK_VAR_IN_STATIC_SCOPE: res << _parse_VAR_IN__SCOPE      ( bin, 1 ); break;
+         case IR_TOK_VAR_IN_CATCHED_VARS: res << _parse_VAR_IN_CATCHED_VARS( bin    ); break;
+         case IR_TOK_VAR_IN_ATTR        : res << _parse_VAR_IN_ATTR        ( bin    ); break;
          default: ERROR( "..." );
          }
     }
@@ -734,8 +734,13 @@ Expr Scope::parse_VAR_SET( BinStreamReader bin ) {
     return ip->make_SurdefList( res );
 }
 
-Expr Scope::get_catched_var_in_attr( int ns, bool stat ) {
+Expr Scope::parse_VAR_IN_ATTR( BinStreamReader bin ) {
+    return get_catched_var_in_attr( read_nstring( bin ) );
+}
+
+Expr Scope::get_catched_var_in_attr( int name ) {
     PRINT( self );
+    PRINT( ip->str_cor.str( name ) );
     TODO;
     return 0;
 }
@@ -791,6 +796,10 @@ Expr Scope::_parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat ) {
 
 Expr Scope::_parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin ) {
     return get_catched_var_in_catched_vars( bin.read_positive_integer() );
+}
+
+Expr Scope::_parse_VAR_IN_ATTR( BinStreamReader &bin ) {
+    return get_catched_var_in_attr( read_nstring( bin ) );
 }
 
 Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
@@ -1141,7 +1150,7 @@ Expr Scope::parse_FOR( BinStreamReader bin ) {
         vals[ i ] = parse( sf, bin.read_offset(), "for rhs" );
 
     Vec<Callable::CatchedVar> catched_vars;
-    Callable::read_catched_vars( catched_vars, bin );
+    Callable::read_catched_vars( catched_vars, bin, this );
 
     const PI8 *tok = bin.read_offset();
 
