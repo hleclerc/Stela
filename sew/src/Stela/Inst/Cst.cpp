@@ -44,6 +44,18 @@ struct Cst : Inst {
             memcpy( dst, data.ptr(), data.size() );
             return true;
         }
+        if ( type == ip->type_SI32 ) {
+            if ( out_type == ip->type_SI64 ) {
+                *reinterpret_cast<SI32 *>( dst ) = *reinterpret_cast<const SI64 *>( data.ptr() );
+                return true;
+            }
+        }
+        if ( type == ip->type_SI64 ) {
+            if ( out_type == ip->type_SI32 ) {
+                *reinterpret_cast<SI64 *>( dst ) = *reinterpret_cast<const SI32 *>( data.ptr() );
+                return true;
+            }
+        }
         //if ( type == ip->type_Bool ) {
         //    return out_type->conv( dst, type, data.ptr() );
         //}

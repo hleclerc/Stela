@@ -1103,20 +1103,14 @@ Expr Scope::parse_ptr_alig( BinStreamReader bin ) {
 Expr Scope::parse_size_of( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
     Expr T = parse( sf, bin.read_offset(), "sizeof" );
-    TODO;
-    return 0;
-//    if ( Type *t = ip->type_from_type_var( T ) )
-//        return Var( ip->type_ST, cst( ST( t->size() ) ) );
-//    return ip->ret_error( "Expecting a type variable" );
+    Expr p = apply( T, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST );
+    return room( ST( p->ptype()->size() ) );
 }
 Expr Scope::parse_alig_of( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
     Expr T = parse( sf, bin.read_offset(), "aligof" );
-    TODO;
-    return 0;
-//    if ( Type *t = ip->type_from_type_var( T ) )
-//        return Var( ip->type_ST, cst( ST( t->alig() ) ) );
-//    return ip->ret_error( "Expecting a type variable" );
+    Expr p = apply( T, 0, 0, 0, 0, 0, APPLY_MODE_PARTIAL_INST );
+    return room( ST( p->ptype()->alig() ) );
 }
 Expr Scope::parse_typeof( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
@@ -1128,8 +1122,12 @@ Expr Scope::parse_address( BinStreamReader bin ) {
     return ip->error_var();
 }
 Expr Scope::parse_get_slice( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    CHECK_PRIM_ARGS( 3 );
+    Expr a = parse( sf, bin.read_offset(), "a" );
+    Expr T = parse( sf, bin.read_offset(), "T" );
+    Expr o = parse( sf, bin.read_offset(), "o" )->get( cond );
+    Type *t = ip->type_from_type_var( T );
+    return rcast( ip->ptr_for( t ), add( a, o ) );
 }
 Expr Scope::parse_pointed_value( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );

@@ -168,11 +168,14 @@ Expr Ip::make_type_var( Type *type ) {
 
 
 Type *Ip::type_from_type_var( Expr var ) {
+    // if Type
     SI64 ptr;
     Expr e = var->get();
     if ( e->get_val( type_Type, &ptr ) )
         return reinterpret_cast<Type *>( ST( ptr ) );
-    return type_Error;
+    //
+    Expr p = ip->main_scope.apply( var, 0, 0, 0, 0, 0, Scope::APPLY_MODE_PARTIAL_INST );
+    return p->ptype();
 }
 
 Type *Ip::ptr_for( Type *type ) {

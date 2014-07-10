@@ -1,6 +1,18 @@
 def add a, b
     ___add a, b
 
+def sub a, b
+    ___sub a, b
+
+def mul a, b
+    ___mul a, b
+
+def div a, b
+    ___div a, b
+
+def mod a, b
+    ___mod a, b
+
 def self_add a, b
     a = a + b
 
@@ -47,6 +59,12 @@ def init self
 def typeof val
     ___typeof val
 
+def sizeof T
+    ___size_of T
+
+def aligof T
+    ___alig_of T
+
 class Range[ TB, TE, TI ]
     beg ~= TB
     end ~= TE
@@ -62,21 +80,55 @@ class Range[ TB, TE, TI ]
 def range a, b
     Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
 
+class Vec[ T, static_size ]
+    ___set_base_size_and_alig sizeof( T ) * static_size, aligof( T )
+    
+    def init
+        for i in self
+            ___info i
+            # i.init()
+    
+    def init val
+        # i := 0
+        # while i < static_size
+            # select( i ).init val
+            # i += 1
+    
+    def select i
+        ___get_slice self, T, sizeof( T ) * i
+        
+    def __for__ block
+        _for_rec block, 0
+        
+    def _for_rec block, i
+        if i < static_size
+            block select i
+            _for_rec block, i + 1
+    
+def sys_write fd, data, size
+    ___syscall SI64( 1 ), SI64( fd ), data, SI64( size )
 
-# # for a in 0 .. 10
-    # # ___info a
-# a := A()
-# a.pouet()
+def print val
+    sit := 10
+    tmp := Vec[ SI8, sit ]()
+    vcp := val
+    nbc := sit - 1
+    tmp[ nbc ] = 10
+    while true
+        tmp[ nbc -= 1 ] = 48 + vcp % 10
+        vcp /= 10
+        if not vcp
+            break
+    sys_write 0, &tmp + nbc, sit - nbc
+
+        
     
-for i in 5 .. 10
-    ___syscall i
-    break
-    
-# class M
-    # a := 0p
-    # b := 0p
-    # c := 0p
-    
+v := Vec[ SI32, 3 ]()
+v[ 1 ] = 2
+v[ 2 ] = 122
+___disp v[ 0 ]
+___disp v[ 1 ]
+
 # m := M()
 # m.b = ___syscall 0
 # ___disp m.a    
