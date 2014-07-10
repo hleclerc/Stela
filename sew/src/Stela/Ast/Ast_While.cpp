@@ -27,6 +27,8 @@ void Ast_While::write_to_stream( Stream &os, int nsp ) const {
 }
 
 void Ast_While::_get_info( IrWriter *aw ) const {
+    aw->push_delayed_parse( ok.ptr() );
+    aw->push_delayed_parse( ko.ptr() );
 }
 
 PI8 Ast_While::_tok_number() const {

@@ -65,6 +65,8 @@ typename EnableIf<
         std::cout << "  " << #A << " -> " << (A) << std::endl
     #define PRINTN( A ) \
         std::cout << "  " << #A << " ->\n" << (A) << std::endl
+    #define PRN( A ) \
+        std::cout << "  " << #A << " => " << ip->str_cor.str( A ) << std::endl
 #endif
 
 typedef std::string  String;

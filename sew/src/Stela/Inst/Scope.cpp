@@ -166,9 +166,16 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Type *base_type ) {
     c->read_bin( this, bin );
 
     // get catched vars
-    for( int n : c->pot_catched_vars )
-        if ( Expr v = find_var( n, true, true ) )
+    for( int n : c->pot_catched_vars ) {
+        Scope *s = this;
+        if ( class_scope ) {
+            if ( local_vars.get( n ) )
+                continue; // do not catch attributes. TODO: case def before name := ...
+            s = s->parent;
+        }
+        if ( Expr v = s->find_var( n, true, true ) )
             c->catched_vars.add( n, v );
+    }
 
     // class Def (or Class)
     //   cpp_inst_ptr ~= SI64 (inst in C++ of Def or Class)
@@ -462,14 +469,18 @@ Expr Scope::get_attr( Expr self, int name ) {
     type->parse();
     for( Type::Attr &at : type->attributes ) {
         if ( at.name == name ) {
-            if ( at.off >= 0 ) {
-                if ( at.val->flags & Inst::SURDEF ) {
-                    //Vec<Expr> lst;
-                    //find_var_clist( lst, name );
-                    //keep_only_method_surdef( lst, cond );
-                    TODO;
-                }
-                return rcast( at.type ? at.val->type() : at.get_ptr_type(), add( self, at.off ) );
+            if ( at.off >= 0 )
+                return rcast( at.val->type(), add( self, at.off ) );
+            if ( at.val->flags & Inst::SURDEF ) {
+                // get all the variants
+                Vec<Expr> lst;
+                find_var_clist( lst, name, false, true );
+                keep_only_method_surdef( lst, cond );
+                for( Type::Attr &nat : type->attributes )
+                    if ( nat.name == name and ( nat.val->flags & Inst::SURDEF ) )
+                        lst << at.val;
+                // -> SurdefList
+                return ip->make_SurdefList( lst, self );
             }
             return at.val;
         }
@@ -548,8 +559,9 @@ Expr Scope::parse_SELECT( BinStreamReader bin ) {
         Vec<Expr> lt;
         lt << f_type->parameters[ 0 ]; // Ptr[VarargItem[...]]
         lt << ip->make_type_var( varg->type() );
-        lt << f_type->parameters[ 2 ];
+        lt << f_type->parameters[ 2 ]; // self ptr type
         Type *res_type = ip->class_SurdefList->type_for( lt );
+        res_type->_len = 2 * ip->ptr_size + ( f_type->parameters[ 2 ] != ip->type_Void ) * ip->ptr_size;
 
         Expr res = cst( res_type );
         res = repl_bits( res, 0 * ip->ptr_size, slice( tp_0, f_val, 0 ) );
@@ -655,7 +667,7 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
 
     //
     if ( flags & IR_ASSIGN_TYPE )
-        var = apply( var, 0, 0, 0, 0, 0, APPLY_MODE_STD );
+        var = apply( var, 0, 0, 0, 0, 0, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD );
 
     //if ( ( flags & IR_ASSIGN_REF ) == 0 and var.referenced_more_than_one_time() )
     //    Expr = copy( var, sf, off );
@@ -757,6 +769,7 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
 
 Expr Scope::parse_WHILE( BinStreamReader bin ) {
     const PI8 *tok = bin.read_offset();
+    PRINT( "yop" );
 
     // watch modified variables
     IpSnapshot nsv, *old_nsv = ip->cur_ip_snapshot;

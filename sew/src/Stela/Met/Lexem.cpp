@@ -15,13 +15,10 @@ Lexem::Lexem() {
     prev             = 0;
     sibling          = 0;
     prev_chro        = 0;
-    num_in_scope     = -1;
-    num_scope        = -1;
     preceded_by_a_cr = false;
 
     nb_preceding_comma_dot = 0;
     nb_preceding_cr        = 0;
-    attribute              = false;
 }
 
 void Lexem::to_rat( int &num, int &den ) const {
@@ -113,14 +110,6 @@ void display_graph_rec( std::ostream &os, const Lexem *t, unsigned level, unsign
         //    os << "[;=>" << t->nb_preceding_comma_dot << ']';
         //if ( t->nb_preceding_cr )
         //    os << "[n=>" << t->nb_preceding_cr << ']';
-        if ( t->num_scope >= 0 ) {
-            os << '[' << t->num_scope;
-            if ( t->num_in_scope >= 0 )
-                os << ',' << t->num_in_scope;
-            if ( t->attribute )
-                os << 'A';
-            os << ']';
-        }
         for( int i = 0; i < t->len; ++i ) {
             if ( t->beg[ i ]=='\n' )
                 os << "\\n";

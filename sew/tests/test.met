@@ -1,64 +1,71 @@
-# def add a, b
-    # ___add a, b
+def add a, b
+    ___add a, b
 
-# def not_boolean v
-    # ___not_boolean v
+def self_add a, b
+    a = a + b
+
+def reassign a, b
+    a.reassign b
+
+def not_boolean v
+    ___not_boolean v
     
-# def inferior a, b
-    # ___inf a, b
+def inferior a, b
+    ___inf a, b
     
-# class SI32
-    # ___set_base_size 32
-    # ___set_base_alig 32
-    # def init val
-        # ___reassign_rec self, val
-    # def reassign val
-        # ___reassign_rec self, val
-
-# void := 1
-
-# class Ptr[ T ]
-    # adress := 0l
-
-# class Block[ sourcefile, tok, catched_vars_type, names ]
-    # catched_vars ~= catched_vars_type
-    # def apply val
-        # ___block_exec self, val
-
-# def init self
-    # # nothing to do
+def superior a, b
+    ___sup a, b
     
-# def typeof val
-    # ___typeof val
+class SI32
+    ___set_base_size_and_alig 32, 32
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
 
-# class Range[ TB, TE, TI ]
-    # beg ~= TB
-    # end ~= TE
-    # inc ~= TI
-    # def init( b, e, i ) starts_with beg( b ), end( e ), inc( i )
-        # #
-    # def __for__ block
-        # cur := beg
-        # # while cur < end
-            # # block cur
-            # # cur += inc
+void := 1
+
+class Ptr[ T ]
+    adress := 0l
+
+class Block[ sourcefile, tok, catched_vars_type, names ]
+    catched_vars ~= catched_vars_type
+    def apply val
+        ___block_exec self, val
+
+def init self
+    # nothing to do
     
-# def range a, b
-    # Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
+def typeof val
+    ___typeof val
 
-# class A
-    # aaa := 10
-    # # bbb := 10
-    # def pouet
-        # cur := aaa
+class Range[ TB, TE, TI ]
+    beg ~= TB
+    end ~= TE
+    inc ~= TI
+    def init( b, e, i ) starts_with beg( b ), end( e ), inc( i )
+        #
+    def __for__ block
+        cur := beg
+        # while cur < end
+            # block cur
+            # cur += inc
+    
+def range a, b
+    Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
+
 
 # # for a in 0 .. 10
     # # ___info a
 # a := A()
 # a.pouet()
-def bar a
-    def foo
-        ___syscall a
-    foo()
-bar 50
+    
+a := 5
+while a < 10
+    ___syscall a
+    if a > 7
+        break
+    ___info a
+    a += 1
 
+    

@@ -10,12 +10,9 @@ class Class;
 class Type {
 public:
     struct Attr {
-        Type *get_type();
-        Type *get_ptr_type();
         int  off; ///< <=0 -> static
-        Expr val;
+        Expr val; ///< flags may be == Inst::PART_INST
         int  name;
-        bool type; ///< for ~= defs
     };
     Type( Class *orig );
 

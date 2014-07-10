@@ -11,7 +11,7 @@ void Ast_Break::write_to_stream( Stream &os, int nsp ) const {
 }
 
 void Ast_Break::_get_info( IrWriter *aw ) const {
-    TODO;
+    aw->data << n;
 }
 
 PI8 Ast_Break::_tok_number() const {

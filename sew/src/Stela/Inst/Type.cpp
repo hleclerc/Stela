@@ -6,21 +6,6 @@
 #include "Ip.h"
 #include "Op.h"
 
-Type *Type::Attr::get_type() {
-    if ( type )
-        return ip->type_from_type_var( val );
-    return val->ptype();
-}
-
-Type *Type::Attr::get_ptr_type() {
-    if ( type ) {
-        Vec<Expr> v( val );
-        return ip->class_Ptr->type_for( v );
-    }
-    return val->type();
-}
-
-
 Type::Type( Class *orig ) : orig( orig ) {
     _len    = -1;
     _ali    = -1;
@@ -89,18 +74,17 @@ void Type::parse() {
 
     for( NamedVarList::NamedVar &nv : ns.local_vars.data ) {
         if ( nv.expr->flags & Inst::SURDEF ) {
-            attributes << Attr{ -1, nv.expr, nv.name, false };
+            attributes << Attr{ -1, nv.expr, nv.name };
         } else {
             _ali = ppcm( _ali, nv.expr->ptype()->alig() );
             _len = ceil( _len, _ali );
 
-            attributes << Attr{ _len, nv.expr, nv.name, bool( nv.expr->flags & Inst::PART_INST ) };
+            attributes << Attr{ _len, nv.expr, nv.name };
 
             _len += nv.expr->ptype()->size();
         }
     }
 
-    for( NamedVarList::NamedVar &nv : ns.static_vars->data ) {
-        attributes << Attr{ -1, nv.expr, nv.name, false };
-    }
+    for( NamedVarList::NamedVar &nv : ns.static_vars->data )
+        attributes << Attr{ -1, nv.expr, nv.name };
 }

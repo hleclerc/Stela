@@ -12,6 +12,8 @@ void Ast_Class::get_potentially_needed_ext_vars( std::set<String> &res, std::set
 }
 
 void Ast_Class::_get_info( IrWriter *aw ) const {
+    Ast_Callable::_get_info( aw );
+
     // extends
     aw->data << inheritance.size();
     for( int i = 0; i < inheritance.size(); ++i )

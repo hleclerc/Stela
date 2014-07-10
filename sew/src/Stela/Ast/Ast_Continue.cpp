@@ -12,7 +12,7 @@ void Ast_Continue::write_to_stream( Stream &os, int nsp ) const {
 
 
 void Ast_Continue::_get_info( IrWriter *aw ) const {
-    TODO;
+    aw->data << n;
 }
 
 PI8 Ast_Continue::_tok_number() const {

@@ -51,6 +51,8 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
 
 Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self ) {
     TrialDef *res = new TrialDef( this, caller );
+    if ( self )
+        res->ns.reg_var( STRING_self_NUM, self );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
 
@@ -149,7 +151,7 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
     return res;
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr _self ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr self ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
@@ -158,29 +160,8 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
-        // get self
-        TODO;
-        Expr self;
-        //        Type *vt = catched_vars->ptype();
-        //        for( int i = 0, o = 0; ; ++i ) {
-        //            if ( i == orig->catched_vars.size() ) {
-        //                if ( not _self )
-        //                    return ip->ret_error( "no self ??" );
-        //                self = _self;
-        //                break;
-        //            }
-        //            if ( orig->catched_vars[ i ].type == IN_SELF ) {
-        //                Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
-        //                self = slice( ts, catched_vars->get( cond ), o );
-        //                break;
-        //            }
-        //            vt = ip->type_from_type_var( vt->parameters[ 2 ] );
-        //            o += ip->ptr_size;
-        //        }
-
         // init attributes
         Type *self_type = self->ptype();
-        // self_type->parse();
 
         if ( self_type->orig->ancestors.size() )
             TODO;
@@ -200,7 +181,8 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
                         args << ns.parse( c.sf, c.tok, "starts_with" );
 
                     //
-                    ns.apply(  ns.get_attr( rcast( a.type ? a.val->type() : a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
+                    ns.apply( ns.get_attr( rcast( a.val->type(), add( self, a.off ) ), STRING_init_NUM ),
+                              nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
                     initialised_args[ i ] = true;
                     break;
                 }
@@ -208,17 +190,10 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
         }
 
         int cpt = 0;
-        for( Type::Attr &a : self_type->attributes ) {
-            if ( a.off >= 0 ) {
-                if ( not initialised_args[ cpt ] ) {
-                    if ( a.type )
-                        ns.apply( ns.get_attr( rcast( a.val->type(), add( self, a.off ) ), STRING_init_NUM ) );
-                    else
-                        ns.apply( ns.get_attr( rcast( a.get_ptr_type(), add( self, a.off ) ), STRING_init_NUM ), 1, &a.val );
-                }
-            }
+        for( Type::Attr &a : self_type->attributes )
+            if ( a.off >= 0 and not initialised_args[ cpt ] )
+                ns.apply( ns.get_attr( rcast( a.val->type(), add( self, a.off ) ), STRING_init_NUM ), not ( a.val->flags & Inst::PART_INST ), &a.val );
             ++cpt;
-        }
     }
 
     // inline call

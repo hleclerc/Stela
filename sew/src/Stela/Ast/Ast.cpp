@@ -67,6 +67,10 @@ struct AstMaker {
     }
 
     Ast *make_ast_variable( const Lexem *l ) {
+        if ( l->eq( "break"    ) ) return new Ast_Break   ( l->off() );
+        if ( l->eq( "continue" ) ) return new Ast_Continue( l->off() );
+        if ( l->eq( "true"     ) ) return new Ast_Number  ( l->off(), true  );
+        if ( l->eq( "false"    ) ) return new Ast_Number  ( l->off(), false );
         return new Ast_Variable( l->off(), String( l->beg, l->beg + l->len ) );
     }
 
@@ -75,8 +79,8 @@ struct AstMaker {
 
         int e = l->len - 1;
         while ( e >= 0 ) {
-            if ( l->beg[ e ] == 'l' ) { res->l = true; continue; }
-            if ( l->beg[ e ] == 'p' ) { res->p = true; continue; }
+            if ( l->beg[ e ] == 'l' ) { res->l = true; --e; continue; }
+            if ( l->beg[ e ] == 'p' ) { res->p = true; --e; continue; }
             break;
         }
 
@@ -555,7 +559,7 @@ struct AstMaker {
     Ast *make_ast_while( const Lexem *l ) {
         Ast_While *res = new Ast_While( l->off() );
 
-        if ( l->children[ 1 ]->type == STRING___else___NUM ) {
+        if ( l->children[ 0 ]->type == STRING___else___NUM ) {
             res->ok = make_ast_block( l->children[ 0 ]->children[ 0 ] );
             res->ko = make_ast_block( l->children[ 0 ]->children[ 1 ] );
         } else
@@ -573,7 +577,6 @@ struct AstMaker {
     Ast *make_ast_get_attr( const Lexem *l, bool ptr, bool ask, bool ddo ) {
         Ast_GetAttr *res = new Ast_GetAttr( l->off() );
         res->name = l->children[ 1 ]->str();
-        PRINT( res->name );
         res->obj = make_ast_single( l->children[ 0 ] );
         res->ptr = ptr;
         res->ask = ask;
@@ -645,6 +648,10 @@ struct AstMaker {
         return 0;
     }
 
+    Ast *make_ast_break( const Lexem *l ) {
+        return new Ast_Break( l->off() );
+    }
+
     Ast *make_ast_call_op( const Lexem *l ) {
         Ast_Apply *res = new Ast_Apply( l->off() );
         res->f = new Ast_Variable( l->off(), get_operators_cpp_name( l->type ) );
@@ -693,6 +700,7 @@ struct AstMaker {
         case STRING___and___NUM         : return make_ast_and     ( l );
         case STRING___or___NUM          : return make_ast_or      ( l );
         case STRING___else___NUM        : return make_ast_or      ( l );
+        case STRING_break_NUM           : return make_ast_break   ( l );
         default:
             return make_ast_call_op( l );
         }

@@ -8,6 +8,7 @@
 class Ast_Number : public Ast {
 public:
     Ast_Number( int off );
+    Ast_Number( int off, bool val );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:
@@ -18,6 +19,7 @@ protected:
 
     bool l; ///< long
     bool p; ///< pointer
+    bool b; ///< boolean
     String str;
 };
 

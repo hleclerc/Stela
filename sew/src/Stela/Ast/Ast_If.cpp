@@ -33,7 +33,9 @@ void Ast_If::write_to_stream( Stream &os, int nsp ) const {
 
 
 void Ast_If::_get_info( IrWriter *aw ) const {
-    TODO;
+    aw->push_delayed_parse( cond.ptr() );
+    aw->push_delayed_parse( ok.ptr() );
+    aw->push_delayed_parse( ko.ptr() );
 }
 
 PI8 Ast_If::_tok_number() const {

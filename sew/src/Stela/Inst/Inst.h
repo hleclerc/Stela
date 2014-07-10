@@ -23,7 +23,6 @@ public:
         CONST     = 1,
         SURDEF    = 2,
         PART_INST = 4 // partial instanciation
-
     };
     enum {
         TPAR_DEP = -1,

@@ -27,7 +27,8 @@ void Ast_GetAttr::write_to_stream( Stream &os, int nsp ) const {
 
 
 void Ast_GetAttr::_get_info( IrWriter *aw ) const {
-    TODO;
+    aw->push_delayed_parse( obj.ptr() );
+    aw->push_nstring( name );
 }
 
 PI8 Ast_GetAttr::_tok_number() const {
