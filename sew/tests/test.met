@@ -37,6 +37,7 @@ class Ptr[ T ]
 
 class Block[ sourcefile, tok, catched_vars_type, names ]
     catched_vars ~= catched_vars_type
+    scope_ptr    := 0l
     def apply val
         ___block_exec self, val
 
@@ -55,9 +56,6 @@ class Range[ TB, TE, TI ]
     def __for__ block
         cur := beg
         while cur < end
-            ___disp beg
-            ___disp end
-            ___disp inc
             block cur
             cur += inc
     
@@ -72,6 +70,7 @@ def range a, b
     
 for i in 5 .. 10
     ___syscall i
+    break
     
 # class M
     # a := 0p

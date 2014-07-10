@@ -34,7 +34,6 @@ public:
     Expr          self; ///< pointer on Expr, to point out object to be worked on
     BoolOpSeq    *cont; ///< continue or not variable
     BoolOpSeq     cond; ///< condition to execute instructions
-    bool          for_scope;
     Scope        *for_block;
 
     Type         *class_scope;
@@ -69,7 +68,7 @@ protected:
         int       count;
         BoolOpSeq cond;
     };
-    Vec<RemBreak>  rem_breaks;
+    Vec<RemBreak> rem_breaks;
 
     template<class OP> Expr parse_una( BinStreamReader bin, OP o );
     template<class OP> Expr parse_bin( BinStreamReader bin, OP o );
