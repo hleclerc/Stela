@@ -72,6 +72,7 @@ def range a, b
     
 for i in 5 .. 10
     ___syscall i
+    
 # class M
     # a := 0p
     # b := 0p
