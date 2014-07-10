@@ -435,7 +435,8 @@ Expr Scope::copy( Expr &var ) {
     if ( var->type()->pod() )
         return room( var->get( cond ) );
     //
-    Expr res = cst( var->type(), var->size() );
+    Expr val = var->get( cond );
+    Expr res = room( cst( val->type(), var->size() ) );
     apply( get_attr( res, STRING_init_NUM ), 1, &var );
     return res;
 }
@@ -664,8 +665,8 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
     if ( flags & IR_ASSIGN_TYPE )
         var = apply( var, 0, 0, 0, 0, 0, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD );
 
-    //if ( ( flags & IR_ASSIGN_REF ) == 0 and var.referenced_more_than_one_time() )
-    //    Expr = copy( var, sf, off );
+    if ( var->referenced_more_than_one_time() and not ( flags & IR_ASSIGN_REF ) )
+        var = copy( var );
 
     if ( flags & IR_ASSIGN_CONST ) {
         TODO;
@@ -1044,7 +1045,7 @@ Expr Scope::parse_syscall( BinStreamReader bin ) {
     Vec<Expr> inp( Rese(), n );
     for( int i = 0; i < n; ++i )
         inp << parse( sf, bin.read_offset(), "arg" )->get( cond );
-    return syscall( inp, cond );
+    return room( syscall( inp, cond ) );
 }
 
 Expr Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {

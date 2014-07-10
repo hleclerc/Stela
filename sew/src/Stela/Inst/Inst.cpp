@@ -318,6 +318,10 @@ int Inst::op_num() const {
     return -1;
 }
 
+bool Inst::referenced_more_than_one_time() const {
+    return true;
+}
+
 void Inst::update_when( const BoolOpSeq &cond ) {
     if ( not when )
         when = new BoolOpSeq( cond );

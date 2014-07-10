@@ -35,6 +35,9 @@ struct Room : Inst {
     virtual Expr get( const BoolOpSeq &cond ) {
         return val->simplified( cond );
     }
+    virtual bool referenced_more_than_one_time() const {
+        return cpt_use != 1 or val->cpt_use != 1;
+    }
 
     virtual void _mk_store_dep( Inst *dst ) {
         Expr st = store( this, val );

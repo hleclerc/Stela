@@ -75,6 +75,8 @@ public:
     virtual operator BoolOpSeq();
     virtual int op_num() const; ///< only for Op<>
 
+    virtual bool referenced_more_than_one_time() const;
+
     // codegen
     virtual void get_constraints( CppRegConstraint &reg_constraints );
     virtual void update_when( const BoolOpSeq &cond );

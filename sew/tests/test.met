@@ -23,6 +23,13 @@ class SI32
     def reassign val
         ___reassign_rec self, val
 
+class SI64
+    ___set_base_size_and_alig 64, 64
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+
 void := 1
 
 class Ptr[ T ]
@@ -48,6 +55,9 @@ class Range[ TB, TE, TI ]
     def __for__ block
         cur := beg
         while cur < end
+            ___disp beg
+            ___disp end
+            ___disp inc
             block cur
             cur += inc
     
@@ -62,8 +72,13 @@ def range a, b
     
 for i in 5 .. 10
     ___syscall i
+# class M
+    # a := 0p
+    # b := 0p
+    # c := 0p
     
-    
-    
-    
-    
+# m := M()
+# m.b = ___syscall 0
+# ___disp m.a    
+# ___disp m.b
+# ___disp m.c    
