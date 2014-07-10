@@ -26,7 +26,7 @@ class SI32
 void := 1
 
 class Ptr[ T ]
-    adress := 0l
+    adress := 0p
 
 class Block[ sourcefile, tok, catched_vars_type, names ]
     catched_vars ~= catched_vars_type
@@ -47,9 +47,9 @@ class Range[ TB, TE, TI ]
         #
     def __for__ block
         cur := beg
-        # while cur < end
-            # block cur
-            # cur += inc
+        while cur < end
+            block cur
+            cur += inc
     
 def range a, b
     Range[ typeof( a ), typeof( b ), typeof( a ) ]( a, b, 1 )
@@ -60,12 +60,10 @@ def range a, b
 # a := A()
 # a.pouet()
     
-a := 5
-while a < 10
-    ___syscall a
-    if a > 7
-        break
-    ___info a
-    a += 1
-
+for i in 5 .. 10
+    ___syscall i
+    
+    
+    
+    
     

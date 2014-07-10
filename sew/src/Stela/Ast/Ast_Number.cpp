@@ -30,5 +30,9 @@ void Ast_Number::_get_info( IrWriter *aw ) const {
 PI8 Ast_Number::_tok_number() const {
     if ( b )
         return str == "1" ? IR_TOK_TRUE : IR_TOK_FALSE;
+    if ( p )
+        return IR_TOK_PTR;
+    if ( l )
+        return IR_TOK_SI64;
     return IR_TOK_SI32;
 }

@@ -14,6 +14,7 @@ public:
     virtual ~Ast();
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
+    virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const = 0;
     void write_to( IrWriter *aw ) const;
 

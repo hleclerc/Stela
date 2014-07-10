@@ -11,6 +11,10 @@ void Ast_Assign::get_potentially_needed_ext_vars( std::set<String> &res, std::se
     avail.insert( name );
 }
 
+void Ast_Assign::prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const {
+    avail.insert( name );
+}
+
 void Ast_Assign::write_to_stream( Stream &os, int nsp ) const {
     os << name;
     if ( stat )

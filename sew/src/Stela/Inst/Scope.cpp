@@ -166,16 +166,9 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Type *base_type ) {
     c->read_bin( this, bin );
 
     // get catched vars
-    for( int n : c->pot_catched_vars ) {
-        Scope *s = this;
-        if ( class_scope ) {
-            if ( local_vars.get( n ) )
-                continue; // do not catch attributes. TODO: case def before name := ...
-            s = s->parent;
-        }
-        if ( Expr v = s->find_var( n, true, true ) )
+    for( int n : c->pot_catched_vars )
+        if ( Expr v = find_var( n, true ) )
             c->catched_vars.add( n, v );
-    }
 
     // class Def (or Class)
     //   cpp_inst_ptr ~= SI64 (inst in C++ of Def or Class)
@@ -460,39 +453,40 @@ static void keep_only_method_surdef( Vec<Expr> &lst, const BoolOpSeq &cond ) {
     }
 }
 
-Expr Scope::get_attr( Expr self, int name ) {
+Expr Scope::get_first_attr( Expr self, int name ) {
     if ( self.error() )
-        return ip->error_var();
+        return (Inst *)0;
 
-    // attributes
-    Type *type = self->ptype();
-    type->parse();
-    for( Type::Attr &at : type->attributes ) {
-        if ( at.name == name ) {
-            if ( at.off >= 0 )
-                return rcast( at.val->type(), add( self, at.off ) );
-            if ( at.val->flags & Inst::SURDEF ) {
-                // get all the variants
-                Vec<Expr> lst;
-                find_var_clist( lst, name, false, true );
-                keep_only_method_surdef( lst, cond );
-                for( Type::Attr &nat : type->attributes )
-                    if ( nat.name == name and ( nat.val->flags & Inst::SURDEF ) )
-                        lst << at.val;
-                // -> SurdefList
-                return ip->make_SurdefList( lst, self );
-            }
-            return at.val;
-        }
-    }
+    Type *type = self->ptype(); type->parse();
+    for( Type::Attr &at : type->attributes )
+        if ( at.name == name )
+            return at.off >= 0 ? rcast( at.val->type(), add( self, at.off ) ) : at.val;
 
-    // not found ? -> search in global scope for def ...( self, ... )
+    return (Inst *)0;
+}
+
+void Scope::get_attr_clist( Vec<Expr> &lst, Expr self, int name ) {
+    if ( self.error() )
+        return;
+
+    Type *type = self->ptype(); type->parse();
+    for( Type::Attr &at : type->attributes )
+        if ( at.name == name and ( at.val->flags & Inst::SURDEF ) )
+            lst << at.val;
+}
+
+Expr Scope::get_attr( Expr self, int name ) {
+    if ( Expr res = get_first_attr( self, name ) )
+        if ( not ( res->flags & Inst::SURDEF ) )
+            return res;
+
+    // not found or surdef ? -> search in global scope for def ...( self, ... )
     Vec<Expr> lst;
-    find_var_clist( lst, name, false, true );
+    find_var_clist( lst, name );
     keep_only_method_surdef( lst, cond );
+    get_attr_clist( lst, self, name );
     if ( lst.size() == 0 )
         return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self->type() ) + "' (or surdef with self as arg in parent scopes)" );
-
     return ip->make_SurdefList( lst, self );
 }
 
@@ -595,8 +589,11 @@ Expr Scope::parse_PI64( BinStreamReader bin ) {
     return room( cst( ip->type_PI64, 64, &data ) );
 }
 Expr Scope::parse_PTR( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    switch ( ip->ptr_size ) {
+    case 32: return parse_SI32( bin );
+    case 64: return parse_SI64( bin );
+    }
+    return ip->ret_error( "wrong ip->ptr_size" );
 }
 Expr Scope::parse_STRING( BinStreamReader bin ) {
     TODO;
@@ -610,13 +607,14 @@ Expr Scope::parse_VAR( BinStreamReader bin ) {
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 
-Expr Scope::find_first_var( int name, bool exclude_main_scope, bool exclude_attr ) {
+Expr Scope::find_first_var( int name, bool exclude_main_scope ) {
     for( Scope *s = this; s; s = s->parent ) {
-        if ( exclude_main_scope and not s->parent )
-            break;
-        if ( exclude_attr and s->class_scope ) {
-            exclude_attr = false;
-            continue;
+        if ( not s->parent ) { // we're in the main scope
+            if ( self )
+                if ( Expr res = s->get_first_attr( self, name ) )
+                    return res;
+            if ( exclude_main_scope )
+                break;
         }
         // local
         if ( Expr res = s->local_vars.get( name ) )
@@ -632,14 +630,11 @@ Expr Scope::find_first_var( int name, bool exclude_main_scope, bool exclude_attr
     return (Inst *)0;
 }
 
-void Scope::find_var_clist( Vec<Expr> &lst, int name, bool exclude_main_scope, bool exclude_attr ) {
+void Scope::find_var_clist( Vec<Expr> &lst, int name ) {
     for( Scope *s = this; s; s = s->parent ) {
-        if ( exclude_main_scope and not s->parent )
-            break;
-        if ( exclude_attr and s->class_scope ) {
-            exclude_attr = false;
-            continue;
-        }
+        if ( not s->parent )
+            if ( self )
+                s->get_attr_clist( lst, self, name );
         // local
         s->local_vars.get( lst, name );
         // static
@@ -650,11 +645,11 @@ void Scope::find_var_clist( Vec<Expr> &lst, int name, bool exclude_main_scope, b
     }
 }
 
-Expr Scope::find_var( int name, bool exclude_main_scope, bool exclude_attr ) {
-    Expr res = find_first_var( name, exclude_main_scope, exclude_attr );
+Expr Scope::find_var( int name, bool exclude_main_scope ) {
+    Expr res = find_first_var( name, exclude_main_scope );
     if ( res and res->is_surdef() ) {
         Vec<Expr> lst;
-        find_var_clist( lst, name, exclude_main_scope, exclude_attr );
+        find_var_clist( lst, name );
         return ip->make_SurdefList( lst );
     }
     return res;
@@ -769,7 +764,6 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
 
 Expr Scope::parse_WHILE( BinStreamReader bin ) {
     const PI8 *tok = bin.read_offset();
-    PRINT( "yop" );
 
     // watch modified variables
     IpSnapshot nsv, *old_nsv = ip->cur_ip_snapshot;
@@ -946,32 +940,38 @@ Expr Scope::parse_THIS( BinStreamReader bin ) {
     // return Var( ip->class_Ptr.type_for( lt ), self.ptr().get_val() );
 }
 Expr Scope::parse_FOR( BinStreamReader bin ) {
-    // read
+    // names
     int nn = bin.read_positive_integer();
     int names[ nn ];
     for( int i = 0; i < nn; ++i )
         names[ i ] = read_nstring( bin );
 
+    // objects
     int nc = bin.read_positive_integer();
     Expr vals[ nc ];
     for( int i = 0; i < nc; ++i )
         vals[ i ] = parse( sf, bin.read_offset(), "for rhs" );
 
-    //Vec<Callable::CatchedVar> catched_vars;
-    //Callable::read_catched_vars( catched_vars, bin, this );
-    TODO;
+    // catched variables
+    Vec<int> catched_names;
+    Vec<Expr> catched_values;
+    int nb = bin.read_positive_integer();
+    for( int i = 0; i < nb; ++i ) {
+        int name = read_nstring( bin );
+        if ( Expr e = find_var( name, true ) ) {
+            catched_values << e;
+            catched_names << name;
+        }
+    }
 
     const PI8 *tok = bin.read_offset();
 
     // block expr
-    Vec<Expr> catched_vals;
-    //for( Callable::CatchedVar &cv : catched_vars )
-    //    catched_vals << get_catched_var( cv );
-    Expr cv = ip->make_Varargs( catched_vals );
-
     Vec<Expr> expr_names;
     for( int i = 0; i < nn; ++i )
         expr_names << names[ i ];
+
+    Expr cv = ip->make_Varargs( catched_values, catched_names );
 
     Vec<Expr> lt;
     lt << room( ST( sf  ) );
@@ -1153,13 +1153,29 @@ Expr Scope::parse_block_exec( BinStreamReader bin ) {
     SourceFile *nsf; if ( not blkt->parameters[ 0 ]->get()->get_val( ip->type_ST, &nsf ) ) return ip->ret_error( "expecting a ST" );
     const PI8  *tok; if ( not blkt->parameters[ 1 ]->get()->get_val( ip->type_ST, &tok ) ) return ip->ret_error( "expecting a ST" );
 
-    // catched +
-    Scope ns( 0, this, "for" );
-    TODO;
-    //ns.local_vars << val;
-    //ns.catched_vars = slice( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk, 0 );
+    // catched
+    Vec<int> catched_names;
+    Vec<Expr> catched_values;
+    ip->get_args_in_varargs( catched_values, catched_names,
+                             rcast( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk ) );
+    NamedVarList catched_vars;
+    for( int i = 0; i < catched_names.size(); ++i )
+        catched_vars.add( catched_names[ i ], catched_values[ i ] );
 
-    return ns.parse( nsf, tok, "for block" );
+    //
+    Vec<Expr> expr_names = ip->get_args_in_varargs( blkt->parameters[ 3 ]->get( cond ) );
+    if ( expr_names.size() != 1 )
+        return ip->ret_error( "todo: nb args != 1" );
+    int name;
+    if ( not expr_names[ 0 ]->get_val( ip->type_SI32, &name ) )
+        return ip->ret_error( "expecting a known value" );
+
+    // catched +
+    Scope ns( &ip->main_scope, this, "block_exec" );
+    ns.catched_vars = &catched_vars;
+    ns.local_vars.add( name, val );
+
+    return ns.parse( nsf, tok, "block_exec" );
 }
 Expr Scope::parse_get_argc( BinStreamReader bin ) {
     TODO;

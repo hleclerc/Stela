@@ -15,12 +15,15 @@ public:
     Ast_Callable( int off );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
+    virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
     virtual void write_callable_type( Stream &os ) const = 0;
 
 protected:
     friend class AstMaker;
+    friend class Ast_Def;
 
+    virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const = 0;
     virtual void _get_info( IrWriter *aw ) const;
     virtual int  _spec_flags() const = 0;
 

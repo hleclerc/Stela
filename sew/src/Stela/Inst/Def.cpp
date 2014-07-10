@@ -51,8 +51,10 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
 
 Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self ) {
     TrialDef *res = new TrialDef( this, caller );
-    if ( self )
+    if ( self ) {
         res->ns.reg_var( STRING_self_NUM, self );
+        res->ns.self = self;
+    }
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
 

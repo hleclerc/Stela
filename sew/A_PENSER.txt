@@ -1,3 +1,4 @@
 * Callable[ ..., VarargsItemEnd plutÃ´t que Void ]
 * ne pas utiliser le to_string( *type ) pour dÃ©terminer le scope statique (deux val != peuvent avoir la mÃªme repr)
 * faire une représentation en Lexem et IR (genre Ast) pour gérer plus facilement les catched_vars...
+* Ir ne sert ¨¤ rien: tout est dans Ast

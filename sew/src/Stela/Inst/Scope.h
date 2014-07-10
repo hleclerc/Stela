@@ -50,17 +50,19 @@ public:
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, int *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
     Expr get_attr( Expr self, int name );
-    Expr find_var( int name, bool exclude_main_scope = false, bool exclude_attr = false );
+    Expr find_var( int name, bool exclude_main_scope = false );
     Expr reg_var( int name, Expr var, bool stat = false );
     Expr copy( Expr &Expr );
 
 protected:
     Expr _parse( const PI8 *tok ); ///< parse from the same sf
     Expr parse_CALLABLE( BinStreamReader bin, Type *base_type );
-    void find_var_clist( Vec<Expr> &lst, int name, bool exclude_main_scope, bool exclude_attr );
-    Expr find_first_var( int name, bool exclude_main_scope, bool exclude_attr );
+    void find_var_clist( Vec<Expr> &lst, int name );
+    Expr find_first_var( int name, bool exclude_main_scope );
     void get_attr_rec( Vec<Expr> &res, Expr self, int name );
     Expr get_attr_rec( Expr self, int name );
+    Expr get_first_attr( Expr self, int name );
+    void get_attr_clist( Vec<Expr> &res, Expr self, int name );
     void BREAK( int n, BoolOpSeq cond );
 
     struct RemBreak {

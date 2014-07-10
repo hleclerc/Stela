@@ -1,15 +1,22 @@
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
+#include "Ast_Class.h"
 #include "IrWriter.h"
 #include "Ast_Def.h"
 
 Ast_Def::Ast_Def( int off ) : Ast_Callable( off ) {
+    method = 0;
 }
 
-void Ast_Def::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
-    Ast_Callable::get_potentially_needed_ext_vars( res, avail );
+void Ast_Def::_get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    if ( method ) {
+        method->block->prep_get_potentially_needed_ext_vars( avail );
+        avail.insert( "self" );
+    }
+
     if ( return_type )
         return_type->get_potentially_needed_ext_vars( res, avail );
+
     for( int i = 0; i < starts_with.size(); ++i ) {
         const StartsWith_Item &sw = starts_with[ i ];
         for( int i = 0; i < sw.args.size(); ++i )

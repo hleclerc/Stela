@@ -19,6 +19,10 @@ void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::
         if ( i >= b )
             default_values[ i - b ]->get_potentially_needed_ext_vars( res, navail );
     }
+    if ( self_as_arg )
+        navail.insert( "self" );
+    if ( varargs )
+        navail.insert( "varargs" );
 
     // cond, ...
     if ( condition )
@@ -26,8 +30,16 @@ void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::
     if ( pertinence )
         pertinence->get_potentially_needed_ext_vars( res, navail );
 
+    // sub cases
+    _get_potentially_needed_ext_vars( res, navail );
+
     // block
     block->get_potentially_needed_ext_vars( res, navail );
+}
+
+
+void Ast_Callable::prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const {
+    avail.insert( name );
 }
 
 void Ast_Callable::write_to_stream( Stream &os, int nsp ) const {

@@ -59,11 +59,14 @@ void Ast::_get_info( IrWriter *aw ) const {
 void Ast::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
 }
 
+void Ast::prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const {
+}
 
 struct AstMaker {
     AstMaker() {
         static_inst = false;
         const_inst = false;
+        in_class = 0;
     }
 
     Ast *make_ast_variable( const Lexem *l ) {
@@ -482,11 +485,17 @@ struct AstMaker {
                 res->default_values << make_ast_single( arguments[ i ].default_value );
 
         // block
+        Ast_Class *old_in_class = in_class;
+        in_class = def ? 0 : static_cast<Ast_Class *>( res );
+
         res->block = make_ast_block( block );
+
+        in_class = old_in_class;
 
         // specific cases
         if ( def ) {
             Ast_Def *rd = static_cast<Ast_Def *>( res );
+            rd->method = in_class;
 
             // return type
             rd->return_type = make_ast_single( return_type );
@@ -715,6 +724,7 @@ struct AstMaker {
     }
 
     ErrorList *error_list;
+    Ast_Class *in_class;
     bool static_inst;
     bool const_inst;
 };
