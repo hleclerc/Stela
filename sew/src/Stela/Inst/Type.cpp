@@ -77,40 +77,30 @@ void Type::parse() {
         return;
     _parsed = true;
 
-    _len = 0;
-    _ali = 1;
-
+    // parse block
     Scope ns( &ip->main_scope, 0, "parsing type" );
-    ns.local_vars.append( parameters );
-    ns.callable = orig;
-    for( Class::Attribute &a : orig->attributes ) {
-        Expr val = ns.parse( a.code.sf, a.code.tok, "arg init" );
-        if ( a.type & CALLABLE_ATTR_BASE_ALIG ) {
-            int v = 0;
-            if ( not val->get( ns.cond )->get_val( ip->type_SI32, &v ) )
-                ip->disp_error( "expecting a number known at runtime" );
-            _ali = ppcm( _ali, val->type()->alig() );
-            continue;
-        }
-        if ( a.type & CALLABLE_ATTR_BASE_SIZE ) {
-            int v = 0;
-            if ( not val->get( ns.cond )->get_val( ip->type_SI32, &v ) )
-                ip->disp_error( "expecting a number known at runtime" );
-            _len += v;
-            continue;
-        }
-        if ( a.type & CALLABLE_ATTR_TYPE ) // ~=
-            val = ns.apply( val, 0, 0, 0, 0, 0, Scope::APPLY_MODE_PARTIAL_INST );
-        ns.local_vars << val;
+    ns.class_scope = this;
+    for( int i = 0; i < parameters.size(); ++i )
+        ns.reg_var( orig->arg_names[ i ], parameters[ i ], true );
+    ns.parse( orig->block.sf, orig->block.tok, "type parsing" );
 
-        _len = ceil( _len, _ali );
+    _len = ns.base_size;
+    _ali = ns.base_alig;
 
-        bool stat = a.type & CALLABLE_ATTR_STATIC;
-        attributes << Attr{ stat ? -1 : _len, val, a.name, a.type == CALLABLE_ATTR_TYPE };
+    for( NamedVarList::NamedVar &nv : ns.local_vars.data ) {
+        if ( nv.expr->flags & Inst::SURDEF ) {
+            attributes << Attr{ -1, nv.expr, nv.name, false };
+        } else {
+            _ali = ppcm( _ali, nv.expr->ptype()->alig() );
+            _len = ceil( _len, _ali );
 
-        if ( not stat ) {
-            _ali = ppcm( _ali, val->ptype()->alig() );
-            _len += val->ptype()->size();
+            attributes << Attr{ _len, nv.expr, nv.name, bool( nv.expr->flags & Inst::PART_INST ) };
+
+            _len += nv.expr->ptype()->size();
         }
+    }
+
+    for( NamedVarList::NamedVar &nv : ns.static_vars->data ) {
+        attributes << Attr{ -1, nv.expr, nv.name, false };
     }
 }

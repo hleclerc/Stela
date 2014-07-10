@@ -56,4 +56,9 @@
     # # ___info a
 # a := A()
 # a.pouet()
-a := 10
+def bar a
+    def foo
+        ___syscall a
+    foo()
+bar 50
+

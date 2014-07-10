@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Void.h"
 
 Ast_Void::Ast_Void( int off ) : Ast( off ) {

@@ -12,7 +12,7 @@ public:
     struct Attr {
         Type *get_type();
         Type *get_ptr_type();
-        int  off;
+        int  off; ///< <=0 -> static
         Expr val;
         int  name;
         bool type; ///< for ~= defs

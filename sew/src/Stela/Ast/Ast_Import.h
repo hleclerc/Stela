@@ -14,7 +14,7 @@ public:
 protected:
     friend class AstMaker;
 
-    virtual void _get_info( AstWriter *aw ) const;
+    virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
     Vec<String> files;

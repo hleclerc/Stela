@@ -28,7 +28,7 @@
 #include "Ast_For.h"
 #include "Ast_If.h"
 
-#include "AstWriter.h"
+#include "IrWriter.h"
 
 Ast::Ast( int off ) : _off( off ) {
 }
@@ -36,7 +36,7 @@ Ast::Ast( int off ) : _off( off ) {
 Ast::~Ast() {
 }
 
-void Ast::write_to( AstWriter *aw ) const {
+void Ast::write_to( IrWriter *aw ) const {
     int old_delayed_parse_size = aw->delayed_parse.size();
 
     // write inst
@@ -46,14 +46,14 @@ void Ast::write_to( AstWriter *aw ) const {
 
     // write instruction needed for inst
     while ( aw->delayed_parse.size() > old_delayed_parse_size ) {
-        AstWriter::DelayedParse dp = aw->delayed_parse.pop_back_val();
+        IrWriter::DelayedParse dp = aw->delayed_parse.pop_back_val();
         *dp.offset = aw->data.size() - dp.old_size;
 
         dp.l->write_to( aw );
     }
 }
 
-void Ast::_get_info( AstWriter *aw ) const {
+void Ast::_get_info( IrWriter *aw ) const {
 }
 
 void Ast::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -242,7 +242,7 @@ struct AstMaker {
                     return add_error( "a primitive do not accept named children", f, res );
                 delete res;
 
-                Ast_Primitive *nres = new Ast_Primitive( f->off() );
+                Ast_Primitive *nres = new Ast_Primitive( f->off(), np );
                 for( int i = 0; i < nb_unnamed_children; ++i )
                     nres->args << make_ast_single( ch[ i ] );
                 return nres;

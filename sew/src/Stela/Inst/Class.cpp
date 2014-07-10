@@ -17,27 +17,10 @@ void Class::read_bin( Scope *scope, BinStreamReader &bin ) {
 
     for( int i = 0, nb_anc = bin.read_positive_integer(); i < nb_anc; ++i )
         ancestors << Code( sf, bin.read_offset() );
-
-    int nb_methods = bin.read_positive_integer();
-    std::map<int,Vec<Code> > mm;
-    for( int i = 0; i < nb_methods; ++i ) {
-        int n = scope->read_nstring( bin );
-        mm[ n ] << Code{ sf, bin.read_offset() };
-    }
-    for( auto i : mm )
-        methods << std::pair<int,Vec<Code> >( i.first, i.second );
-
-    int nb_attributes = bin.read_positive_integer();
-    for( int i = 0, num = 0; i < nb_attributes; ++i ) {
-        int t = bin.read_positive_integer();
-        int n = scope->read_nstring( bin );
-        attributes << Attribute{ t, n, Code{ sf, bin.read_offset() }, num };
-        num += not bool( t & ( CALLABLE_ATTR_BASE_ALIG | CALLABLE_ATTR_BASE_SIZE ) );
-    }
 }
 
 Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self ) {
-    TrialClass *res = new TrialClass( this );
+    TrialClass *res = new TrialClass( this, caller );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
 
@@ -45,17 +28,12 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
     if ( pnu + pnn < min_nb_args() ) return res->wr( "no enough arguments" );
     if ( pnu + pnn > max_nb_args() ) return res->wr( "To much arguments" );
 
-    Scope scope = Scope( &ip->main_scope, 0, "trial_class_" + to_string( name ) );
-    // res->args.resize( arg_names.size() );
-
     if ( has_varargs() ) {
         TODO;
     } else {
         // unnamed args
-        for( int i = 0; i < pnu; ++i ) {
-            scope.local_vars << pvu[ i ];
-            res->args << pvu[ i ];
-        }
+        for( int i = 0; i < pnu; ++i )
+            res->ns.reg_var( arg_names[ i ], pvu[ i ] );
         // named args
         Vec<bool> used_arg( Size(), pnn, false );
         for( int i = pnu; i < arg_names.size(); ++i ) {
@@ -66,13 +44,12 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
                     int j = i - ( arg_names.size() - arg_defaults.size() );
                     if ( j < 0 )
                         return res->wr( "unspecified mandatory argument" );
-                    scope.local_vars << scope.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
-                    res->args << scope.local_vars.back();
+                    Expr v = res->ns.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
+                    res->ns.reg_var( arg_name, v );
                     break;
                 }
                 if ( arg_name == pnames[ n ] ) {
-                    scope.local_vars << pvn[ n ];
-                    res->args << pvn[ n ];
+                    res->ns.reg_var( arg_name, pvn[ n ] );
                     used_arg[ n ] = true;
                     break;
                 }
@@ -90,7 +67,7 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
 
     // condition
     if ( condition ) {
-        res->cond = *scope.parse( condition.sf, condition.tok, "parsing condition" )->get( scope.cond );
+        res->cond = *res->ns.parse( condition.sf, condition.tok, "parsing condition" )->get( res->ns.cond );
         if ( res->cond.always( false ) )
             return res->wr( "condition = false" );
         if ( not res->cond.always( true ) ) {
@@ -102,16 +79,23 @@ Class::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int p
     return res;
 }
 
-Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self ) {
+Class::TrialClass::TrialClass( Class *orig, Scope *caller ) : orig( orig ),
+    ns( &ip->main_scope, caller, "trial_class_" + to_string( orig->name ) )  {
+
+    ns.catched_vars = &orig->catched_vars;
+}
+
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr self ) {
+    Vec<Expr> args;
+    for( int n : orig->arg_names )
+        args << ns.find_var( n );
+
     Type *type = orig->type_for( args );
+    ns.cond         = ns.cond and cond;
+    ns.class_scope  = type;
 
     // start with a unknown cst
     Expr ret = room( cst( type, type->size() ) );
-
-    Scope ns( &ip->main_scope, caller, "ClassInit_" + to_string( *type ) );
-    ns.cond = ns.cond and cond;
-    ns.class_scope = type;
-    ns.callable = orig;
 
     //
     if ( apply_mode == Scope::APPLY_MODE_NEW )

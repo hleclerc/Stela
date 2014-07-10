@@ -1,26 +1,26 @@
 #include "../Ir/CallableFlags.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast.h"
 
-AstWriter::AstWriter( Ast *root ) {
+IrWriter::IrWriter( Ast *root ) {
     parse( root );
     int_reduction();
 }
 
-void AstWriter::parse( Ast *root ) {
+void IrWriter::parse( Ast *root ) {
     root->write_to( this );
 }
 
-ST AstWriter::size_of_binary_data() {
+ST IrWriter::size_of_binary_data() {
     ST res = 2;
     for( auto iter : nstrings )
         res += BinStreamWriter::size_needed_for( iter.first.size() ) + iter.first.size();
     return res + 1 + data.size();
 }
 
-void AstWriter::copy_binary_data_to( PI8 *ptr ) {
+void IrWriter::copy_binary_data_to( PI8 *ptr ) {
     // list of size + strings (not 0 ended)
     Vec<std::string> strings( Size(), nstrings.size() );
     for( auto iter : nstrings )
@@ -40,7 +40,7 @@ void AstWriter::copy_binary_data_to( PI8 *ptr ) {
     data.copy_to( ptr );
 }
 
-void AstWriter::push_delayed_parse( const Ast *l ) {
+void IrWriter::push_delayed_parse( const Ast *l ) {
     int_to_reduce << IntToReduce{ data.size(), IntToReduce::OFFSET };
 
     if ( l ) {
@@ -56,7 +56,7 @@ void AstWriter::push_delayed_parse( const Ast *l ) {
     }
 }
 
-void AstWriter::push_potential_catched_vars_from( const Ast *l, std::set<String> avail ) {
+void IrWriter::push_potential_catched_vars_from( const Ast *l, std::set<String> avail ) {
     std::set<String> pot_needed;
     l->get_potentially_needed_ext_vars( pot_needed, avail );
 
@@ -65,7 +65,7 @@ void AstWriter::push_potential_catched_vars_from( const Ast *l, std::set<String>
         push_nstring( s );
 }
 
-void AstWriter::int_reduction() {
+void IrWriter::int_reduction() {
     if ( int_to_reduce.size() == 0 )
         return;
 
@@ -120,7 +120,7 @@ void AstWriter::int_reduction() {
 }
 
 
-int AstWriter::nstring( const String &str ) {
+int IrWriter::nstring( const String &str ) {
     auto iter = nstrings.find( str );
     if ( iter != nstrings.end() )
         return iter->second;
@@ -129,6 +129,6 @@ int AstWriter::nstring( const String &str ) {
     return res;
 }
 
-void AstWriter::push_nstring( const String &str ) {
+void IrWriter::push_nstring( const String &str ) {
     data << nstring( str );
 }

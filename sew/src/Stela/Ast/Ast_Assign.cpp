@@ -1,6 +1,6 @@
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Assign.h"
 
 Ast_Assign::Ast_Assign( int off ) : Ast( off ) {
@@ -26,7 +26,7 @@ void Ast_Assign::write_to_stream( Stream &os, int nsp ) const {
     val->write_to_stream( os, nsp );
 }
 
-void Ast_Assign::_get_info( AstWriter *aw ) const {
+void Ast_Assign::_get_info( IrWriter *aw ) const {
     // name
     aw->push_nstring( name );
 

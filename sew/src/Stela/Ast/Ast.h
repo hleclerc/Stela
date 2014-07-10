@@ -4,7 +4,7 @@
 #include "../System/Stream.h"
 #include <set>
 class ErrorList;
-class AstWriter;
+class IrWriter;
 class Lexem;
 
 /***/
@@ -15,10 +15,10 @@ public:
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const = 0;
-    void write_to( AstWriter *aw ) const;
+    void write_to( IrWriter *aw ) const;
 
 protected:
-    virtual void _get_info( AstWriter *aw ) const;
+    virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const = 0;
 
     int _off; ///< offset in sourcefile

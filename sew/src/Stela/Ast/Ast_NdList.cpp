@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_NdList.h"
 
 Ast_NdList::Ast_NdList( int off ) : Ast( off ) {
@@ -17,7 +17,7 @@ void Ast_NdList::write_to_stream( Stream &os, int nsp ) const {
 }
 
 
-void Ast_NdList::_get_info( AstWriter *aw ) const {
+void Ast_NdList::_get_info( IrWriter *aw ) const {
     TODO;
 }
 

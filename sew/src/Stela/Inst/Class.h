@@ -2,6 +2,7 @@
 #define CLASS_H
 
 #include "Callable.h"
+#include "Scope.h"
 class Type;
 
 /**
@@ -9,10 +10,10 @@ class Type;
 class Class : public Callable {
 public:
     struct TrialClass : Trial {
-        TrialClass( Class *orig ) : orig( orig ) {}
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self );
-        Vec<Expr> args;
+        TrialClass( Class *orig, Scope *caller );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr self );
         Class *orig;
+        Scope ns;
     };
     struct Attribute {
         SI32 type; ///< CALLABLE_ATTR_...

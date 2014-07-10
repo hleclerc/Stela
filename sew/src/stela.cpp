@@ -4,7 +4,6 @@
 #include <Stela/Codegen/Codegen_C.h>
 #include <Stela/System/InstallDir.h>
 #include <Stela/System/ReadFile.h>
-#include <Stela/Met/IrWriter.h>
 #include <Stela/Met/Lexer.h>
 #include <Stela/Inst/Ip.h>
 #include <fstream>
@@ -58,6 +57,7 @@ int main( int argc, char **argv ) {
     ip->add_inc_path( base_met_files );
 
     // parse
+    // ip->main_scope.disp_tok = true;
     for( int i = 0; i < input_files.size(); ++i )
         ip->main_scope.import( input_files[ i ] );
 

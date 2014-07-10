@@ -6,7 +6,8 @@
 #include "../Ir/CallableFlags.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
-#include "../Met/IrWriter.h"
+#include "../Ast/IrWriter.h"
+#include "../Ast/Ast.h"
 #include "../Met/Lexer.h"
 #include "UnknownInst.h"
 #include "Sourcefile.h"
@@ -39,15 +40,17 @@ Scope::Scope( Scope *parent, Scope *caller, String name, Ip *lip ) :
 
     sf = caller ? caller->sf : ( parent ? parent->sf : 0 );
 
-    static_vars = ( lip ? lip : ip )->get_static_vars( path );
     do_not_execute_anything = false;
+    static_vars   = ( lip ? lip : ip )->get_static_vars( path );
     class_scope   = 0;
-    callable      = 0;
     method        = false;
     disp_tok      = false;
     cont          = 0;
     for_scope     = 0;
     for_block     = 0;
+    catched_vars  = 0;
+    base_size     = 0;
+    base_alig     = 1;
 
     if ( caller )
         cond = caller->cond;
@@ -75,12 +78,13 @@ Expr Scope::import( String file ) {
     if ( ip->error_list )
         return ip->error_var();
 
-    IrWriter t( ip->error_list );
-    t.parse( l.root() );
+    // -> Ast
+    AutoPtr<Ast> a = make_ast( ip->error_list, l.root(), true );
     if ( ip->error_list )
         return ip->error_var();
 
-    // -> fill sf->tok_data
+    // Ir -> fill sf->tok_data
+    IrWriter t( a.ptr() );
     sf->tok_data.resize( t.size_of_binary_data() );
     t.copy_binary_data_to( sf->tok_data.ptr() );
 
@@ -99,20 +103,20 @@ Expr Scope::import( String file ) {
 }
 
 Expr Scope::parse( SourceFile *nsf, const PI8 *ntok, const char *nreason ) {
+    auto oscoper = raii_save( ip->cur_scope, this );
     auto oreason = raii_save( reason, nreason );
     auto osf     = raii_save( sf    , nsf );
     auto ooff    = raii_save( off );
-    return parse( ntok );
+    return _parse( ntok );
 }
 
-Expr Scope::parse( const PI8 *tok ) {
+Expr Scope::_parse( const PI8 *tok ) {
     if ( tok == 0 or do_not_execute_anything )
         return ip->error_var();
 
     BinStreamReader bin( tok );
     PI8 tva = bin.get<PI8>(); ///< token type
     off = bin.read_positive_integer(); ///< offset in sourcefile
-    auto rs = raii_save( ip->cur_scope, this );
 
     switch ( tva ) {
         #define DECL_IR_TOK( N ) case IR_TOK_##N: if ( disp_tok ) std::cout << #N "\n"; return parse_##N( bin );
@@ -133,26 +137,14 @@ Expr Scope::parse_BLOCK( BinStreamReader bin ) {
     return res;
 }
 
-Expr Scope::get_catched_var( Callable::CatchedVar &cv ) {
-    switch ( cv.type ) {
-    case IN_LOCAL_SCOPE : return get_catched_var_in__scope( cv.np, cv.ns, 0 );
-    case IN_STATIC_SCOPE: return get_catched_var_in__scope( cv.np, cv.ns, 1 );
-    case IN_CATCHED_VARS: return get_catched_var_in_catched_vars( cv.ns );
-    case IN_SELF        : ASSERT( self, "..." ); return self;
-    case IN_ATTR        : return get_catched_var_in_attr( cv.ns );
-    default: ERROR( "???" );
-    }
-    return 0;
-}
-
-Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
+Expr Scope::parse_CALLABLE( BinStreamReader bin, Type *base_type ) {
     int name = read_nstring( bin );
     if ( disp_tok )
         std::cout << "name=" << ip->str_cor.str( name ) << std::endl;
 
     // supporting variable
     Callable *c = 0;
-    if ( base_class == ip->class_Class ) {
+    if ( base_type == ip->type_Class ) {
         switch( name ) {
         #define DECL_BT( T ) case STRING_##T##_NUM: c = ip->class_##T; break;
         #include "DeclBaseClass.h"
@@ -162,8 +154,8 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
         }
     }
     if ( not c ) {
-        if      ( base_class == ip->class_Def   ) c = new Def;
-        else if ( base_class == ip->class_Class ) c = new Class;
+        if      ( base_type == ip->type_Def   ) c = new Def;
+        else if ( base_type == ip->type_Class ) c = new Class;
         else ERROR( "..." );
     }
 
@@ -174,43 +166,28 @@ Expr Scope::parse_CALLABLE( BinStreamReader bin, Class *base_class ) {
     c->read_bin( this, bin );
 
     // get catched vars
-    Vec<Expr> catched_vars;
-    for( Callable::CatchedVar &cv : c->catched_vars )
-        catched_vars << get_catched_var( cv );
-    Expr cva = ip->make_Varargs( catched_vars );
+    for( int n : c->pot_catched_vars )
+        if ( Expr v = find_var( n, true, true ) )
+            c->catched_vars.add( n, v );
 
-    // output type
-    // Def[ catched_vars_type ]
-    //   cpp_inst_ptr (inst in C++ of Def or Class)
-    //   catched_var_ptr
-    Vec<Expr> lt;
-    lt << ip->make_type_var( cva->type() );
-    Type *type = base_class->type_for( lt );
-    type->_len = 64 + ip->ptr_size;
-    type->_pod = 1;
-
-    // output val
-    Expr val = cst( type, 64 + ip->ptr_size );
-
-    SI64 ptr = (SI64)c;
-    val = repl_bits( val,  0, cst( ip->type_ST, 64, &ptr ) );
-    val = repl_bits( val, 64, cva );
+    // class Def (or Class)
+    //   cpp_inst_ptr ~= SI64 (inst in C++ of Def or Class)
+    SI64 ptr = SI64( ST( c ) );
+    Expr val = cst( base_type, 64, &ptr );
 
     // output var
     Expr res = room( val, Inst::SURDEF | Inst::CONST );
     c->var = res.inst;
 
-    if ( parent ) local_vars << res;
-    else ip->vars.add( name, res );
-    return res;
+    return reg_var( name, res );
 }
 
 Expr Scope::parse_DEF( BinStreamReader bin ) {
-    return parse_CALLABLE( bin, ip->class_Def );
+    return parse_CALLABLE( bin, ip->type_Def );
 }
 
 Expr Scope::parse_CLASS( BinStreamReader bin ) {
-    return parse_CALLABLE( bin, ip->class_Class );
+    return parse_CALLABLE( bin, ip->type_Class );
 }
 
 Expr Scope::parse_RETURN( BinStreamReader bin ) {
@@ -218,14 +195,9 @@ Expr Scope::parse_RETURN( BinStreamReader bin ) {
     return ip->error_var();
 }
 
-struct CallableAndCatchedVars {
-    Callable *ca;
-    Expr      cv;
-};
-
 struct CmpCallableInfobyPertinence {
-    bool operator()( const CallableAndCatchedVars &a, const CallableAndCatchedVars &b ) const {
-        return a.ca->pertinence > b.ca->pertinence;
+    bool operator()( const Callable *a, const Callable *b ) const {
+        return a->pertinence > b->pertinence;
     }
 };
 
@@ -243,21 +215,15 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
     // SurdefList( ... )
     Type *f_type = f->ptype();
     if ( f_type->orig == ip->class_SurdefList ) {
-        Type *l_type = ip->type_from_type_var( f_type->parameters[ 0 ] );
-        Expr lst = slice( l_type, f->get(), 0 )->get( cond );
-        Type *vt = lst->type();
-        int o = 0;
-        Vec<CallableAndCatchedVars> ci;
-        for ( ; vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->ptr_size ) {
-            Type *pt = ip->type_from_type_var( vt->parameters[ 0 ] );
-            Expr callable = slice( pt, lst, o )->get( cond );
-            // Callable *
-            Expr cptr = slice( ip->type_SI64, callable, 0 );
+        // Callable * list
+        Vec<Callable *> ci;
+        Vec<Expr> surdefs = ip->get_args_in_varargs( slice( ip->type_from_type_var( f_type->parameters[ 0 ] ), f->get(), 0 )->get( cond ) );
+        for( Expr surdef : surdefs ) {
             SI64 cptr_val;
+            Expr cptr = rcast( ip->type_SI64, surdef->get( cond ) );
             if ( not cptr->get_val( ip->type_SI64, &cptr_val ) )
                 return ip->ret_error( "exp. cst" );
-            ci << CallableAndCatchedVars{ reinterpret_cast<Callable *>( ST( cptr_val ) ),
-                  slice( ip->type_from_type_var( callable->type()->parameters[ 0 ] ), callable, 64 ) };
+            ci << reinterpret_cast<Callable *>( ST( cptr_val ) );
         }
 
         // parm
@@ -309,18 +275,18 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         bool has_guaranted_pertinence = false;
         AutoPtr<Callable::Trial> trials[ nb_surdefs ];
         for( int i = 0; i < nb_surdefs; ++i ) {
-            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ].ca->pertinence ) {
+            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ]->pertinence ) {
                 for( int j = i; j < nb_surdefs; ++j )
                     trials[ j ] = new Callable::Trial( "Already a more pertinent solution" );
                 break;
             }
 
-            trials[ i ] = ci[ i ].ca->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
+            trials[ i ] = ci[ i ]->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
 
             if ( trials[ i ]->ok() ) {
                 if ( trials[ i ]->cond.always( true ) ) {
                     has_guaranted_pertinence = true;
-                    guaranted_pertinence = ci[ i ].ca->pertinence;
+                    guaranted_pertinence = ci[ i ]->pertinence;
                 }
                 ++nb_ok;
             }
@@ -344,7 +310,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             //            }
             ErrorList::Error &err = ip->error_msg( ss.str() );
             for( int i = 0; i < nb_surdefs; ++i )
-                err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
+                err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
             std::cerr << err;
             return ip->error_var();
         }
@@ -356,9 +322,9 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
             ErrorList::Error &err = ip->error_msg( ss.str() );
             for( int i = 0; i < nb_surdefs; ++i ) {
                 if ( trials[ i ]->ok() )
-                    err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, "accepted" );
+                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "accepted" );
                 else
-                    err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+                    err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
             }
             std::cerr << err;
             return ip->error_var();
@@ -368,17 +334,17 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         if ( nb_ok > 1 ) {
             double best_pertinence = -std::numeric_limits<double>::max();
             for( int i = 0; i < nb_surdefs; ++i )
-                best_pertinence = std::max( best_pertinence, ci[ i ].ca->pertinence );
+                best_pertinence = std::max( best_pertinence, ci[ i ]->pertinence );
             int nb_wp = 0;
             for( int i = 0; i < nb_surdefs; ++i )
-                nb_wp += trials[ i ]->ok() and ci[ i ].ca->pertinence == best_pertinence;
+                nb_wp += trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence;
             if ( nb_wp > 1 ) {
                 std::ostringstream ss;
                 ss << "Ambiguous overload";
                 ErrorList::Error &err = ip->error_msg( ss.str() );
                 for( int i = 0; i < nb_surdefs; ++i )
-                    if ( trials[ i ]->ok() and ci[ i ].ca->pertinence == best_pertinence )
-                        err.ap( ci[ i ].ca->sf->name.c_str(), ci[ i ].ca->off, "possibility" );
+                    if ( trials[ i ]->ok() and ci[ i ]->pertinence == best_pertinence )
+                        err.ap( ci[ i ]->sf->name.c_str(), ci[ i ]->off, "possibility" );
                 std::cerr << err;
                 return ip->error_var();
             }
@@ -389,7 +355,7 @@ Expr Scope::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_ar
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
                 BoolOpSeq loc_cond = cond and trials[ i ]->cond;
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, ci[ i ].cv, self_ptr );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, self_ptr );
                 res << std::make_pair( loc_cond, loc );
 
                 if ( trials[ i ]->cond.always( true ) )
@@ -427,46 +393,45 @@ Expr Scope::get_attr_rec( Expr self, int name ) {
     if ( not self )
         return (Inst *)0;
     TODO;
-    return 0;
-//    // look in attributes
-//    if ( const Type::Attr *attr = self.type->find_attr( name ) )
-//        return self.type->make_attr( self, attr );
+    //    // look in attributes
+    //    if ( const Type::Attr *attr = self.type->find_attr( name ) )
+    //        return self.type->make_attr( self, attr );
 
-//    // interet d'avoir super:
-//    //    // ancestors
-//    // OR NOT: may use aggr of attributes done in TypeInfo
-//    //    if ( name != STRING_init_NUM and name != STRING_destroy_NUM ) {
-//    //        for( int i = 0; i < self.type->ancestors.size(); ++i ) {
-//    //            Expr super = self.type->make_attr( self, self.type->ancestor_attr( i ) );
-//    //            if ( Expr res = get_attr_rec( super, name ) )
-//    //                return res;
-//    //        }
-//    //    }
+    //    // interet d'avoir super:
+    //    //    // ancestors
+    //    // OR NOT: may use aggr of attributes done in TypeInfo
+    //    //    if ( name != STRING_init_NUM and name != STRING_destroy_NUM ) {
+    //    //        for( int i = 0; i < self.type->ancestors.size(); ++i ) {
+    //    //            Expr super = self.type->make_attr( self, self.type->ancestor_attr( i ) );
+    //    //            if ( Expr res = get_attr_rec( super, name ) )
+    //    //                return res;
+    //    //        }
+    //    //    }
     return (Inst *)0;
 }
 
 void Scope::get_attr_rec( Vec<Expr> &res, Expr self, int name ) {
     TODO;
-//    // look in attributes
-//    Vec<const Type::Attr *> lattr;
-//    self.type->find_attr( lattr, name );
-//    for( const Type::Attr *attr: lattr )
-//        res << self.type->make_attr( self, attr );
+    //    // look in attributes
+    //    Vec<const Type::Attr *> lattr;
+    //    self.type->find_attr( lattr, name );
+    //    for( const Type::Attr *attr: lattr )
+    //        res << self.type->make_attr( self, attr );
 
-//    // interet d'avoir super:
-//    //    // ancestors
-//    // OR NOT: may use aggr of attributes done in TypeInfo
-//    //    if ( name != STRING_init_NUM and name != STRING_destroy_NUM ) {
-//    //        for( int i = 0; i < self.type->ancestors.size(); ++i ) {
-//    //            Expr super = self.type->make_attr( self, self.type->ancestor_attr( i ) );
-//    //            if ( Expr res = get_attr_rec( super, name ) )
-//    //                return res;
-//    //        }
-//    //    }
+    //    // interet d'avoir super:
+    //    //    // ancestors
+    //    // OR NOT: may use aggr of attributes done in TypeInfo
+    //    //    if ( name != STRING_init_NUM and name != STRING_destroy_NUM ) {
+    //    //        for( int i = 0; i < self.type->ancestors.size(); ++i ) {
+    //    //            Expr super = self.type->make_attr( self, self.type->ancestor_attr( i ) );
+    //    //            if ( Expr res = get_attr_rec( super, name ) )
+    //    //                return res;
+    //    //        }
+    //    //    }
 }
 
 Expr Scope::copy( Expr &var ) {
-    // shortcut (for bootstrap)
+    // shortcut (for bootstraping)
     if ( var->type()->pod() )
         return room( var->get( cond ) );
     //
@@ -492,115 +457,32 @@ Expr Scope::get_attr( Expr self, int name ) {
     if ( self.error() )
         return ip->error_var();
 
-    // methods
-    Type *type = self->ptype();
-    for( std::pair<int,Vec<Class::Code> > &m : type->orig->methods ) {
-        if ( m.first == name ) {
-            Scope ns( &ip->main_scope, this, "preinit" );
-            ns.callable = type->orig;
-            ns.self = self;
-
-            Vec<Expr> lst;
-            find_var_clist( lst, name );
-            keep_only_method_surdef( lst, cond );
-            if ( type->ancestors.size() )
-                TODO;
-            for( int i = 0; i < m.second.size(); ++i )
-                lst << ns.parse( m.second[ i ].sf, m.second[ i ].tok, "method parsing" );
-            return ip->make_SurdefList( lst, self );
-        }
-    }
-
     // attributes
+    Type *type = self->ptype();
     type->parse();
-    for( Class::Attribute &a : type->orig->attributes ) {
-        if ( a.name == name ) {
-            Type::Attr &at = type->attributes[ a.num ];
-            if ( at.off >= 0 )
+    for( Type::Attr &at : type->attributes ) {
+        if ( at.name == name ) {
+            if ( at.off >= 0 ) {
+                if ( at.val->flags & Inst::SURDEF ) {
+                    //Vec<Expr> lst;
+                    //find_var_clist( lst, name );
+                    //keep_only_method_surdef( lst, cond );
+                    TODO;
+                }
                 return rcast( at.type ? at.val->type() : at.get_ptr_type(), add( self, at.off ) );
+            }
             return at.val;
         }
     }
 
-    // template parameters
-    for( int i = 0; i < type->orig->arg_names.size(); ++i )
-        if ( type->orig->arg_names[ i ] == name )
-            return type->parameters[ i ];
-
     // not found ? -> search in global scope for def ...( self, ... )
     Vec<Expr> lst;
-    find_var_clist( lst, name );
+    find_var_clist( lst, name, false, true );
     keep_only_method_surdef( lst, cond );
     if ( lst.size() == 0 )
         return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self->type() ) + "' (or surdef with self as arg in parent scopes)" );
 
     return ip->make_SurdefList( lst, self );
-
-//    if ( self.type->orig == &ip->class_GetSetSopInst )
-//        TODO;
-//        //return get_attr( get_val_if_GetSetSopInst( self, sf, off ), name, sf, off );
-
-//    // in self or super(s)
-//    Expr res = get_attr_rec( self, name );
-
-//    // look for external methods
-//    if ( res.type == 0 ) {
-//        for( Scope *s = this; s; s = s->parent ) {
-//            if ( s->static_scope ) {
-//                Expr tmp = s->static_scope->get( name );
-//                if ( tmp.defined() ) {
-//                    if ( tmp.type == &ip->type_Def ) {
-//                        res = tmp;
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-//    if ( res.type == 0 )
-//        return ip->ret_error( "no attr '" + ip->str_cor.str( name ) + "' in object of type '" + to_string( *self.type ) + "' or in parent scopes" );
-
-
-//    if ( res.type->orig == &ip->class_GetSetSopDef ) {
-//        TODO;
-//        //            SI32 get_of = to_int( res.type->parameters[ 0 ] );
-//        //            Expr getr;
-//        //            if ( get_of >= 0 )
-//        //                getr = apply( get_attr( self, get_of, sf, off ), 0, 0, 0, 0, 0, true );
-
-//        //            Vec<Var> par;
-//        //            par << make_type_var( self.type );
-//        //            par << make_type_var( getr.type );
-//        //            for( int i = 0; i < 3; ++i )
-//        //                par << res.type->parameters[ i ];
-//        //            Expr tmp( ip, ip->class_GetSetSopInst.type_for( this, par, sf, off ) );
-//        //            ip->set_ref( tmp.data + 0 * sizeof( void * ), self );
-//        //            ip->set_ref( tmp.data + 1 * sizeof( void * ), getr );
-//        //            return tmp;
-//    }
-
-
-//    if ( res.is_surdef() ) {
-//        // find all the variants
-//        Vec<Var> lst;
-
-//        // in attributes
-//        get_attr_rec( lst, self, name );
-
-//        // (filtered) external methods
-//        int os = lst.size();
-//        for( Scope *s = this; s; s = s->parent )
-//            if ( s->static_scope )
-//                s->static_scope->get( lst, name );
-//        for( int i = os; i < lst.size(); ++i )
-//            if ( not ip->ext_method( lst[ i ] ) )
-//                lst.remove_unordered( i-- );
-
-//        return ip->make_SurdefList( lst );
-//    }
-
-//    return res;
 }
 
 Expr Scope::parse_APPLY( BinStreamReader bin ) {
@@ -716,119 +598,51 @@ Expr Scope::parse_VAR( BinStreamReader bin ) {
     return ip->ret_error( "Impossible to find variable '" + ip->str_cor.str( name ) + "'." );
 }
 
-Expr Scope::parse_VAR_SET( BinStreamReader bin ) {
-    int n = bin.read_positive_integer();
-    int name = read_nstring( bin );
-    Vec<Expr> res;
-    for( int i = 0; i < n; ++i ) {
-         PI8 c = bin.get<PI8>();
-         switch ( c ) {
-         case IR_TOK_VAR_IN_LOCAL_SCOPE : res << _parse_VAR_IN__SCOPE      ( bin, 0 ); break;
-         case IR_TOK_VAR_IN_STATIC_SCOPE: res << _parse_VAR_IN__SCOPE      ( bin, 1 ); break;
-         case IR_TOK_VAR_IN_CATCHED_VARS: res << _parse_VAR_IN_CATCHED_VARS( bin    ); break;
-         case IR_TOK_VAR_IN_ATTR        : res << _parse_VAR_IN_ATTR        ( bin    ); break;
-         default: ERROR( "..." );
-         }
-    }
-    find_var_clist( res, name );
-    return ip->make_SurdefList( res );
-}
-
-Expr Scope::parse_VAR_IN_ATTR( BinStreamReader bin ) {
-    return get_catched_var_in_attr( read_nstring( bin ) );
-}
-
-Expr Scope::get_catched_var_in_attr( int name ) {
-    PRINT( self );
-    PRINT( ip->str_cor.str( name ) );
-    TODO;
-    return 0;
-}
-
-Expr Scope::get_catched_var_in__scope( int np, int ns, bool stat ) {
-    Scope *s = this;
-    for( ; np; --np )
-        s = s->parent;
-    if ( not s )
-        return ip->ret_error( "bad np (not enough scopes)" );
-    Vec<Expr> &vl = stat ? *s->static_vars : s->local_vars;
-    if ( ns >= vl.size() ) {
-        PRINT( ns );
-        PRINT( stat );
-        return ip->ret_error( "bad ns (size of local or static vars is not high enough)" );
-    }
-    return vl[ ns ];
-}
-
-Expr Scope::get_catched_var_in_catched_list( Expr v, int num ) {
-    int o = 0, n = 0;
-    for( Type *vt = v->type(); vt->orig == ip->class_VarargsItemBeg; o += ip->ptr_size, ++n ) {
-        if ( n == num ) {
-            Type *tv = ip->type_from_type_var( vt->parameters[ 0 ] );
-            return slice( tv, v, o );
-        }
-        vt = ip->type_from_type_var( vt->parameters[ 2 ] );
-    }
-    return ip->ret_error( "size of catched var list is too small" );
-}
-
-Expr Scope::get_catched_var_in_catched_vars( int num ) {
+Expr Scope::find_first_var( int name, bool exclude_main_scope, bool exclude_attr ) {
     for( Scope *s = this; s; s = s->parent ) {
-        if ( s->catched_vars ) {
-            Expr v = s->catched_vars->get( cond );
-            return get_catched_var_in_catched_list( v, num );
+        if ( exclude_main_scope and not s->parent )
+            break;
+        if ( exclude_attr and s->class_scope ) {
+            exclude_attr = false;
+            continue;
         }
-        if ( s->callable ) {
-            Expr  f = s->callable->var->get( cond );
-            Type *p = ip->type_from_type_var( f->type()->parameters[ 0 ] );
-            Expr  v = slice( p, f, 64 )->get( cond );
-            return get_catched_var_in_catched_list( v, num );
-        }
+        // local
+        if ( Expr res = s->local_vars.get( name ) )
+            return res;
+        // static
+        if ( Expr res = s->static_vars->get( name ) )
+            return res;
+        // catched_vars
+        if ( s->catched_vars )
+            if ( Expr res = s->catched_vars->get( name ) )
+                return res;
     }
-    return ip->ret_error( "expecting a calling context (a scope that has a callable *)" );
-}
-
-Expr Scope::_parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat ) {
-    int np = bin.read_positive_integer();
-    int ns = bin.read_positive_integer();
-    return get_catched_var_in__scope( np, ns, stat );
-}
-
-Expr Scope::_parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin ) {
-    return get_catched_var_in_catched_vars( bin.read_positive_integer() );
-}
-
-Expr Scope::_parse_VAR_IN_ATTR( BinStreamReader &bin ) {
-    return get_catched_var_in_attr( read_nstring( bin ) );
-}
-
-Expr Scope::parse_VAR_IN_LOCAL_SCOPE( BinStreamReader bin ) {
-    return _parse_VAR_IN__SCOPE( bin, false );
-}
-
-Expr Scope::parse_VAR_IN_STATIC_SCOPE( BinStreamReader bin ) {
-    return _parse_VAR_IN__SCOPE( bin, true );
-}
-
-Expr Scope::parse_VAR_IN_CATCHED_VARS( BinStreamReader bin ) {
-    return _parse_VAR_IN_CATCHED_VARS( bin );
-}
-
-Expr Scope::find_first_var( int name ) {
-    if ( Expr res = ip->vars.get( name ) )
-        return res;
     return (Inst *)0;
 }
 
-void Scope::find_var_clist( Vec<Expr> &lst, int name ) {
-    ip->vars.get( lst, name );
+void Scope::find_var_clist( Vec<Expr> &lst, int name, bool exclude_main_scope, bool exclude_attr ) {
+    for( Scope *s = this; s; s = s->parent ) {
+        if ( exclude_main_scope and not s->parent )
+            break;
+        if ( exclude_attr and s->class_scope ) {
+            exclude_attr = false;
+            continue;
+        }
+        // local
+        s->local_vars.get( lst, name );
+        // static
+        s->static_vars->get( lst, name );
+        // catched_vars
+        if ( s->catched_vars )
+            s->catched_vars->get( lst, name );
+    }
 }
 
-Expr Scope::find_var( int name ) {
-    Expr res = find_first_var( name );
+Expr Scope::find_var( int name, bool exclude_main_scope, bool exclude_attr ) {
+    Expr res = find_first_var( name, exclude_main_scope, exclude_attr );
     if ( res and res->is_surdef() ) {
         Vec<Expr> lst;
-        find_var_clist( lst, name );
+        find_var_clist( lst, name, exclude_main_scope, exclude_attr );
         return ip->make_SurdefList( lst );
     }
     return res;
@@ -854,45 +668,26 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
         //        var.data->flags = PRef::CONST;
     }
 
-    return ip->reg_var( name, var );
+    return reg_var( name, var, flags & IR_ASSIGN_STATIC );
 }
 
-Expr Scope::parse_PUSH_IN_SCOPE( BinStreamReader bin ) {
-    int flags = bin.read_positive_integer();
-    Expr var = parse( sf, bin.read_offset(), "lhs to push" );
-
-    //
-    if ( flags & IR_ASSIGN_TYPE )
-        TODO;
-        // Expr = apply( var, 0, 0, 0, 0, 0, class_scope ? APPLY_MODE_PARTIAL_INST : APPLY_MODE_STD, sf, off );
-
-    if ( flags & IR_ASSIGN_CONST ) {
-        TODO;
-        //        if ( ( var.flags & Var::WEAK_CONST ) == 0 and var.referenced_more_than_one_time() )
-        //            disp_error( "Impossible to make this variable fully const (already referenced elsewhere)", sf, off );
-        //        var.flags |= Var::WEAK_CONST;
-        //        var.data->flags = PRef::CONST;
-    }
-
-    if ( flags & IR_ASSIGN_STATIC )
-        *static_vars << var;
-    else
-        local_vars << var;
-    return var;
+Expr Scope::reg_var( int name, Expr var, bool stat ) {
+    NamedVarList &vars = stat ? *static_vars : local_vars;
+    if ( vars.contains( name ) and not var->is_surdef() )
+        return ip->ret_error( "There is already a Expr named '" + ip->str_cor.str( name ) + "' in the current scope" );
+    return vars.add( name, var );
 }
 
-Expr Scope::parse_REASSIGN( BinStreamReader bin ) {
-    Expr a = parse( sf, bin.read_offset(), "rhs" );
-    Expr b = parse( sf, bin.read_offset(), "lhs" );
-    return apply( get_attr( a, STRING_reassign_NUM ), 1, &b, 0, 0, 0, APPLY_MODE_STD );
-}
+
 Expr Scope::parse_GET_ATTR( BinStreamReader bin ) {
     Expr self = parse( sf, bin.read_offset(), "rhs" );
-    int attr = read_nstring( bin );
     if ( self.error())
         return ip->error_var();
+
+    int attr = read_nstring( bin );
     if ( Expr res = get_attr( self, attr ) )
         return res;
+
     return ip->ret_error( "No attribute " + ip->str_cor.str( attr ) );
 }
 Expr Scope::parse_GET_ATTR_PTR( BinStreamReader bin ) {
@@ -920,7 +715,7 @@ Expr Scope::parse_IF( BinStreamReader bin ) {
     if ( cond_if->ptype() != ip->type_Bool ) {
         cond_if = apply( find_var( STRING_Bool_NUM ), 1, &cond_if );
         if ( cond_if.error() )
-            return cond_if;
+            return ip->error_var();
     }
 
     // simplified expression
@@ -1149,15 +944,16 @@ Expr Scope::parse_FOR( BinStreamReader bin ) {
     for( int i = 0; i < nc; ++i )
         vals[ i ] = parse( sf, bin.read_offset(), "for rhs" );
 
-    Vec<Callable::CatchedVar> catched_vars;
-    Callable::read_catched_vars( catched_vars, bin, this );
+    //Vec<Callable::CatchedVar> catched_vars;
+    //Callable::read_catched_vars( catched_vars, bin, this );
+    TODO;
 
     const PI8 *tok = bin.read_offset();
 
     // block expr
     Vec<Expr> catched_vals;
-    for( Callable::CatchedVar &cv : catched_vars )
-        catched_vals << get_catched_var( cv );
+    //for( Callable::CatchedVar &cv : catched_vars )
+    //    catched_vals << get_catched_var( cv );
     Expr cv = ip->make_Varargs( catched_vals );
 
     Vec<Expr> expr_names;
@@ -1193,10 +989,6 @@ Expr Scope::parse_LIST( BinStreamReader bin ) {
     return ip->error_var();
 }
 Expr Scope::parse_LAMBDA( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
-}
-Expr Scope::parse_NULL_REF( BinStreamReader bin ) {
     TODO;
     return ip->error_var();
 }
@@ -1244,16 +1036,12 @@ Expr Scope::parse_syscall( BinStreamReader bin ) {
 
 Expr Scope::parse_set_base_size_and_alig( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
-    Expr a = parse( sf, bin.read_offset(), "bs" );
-    Expr b = parse( sf, bin.read_offset(), "ba" );
+    Expr a = parse( sf, bin.read_offset(), "bs" )->get( cond );
+    Expr b = parse( sf, bin.read_offset(), "ba" )->get( cond );
     if ( a.error() or b.error() )
         return ip->void_var();
-    TODO;
-    //    if ( a->get_val( ip->type_SI32, &base_size ) == false or b->get_val( ip->type_SI32, &base_alig ) == false ) {
-    //        PRINT( a );
-    //        PRINT( b );
-    //        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 known values" );
-    //    }
+    if ( a->get_val( ip->type_SI32, &base_size ) == false or b->get_val( ip->type_SI32, &base_alig ) == false )
+        return ip->ret_error( "set_base_size_and_alig -> SI32/SI64 known values" );
     return ip->void_var();
 }
 Expr Scope::parse_set_RawRef_dependancy( BinStreamReader bin ) {
@@ -1354,8 +1142,9 @@ Expr Scope::parse_block_exec( BinStreamReader bin ) {
 
     // catched +
     Scope ns( 0, this, "for" );
-    ns.local_vars << val;
-    ns.catched_vars = slice( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk, 0 );
+    TODO;
+    //ns.local_vars << val;
+    //ns.catched_vars = slice( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk, 0 );
 
     return ns.parse( nsf, tok, "for block" );
 }

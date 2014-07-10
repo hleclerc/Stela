@@ -1,12 +1,16 @@
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Callable.h"
 
 Ast_Callable::Ast_Callable( int off ) : Ast( off ) {
 }
 
 void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    // function name
+    avail.insert( name );
+
+    // new scope
     std::set<String> navail = avail;
 
     // arguments
@@ -53,7 +57,7 @@ void Ast_Callable::write_to_stream( Stream &os, int nsp ) const {
     block->write_to_stream( os << " ", nsp + 2 );
 }
 
-void Ast_Callable::_get_info( AstWriter *aw ) const {
+void Ast_Callable::_get_info( IrWriter *aw ) const {
     aw->push_nstring( name );
 
     aw->data << bool( self_as_arg      ) * IR_SELF_AS_ARG +
@@ -86,10 +90,9 @@ void Ast_Callable::_get_info( AstWriter *aw ) const {
     if ( condition )
         aw->push_delayed_parse( condition.ptr() );
 
-    // catched var data
-    PRINT( name );
-    aw->push_potential_catched_vars_from( this );
-
     // block
     aw->push_delayed_parse( block.ptr() );
+
+    // catched var data
+    aw->push_potential_catched_vars_from( this );
 }

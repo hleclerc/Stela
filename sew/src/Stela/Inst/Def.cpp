@@ -8,7 +8,11 @@
 #include "Ip.h"
 #include "Op.h"
 
-Def::TrialDef::TrialDef( Def *orig ) : orig( orig ) {
+Def::TrialDef::TrialDef( Def *orig, Scope *caller ) : orig( orig ),
+    ns( &ip->main_scope, caller,
+           "TrialDef_" + ip->str_cor.str( orig->name ) + "_" + orig->sf->name + "_" + to_string( orig->off ) ) {
+
+    ns.catched_vars = &orig->catched_vars;
 }
 
 Def::TrialDef::~TrialDef() {
@@ -20,8 +24,6 @@ Def::Def() {
 void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
     Callable::read_bin( scope, bin );
 
-    block = Code( sf, bin.read_offset() );
-
     if ( flags & IR_HAS_RETURN_TYPE )
         return_type = Code( sf, bin.read_offset() );
 
@@ -30,14 +32,14 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
         attr_init.reserve( nb_args );
         for( int n = 0; n < nb_args; ++n ) {
             AttrInit *ai = attr_init.push_back();
-            ai->name = scope->read_nstring( bin );
+            ai->attr = scope->read_nstring( bin );
             ai->nu = bin.read_positive_integer();
             for( int i = 0; i < ai->nu; ++i )
                 ai->args.push_back( sf, bin.read_offset() );
             ai->nn = bin.read_positive_integer();
             for( int i = 0; i < ai->nn; ++i ) {
-                ai->args.push_back( sf, bin.read_offset() );
                 ai->names.push_back( scope->read_nstring( bin ) );
+                ai->args.push_back( sf, bin.read_offset() );
             }
         }
     }
@@ -48,15 +50,13 @@ void Def::read_bin( Scope *scope, BinStreamReader &bin ) {
 }
 
 Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self ) {
-    TrialDef *res = new TrialDef( this );
+    TrialDef *res = new TrialDef( this, caller );
 
     if ( flags & IR_HAS_COMPUTED_PERT ) return res->wr( "TODO: computed pertinence" );
 
     // nb arguments
     if ( pnu + pnn + nu + nn < min_nb_args() ) return res->wr( "no enough arguments" );
     if ( pnu + pnn + nu + nn > max_nb_args() ) return res->wr( "To much arguments" );
-
-    Scope scope( &ip->main_scope, caller, "TrialDef_" + ip->str_cor.str( name ) + "_" + sf->name + "_" + to_string( off ) );
 
     if ( pnu + pnn )
         TODO;
@@ -93,7 +93,7 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
     } else {
         // unnamed args
         for( int i = 0; i < nu; ++i )
-            scope.local_vars << vu[ i ];
+            res->ns.reg_var( arg_names[ i ], vu[ i ] );
         // basic check
         for( int n = 0; n < nn; ++n )
             if ( not arg_names.contains( names[ n ] ) )
@@ -108,11 +108,12 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
                     int j = i - ( arg_names.size() - arg_defaults.size() );
                     if ( j < 0 )
                         return res->wr( "unspecified mandatory argument" );
-                    scope.local_vars << scope.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "making default value" );
+                    Expr v = res->ns.parse( arg_defaults[ j ].sf, arg_defaults[ j ].tok, "default value" );
+                    res->ns.reg_var( arg_name, v );
                     break;
                 }
                 if ( arg_name == names[ n ] ) {
-                    scope.local_vars << vn[ n ];
+                    res->ns.reg_var( arg_name, vn[ n ] );
                     used_arg[ n ] = true;
                     break;
                 }
@@ -125,7 +126,7 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
 
     // arg constraints
     for( int i = 0; i < arg_constraints.size(); ++i ) {
-        Expr v = scope.local_vars[ i ];
+        Expr v = res->ns.find_var( arg_names[ i ] );
         int n = v->type()->orig->name;
         if ( int t = arg_constraints[ i ].class_names.size() ) {
             for( int j = 0; ; ++j ) {
@@ -145,43 +146,37 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int 
             return res->wr( "condition = false" );
     }
 
-    res->args = scope.local_vars;
     return res;
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr _self ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr _self ) {
     if ( apply_mode != Scope::APPLY_MODE_STD )
         TODO;
 
-    // new scope (with local static variables)
-    String path = "Def_" + to_string( ip->str_cor.str( orig->name ) ) + "_" + orig->sf->name + "_" + to_string( orig->off );
-    for( int i = 0; i < orig->arg_names.size(); ++i )
-        path += "_" + to_string( *args[ i ]->type() );
-    Scope ns( &ip->main_scope, caller, path );
-    ns.callable = orig;
+    //
     ns.cond = ns.cond and cond;
-    ns.local_vars = args;
 
     // particular case
     if ( orig->name == STRING_init_NUM ) {
         // get self
-        Type *vt = catched_vars->ptype();
+        TODO;
         Expr self;
-        for( int i = 0, o = 0; ; ++i ) {
-            if ( i == orig->catched_vars.size() ) {
-                if ( not _self )
-                    return ip->ret_error( "no self ??" );
-                self = _self;
-                break;
-            }
-            if ( orig->catched_vars[ i ].type == IN_SELF ) {
-                Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
-                self = slice( ts, catched_vars->get( cond ), o );
-                break;
-            }
-            vt = ip->type_from_type_var( vt->parameters[ 2 ] );
-            o += ip->ptr_size;
-        }
+        //        Type *vt = catched_vars->ptype();
+        //        for( int i = 0, o = 0; ; ++i ) {
+        //            if ( i == orig->catched_vars.size() ) {
+        //                if ( not _self )
+        //                    return ip->ret_error( "no self ??" );
+        //                self = _self;
+        //                break;
+        //            }
+        //            if ( orig->catched_vars[ i ].type == IN_SELF ) {
+        //                Type *ts = ip->type_from_type_var( vt->parameters[ 0 ] );
+        //                self = slice( ts, catched_vars->get( cond ), o );
+        //                break;
+        //            }
+        //            vt = ip->type_from_type_var( vt->parameters[ 2 ] );
+        //            o += ip->ptr_size;
+        //        }
 
         // init attributes
         Type *self_type = self->ptype();
@@ -194,10 +189,10 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
         for( AttrInit &d : orig->attr_init ) {
             for( int i = 0; ; ++i ) {
                 if ( i == self_type->attributes.size() )
-                    return ip->ret_error( "no attribute " + ip->str_cor.str( d.name ) + " in class" );
+                    return ip->ret_error( "no attribute " + ip->str_cor.str( d.attr ) + " in class" );
 
                 Type::Attr &a = self_type->attributes[ i ];
-                if ( d.name == a.name ) {
+                if ( d.attr == a.name ) {
                     // parse args
                     Vec<Expr> args;
                     int nu = d.args.size() - d.names.size();

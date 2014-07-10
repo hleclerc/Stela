@@ -19,7 +19,7 @@ public:
 protected:
     friend class AstMaker;
 
-    virtual void _get_info( AstWriter *aw ) const;
+    virtual void _get_info( IrWriter *aw ) const;
 
     AutoPtr<Ast>                 f;
     SplittedVec<AutoPtr<Ast>,4 > args;

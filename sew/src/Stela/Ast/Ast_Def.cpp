@@ -1,6 +1,6 @@
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Def.h"
 
 Ast_Def::Ast_Def( int off ) : Ast_Callable( off ) {
@@ -17,7 +17,7 @@ void Ast_Def::get_potentially_needed_ext_vars( std::set<String> &res, std::set<S
     }
 }
 
-void Ast_Def::_get_info( AstWriter *aw ) const {
+void Ast_Def::_get_info( IrWriter *aw ) const {
     Ast_Callable::_get_info( aw );
 
     // return type
@@ -40,7 +40,7 @@ void Ast_Def::_get_info( AstWriter *aw ) const {
                 aw->push_delayed_parse( sw.args[ i ].ptr() );
 
             // named args
-            aw->data << nu;
+            aw->data << nn;
             for( int i = 0; i < nn; ++i ) {
                 aw->push_nstring( sw.names[ i ] );
                 aw->push_delayed_parse( sw.args[ nu + i ].ptr() );

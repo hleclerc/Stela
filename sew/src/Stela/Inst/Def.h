@@ -2,21 +2,22 @@
 #define DEF_H
 
 #include "Callable.h"
+#include "Scope.h"
 
 /**
 */
 class Def : public Callable {
 public:
     struct TrialDef : Trial {
-        TrialDef( Def *orig );
+        TrialDef( Def *orig, Scope *caller );
         virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self );
-        Vec<Expr> args; ///< def arguments
-        Def *orig;
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr self );
+        Def  *orig;
+        Scope ns;
     };
 
     struct AttrInit {
-        SI32 name;
+        SI32 attr; ///< attribute name
         SI32 nu, nn;
         Vec<Code> args;
         Vec<SI32> names; ///< named arguments
@@ -27,7 +28,6 @@ public:
     virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, Scope *caller, Expr self );
 
     // data
-    Code          block;
     Code          return_type;
     Vec<AttrInit> attr_init; ///< if init
 

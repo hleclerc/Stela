@@ -7,5 +7,8 @@ DECL_BT( SourceFile )
 
 DECL_BT( VarargsItemEnd )
 
+DECL_BT( Class )
+DECL_BT( Def )
+
 #include "DeclArytTypes.h"
 

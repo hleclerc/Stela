@@ -27,7 +27,7 @@ public:
     Expr error_var();
     Expr void_var();
 
-    Vec<Expr> *get_static_vars( String path ); ///<
+    NamedVarList *get_static_vars( String path ); ///<
     Expr reg_var( int name, Expr var ); ///< in main scope
 
     void add_inc_path( String inc_path );
@@ -43,6 +43,9 @@ public:
     Type *make_Varargs_type( const Vec<Type *> &types, const Vec<int> &names, int o );
     Type *type_from_type_var( Expr var );
 
+    void get_args_in_varargs( Vec<Expr> &args, Vec<int> &names, Expr lst );
+    Vec<Expr> get_args_in_varargs( Expr lst );
+
     #define DECL_BT( T ) Type *type_##T;
     #include "DeclBaseClass.h"
     #undef DECL_BT
@@ -55,20 +58,19 @@ public:
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-    std::map<String,SourceFile> sourcefiles;
-    std::map<String,Vec<Expr> > static_vars;
-    std::map<Type *,Type *>     ptr_map;
-    Vec<String>                 inc_paths;
-    NamedVarList                vars;
+    std::map<String,NamedVarList> static_vars;
+    std::map<String,SourceFile>   sourcefiles;
+    std::map<Type *,Type *>       ptr_map;
+    Vec<String>                   inc_paths;
 
-    ErrorList                   error_list;
-    NstrCor                     str_cor;
+    ErrorList                     error_list;
+    NstrCor                       str_cor;
 
-    Expr                        sys_state;
+    Expr                          sys_state;
 
-    Scope                       main_scope;
-    Scope                      *cur_scope;
-    IpSnapshot                 *cur_ip_snapshot;
+    Scope                         main_scope;
+    Scope                        *cur_scope;
+    IpSnapshot                   *cur_ip_snapshot;
 };
 
 extern Ip *ip;

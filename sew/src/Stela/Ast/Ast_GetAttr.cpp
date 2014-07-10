@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_GetAttr.h"
 
 Ast_GetAttr::Ast_GetAttr( int off ) : Ast( off ) {
@@ -26,7 +26,7 @@ void Ast_GetAttr::write_to_stream( Stream &os, int nsp ) const {
 }
 
 
-void Ast_GetAttr::_get_info( AstWriter *aw ) const {
+void Ast_GetAttr::_get_info( IrWriter *aw ) const {
     TODO;
 }
 

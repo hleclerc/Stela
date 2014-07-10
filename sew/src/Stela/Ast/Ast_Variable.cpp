@@ -1,6 +1,6 @@
 #include "../Ir/Numbers.h"
 #include "Ast_Variable.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 
 Ast_Variable::Ast_Variable( int off, String str ) : Ast( off ), str( str ) {
 }
@@ -14,7 +14,7 @@ void Ast_Variable::write_to_stream( Stream &os, int nsp ) const {
     os << str;
 }
 
-//void AstWriter::parse_variable( const Lexem *l ) {
+//void IrWriter::parse_variable( const Lexem *l ) {
 //    if ( l->eq( "true" ) ) {
 //        data << IR_TOK_TRUE;
 //        push_offset( l );
@@ -93,7 +93,7 @@ void Ast_Variable::write_to_stream( Stream &os, int nsp ) const {
 //    }
 //}
 
-void Ast_Variable::_get_info( AstWriter *aw ) const {
+void Ast_Variable::_get_info( IrWriter *aw ) const {
     aw->push_nstring( str );
 }
 

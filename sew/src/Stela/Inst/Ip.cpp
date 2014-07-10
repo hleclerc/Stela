@@ -1,6 +1,7 @@
 #include "../System/BinStreamReader.h"
 #include "ReplBits.h"
 #include "Class.h"
+#include "Slice.h"
 #include "Room.h"
 #include "Type.h"
 #include "Cst.h"
@@ -25,6 +26,8 @@ Ip::Ip() : main_scope( 0, 0, "", this ), cur_scope( &main_scope ), cur_ip_snapsh
     type_Type ->_len = 64; type_Type ->_ali = 32; type_Type ->_pod = 1;
     type_Void ->_len =  0; type_Void ->_ali =  1; type_Void ->_pod = 1;
     type_Error->_len =  0; type_Error->_ali =  1; type_Error->_pod = 1;
+    type_Def  ->_len = 64; type_Def  ->_ali = 32; type_Def  ->_pod = 1;
+    type_Class->_len = 64; type_Class->_ali = 32; type_Class->_pod = 1;
 
     type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
     ptr_size = 8 * sizeof( void * );
@@ -75,14 +78,8 @@ Expr Ip::void_var() {
 }
 
 
-Vec<Expr> *Ip::get_static_vars( String path ) {
+NamedVarList *Ip::get_static_vars( String path ) {
     return &static_vars[ path ];
-}
-
-Expr Ip::reg_var( int name, Expr var ) {
-    if ( vars.contains( name ) and not var->is_surdef() )
-        return ip->ret_error( "There is already a Expr named '" + ip->str_cor.str( name ) + "' in the current scope" );
-    return vars.add( name, var );
 }
 
 void Ip::add_inc_path( String inc_path ) {
@@ -140,7 +137,7 @@ Expr Ip::make_Varargs( Vec<Expr> &lst, const Vec<int> &names ) {
 
 Expr Ip::make_SurdefList( Vec<Expr> &surdefs, Expr self ) {
     // SurdefList[ surdef_type, parm_type, self_type ]
-    //   c ~= surdef_type (-> Ptr[Vararg[...]])
+    //   c ~= surdef_type (-> Ptr[VarargBeg[...]] with )
     //   p ~= parm_type (-> Void or Ptr[Vararg[...]])
     //   s ~= self_type (-> Void or Ptr[Vararg[...]])
     Expr vs = make_Varargs( surdefs );
@@ -190,4 +187,22 @@ Type *Ip::ptr_for( Type *type ) {
 
     ptr_map[ type ] = res;
     return res;
+}
+
+void Ip::get_args_in_varargs( Vec<Expr> &args, Vec<int> &names, Expr lst ) {
+    int o = 0, tn;
+    for ( Type *vt = lst->type(); vt->orig == ip->class_VarargsItemBeg; vt = ip->type_from_type_var( vt->parameters[ 2 ] ), o += ip->ptr_size ) {
+        args << slice( ip->type_from_type_var( vt->parameters[ 0 ] ), lst, o );
+        if ( not vt->parameters[ 1 ]->get()->get_val( type_SI32, &tn ) )
+            return disp_error( "expecting a known SI32 as second arg of a varargs" );
+        if ( tn >= 0 )
+            names << tn;
+    }
+}
+
+Vec<Expr> Ip::get_args_in_varargs( Expr lst ) {
+    Vec<Expr> args;
+    Vec<int> names;
+    get_args_in_varargs( args, names, lst );
+    return args;
 }

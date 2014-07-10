@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Call.h"
 
 Ast_Call::Ast_Call( int off ) : Ast( off ) {
@@ -22,6 +22,18 @@ void Ast_Call::write_to_stream( Stream &os, int nsp ) const {
     }
 }
 
-void Ast_Call::_get_info( AstWriter *aw ) const {
-    TODO;
+void Ast_Call::_get_info( IrWriter *aw ) const {
+    int nn = names.size(), nu = args.size() - nn;
+
+    aw->push_delayed_parse( f.ptr() );
+
+    aw->data << nu;
+    for( int i = 0; i < nu; ++i )
+        aw->push_delayed_parse( args[ i ].ptr() );
+
+    aw->data << nn;
+    for( int i = 0; i < nn; ++i ) {
+        aw->push_nstring( names[ i ] );
+        aw->push_delayed_parse( args[ nu + i ].ptr() );
+    }
 }

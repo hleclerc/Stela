@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_ChBeBa.h"
 
 Ast_ChBeBa::Ast_ChBeBa( int off ) : Ast_Call( off ) {

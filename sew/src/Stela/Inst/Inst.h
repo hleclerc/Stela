@@ -20,8 +20,10 @@ public:
         int   ninp; ///< input number (or TPAR_...)
     };
     enum {
-        CONST = 1,
-        SURDEF = 2
+        CONST     = 1,
+        SURDEF    = 2,
+        PART_INST = 4 // partial instanciation
+
     };
     enum {
         TPAR_DEP = -1,

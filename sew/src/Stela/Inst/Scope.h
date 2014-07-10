@@ -12,22 +12,20 @@ class Ip;
 */
 class Scope {
 public:
-    /// parent = where to find the local var
-    /// closure ??
+    /// parent = where to find the named variables
     Scope( Scope *parent, Scope *caller, String name, Ip *ip = 0 );
 
     Expr import( String file );
-    Expr parse( SourceFile *sf, const PI8 *tok, const char *reason ); ///< version that change sf in ip
-    Expr parse( const PI8 *tok ); ///< parse from the same sf
     int  read_nstring( BinStreamReader &bin );
+    Expr parse( SourceFile *sf, const PI8 *tok, const char *reason ); ///< version that change sf in ip
 
     Scope        *parent;
     Scope        *caller;
     String        path;
 
-    Vec<Expr>    *static_vars;
-    Vec<Expr>     local_vars;
-    Expr          catched_vars;
+    NamedVarList *static_vars;
+    NamedVarList  local_vars;
+    NamedVarList *catched_vars;
 
     SourceFile   *sf;     ///< reading context
     SI32          off;    ///< reading context
@@ -39,7 +37,6 @@ public:
     bool          for_scope;
     Scope        *for_block;
 
-    Callable     *callable;
     Type         *class_scope;
     bool          do_not_execute_anything;
     bool          method;
@@ -47,27 +44,24 @@ public:
     bool          disp_tok;
     int           creation_date;
 
+    int           base_size;
+    int           base_alig;
+
     enum ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, int *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
     Expr get_attr( Expr self, int name );
-    Expr find_var( int name );
+    Expr find_var( int name, bool exclude_main_scope = false, bool exclude_attr = false );
+    Expr reg_var( int name, Expr var, bool stat = false );
     Expr copy( Expr &Expr );
 
 protected:
-    Expr parse_CALLABLE( BinStreamReader bin, Class *base_class );
-    void find_var_clist( Vec<Expr> &lst, int name );
-    Expr find_first_var( int name );
+    Expr _parse( const PI8 *tok ); ///< parse from the same sf
+    Expr parse_CALLABLE( BinStreamReader bin, Type *base_type );
+    void find_var_clist( Vec<Expr> &lst, int name, bool exclude_main_scope, bool exclude_attr );
+    Expr find_first_var( int name, bool exclude_main_scope, bool exclude_attr );
     void get_attr_rec( Vec<Expr> &res, Expr self, int name );
     Expr get_attr_rec( Expr self, int name );
-    Expr _parse_VAR_IN__SCOPE( BinStreamReader &bin, bool stat );
-    Expr _parse_VAR_IN_CATCHED_VARS( BinStreamReader &bin );
-    Expr _parse_VAR_IN_ATTR( BinStreamReader &bin );
-    Expr get_catched_var_in__scope( int np, int ns, bool stat );
-    Expr get_catched_var_in_attr( int name );
-    Expr get_catched_var_in_catched_vars( int s );
     void BREAK( int n, BoolOpSeq cond );
-    Expr get_catched_var( Callable::CatchedVar &cv );
-    Expr get_catched_var_in_catched_list( Expr v, int num );
 
     struct RemBreak {
         int       count;

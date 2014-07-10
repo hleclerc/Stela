@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Class.h"
 
 Ast_Class::Ast_Class( int off ) : Ast_Callable( off ) {
@@ -11,7 +11,7 @@ void Ast_Class::get_potentially_needed_ext_vars( std::set<String> &res, std::set
         inheritance[ i ]->get_potentially_needed_ext_vars( res, avail );
 }
 
-void Ast_Class::_get_info( AstWriter *aw ) const {
+void Ast_Class::_get_info( IrWriter *aw ) const {
     // extends
     aw->data << inheritance.size();
     for( int i = 0; i < inheritance.size(); ++i )

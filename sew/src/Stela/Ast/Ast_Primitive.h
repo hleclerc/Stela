@@ -9,7 +9,7 @@
 */
 class Ast_Primitive : public Ast {
 public:
-    Ast_Primitive( int off );
+    Ast_Primitive( int off, int tok_number );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
@@ -17,7 +17,7 @@ public:
 protected:
     friend class AstMaker;
     
-    virtual void _get_info( AstWriter *aw ) const;
+    virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
     SplittedVec<AutoPtr<Ast>,4 > args;

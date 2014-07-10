@@ -1,5 +1,5 @@
 #include "../Ir/Numbers.h"
-#include "AstWriter.h"
+#include "IrWriter.h"
 #include "Ast_Continue.h"
 
 Ast_Continue::Ast_Continue( int off ) : Ast( off ) {
@@ -11,7 +11,7 @@ void Ast_Continue::write_to_stream( Stream &os, int nsp ) const {
 }
 
 
-void Ast_Continue::_get_info( AstWriter *aw ) const {
+void Ast_Continue::_get_info( IrWriter *aw ) const {
     TODO;
 }
 

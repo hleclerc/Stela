@@ -1,5 +1,5 @@
-#ifndef Ast_WRITER_H
-#define Ast_WRITER_H
+#ifndef Ir_WRITER_H
+#define Ir_WRITER_H
 
 #include "../System/BinStreamWriter.h"
 #include "../System/ErrorList.h"
@@ -9,9 +9,9 @@ class Ast;
 
 /**
 */
-class AstWriter {
+class IrWriter {
 public:
-    AstWriter( Ast *root );
+    IrWriter( Ast *root );
 
     ST   size_of_binary_data(); ///< may be called to reserve the size for ptr for copy_to( ptr );
     void copy_binary_data_to( PI8 *ptr );
@@ -50,4 +50,4 @@ protected:
     std::map<std::string,int>    nstrings;
 };
 
-#endif // Ast_WRITER_H
+#endif // Ir_WRITER_H

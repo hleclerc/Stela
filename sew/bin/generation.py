@@ -535,14 +535,7 @@ base_token_types = string.split( """
     PTR
     STRING
     VAR
-    VAR_IN_LOCAL_SCOPE
-    VAR_IN_STATIC_SCOPE
-    VAR_IN_CATCHED_VARS
-    VAR_IN_ATTR
-    VAR_SET
     ASSIGN
-    PUSH_IN_SCOPE
-    REASSIGN
     GET_ATTR
     GET_ATTR_PTR
     GET_ATTR_ASK
@@ -562,7 +555,6 @@ base_token_types = string.split( """
     NEW
     LIST
     LAMBDA
-    NULL_REF
     AND
     OR
 """ )

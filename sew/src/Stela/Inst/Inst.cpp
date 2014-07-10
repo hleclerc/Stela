@@ -310,7 +310,6 @@ bool Inst::is_const() const {
     return flags & CONST;
 }
 
-
 bool Inst::get_val( Type *type, void *data ) const {
     return false;
 }

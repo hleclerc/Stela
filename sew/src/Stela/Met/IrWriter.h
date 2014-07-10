@@ -9,9 +9,9 @@ class Ast;
 
 /**
 */
-class AstWriter {
+class IrWriter {
 public:
-    AstWriter( ErrorList &error_list );
+    IrWriter( ErrorList &error_list );
     void parse( Ast *root );
 
     ST   size_of_binary_data(); ///< may be called to reserve the size for ptr for copy_to( ptr );

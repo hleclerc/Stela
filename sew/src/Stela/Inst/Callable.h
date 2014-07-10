@@ -2,6 +2,7 @@
 #define CALLABLE_H
 
 #include "../System/BinStreamReader.h"
+#include "NamedVarList.h"
 #include "BoolOpSeq.h"
 #include "Inst.h"
 class SourceFile;
@@ -21,16 +22,11 @@ public:
         SourceFile *sf;
         const PI8 *tok;
     };
-    struct CatchedVar {
-        int type; ///< IN_...
-        int np;   ///< num parent (only for type IN_LOCAL or IN_STATIC)
-        int ns;   ///< num in scope
-    };
     struct Trial {
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr self );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 
@@ -52,13 +48,11 @@ public:
     bool has_varargs() const;
     bool self_as_arg() const;
 
-    static void read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin, Scope *scope );
-
     // provenance
     SourceFile     *sf;
     int             off; ///< in sourcefile
 
-    // data
+    // data from Ir
     int             name;
     double          pertinence;
 
@@ -70,9 +64,12 @@ public:
     Vec<ArgCst>     arg_constraints; ///< class names
     Code            comp_pert;
     Code            condition;
-    Vec<CatchedVar> catched_vars;
+    Vec<int>        pot_catched_vars; ///< name of potential variables to catch
+    Code            block;
 
+    // f
     Inst           *var;
+    NamedVarList    catched_vars;
 };
 
 #endif // CALLABLE_H

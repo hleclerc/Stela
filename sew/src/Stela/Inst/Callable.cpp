@@ -9,7 +9,7 @@ Callable::Trial::Trial( const char *reason ) : reason( reason ) {
 Callable::Trial::~Trial() {
 }
 
-Expr Callable::Trial::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr catched_vars, Expr self ) {
+Expr Callable::Trial::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, Scope *caller, const BoolOpSeq &cond, Expr self ) {
     ERROR( "weird... should not be here" );
     return ip->error_var();
 }
@@ -29,8 +29,9 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     pertinence = ( flags & IR_HAS_COMPUTED_PERT ) ? 0 : FP64( bin.read_positive_integer() ) / FP64( bin.read_positive_integer() );
     if ( flags & IR_NEG_PERT )
         pertinence = - pertinence;
+    // arguments
     for( int i = 0; i < nargs; ++i ) {
-        // arg name
+        // name
         arg_names << scope->read_nstring( bin );
 
         // constraints
@@ -46,21 +47,11 @@ void Callable::read_bin( Scope *scope, BinStreamReader &bin ) {
     if ( flags & IR_HAS_CONDITION )
         condition = Code( sf, bin.read_offset() );
 
-    read_catched_vars( catched_vars, bin, scope );
-}
+    block = Code( sf, bin.read_offset() );
 
-void Callable::read_catched_vars( Vec<CatchedVar> &catched_vars, BinStreamReader &bin, Scope *scope ) {
-    catched_vars.resize( bin.read_positive_integer() );
-    for( CatchedVar &cv : catched_vars ) {
-        cv.type = bin.read_positive_integer();
-        if ( cv.type == IN_ATTR ) {
-            cv.ns = scope->read_nstring( bin );
-        } else if ( cv.type != IN_SELF ) {
-            if ( cv.type != IN_CATCHED_VARS )
-                cv.np = bin.read_positive_integer();
-            cv.ns = bin.read_positive_integer();
-        }
-    }
+    pot_catched_vars.resize( bin.read_positive_integer() );
+    for( int &cv : pot_catched_vars )
+        cv = scope->read_nstring( bin );
 }
 
 void Callable::write_to_stream( Stream &os ) {
