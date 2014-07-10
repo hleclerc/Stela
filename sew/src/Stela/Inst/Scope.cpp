@@ -476,6 +476,8 @@ void Scope::get_attr_clist( Vec<Expr> &lst, Expr self, int name ) {
 }
 
 Expr Scope::get_attr( Expr self, int name ) {
+    if ( self.error() )
+        return ip->error_var();
     if ( Expr res = get_first_attr( self, name ) )
         if ( not ( res->flags & Inst::SURDEF ) )
             return res;
@@ -556,6 +558,7 @@ Expr Scope::parse_SELECT( BinStreamReader bin ) {
         lt << f_type->parameters[ 2 ]; // self ptr type
         Type *res_type = ip->class_SurdefList->type_for( lt );
         res_type->_len = 2 * ip->ptr_size + ( f_type->parameters[ 2 ] != ip->type_Void ) * ip->ptr_size;
+        res_type->_ali = 32;
 
         Expr res = cst( res_type );
         res = repl_bits( res, 0 * ip->ptr_size, slice( tp_0, f_val, 0 ) );
@@ -650,7 +653,7 @@ Expr Scope::find_var( int name, bool exclude_main_scope ) {
     if ( res and res->is_surdef() ) {
         Vec<Expr> lst;
         find_var_clist( lst, name );
-        return ip->make_SurdefList( lst );
+        return ip->make_SurdefList( lst, self );
     }
     return res;
 }
@@ -680,8 +683,10 @@ Expr Scope::parse_ASSIGN( BinStreamReader bin ) {
 
 Expr Scope::reg_var( int name, Expr var, bool stat ) {
     NamedVarList &vars = stat ? *static_vars : local_vars;
-    if ( vars.contains( name ) and not var->is_surdef() )
+    if ( vars.contains( name ) and not var->is_surdef() ) {
+        TODO;
         return ip->ret_error( "There is already a Expr named '" + ip->str_cor.str( name ) + "' in the current scope" );
+    }
     return vars.add( name, var );
 }
 
@@ -1142,9 +1147,7 @@ Expr Scope::parse_pointed_value( BinStreamReader bin ) {
 }
 Expr Scope::parse_pointer_on( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 1 );
-    Expr a = parse( sf, bin.read_offset(), "a" );
-    TODO;
-    return 0;
+    return room( parse( sf, bin.read_offset(), "a" ) );
 }
 Expr Scope::parse_block_exec( BinStreamReader bin ) {
     CHECK_PRIM_ARGS( 2 );
@@ -1158,7 +1161,7 @@ Expr Scope::parse_block_exec( BinStreamReader bin ) {
     Vec<int> catched_names;
     Vec<Expr> catched_values;
     ip->get_args_in_varargs( catched_values, catched_names,
-                             rcast( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk ) );
+                             slice( ip->type_from_type_var( blkt->parameters[ 2 ] ), blk, 0 )->get( cond ) );
     NamedVarList catched_vars;
     for( int i = 0; i < catched_names.size(); ++i )
         catched_vars.add( catched_names[ i ], catched_values[ i ] );

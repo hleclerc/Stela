@@ -24,7 +24,7 @@ struct Slice : Inst {
     virtual Expr _simp_slice( Type *dst, Expr off ) {
         if ( Expr res = Inst::_simp_slice( dst, off ) )
             return res;
-        return inp[ 0 ]->_simp_slice( dst, add( off, inp[ 1 ] ) );
+        return slice( dst, inp[ 0 ], add( off, inp[ 1 ] ) );
     }
     virtual Expr get( const BoolOpSeq &cond ) {
         int voff;

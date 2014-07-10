@@ -19,7 +19,7 @@ Inst::Inst() {
     op_mp     = 0;
 
     cpt_use   = 0;
-
+    flags     = 0;
 }
 
 Inst::~Inst() {

@@ -1,6 +1,7 @@
 #include "../Codegen/Codegen_C.h"
 #include "Conv.h"
 #include "Type.h"
+#include "Cst.h"
 
 /**
 */
@@ -28,6 +29,12 @@ struct Conv : Inst {
 Expr conv( Type *dst, Expr inp ) {
     if ( dst == inp->type() )
         return inp;
+
+    if ( dst->aryth ) {
+        PI8 val[ dst->sb() ];
+        if ( inp->get_val( dst, val ) )
+            return cst( dst, dst->size(), val );
+    }
 
     Conv *res = new Conv( dst );
     res->add_inp( inp );

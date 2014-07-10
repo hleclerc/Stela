@@ -39,26 +39,26 @@ struct Cst : Inst {
     virtual Type *type() {
         return out_type;
     }
+
+    template<class T>
+    bool _get_val( T *dst ) const {
+        #define DECL_BT( T ) if ( out_type == ip->type_##T ) { *dst = *reinterpret_cast<const T *>( data.ptr() ); return true; }
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+        return false;
+    }
+
     virtual bool get_val( Type *type, void *dst ) const {
         if ( type == out_type ) {
             memcpy( dst, data.ptr(), data.size() );
             return true;
         }
-        if ( type == ip->type_SI32 ) {
-            if ( out_type == ip->type_SI64 ) {
-                *reinterpret_cast<SI32 *>( dst ) = *reinterpret_cast<const SI64 *>( data.ptr() );
-                return true;
-            }
+        if ( type->aryth and out_type->aryth ) {
+            #define DECL_BT( T ) if ( type == ip->type_##T and _get_val( reinterpret_cast<T *>( dst ) ) ) return true;
+            #include "DeclArytTypes.h"
+            #undef DECL_BT
         }
-        if ( type == ip->type_SI64 ) {
-            if ( out_type == ip->type_SI32 ) {
-                *reinterpret_cast<SI64 *>( dst ) = *reinterpret_cast<const SI32 *>( data.ptr() );
-                return true;
-            }
-        }
-        //if ( type == ip->type_Bool ) {
-        //    return out_type->conv( dst, type, data.ptr() );
-        //}
+
         PRINT( *type );
         PRINT( *out_type );
         TODO;

@@ -16,6 +16,20 @@ static Type *type_promote( Type *a, Type *b, TO ) {
         return ip->type_Bool;
     if ( a == b or a->orig == ip->class_Ptr )
         return a;
+    if ( a == ip->type_SI32 ) {
+        if ( b == ip->type_PI64 ) return ip->type_SI64;
+        if ( b == ip->type_SI64 ) return b;
+        if ( b == ip->type_FP32 ) return b;
+        if ( b == ip->type_FP64 ) return b;
+        return a;
+    }
+    if ( a == ip->type_SI64 ) {
+        if ( b == ip->type_FP32 ) return b;
+        if ( b == ip->type_FP64 ) return b;
+        return a;
+    }
+    PRINT( *a );
+    PRINT( *b );
     TODO;
     return 0;
 }

@@ -16,6 +16,18 @@ def mod a, b
 def self_add a, b
     a = a + b
 
+def self_sub a, b
+    a = a - b
+
+def self_mul a, b
+    a = a * b
+
+def self_div a, b
+    a = a / b
+
+def self_mod a, b
+    a = a % b
+
 def reassign a, b
     a.reassign b
 
@@ -27,6 +39,13 @@ def inferior a, b
     
 def superior a, b
     ___sup a, b
+
+class SI8
+    ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
     
 class SI32
     ___set_base_size_and_alig 32, 32
@@ -46,6 +65,9 @@ void := 1
 
 class Ptr[ T ]
     adress := 0p
+   
+def pointer_on val
+    ___pointer_on val
 
 class Block[ sourcefile, tok, catched_vars_type, names ]
     catched_vars ~= catched_vars_type
@@ -85,14 +107,11 @@ class Vec[ T, static_size ]
     
     def init
         for i in self
-            ___info i
-            # i.init()
+            i.init()
     
     def init val
-        # i := 0
-        # while i < static_size
-            # select( i ).init val
-            # i += 1
+        for i in self
+            i.init val
     
     def select i
         ___get_slice self, T, sizeof( T ) * i
@@ -121,14 +140,16 @@ def print val
             break
     sys_write 0, &tmp + nbc, sit - nbc
 
+class A
+    def g a
+        a + 1
+    def f
+        g 32
         
-    
-v := Vec[ SI32, 3 ]()
-v[ 1 ] = 2
-v[ 2 ] = 122
-___disp v[ 0 ]
-___disp v[ 1 ]
-
+# i := A()
+# ___disp i.f()
+print 120    
+# ___disp v[ 1 ]
 # m := M()
 # m.b = ___syscall 0
 # ___disp m.a    

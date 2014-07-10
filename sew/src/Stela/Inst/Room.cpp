@@ -21,7 +21,7 @@ struct Room : Inst {
         //if ( t and t != ip->type_Type ) os << "}";
     }
 
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new Room; }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { Room *res = new Room; res->val = val; return res; }
     virtual Type *type() { return ip->ptr_for( val->type() ); }
     virtual void set( Expr obj, const BoolOpSeq &cond ) {
         if ( flags & CONST )

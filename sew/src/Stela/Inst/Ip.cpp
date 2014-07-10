@@ -6,6 +6,7 @@
 #include "Type.h"
 #include "Cst.h"
 #include "Ip.h"
+#include "Op.h"
 
 Ip *ip;
 
@@ -126,6 +127,7 @@ Expr Ip::make_Varargs( Vec<Expr> &lst, const Vec<int> &names ) {
         types << v->type();
     Type *type = make_Varargs_type( types, names, 0 );
     type->_len = lst.size() * ptr_size;
+    type->_ali = 32;
     type->_pod = 1;
 
     // data
@@ -151,6 +153,7 @@ Expr Ip::make_SurdefList( Vec<Expr> &surdefs, Expr self ) {
         lt << make_type_var( type_Void );
     Type *type = class_SurdefList->type_for( lt );
     type->_len = ptr_size + bool( self ) * ptr_size;
+    type->_ali = 32;
     type->_pod = 1;
 
     // data
@@ -183,9 +186,13 @@ Type *Ip::ptr_for( Type *type ) {
     if ( it != ptr_map.end() )
         return it->second;
 
+    if ( type == type_Error )
+        return type;
+
     Vec<Expr> tl = make_type_var( type );
     Type *res = class_Ptr->type_for( tl );
     res->_len = ptr_size;
+    res->_ali = 32;
     res->_pod = 1;
 
     ptr_map[ type ] = res;
