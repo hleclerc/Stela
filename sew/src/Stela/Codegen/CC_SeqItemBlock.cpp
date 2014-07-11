@@ -42,17 +42,18 @@ bool CC_SeqItemBlock::non_void() {
 }
 
 void CC_SeqItemBlock::write( Codegen_C *cc ) {
-    std::map<Type *,Vec<CppOutReg *> > by_type;
+    // type decl
+    std::map<String,Vec<CppOutReg *> > by_type;
     for( CppOutReg *r : reg_to_decl )
-        by_type[ r->type ] << r;
+        by_type[ cc->type_to_str( r->type ) ] << r;
     for( auto it : by_type ) {
-        cc->on.write_beg();
-        cc->write( it.first );
+        cc->on.write_beg() << it.first;
         for( int i = 0; i < it.second.size(); ++i )
             *cc->os << ( i ? ", R" : " R" ) << it.second[ i ]->num;
         cc->on.write_end( ";" );
     }
 
+    // instructions
     for( int i = 0; i < seq.size(); ++i )
         seq[ i ]->write( cc );
 }

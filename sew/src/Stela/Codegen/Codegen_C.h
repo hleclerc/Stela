@@ -6,6 +6,7 @@
 #include "CppOutReg.h"
 #include "Codegen.h"
 #include <set>
+#include <map>
 
 /**
 */
@@ -21,8 +22,8 @@ public:
     void add_type( Type *type );
 
     CppOutReg *new_out_reg( Type *type );
+    String type_to_str( Type *type );
     void write_out( Expr expr );
-    void write( Type *type );
 
     StreamSepMaker<std::ostringstream> on;
     std::ostringstream main_os;
@@ -37,7 +38,10 @@ public:
 protected:
     void make_code();
     void scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out );
+
     SplittedVec<CppOutReg,32> out_regs;
+    std::set<Type *>          needed_aryth_types;
+    std::map<int,String>      spec_types;
 };
 
 #endif // CODEGEN_C_H

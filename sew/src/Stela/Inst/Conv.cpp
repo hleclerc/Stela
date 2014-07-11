@@ -15,8 +15,7 @@ struct Conv : Inst {
         out_reg->write( cc, new_reg ) << " = ";
         bool p = out_reg->type != dst;
         if ( p ) {
-            cc->write( dst );
-            *cc->os << "(";
+            *cc->os << *dst << "(";
         }
         cc->write_out( inp[ 0 ] );
         if ( p )

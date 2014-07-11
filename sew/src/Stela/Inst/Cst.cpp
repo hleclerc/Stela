@@ -1,3 +1,4 @@
+#include "../Codegen/Codegen_C.h"
 #include "../System/Memcpy.h"
 #include "../System/dcast.h"
 #include <string.h>
@@ -114,8 +115,30 @@ struct Cst : Inst {
         return len;
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
-        if ( len )
-            Inst::write( cc, b );
+        if ( not out_reg )
+            return;
+        if ( out_type->aryth ) {
+            cc->on.write_beg();
+            out_reg->write( cc, new_reg ) << " = ";
+            write_dot( *cc->os );
+            cc->on.write_end( ";" );
+        } else {
+            // decl
+            if ( new_reg ) {
+                cc->on.write_beg();
+                out_reg->write( cc, new_reg );
+                cc->on.write_end( ";" );
+            }
+
+            // fill in
+            for( int i = 0; i < sb(); ++i ) {
+                if ( knwn[ i ] ) {
+                    cc->on.write_beg();
+                    out_reg->write( cc, false ) << ".data[ " << i << " ] = " << (int)data[ i ];
+                    cc->on.write_end( ";" );
+                }
+            }
+        }
     }
 
     Type *out_type;

@@ -47,6 +47,13 @@ class SI8
     def reassign val
         ___reassign_rec self, val
     
+class PI8
+    ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
 class SI32
     ___set_base_size_and_alig 32, 32
     def init val
@@ -145,10 +152,13 @@ class A
         a + 1
     def f
         g 32
-        
+      
+v := Vec[ PI8, 3 ] 48
+___syscall &v
+
 # i := A()
 # ___disp i.f()
-print 120    
+# print 120    
 # ___disp v[ 1 ]
 # m := M()
 # m.b = ___syscall 0

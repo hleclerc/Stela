@@ -2,6 +2,7 @@
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
 #include "../Inst/Type.h"
+#include "../Inst/Ip.h"
 #include "CC_SeqItemExpr.h"
 #include "CC_SeqItemIf.h"
 #include "Codegen_C.h"
@@ -41,8 +42,15 @@ void Codegen_C::write_out( Expr expr ) {
         *os << "no_out_reg";
 }
 
-void Codegen_C::write( Type *type ) {
-    *os << *type;
+String Codegen_C::type_to_str( Type *type ) {
+    std::ostringstream ss;
+    if ( type->aryth )
+        ss << *type;
+    else {
+        ss << "GT" << type->size();
+        spec_types[ type->size() ] = ss.str();
+    }
+    return ss.str();
 }
 
 void Codegen_C::write_to( Stream &out ) {
@@ -60,8 +68,25 @@ void Codegen_C::write_to( Stream &out ) {
     //    for( Type *type : types )
     //        orbt[ type ];
 
-    //    for( auto iter : orbt )
-    //        iter.first->write_C_decl( out );
+    // arythmetic types
+    if ( needed_aryth_types.count( ip->type_Bool ) ) out << "typedef bool Bool;\n";
+    if ( needed_aryth_types.count( ip->type_SI8  ) ) out << "typedef signed char SI8;\n";
+    if ( needed_aryth_types.count( ip->type_SI16 ) ) out << "typedef short SI16;\n";
+    if ( needed_aryth_types.count( ip->type_SI32 ) ) out << "typedef int SI32;\n";
+    if ( needed_aryth_types.count( ip->type_SI64 ) ) out << "typedef long long SI64;\n";
+    if ( needed_aryth_types.count( ip->type_PI8  ) ) out << "typedef unsigned char PI8;\n";
+    if ( needed_aryth_types.count( ip->type_PI16 ) ) out << "typedef unsigned short PI16;\n";
+    if ( needed_aryth_types.count( ip->type_PI32 ) ) out << "typedef unsigned int PI32;\n";
+    if ( needed_aryth_types.count( ip->type_PI64 ) ) out << "typedef unsigned long long PI64;\n";
+    if ( needed_aryth_types.count( ip->type_FP32 ) ) out << "typedef float FP32;\n";
+    if ( needed_aryth_types.count( ip->type_FP64 ) ) out << "typedef double FP64;\n";
+
+    // specific types
+    for( auto iter : spec_types ) {
+        out << "struct " << iter.second << " {\n";
+        out << "    unsigned char data[ " << ( iter.first + 7 ) / 8 << " ];\n";
+        out << "};\n";
+    }
 
     // preliminaries
     for( String prel : preliminaries )
