@@ -3,7 +3,7 @@
 
 #include "../System/Vec.h"
 #include "Expr.h"
-class CppRegConstraint;
+#include <map>
 class CC_SeqItemBlock;
 class CppOutReg;
 class BoolOpSeq;
@@ -19,13 +19,19 @@ public:
         Inst *inst;
         int   ninp; ///< input number (or TPAR_...)
     };
+    ///< flags
     enum {
         CONST     = 1,
         SURDEF    = 2,
         PART_INST = 4 // partial instanciation
     };
+    ///< for Parent::ninp
     enum {
-        TPAR_DEP = -1,
+        TPAR_DEP = -1
+    };
+    ///< for same_out and diff_out level
+    enum {
+        COMPULSORY = 100 ///< for
     };
 
     Inst();
@@ -48,7 +54,7 @@ public:
     void add_store_dep( Inst *dst );
 
     virtual void write_to_stream( Stream &os, int prec = -1 );
-    virtual void write_dot( Stream &os ) = 0;
+    virtual void write_dot( Stream &os ) const = 0;
     virtual Type *type( int nout ); ///
     virtual Type *ptype( int nout );
     virtual Type *type() = 0;
@@ -64,8 +70,9 @@ public:
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
 
     // properties
-    virtual int always_checked() const;
+    virtual int  always_checked() const;
     virtual bool has_inp_parent() const;
+    virtual int  nb_inp_parents() const;
 
     virtual bool uninitialized() const;
     virtual bool is_surdef() const;
@@ -78,12 +85,15 @@ public:
     virtual bool referenced_more_than_one_time() const;
 
     // codegen
-    virtual void get_constraints( CppRegConstraint &reg_constraints );
+    virtual void get_constraints();
     virtual void update_when( const BoolOpSeq &cond );
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b );
     virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
     virtual bool will_write_code() const;
     virtual bool need_a_register();
+
+    void add_same_out( Inst *inst, int level );
+    void add_diff_out( Inst *inst, int level );
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -95,22 +105,24 @@ public:
     virtual Expr _simp_slice( Type *dst, Expr off );
     virtual void _mk_store_dep( Inst *dst );
 
-    Vec<Expr>           inp;
-    Vec<Expr>           ext;
-    Vec<Expr>           dep;
-    mutable Vec<Parent> par; ///< parents
-    mutable Inst       *ext_par;
-    BoolOpSeq          *when; ///< used for code generation (to know when needed)
-    CppOutReg          *out_reg;
-    bool                new_reg;
+    Vec<Expr>            inp;
+    Vec<Expr>            ext;
+    Vec<Expr>            dep;
+    mutable Vec<Parent>  par; ///< parents
+    mutable Inst        *ext_par;
+    int                  flags;
 
-    int                 flags;
+    BoolOpSeq           *when; ///< used for code generation (to know when needed)
+    CppOutReg           *out_reg;
+    bool                 new_reg;
+    std::map<Inst *,int> same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
+    std::map<Inst *,int> diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
 
-    static  PI64        cur_op_id; ///<
-    mutable PI64        op_id_vis; ///<
-    mutable PI64        op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
-    mutable void       *op_mp;     ///< result of current operations
-    mutable int         cpt_use;
+    static  PI64         cur_op_id; ///<
+    mutable PI64         op_id_vis; ///<
+    mutable PI64         op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
+    mutable void        *op_mp;     ///< result of current operations
+    mutable int          cpt_use;
 };
 
 #endif // INST_H

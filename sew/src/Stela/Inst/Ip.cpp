@@ -210,6 +210,19 @@ void Ip::get_args_in_varargs( Vec<Expr> &args, Vec<int> &names, Expr lst ) {
     }
 }
 
+bool Ip::is_integer( Type *type ) {
+    return type == type_Bool or
+           type == type_PI8  or
+           type == type_PI16 or
+           type == type_PI32 or
+           type == type_PI64 or
+           type == type_SI8  or
+           type == type_SI16 or
+           type == type_SI32 or
+           type == type_SI64;
+
+}
+
 Vec<Expr> Ip::get_args_in_varargs( Expr lst ) {
     Vec<Expr> args;
     Vec<int> names;

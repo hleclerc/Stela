@@ -1,3 +1,4 @@
+#include "../Codegen/Codegen_C.h"
 #include "ReplBits.h"
 #include "Slice.h"
 #include "Type.h"
@@ -8,7 +9,7 @@
   repl_bits( src, off, val )
 */
 struct ReplBits : Inst {
-    virtual void write_dot( Stream &os ) { os << "ReplBits"; }
+    virtual void write_dot( Stream &os ) const { os << "ReplBits"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new ReplBits; }
     virtual Type *type() { return inp[ 0 ]->type(); }
     virtual Expr _simp_slice( Type *dst, Expr off ) {
@@ -22,6 +23,18 @@ struct ReplBits : Inst {
         if ( nbeg >= beg and nend <= end ) return slice( dst, inp[ 2 ], sub( off, inp[ 1 ] ) );
 
         return Inst::_simp_slice( dst, off );
+    }
+    virtual void get_constraints() {
+        add_same_out( inp[ 0 ].inst, COMPULSORY );
+    }
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        cc->on.write_beg() << "*(" << cc->type_to_str( inp[ 2 ]->out_reg->type ) << " *)( (char *)&";
+        out_reg->write( cc, false );
+        *cc->os << " + ";
+        inp[ 1 ]->out_reg->write( cc, false );
+        *cc->os << " / 8 ) = ";
+        inp[ 2 ]->out_reg->write( cc, new_reg );
+        cc->on.write_end( ";" );
     }
 };
 

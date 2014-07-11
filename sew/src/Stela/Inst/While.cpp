@@ -1,7 +1,6 @@
 #include "../Codegen/CC_SeqItemContinueOrBreak.h"
 #include "../Codegen/CC_SeqItemIf.h"
 #include "../Codegen/Codegen_C.h"
-#include "CppRegConstraint.h"
 #include "While.h"
 #include "Ip.h"
 
@@ -9,7 +8,7 @@
 */
 struct WhileInp : Inst {
     WhileInp( const Vec<Type *> types ) : types( types ) {}
-    virtual void write_dot( Stream &os ) { os << "while_inp"; }
+    virtual void write_dot( Stream &os ) const { os << "while_inp"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new WhileInp( types ); }
     virtual Type *type( int nout ) { return types[ nout ]; }
     virtual Type *ptype( int nout ) { TODO; return 0; }
@@ -24,7 +23,7 @@ struct WhileInp : Inst {
 */
 struct WhileOut : Inst {
     WhileOut( const Vec<Vec<bool> > &pos ) : pos( pos ) {}
-    virtual void write_dot( Stream &os ) { os << "while_out"; }
+    virtual void write_dot( Stream &os ) const { os << "while_out"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new WhileOut( pos ); }
     virtual Type *type( int nout ) { return inp[ nout ]->type(); }
     virtual Type *type() { return ip->type_Void; }
@@ -38,7 +37,7 @@ struct WhileOut : Inst {
 */
 struct WhileInst : Inst {
     WhileInst( const Vec<int> &corr ) : corr( corr ) {}
-    virtual void write_dot( Stream &os ) { os << "while"; }
+    virtual void write_dot( Stream &os ) const { os << "while"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new WhileInst( corr ); }
     virtual Type *type( int nout ) { return ext[ 0 ]->type( nout ); }
     virtual Type *ptype( int nout ) { TODO; return 0; }
@@ -46,26 +45,20 @@ struct WhileInst : Inst {
     virtual int ext_disp_size() const { return 1; }
     virtual bool need_a_register() { return false; }
 
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
+    virtual void get_constraints() {
         for( int nout = 0; nout < corr.size(); ++nout ) {
             int ninp = corr[ nout ];
             if ( Inst *p = find_par_for_nout( nout ) ) {
                 // while out <-> inp
                 if ( ninp >= 0 )
-                    reg_constraints.add_equ(
-                                CppRegConstraint::COMPULSORY,
-                                p, inp[ ninp ] );
+                    p->add_same_out( inp[ ninp ].inst, COMPULSORY );
                 // while out <-> while_out->inp
-                reg_constraints.add_equ(
-                            CppRegConstraint::COMPULSORY,
-                            p, ext[ 0 ]->inp[ nout ] );
+                p->add_same_out( ext[ 0 ]->inp[ nout ].inst, COMPULSORY );
             }
             // while inp -> while_inp->par
             if ( ninp >= 0 )
                 if ( Inst *p = ext[ 1 ]->find_par_for_nout( ninp ) )
-                    reg_constraints.add_equ(
-                                CppRegConstraint::COMPULSORY,
-                                inp[ ninp ], p );
+                    p->add_same_out( inp[ ninp ].inst, COMPULSORY );
         }
     }
 
@@ -73,6 +66,7 @@ struct WhileInst : Inst {
         Vec<CC_SeqItemBlock *> seq;
         BoolOpSeq cont = get_cont(), need_a_break = not cont, cond = True();
         b[ 0 ]->get_glo_cond_and_seq_of_sub_blocks( seq, cond );
+        PRINT( need_a_break );
 
         for( int i = 0; i < seq.size(); ++i ) {
             if ( not seq[ i ]->parent )
@@ -94,6 +88,14 @@ struct WhileInst : Inst {
                     seq[ i ]->seq << new CC_SeqItemContinueOrBreak( true, seq[ i ] );
                 }
             }
+        }
+
+        if ( not need_a_break.always( false ) ) {
+            CC_SeqItemIf *cif = new CC_SeqItemIf( b[ 0 ] );
+            cif->cond = need_a_break;
+            cif->seq[ 0 ].seq << new CC_SeqItemContinueOrBreak( false, &cif->seq[ 0 ] );
+
+            b[ 0 ]->seq << cif;
         }
     }
 

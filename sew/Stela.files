@@ -15,7 +15,7 @@ src/Stela/Inst/DeclOp_Binary.h
 src/Stela/Inst/Type.h
 src/Stela/Inst/While.h
 src/Stela/Inst/ReplBits.h
-src/Stela/Inst/CppRegConstraint.h
+src/Stela/Inst/CppGetConstraint.h
 src/Stela/Inst/DeclOp_Unary.h
 src/Stela/Inst/Callable.h
 src/Stela/Inst/Symbol.h
@@ -129,7 +129,7 @@ src/stela.cpp
 src/Stela/Inst/ReplBits.cpp
 src/Stela/Inst/Sourcefile.cpp
 src/Stela/Inst/Class.cpp
-src/Stela/Inst/CppRegConstraint.cpp
+src/Stela/Inst/CppGetConstraint.cpp
 src/Stela/Inst/Callable.cpp
 src/Stela/Inst/Room.cpp
 src/Stela/Inst/Slice.cpp

@@ -298,6 +298,13 @@ bool Inst::has_inp_parent() const {
     return false;
 }
 
+int Inst::nb_inp_parents() const {
+    int res = 0;
+    for( int i = 0; i < par.size(); ++i )
+        res += ( par[ i ].ninp >= 0 );
+    return res;
+}
+
 bool Inst::uninitialized() const {
     return false;
 }
@@ -334,7 +341,7 @@ void Inst::update_when( const BoolOpSeq &cond ) {
         inst->update_when( cond );
 }
 
-void Inst::get_constraints( CppRegConstraint &reg_constraints ) {
+void Inst::get_constraints() {
 }
 
 void Inst::add_break_and_continue_internal( CC_SeqItemBlock **b ) {
@@ -347,6 +354,20 @@ bool Inst::will_write_code() const {
 
 bool Inst::need_a_register() {
     return has_inp_parent();
+}
+
+static void self_max( int &src, int val ) {
+    src = std::max( src, val );
+}
+
+void Inst::add_same_out( Inst *inst, int level ) {
+    self_max( this->same_out[ inst ], level );
+    self_max( inst->same_out[ this ], level );
+}
+
+void Inst::add_diff_out( Inst *inst, int level ) {
+    self_max( this->diff_out[ inst ], level );
+    self_max( inst->diff_out[ this ], level );
 }
 
 void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {

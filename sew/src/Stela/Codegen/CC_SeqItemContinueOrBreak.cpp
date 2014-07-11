@@ -9,10 +9,7 @@ void CC_SeqItemContinueOrBreak::CC_SeqItemContinueOrBreak::write( Codegen_C *cc 
     cc->on << ( cont ? "continue;" : "break;" );
 }
 
-void CC_SeqItemContinueOrBreak::get_constraints( CppRegConstraint &reg_constraints ) {
-}
-
-void CC_SeqItemContinueOrBreak::assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
+void CC_SeqItemContinueOrBreak::get_constraints( CppGetConstraint &context ) {
 }
 
 bool CC_SeqItemContinueOrBreak::ch_followed_by_something_to_execute( int &nb_evicted_blocks, CC_SeqItem *ch, const BoolOpSeq &cond ) {

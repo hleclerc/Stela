@@ -7,7 +7,7 @@
 */
 struct Syscall : Inst {
     Syscall() {} 
-    virtual void write_dot( Stream &os ) { os << "Syscall"; }
+    virtual void write_dot( Stream &os ) const { os << "Syscall"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Syscall(); }
     virtual Type *type() { return ip->type_ST; }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {

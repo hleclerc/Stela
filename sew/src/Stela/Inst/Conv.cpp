@@ -7,7 +7,7 @@
 */
 struct Conv : Inst {
     Conv( Type *dst ) : dst( dst ) {}
-    virtual void write_dot( Stream &os ) { os << "Conv[" << *dst << "]"; }
+    virtual void write_dot( Stream &os ) const { os << "Conv[" << *dst << "]"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Conv( dst ); }
     virtual Type *type() { return dst; }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {

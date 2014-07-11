@@ -1,3 +1,4 @@
+#include "../Codegen/Codegen_C.h"
 #include "BoolOpSeq.h"
 #include "Slice.h"
 #include "Type.h"
@@ -9,7 +10,7 @@
 */
 struct Slice : Inst {
     Slice( Type *out_type ) : out_type( out_type ) {}
-    virtual void write_dot( Stream &os ) { os << "Slice"; }
+    virtual void write_dot( Stream &os ) const { os << "Slice"; }
     virtual void write_to_stream( Stream &os, int prec ) {
         int voff;
         if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
@@ -45,6 +46,25 @@ struct Slice : Inst {
         if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
             return inp[ 0 ]->set( obj, cond );
         TODO;
+    }
+
+    virtual void get_constraints() {
+        if ( inp[ 0 ]->type()->size() == type()->size() )
+            add_same_out( inp[ 0 ].inst, COMPULSORY );
+    }
+
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        if ( out_reg == inp[ 0 ]->out_reg )
+            return;
+        Type *t = inp[ 1 ]->type();
+        for( int i = 0; i < t->sb(); ++i ) {
+            cc->on.write_beg() << "*( (char *)&";
+            out_reg->write( cc, false ) << " + ";
+            inp[ 1 ]->out_reg->write( cc, false ) << " / 8 + " << i << " ) = ";
+            *cc->os << "*( (char *)&";
+            inp[ 0 ]->out_reg->write( cc, false ) << " + " << i << " )";
+            cc->on.write_end( ";" );
+        }
     }
 
     Type *out_type;

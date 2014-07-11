@@ -2,6 +2,7 @@
 #include "../System/Memcpy.h"
 #include "../System/dcast.h"
 #include <string.h>
+#include <typeinfo>
 #include "Type.h"
 #include "Cst.h"
 #include "Ip.h"
@@ -9,13 +10,24 @@
 /**
 */
 struct Cst : Inst {
-    virtual void write_dot( Stream &os ) {
+    virtual void write_dot( Stream &os ) const {
+        //
+        if ( out_type == ip->type_SI8 ) {
+            os << (int)*reinterpret_cast<const SI8 *>( data.ptr() );
+            return;
+        }
+        if ( out_type == ip->type_PI8 ) {
+            os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
+            return;
+        }
+        //
         #define DECL_BT( T ) \
-            if ( out_type == ip->type_##T ) { os << *reinterpret_cast<T *>( data.ptr() ); return; }
+            if ( out_type == ip->type_##T ) { os << *reinterpret_cast<const T *>( data.ptr() ); return; }
         #include "DeclArytTypes.h"
         #undef DECL_BT
+        //
         if ( out_type == ip->type_Type ) {
-            ST d = *reinterpret_cast<SI64 *>( data.ptr() );
+            ST d = *reinterpret_cast<const SI64 *>( data.ptr() );
             os << *reinterpret_cast<Type *>( d );
             return;
         }
@@ -43,7 +55,7 @@ struct Cst : Inst {
 
     template<class T>
     bool _get_val( T *dst ) const {
-        #define DECL_BT( T ) if ( out_type == ip->type_##T ) { *dst = *reinterpret_cast<const T *>( data.ptr() ); return true; }
+        #define DECL_BT( OT ) if ( out_type == ip->type_##OT ) { *dst = *reinterpret_cast<const OT *>( data.ptr() ); return true; }
         #include "DeclArytTypes.h"
         #undef DECL_BT
         return false;
@@ -55,7 +67,7 @@ struct Cst : Inst {
             return true;
         }
         if ( type->aryth and out_type->aryth ) {
-            #define DECL_BT( T ) if ( type == ip->type_##T and _get_val( reinterpret_cast<T *>( dst ) ) ) return true;
+            #define DECL_BT( RT ) if ( type == ip->type_##RT ) return _get_val( reinterpret_cast<RT *>( dst ) );
             #include "DeclArytTypes.h"
             #undef DECL_BT
         }

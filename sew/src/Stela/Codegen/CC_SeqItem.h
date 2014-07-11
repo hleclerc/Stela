@@ -4,7 +4,7 @@
 #include "../System/SplittedVec.h"
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
-class CppRegConstraint;
+class CppGetConstraint;
 class CC_SeqItemBlock;
 class Codegen_C;
 
@@ -12,8 +12,7 @@ struct CC_SeqItem {
     CC_SeqItem( CC_SeqItem *parent, CC_SeqItemBlock *parent_block );
     virtual ~CC_SeqItem();
     virtual void write( Codegen_C *cc ) = 0;
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) = 0;
-    virtual void assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) = 0;
+    virtual void get_constraints( CppGetConstraint &context ) = 0;
     virtual void get_glo_cond_and_seq_of_sub_blocks( Vec<CC_SeqItemBlock *> &seq, const BoolOpSeq &cond );
     virtual bool ch_followed_by_something_to_execute( int &nb_evicted_blocks, CC_SeqItem *ch, const BoolOpSeq &cond ) = 0;
     virtual void write_to_stream( Stream &os ) = 0;

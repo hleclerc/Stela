@@ -13,7 +13,7 @@
 */
 struct Room : Inst {
     Room() : creation_date( IpSnapshot::cur_date ) {}
-    virtual void write_dot( Stream &os ) { os << "&"; }
+    virtual void write_dot( Stream &os ) const { os << "&"; }
     virtual void write_to_stream( Stream &os, int prec = -1 ) {
         //Type *t = type();
         //if ( t and t != ip->type_Type ) { os << *t; os << "{"; }
@@ -49,6 +49,13 @@ struct Room : Inst {
         future_dep << dst;
 
         val->add_store_dep( dst );
+    }
+
+    virtual bool will_write_code() const {
+        return false;
+    }
+
+    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }
 
     Vec<Expr> future_dep;

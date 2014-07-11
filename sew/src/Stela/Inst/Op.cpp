@@ -45,7 +45,7 @@ static Type *type_promote( Type *a, TO ) {
 */
 template<class TO>
 struct Op : Inst {
-    virtual void write_dot( Stream &os ) { os << op; }
+    virtual void write_dot( Stream &os ) const { os << op; }
     virtual int op_num() const {
         return TO::op_id;
     }
@@ -124,13 +124,20 @@ struct BOp : Op<TO> {
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         cc->on.write_beg();
         this->out_reg->write( cc, this->new_reg ) << " = ";
-        if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }
-        cc->write_out( this->inp[ 0 ] );
-        if ( not TO::is_oper ) *cc->os << ", ";
-        else { *cc->os << " "; to.write_oper( *cc->os ); *cc->os << " "; }
-        cc->write_out( this->inp[ 1 ] );
-        if ( not TO::is_oper ) *cc->os << " )";
-        cc->on.write_end( ";" );
+        if (  SameType<TO,Op_mod>::res and ip->is_integer( this->out_reg->type ) ) {
+            cc->write_out( this->inp[ 0 ] );
+            *cc->os << " % ";
+            cc->write_out( this->inp[ 1 ] );
+            cc->on.write_end( ";" );
+        } else {
+            if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }
+            cc->write_out( this->inp[ 0 ] );
+            if ( not TO::is_oper ) *cc->os << ", ";
+            else { *cc->os << " "; to.write_oper( *cc->os ); *cc->os << " "; }
+            cc->write_out( this->inp[ 1 ] );
+            if ( not TO::is_oper ) *cc->os << " )";
+            cc->on.write_end( ";" );
+        }
     }
 
     TO to;

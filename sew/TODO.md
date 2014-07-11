@@ -1,9 +1,6 @@
-Boucles for:
-* block doit contenir liste de variables capturées
+Sémantique du Store
+* on pourrait dire que pointer_on fait 
 
-
-for a in A()
-    block
 
 class A
     size := 0

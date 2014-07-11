@@ -25,14 +25,14 @@ void Type::write_to_stream( Stream &os ) {
     }
 }
 
-void Type::write_to_stream( Stream &os, void *data, int len ) {
+void Type::write_to_stream( Stream &os, const void *data, int len ) {
     if ( len == 0 )
         os << "void";
     int sb = ( len + 7 ) / 8;
     const char *c = "0123456789ABCDEF";
     for( int i = 0; i < std::min( sb, 4 ); ++i )
-        os << c[ reinterpret_cast<PI8 *>( data )[ i ] >> 4 ]
-           << c[ reinterpret_cast<PI8 *>( data )[ i ] & 0xF ];
+        os << c[ reinterpret_cast<const PI8 *>( data )[ i ] >> 4 ]
+           << c[ reinterpret_cast<const PI8 *>( data )[ i ] & 0xF ];
     if ( sb > 4 )
         os << "...";
 }

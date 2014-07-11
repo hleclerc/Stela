@@ -17,7 +17,7 @@ public:
     Type( Class *orig );
 
     void write_to_stream( Stream &os );
-    void write_to_stream( Stream &os, void *data, int len );
+    void write_to_stream( Stream &os, const void *data, int len );
     void parse();
 
     int  size(); ///< size in bits

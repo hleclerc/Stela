@@ -45,6 +45,7 @@ class SI8
     def init val
         ___reassign_rec self, val
     def reassign val
+        ___disp val
         ___reassign_rec self, val
     
 class PI8
@@ -147,21 +148,15 @@ def print val
             break
     sys_write 0, &tmp + nbc, sit - nbc
 
-class A
-    def g a
-        a + 1
-    def f
-        g 32
-      
-v := Vec[ PI8, 3 ] 48
-___syscall &v
+# v := Vec[ PI8, 3 ] 48
+# ___syscall &v
+# print 120
 
-# i := A()
-# ___disp i.f()
-# print 120    
-# ___disp v[ 1 ]
-# m := M()
-# m.b = ___syscall 0
-# ___disp m.a    
-# ___disp m.b
-# ___disp m.c    
+a := Vec[SI8,3]()
+a[ ___rand() ] = 48
+b := a
+b[ ___rand() ] = 49
+
+___syscall a, b
+
+

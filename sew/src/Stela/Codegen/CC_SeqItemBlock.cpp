@@ -1,4 +1,3 @@
-#include "../Inst/CppRegConstraint.h"
 #include "../Inst/Type.h"
 
 #include "CC_SeqItemContinueOrBreak.h"
@@ -58,14 +57,9 @@ void CC_SeqItemBlock::write( Codegen_C *cc ) {
         seq[ i ]->write( cc );
 }
 
-void CC_SeqItemBlock::get_constraints( CppRegConstraint &reg_constraints ) {
+void CC_SeqItemBlock::get_constraints( CppGetConstraint &context ) {
     for( int n = 0; n < seq.size(); ++n )
-        seq[ n ]->get_constraints( reg_constraints );
-}
-
-void CC_SeqItemBlock::assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
-    for( int n = 0; n < seq.size(); ++n )
-        seq[ n ]->assign_reg( cc, reg_constraints );
+        seq[ n ]->get_constraints( context );
 }
 
 bool CC_SeqItemBlock::contains_a_cont_or_break() {

@@ -1,5 +1,4 @@
 #include "../System/AssignIfNeq.h"
-#include "CppRegConstraint.h"
 #include "BoolOpSeq.h"
 #include "Select.h"
 #include "Ip.h"
@@ -11,7 +10,7 @@ struct Select : Inst {
     Select( Vec<Vec<Bool> > pos ) : pos( pos ) {}
     Select() {}
 
-    virtual void write_dot( Stream &os ) { os << "Select"; }
+    virtual void write_dot( Stream &os ) const { os << "Select"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Select( pos ); }
     virtual Type *type() { return inp[ 0 ]->type(); }
     virtual Expr simplified( const BoolOpSeq &cond ) {
@@ -46,9 +45,9 @@ struct Select : Inst {
         for( Expr inst : dep )
             inst->update_when( cond );
     }
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
-        reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ], inp[ 1 ] );
-        reg_constraints.add_equ( CppRegConstraint::COMPULSORY, inp[ 0 ],     this );
+    virtual void get_constraints() {
+        inp[ 0 ]->add_same_out( inp[ 1 ].inst, COMPULSORY );
+        inp[ 0 ]->add_same_out( this         , COMPULSORY );
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }
@@ -66,7 +65,7 @@ struct SelectDep : Select {
     SelectDep( Vec<Vec<Bool> > pos ) : Select( pos ) {}
     SelectDep() {}
 
-    virtual void write_dot( Stream &os ) { os << "SelectDep"; }
+    virtual void write_dot( Stream &os ) const { os << "SelectDep"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new SelectDep( pos ); }
     virtual Type *type() { return ip->type_Void; }
     virtual Expr simplified( const BoolOpSeq &cond ) {
@@ -92,7 +91,7 @@ struct SelectDep : Select {
         for( int i = 2; i < dep.size(); ++i )
             dep[ i ]->update_when( cond );
     }
-    virtual void get_constraints( CppRegConstraint &reg_constraints ) {
+    virtual void get_constraints() {
     }
 };
 

@@ -60,12 +60,7 @@ void CC_SeqItemIf::write( Codegen_C *cc ) {
 }
 
 
-void CC_SeqItemIf::get_constraints( CppRegConstraint &reg_constraints ) {
+void CC_SeqItemIf::get_constraints( CppGetConstraint &context ) {
     for( int i = 0; i < 2; ++i )
-        seq[ i ].get_constraints( reg_constraints );
-}
-
-void CC_SeqItemIf::assign_reg( Codegen_C *cc, CppRegConstraint &reg_constraints ) {
-    for( int i = 0; i < 2; ++i )
-        seq[ i ].assign_reg( cc, reg_constraints );
+        seq[ i ].get_constraints( context );
 }

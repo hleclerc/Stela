@@ -46,6 +46,8 @@ public:
     void get_args_in_varargs( Vec<Expr> &args, Vec<int> &names, Expr lst );
     Vec<Expr> get_args_in_varargs( Expr lst );
 
+    bool is_integer( Type *type );
+
     #define DECL_BT( T ) Type *type_##T;
     #include "DeclBaseClass.h"
     #undef DECL_BT

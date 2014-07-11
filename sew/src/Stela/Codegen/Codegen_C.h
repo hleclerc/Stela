@@ -40,7 +40,6 @@ protected:
     void scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out );
 
     SplittedVec<CppOutReg,32> out_regs;
-    std::set<Type *>          needed_aryth_types;
     std::map<int,String>      spec_types;
 };
 

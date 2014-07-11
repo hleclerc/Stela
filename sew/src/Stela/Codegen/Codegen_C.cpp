@@ -1,8 +1,8 @@
-#include "../Inst/CppRegConstraint.h"
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
 #include "../Inst/Type.h"
 #include "../Inst/Ip.h"
+#include "CppGetConstraint.h"
 #include "CC_SeqItemExpr.h"
 #include "CC_SeqItemIf.h"
 #include "Codegen_C.h"
@@ -14,6 +14,7 @@ Codegen_C::Codegen_C() : on( &main_os ), os( &main_os ) {
 
     add_include( "<stdint.h>" );
     add_include( "<stdlib.h>" );
+    add_include( "<unistd.h>" );
     add_include( "<time.h>" );
 
     add_prel( "#pragma cpp_flag -std=c++11" );
@@ -46,7 +47,10 @@ String Codegen_C::type_to_str( Type *type ) {
     std::ostringstream ss;
     if ( type->aryth )
         ss << *type;
-    else {
+    else if ( type->orig == ip->class_Ptr ) {
+        add_type( ip->type_PI8 );
+        ss << "TPTR";
+    } else {
         ss << "GT" << type->size();
         spec_types[ type->size() ] = ss.str();
     }
@@ -69,22 +73,23 @@ void Codegen_C::write_to( Stream &out ) {
     //        orbt[ type ];
 
     // arythmetic types
-    if ( needed_aryth_types.count( ip->type_Bool ) ) out << "typedef bool Bool;\n";
-    if ( needed_aryth_types.count( ip->type_SI8  ) ) out << "typedef signed char SI8;\n";
-    if ( needed_aryth_types.count( ip->type_SI16 ) ) out << "typedef short SI16;\n";
-    if ( needed_aryth_types.count( ip->type_SI32 ) ) out << "typedef int SI32;\n";
-    if ( needed_aryth_types.count( ip->type_SI64 ) ) out << "typedef long long SI64;\n";
-    if ( needed_aryth_types.count( ip->type_PI8  ) ) out << "typedef unsigned char PI8;\n";
-    if ( needed_aryth_types.count( ip->type_PI16 ) ) out << "typedef unsigned short PI16;\n";
-    if ( needed_aryth_types.count( ip->type_PI32 ) ) out << "typedef unsigned int PI32;\n";
-    if ( needed_aryth_types.count( ip->type_PI64 ) ) out << "typedef unsigned long long PI64;\n";
-    if ( needed_aryth_types.count( ip->type_FP32 ) ) out << "typedef float FP32;\n";
-    if ( needed_aryth_types.count( ip->type_FP64 ) ) out << "typedef double FP64;\n";
+    out << "typedef unsigned char *TPTR;\n";
+    if ( types.count( ip->type_Bool ) ) out << "typedef bool Bool;\n";
+    if ( types.count( ip->type_SI8  ) ) out << "typedef signed char SI8;\n";
+    if ( types.count( ip->type_SI16 ) ) out << "typedef short SI16;\n";
+    if ( types.count( ip->type_SI32 ) ) out << "typedef int SI32;\n";
+    if ( types.count( ip->type_SI64 ) ) out << "typedef long long SI64;\n";
+    if ( types.count( ip->type_PI8  ) ) out << "typedef unsigned char PI8;\n";
+    if ( types.count( ip->type_PI16 ) ) out << "typedef unsigned short PI16;\n";
+    if ( types.count( ip->type_PI32 ) ) out << "typedef unsigned int PI32;\n";
+    if ( types.count( ip->type_PI64 ) ) out << "typedef unsigned long long PI64;\n";
+    if ( types.count( ip->type_FP32 ) ) out << "typedef float FP32;\n";
+    if ( types.count( ip->type_FP64 ) ) out << "typedef double FP64;\n";
 
     // specific types
     for( auto iter : spec_types ) {
-        out << "struct " << iter.second << " {\n";
-        out << "    unsigned char data[ " << ( iter.first + 7 ) / 8 << " ];\n";
+        out << "struct " << iter.second << " { ";
+        out << "unsigned char data[ " << ( iter.first + 7 ) / 8 << " ]; ";
         out << "};\n";
     }
 
@@ -308,6 +313,17 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
 //    }
 //}
 
+static void get_same_out_rec( Vec<Inst *> &same_out, Inst *i ) {
+    if ( i->op_id == Inst::cur_op_id )
+        return;
+    i->op_id = Inst::cur_op_id;
+
+    same_out << i;
+
+    for( auto s : i->same_out )
+        get_same_out_rec( same_out, s.first );
+}
+
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
     ++Inst::cur_op_id;
@@ -329,9 +345,54 @@ void Codegen_C::make_code() {
     scheduling( &main_block, out );
 
     // get reg for each output
-    CppRegConstraint reg_constraints;
-    main_block.get_constraints( reg_constraints );
-    main_block.assign_reg( this, reg_constraints );
+    CppGetConstraint context;
+    main_block.get_constraints( context );
+
+    for( Inst *i : context.seq ) {
+        // is it possible to fullfill all the constraints ?
+        ++Inst::cur_op_id;
+        Vec<Inst *> same_out;
+        get_same_out_rec( same_out, i );
+    }
+
+    //    for( Inst *i : context.seq ) {
+    //        i->write_dot( std::cout );
+    //        std::cout << "\n";
+    //    }
+    //    for( Inst *i : context.seq ) {
+    //        i->write_dot( std::cout );
+    //        std::cout << " ->\n";
+    //        for( auto o : i->same_out ) {
+    //            o.first->write_dot( std::cout << " == " );
+    //            std::cout << "\n";
+    //        }
+    //        for( auto o : i->diff_out ) {
+    //            o.first->write_dot( std::cout << " != " );
+    //            std::cout << "\n";
+    //        }
+    //    }
+
+//    void CC_SeqItemExpr::assign_reg( Codegen_C *cc, CppGetConstraint &context ) {
+//        if ( expr->need_a_register() and not expr->out_reg ) {
+//            // look if it's possible to assign a register
+//            //std::set<Inst *> same, diff;
+//            //++Inst::cur_op_id;
+//            //expr->out_reg = reg_constraints.compulsory_reg( expr );
+
+
+//            // constrained ?
+//            ++Inst::cur_op_id;
+//            expr->out_reg = reg_constraints.compulsory_reg( expr );
+//            // else,
+//            if ( not expr->out_reg )
+//                expr->out_reg = cc->new_out_reg( expr->type() );
+//            //
+//            expr->out_reg->provenance << parent_block;
+//        }
+//        for( AutoPtr<CC_SeqItemBlock> &b : ext )
+//            b->assign_reg( cc, reg_constraints );
+//    }
+
 
     // specify where the registers have to be declared
     for( int n = 0; n < out_regs.size(); ++n ) {
