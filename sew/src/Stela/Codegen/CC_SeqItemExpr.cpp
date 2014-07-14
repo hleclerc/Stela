@@ -25,7 +25,7 @@ void CC_SeqItemExpr::get_constraints( CppGetConstraint &context ) {
             context.cur_live_outputs.erase( i.inst );
 
     for( auto cli : context.cur_live_outputs )
-        expr->add_diff_out( cli.first, Inst::COMPULSORY );
+        expr->add_diff_out( -1, cli.first, -1, Inst::COMPULSORY );
 
     if ( int n = expr->nb_inp_parents() )
         context.cur_live_outputs[ expr.inst ] = n;

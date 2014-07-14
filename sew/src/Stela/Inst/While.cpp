@@ -53,7 +53,7 @@ struct WhileInst : Inst {
                 if ( ninp >= 0 )
                     p->add_same_out( -1, this, ninp, COMPULSORY );
                 // out of while <-> while_out->inp
-                p->add_same_out( -1, ext[ 0 ], nout, COMPULSORY );
+                p->add_same_out( -1, ext[ 0 ].inst, nout, COMPULSORY );
             }
             // out of while_inp <-> inp of while
             if ( ninp >= 0 )

@@ -313,6 +313,34 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
 //    }
 //}
 
+static void display_constraints( Vec<Inst *> &seq ) {
+    for( Inst *i : seq ) {
+        i->write_dot( std::cout );
+        std::cout << "\n";
+    }
+    for( Inst *i : seq ) {
+        i->write_dot( std::cout );
+        std::cout << " ->\n";
+        for( auto o : i->same_out ) {
+            if ( o.first.src_ninp < 0 )
+                std::cout << "  out ";
+            else
+                std::cout << "  [" << o.first.src_ninp << "] ";
+            o.first.dst_inst->write_dot( std::cout << "== " );
+            if ( o.first.dst_ninp < 0 )
+                std::cout << " out ";
+            else
+                std::cout << "[" << o.first.dst_ninp << "] ";
+            std::cout << "\n";
+        }
+//        for( auto o : i->diff_out ) {
+//            o.first->write_dot( std::cout << " != " );
+//            std::cout << "\n";
+//        }
+    }
+}
+
+
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
     ++Inst::cur_op_id;
@@ -337,23 +365,7 @@ void Codegen_C::make_code() {
     CppGetConstraint context;
     main_block.get_constraints( context );
 
-
-    //    for( Inst *i : context.seq ) {
-    //        i->write_dot( std::cout );
-    //        std::cout << "\n";
-    //    }
-    //    for( Inst *i : context.seq ) {
-    //        i->write_dot( std::cout );
-    //        std::cout << " ->\n";
-    //        for( auto o : i->same_out ) {
-    //            o.first->write_dot( std::cout << " == " );
-    //            std::cout << "\n";
-    //        }
-    //        for( auto o : i->diff_out ) {
-    //            o.first->write_dot( std::cout << " != " );
-    //            std::cout << "\n";
-    //        }
-    //    }
+    display_constraints( context.seq );
 
 //    void CC_SeqItemExpr::assign_reg( Codegen_C *cc, CppGetConstraint &context ) {
 //        if ( expr->need_a_register() and not expr->out_reg ) {
