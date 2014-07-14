@@ -313,17 +313,6 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
 //    }
 //}
 
-static void get_same_out_rec( Vec<Inst *> &same_out, Inst *i ) {
-    if ( i->op_id == Inst::cur_op_id )
-        return;
-    i->op_id = Inst::cur_op_id;
-
-    same_out << i;
-
-    for( auto s : i->same_out )
-        get_same_out_rec( same_out, s.first );
-}
-
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
     ++Inst::cur_op_id;
@@ -348,12 +337,6 @@ void Codegen_C::make_code() {
     CppGetConstraint context;
     main_block.get_constraints( context );
 
-    for( Inst *i : context.seq ) {
-        // is it possible to fullfill all the constraints ?
-        ++Inst::cur_op_id;
-        Vec<Inst *> same_out;
-        get_same_out_rec( same_out, i );
-    }
 
     //    for( Inst *i : context.seq ) {
     //        i->write_dot( std::cout );

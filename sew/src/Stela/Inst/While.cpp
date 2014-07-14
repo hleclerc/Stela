@@ -49,16 +49,16 @@ struct WhileInst : Inst {
         for( int nout = 0; nout < corr.size(); ++nout ) {
             int ninp = corr[ nout ];
             if ( Inst *p = find_par_for_nout( nout ) ) {
-                // while out <-> inp
+                // out of while <-> inp of while
                 if ( ninp >= 0 )
-                    p->add_same_out( inp[ ninp ].inst, COMPULSORY );
-                // while out <-> while_out->inp
-                p->add_same_out( ext[ 0 ]->inp[ nout ].inst, COMPULSORY );
+                    p->add_same_out( -1, this, ninp, COMPULSORY );
+                // out of while <-> while_out->inp
+                p->add_same_out( -1, ext[ 0 ], nout, COMPULSORY );
             }
-            // while inp -> while_inp->par
+            // out of while_inp <-> inp of while
             if ( ninp >= 0 )
                 if ( Inst *p = ext[ 1 ]->find_par_for_nout( ninp ) )
-                    p->add_same_out( inp[ ninp ].inst, COMPULSORY );
+                    p->add_same_out( -1, this, ninp, COMPULSORY );
         }
     }
 

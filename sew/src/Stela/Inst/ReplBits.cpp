@@ -25,7 +25,8 @@ struct ReplBits : Inst {
         return Inst::_simp_slice( dst, off );
     }
     virtual void get_constraints() {
-        add_same_out( inp[ 0 ].inst, COMPULSORY );
+        // inp[ 0 ] -> out
+        add_same_out( 0, this, -1, COMPULSORY );
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         cc->on.write_beg() << "*(" << cc->type_to_str( inp[ 2 ]->out_reg->type ) << " *)( (char *)&";

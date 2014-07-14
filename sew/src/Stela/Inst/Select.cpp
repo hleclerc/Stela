@@ -46,8 +46,8 @@ struct Select : Inst {
             inst->update_when( cond );
     }
     virtual void get_constraints() {
-        inp[ 0 ]->add_same_out( inp[ 1 ].inst, COMPULSORY );
-        inp[ 0 ]->add_same_out( this         , COMPULSORY );
+        inp[ 0 ]->add_same_out( 0, this,  1, COMPULSORY ); // inp[ 0 ] and inp[ 1 ]
+        inp[ 0 ]->add_same_out( 0, this, -1, COMPULSORY ); // inp[ 0 ] and out
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }

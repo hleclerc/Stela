@@ -33,6 +33,17 @@ public:
     enum {
         COMPULSORY = 100 ///< for
     };
+    ///< for same_out and diff_out level
+    struct Port {
+        bool operator<( const Port &p ) const {
+            if ( src_ninp != p.src_ninp ) return src_ninp < p.src_ninp;
+            if ( dst_inst != p.dst_inst ) return dst_inst < p.dst_inst;
+            return dst_ninp < p.dst_ninp;
+        }
+        int   src_ninp; ///< -1 -> out
+        Inst *dst_inst;
+        int   dst_ninp; ///< -1 -> out
+    };
 
     Inst();
     virtual ~Inst();
@@ -92,8 +103,8 @@ public:
     virtual bool will_write_code() const;
     virtual bool need_a_register();
 
-    void add_same_out( Inst *inst, int level );
-    void add_diff_out( Inst *inst, int level );
+    void add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
+    void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -115,8 +126,8 @@ public:
     BoolOpSeq           *when; ///< used for code generation (to know when needed)
     CppOutReg           *out_reg;
     bool                 new_reg;
-    std::map<Inst *,int> same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
-    std::map<Inst *,int> diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
+    std::map<Port,int>   same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
+    std::map<Port,int>   diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
 
     static  PI64         cur_op_id; ///<
     mutable PI64         op_id_vis; ///<
