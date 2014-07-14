@@ -32,8 +32,8 @@ void Codegen_C::add_type( Type *type ) {
     types.insert( type );
 }
 
-CppOutReg *Codegen_C::new_out_reg( Type *type ) {
-    return out_regs.push_back( type, out_regs.size() );
+CppOutReg *Codegen_C::new_out_reg( Type *type, CC_SeqItemBlock *parent_block ) {
+    return out_regs.push_back( type, out_regs.size(), parent_block );
 }
 
 void Codegen_C::write_out( Expr expr ) {
@@ -303,22 +303,14 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
 
 }
 
-//void simplifications( Vec<Expr> &created, Vec<Expr> &out ) {
-//    for( Expr &e : created ) {
-//        if ( e->op_num() == ID_OP_not_boolean ) {
-//            if ( e->inp[ 0 ]->op_num() == ID_OP_inf ) {
-
-//            }
-//        }
-//    }
-//}
-
-static void display_constraints( Vec<Inst *> &seq ) {
-    for( Inst *i : seq ) {
+static void display_constraints( Vec<CC_SeqItemExpr *> &seq ) {
+    for( CC_SeqItemExpr *c : seq ) {
+        Inst *i = c->expr.inst;
         i->write_dot( std::cout );
         std::cout << "\n";
     }
-    for( Inst *i : seq ) {
+    for( CC_SeqItemExpr *c : seq ) {
+        Inst *i = c->expr.inst;
         i->write_dot( std::cout );
         std::cout << " ->\n";
         for( auto o : i->same_out ) {
@@ -333,10 +325,18 @@ static void display_constraints( Vec<Inst *> &seq ) {
                 std::cout << "[" << o.first.dst_ninp << "] ";
             std::cout << "\n";
         }
-//        for( auto o : i->diff_out ) {
-//            o.first->write_dot( std::cout << " != " );
-//            std::cout << "\n";
-//        }
+        for( auto o : i->diff_out ) {
+            if ( o.first.src_ninp < 0 )
+                std::cout << "  out ";
+            else
+                std::cout << "  [" << o.first.src_ninp << "] ";
+            o.first.dst_inst->write_dot( std::cout << "!= " );
+            if ( o.first.dst_ninp < 0 )
+                std::cout << " out ";
+            else
+                std::cout << "[" << o.first.dst_ninp << "] ";
+            std::cout << "\n";
+        }
     }
 }
 
@@ -349,13 +349,22 @@ void Codegen_C::make_code() {
         out << cloned( inst, created );
 
     // simplifications
-    //    simplifications( created, out );
+    for( Expr &e : created )
+        e->codegen_simplification( created, out );
+
+    // remove parents that are not part of the graph
+    PI64 coi = ++Inst::cur_op_id;
+    created.resize( 0 );
+    for( Expr &e : out )
+        e->mark_children( &created );
+    for( Expr &e : created )
+        for( int i = 0; i < e->par.size(); ++i )
+            if ( e->par[ i ].inst->op_id != coi )
+                e->par.remove( i );
 
     // display
     if ( disp_inst_graph )
         Inst::display_graph( out );
-
-    // replication of inlined instructions
 
     // scheduling (-> list of SeqItem)
     CC_SeqItemBlock main_block;
@@ -364,29 +373,15 @@ void Codegen_C::make_code() {
     // get reg for each output
     CppGetConstraint context;
     main_block.get_constraints( context );
-
     display_constraints( context.seq );
 
-//    void CC_SeqItemExpr::assign_reg( Codegen_C *cc, CppGetConstraint &context ) {
-//        if ( expr->need_a_register() and not expr->out_reg ) {
-//            // look if it's possible to assign a register
-//            //std::set<Inst *> same, diff;
-//            //++Inst::cur_op_id;
-//            //expr->out_reg = reg_constraints.compulsory_reg( expr );
+    for( CC_SeqItemExpr *e : context.seq ) {
+        if ( e->expr->out_reg or not e->expr->need_a_register() )
+            continue;
 
-
-//            // constrained ?
-//            ++Inst::cur_op_id;
-//            expr->out_reg = reg_constraints.compulsory_reg( expr );
-//            // else,
-//            if ( not expr->out_reg )
-//                expr->out_reg = cc->new_out_reg( expr->type() );
-//            //
-//            expr->out_reg->provenance << parent_block;
-//        }
-//        for( AutoPtr<CC_SeqItemBlock> &b : ext )
-//            b->assign_reg( cc, reg_constraints );
-//    }
+        // assignation of a new reg
+        e->expr->out_reg = new_out_reg( e->expr->type(), e->parent_block );
+    }
 
 
     // specify where the registers have to be declared

@@ -21,7 +21,7 @@ public:
     void add_prel( String data );
     void add_type( Type *type );
 
-    CppOutReg *new_out_reg( Type *type );
+    CppOutReg *new_out_reg( Type *type, CC_SeqItemBlock *parent_block );
     String type_to_str( Type *type );
     void write_out( Expr expr );
 

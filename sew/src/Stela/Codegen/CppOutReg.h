@@ -8,7 +8,7 @@ struct CC_SeqItemBlock;
 */
 class CppOutReg {
 public:
-    CppOutReg( Type *type, int num );
+    CppOutReg( Type *type, int num, CC_SeqItemBlock *parent_block );
 
     Stream &write( Codegen_C *cc, bool new_reg );
     CC_SeqItemBlock *common_provenance_ancestor();

@@ -13,7 +13,7 @@ void CC_SeqItemExpr::write( Codegen_C *cc ) {
 }
 
 void CC_SeqItemExpr::get_constraints( CppGetConstraint &context ) {
-    context.seq << expr.inst;
+    context.seq << this;
 
     expr->get_constraints();
     for( AutoPtr<CC_SeqItemBlock> &b : ext )
@@ -24,8 +24,8 @@ void CC_SeqItemExpr::get_constraints( CppGetConstraint &context ) {
         if( --context.cur_live_outputs[ i.inst ] == 0 )
             context.cur_live_outputs.erase( i.inst );
 
-    for( auto cli : context.cur_live_outputs )
-        expr->add_diff_out( -1, cli.first, -1, Inst::COMPULSORY );
+    //for( auto cli : context.cur_live_outputs )
+    //    expr->add_diff_out( -1, cli.first, -1, Inst::COMPULSORY );
 
     if ( int n = expr->nb_inp_parents() )
         context.cur_live_outputs[ expr.inst ] = n;

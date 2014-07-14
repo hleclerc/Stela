@@ -54,6 +54,11 @@ struct Slice : Inst {
         }
     }
 
+    virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out ) {
+        if ( inp[ 0 ]->type()->size() == type()->size() )
+            replace_this_by_inp( 0, out );
+    }
+
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         if ( out_reg == inp[ 0 ]->out_reg )
             return;

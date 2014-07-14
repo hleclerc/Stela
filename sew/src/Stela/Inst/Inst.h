@@ -72,13 +72,15 @@ public:
     virtual Type *ptype();
 
     void rem_ref_to_this();
+    void replace_this_by_inp( int ninp, Vec<Expr> &out );
     Inst *find_par_for_nout( int nout );
     virtual int pointing_to_nout();
 
-    void mark_children();
+    void mark_children( Vec<Expr> *seq = 0 );
 
     virtual void clone( Vec<Expr> &created ) const;
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
+
 
     // properties
     virtual int  always_checked() const;
@@ -102,6 +104,7 @@ public:
     virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
     virtual bool will_write_code() const;
     virtual bool need_a_register();
+    virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out );
 
     void add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );

@@ -134,6 +134,22 @@ void Inst::rem_ref_to_this() {
         ext[ num ]->ext_par = 0;
 }
 
+void Inst::replace_this_by_inp( int ninp, Vec<Expr> &out ) {
+    for( Parent &p : par ) {
+        if ( p.ninp >= 0 )
+            p.inst->mod_inp( inp[ ninp ], p.ninp );
+        else
+            p.inst->add_dep( inp[ ninp ] );
+    }
+
+    rem_ref_to_this();
+
+    for( Expr &e : out )
+        if ( e.inst == this )
+            e = inp[ 0 ];
+}
+
+
 int Inst::pointing_to_nout() {
     return -1;
 }
@@ -145,14 +161,20 @@ Inst *Inst::find_par_for_nout( int nout ) {
     return 0;
 }
 
-void Inst::mark_children() {
+void Inst::mark_children( Vec<Expr> *seq ) {
     if ( op_id == cur_op_id )
         return;
     op_id = cur_op_id;
+
+    if ( seq )
+        *seq << this;
+
     for( Expr &e : inp )
-        e->mark_children();
+        e->mark_children( seq );
+    for( Expr &e : dep )
+        e->mark_children( seq );
     for( Expr &e : ext )
-        e->mark_children();
+        e->mark_children( seq );
 }
 
 
@@ -267,6 +289,10 @@ void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
     for( int i = 0; i < ext_disp_size(); ++i )
         if ( Inst *ch = ext[ i ].inst )
             ext_buf << ch;
+
+    // par
+    //for( int i = 0; i < par.size(); ++i )
+    //    os << "    node" << par[ i ].inst << " -> node" << this << " [color=red];\n";
 }
 
 int Inst::ext_disp_size() const {
@@ -354,6 +380,9 @@ bool Inst::will_write_code() const {
 
 bool Inst::need_a_register() {
     return has_inp_parent();
+}
+
+void Inst::codegen_simplification( Vec<Expr> &created, Vec<Expr> &out ) {
 }
 
 static void self_max( int &src, int val ) {

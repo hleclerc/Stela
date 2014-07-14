@@ -9,9 +9,18 @@
   repl_bits( src, off, val )
 */
 struct ReplBits : Inst {
-    virtual void write_dot( Stream &os ) const { os << "ReplBits"; }
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new ReplBits; }
-    virtual Type *type() { return inp[ 0 ]->type(); }
+    ReplBits() {
+        use_bytes_for_codegen = false;
+    }
+    virtual void write_dot( Stream &os ) const {
+        os << "ReplBits";
+    }
+    virtual Expr forced_clone( Vec<Expr> &created ) const {
+        return new ReplBits;
+    }
+    virtual Type *type() {
+        return inp[ 0 ]->type();
+    }
     virtual Expr _simp_slice( Type *dst, Expr off ) {
         SI32 beg, len = inp[ 2 ]->size();
         if ( not inp[ 1 ]->get_val( ip->type_SI32, &beg ) ) return (Inst *)0;
@@ -28,15 +37,25 @@ struct ReplBits : Inst {
         // inp[ 0 ] -> out
         add_same_out( 0, this, -1, COMPULSORY );
     }
+    virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out ) {
+        int m;
+        if ( use_bytes_for_codegen == false and inp[ 1 ]->op_num() == ID_OP_mul and inp[ 1 ]->inp[ 0 ]->get_val( ip->type_SI32, &m ) and m == 8 ) {
+            mod_inp( inp[ 1 ]->inp[ 1 ], 1 );
+            use_bytes_for_codegen = true;
+        }
+    }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         cc->on.write_beg() << "*(" << cc->type_to_str( inp[ 2 ]->out_reg->type ) << " *)( (char *)&";
         out_reg->write( cc, false );
         *cc->os << " + ";
         inp[ 1 ]->out_reg->write( cc, false );
-        *cc->os << " / 8 ) = ";
+        if ( not use_bytes_for_codegen )
+            *cc->os << " / 8";
+        *cc->os << " ) = ";
         inp[ 2 ]->out_reg->write( cc, new_reg );
         cc->on.write_end( ";" );
     }
+    bool use_bytes_for_codegen;
 };
 
 Expr repl_bits( Expr src, Expr off, Expr val ) {
