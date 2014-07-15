@@ -356,7 +356,8 @@ static bool _assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, C
 
     // constraint propagation
     for( std::pair<const Inst::Port,int> &c : inst->same_out )
-        if ( c.first.src_ninp == ninp and not _assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+        if ( c.first.src_ninp == ninp and
+             not _assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
             return false;
 
     // diff_out -> look if this assignation is not going to break a constraint
@@ -428,6 +429,10 @@ void Codegen_C::make_code() {
         for( int i = 0; i < e->par.size(); ++i )
             if ( e->par[ i ].inst->op_id != coi )
                 e->par.remove( i );
+
+    // display
+    if ( disp_inst_graph )
+        Inst::display_graph( out );
 
     // scheduling (-> list of SeqItem)
     CC_SeqItemBlock main_block;

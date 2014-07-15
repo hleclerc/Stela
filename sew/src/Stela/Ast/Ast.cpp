@@ -9,6 +9,7 @@
 #include "Ast_Continue.h"
 #include "Ast_Variable.h"
 #include "Ast_GetAttr.h"
+#include "Ast_AndOrOr.h"
 #include "Ast_Number.h"
 #include "Ast_String.h"
 #include "Ast_NdList.h"
@@ -648,13 +649,17 @@ struct AstMaker {
     }
 
     Ast *make_ast_and( const Lexem *l ) {
-        TODO;
-        return 0;
+        Ast_AndOrOr *res = new Ast_AndOrOr( l->off(), true );
+        for( int i = 0; i < 2; ++i )
+            res->args[ i ] = make_ast_single( l->children[ i ] );
+        return res;
     }
 
     Ast *make_ast_or( const Lexem *l ) {
-        TODO;
-        return 0;
+        Ast_AndOrOr *res = new Ast_AndOrOr( l->off(), false );
+        for( int i = 0; i < 2; ++i )
+            res->args[ i ] = make_ast_single( l->children[ i ] );
+        return res;
     }
 
     Ast *make_ast_break( const Lexem *l ) {

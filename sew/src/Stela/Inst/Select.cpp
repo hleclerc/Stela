@@ -21,6 +21,14 @@ struct Select : Inst {
             return inp[ 1 ];
         return this;
     }
+    virtual void set( Expr obj, const BoolOpSeq &cond ) {
+        TODO;
+    }
+
+    virtual Expr get( const BoolOpSeq &cond ) {
+        return select( get_bos() - cond, inp[ 0 ]->get( cond ), inp[ 1 ]->get( cond ) );
+    }
+
     BoolOpSeq get_bos() {
         BoolOpSeq res = True();
         for( int i = 0, o = 2; i < pos.size(); ++i ) {
@@ -46,8 +54,8 @@ struct Select : Inst {
             inst->update_when( cond );
     }
     virtual void get_constraints() {
-        inp[ 0 ]->add_same_out( 0, this,  1, COMPULSORY ); // inp[ 0 ] and inp[ 1 ]
-        inp[ 0 ]->add_same_out( 0, this, -1, COMPULSORY ); // inp[ 0 ] and out
+        add_same_out( 0, this, -1, COMPULSORY ); // inp[ 0 ] <-> out
+        add_same_out( 1, this, -1, COMPULSORY ); // inp[ 1 ] <-> out
     }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }
