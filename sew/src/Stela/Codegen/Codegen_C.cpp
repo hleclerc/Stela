@@ -341,7 +341,7 @@ static void display_constraints( Vec<CC_SeqItemExpr *> &seq ) {
     }
 }
 
-static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, CppOutReg *out_reg ) {
+static bool _assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, CppOutReg *out_reg ) {
     // assignation
     if ( ninp < 0 ) {
         if ( inst->out_reg )
@@ -356,25 +356,56 @@ static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, Cp
 
     // constraint propagation
     for( std::pair<const Inst::Port,int> &c : inst->same_out )
-        if ( c.first.src_ninp == ninp and not assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+        if ( c.first.src_ninp == ninp and not _assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
             return false;
+
+    // diff_out -> look if this assignation is not going to break a constraint
+    for( std::pair<const Inst::Port,int> &c : inst->diff_out ) {
+        if ( c.first.src_ninp == ninp ) {
+            if ( c.first.dst_ninp >= 0 ) {
+                if ( c.first.dst_ninp >= c.first.dst_inst->inp_reg.size() or
+                     c.first.dst_inst->inp_reg[ c.first.dst_ninp ] == out_reg )
+                    return false;
+            } else {
+                if ( c.first.dst_inst->out_reg == out_reg )
+                    return false;
+            }
+            return false;
+        }
+    }
+
     return true; // OK
+}
+
+static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, CppOutReg *out_reg ) {
+    Vec<Inst *> assigned_out_trial;
+    // ok ?
+    if ( _assign_port_rec( assigned_out_trial, inst, ninp, out_reg ) ) {
+        assigned_out.append( assigned_out_trial );
+        return true;
+    }
+    // else, undo out_reg assignations
+    for( Inst *inst : assigned_out_trial )
+        inst->out_reg = 0;
+    return false;
 }
 
 static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial ) {
     Expr s = copy( trial );
+    PRINT( *trial );
+
     s->num_in_seq = num_in_seq;
     CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
     CC_SeqItemExpr *c = new CC_SeqItemExpr( s, pb );
     pb->insert_before( seq[ num_in_seq ], c );
 
     for( Inst::Parent &p : trial->par )
-        if ( p.ninp >= 0 and p.inst->num_in_seq > num_in_seq )
+        if ( p.ninp >= 0 and p.inst->num_in_seq >= num_in_seq and p.inst != s.inst )
             p.inst->mod_inp( s, p.ninp );
 
     for( int i = num_in_seq; i < seq.size(); ++i )
         ++seq[ i ]->expr->num_in_seq;
-    seq.insert( num_in_seq - 1, c );
+    seq.insert( num_in_seq, c );
 }
 
 void Codegen_C::make_code() {
@@ -412,14 +443,26 @@ void Codegen_C::make_code() {
         if ( e->expr->out_reg or not e->expr->need_a_register() )
             continue;
 
-        // new reg
-        CppOutReg *out_reg = new_out_reg( e->expr->type(), e->parent_block );
+        // a proposition for the out_reg ?
+        CppOutReg *out_reg = 0;
+        for( Inst::Parent &p : e->expr->par ) {
+            if ( p.ninp >= 0 ) {
+                if ( p.ninp < p.inst->inp_reg.size() and p.inst->inp_reg[ p.ninp ] ) {
+                    out_reg = p.inst->inp_reg[ p.ninp ];
+                    break;
+                }
+            }
+        }
 
-        // constraint propagation
+        // else, make a new reg
+        if ( not out_reg )
+            out_reg = new_out_reg( e->expr->type(), e->parent_block );
+
+        // constraint propagation from e->expr
         Vec<Inst *> assigned_out;
         assign_port_rec( assigned_out, e->expr.inst, -1, out_reg );
 
-        // edges ( out-> inp ) propagation
+        // edges ( out -> inp ) propagation
         while ( assigned_out.size() ) {
             // pop the earliest inst
             int best_i = 0;

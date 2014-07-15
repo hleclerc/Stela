@@ -46,19 +46,23 @@ struct WhileInst : Inst {
     virtual bool need_a_register() { return false; }
 
     virtual void get_constraints() {
+        PRINT( corr );
         for( int nout = 0; nout < corr.size(); ++nout ) {
             int ninp = corr[ nout ];
-            if ( Inst *p = find_par_for_nout( nout ) ) {
-                // out of while <-> inp of while
-                if ( ninp >= 0 )
-                    p->add_same_out( -1, this, ninp, COMPULSORY );
-                // out of while <-> while_out->inp
-                p->add_same_out( -1, ext[ 0 ].inst, nout, COMPULSORY );
+
+            if ( ninp >= 0 ) {
+                if ( Inst *p = ext[ 1 ]->find_par_for_nout( ninp ) ) {
+                    // inp[ ninp ] of while <-> out[ ninp ] of while_inp
+                    this->add_same_out( ninp, p, -1, COMPULSORY );
+
+                    // out[ ninp ] of while_inp <-> inp[ nout ] of while out
+                    p->add_same_out( -1, ext[ 0 ].inst, nout, COMPULSORY );
+                }
             }
-            // out of while_inp <-> inp of while
-            if ( ninp >= 0 )
-                if ( Inst *p = ext[ 1 ]->find_par_for_nout( ninp ) )
-                    p->add_same_out( -1, this, ninp, COMPULSORY );
+
+            // inp[ nout ] of while out <-> out[ nout ] of while
+            if ( Inst *p = this->find_par_for_nout( nout ) )
+                ext[ 0 ]->add_same_out( nout, p, -1, COMPULSORY );
         }
     }
 
@@ -66,7 +70,6 @@ struct WhileInst : Inst {
         Vec<CC_SeqItemBlock *> seq;
         BoolOpSeq cont = get_cont(), need_a_break = not cont, cond = True();
         b[ 0 ]->get_glo_cond_and_seq_of_sub_blocks( seq, cond );
-        PRINT( need_a_break );
 
         for( int i = 0; i < seq.size(); ++i ) {
             if ( not seq[ i ]->parent )

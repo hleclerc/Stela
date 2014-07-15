@@ -150,13 +150,13 @@ def print val
 
 # v := Vec[ PI8, 3 ] 48
 # ___syscall &v
-# print 120
+print 120
 
-a := Vec[SI8,3]()
-a[ ___rand() ] = 48
-b := a
-b[ ___rand() ] = 49
+# a := Vec[SI8,3]()
+# a[ ___rand() ] = 48
+# b := a
+# b[ ___rand() ] = 49
 
-___syscall a, b
+# ___syscall a, b
 
 
