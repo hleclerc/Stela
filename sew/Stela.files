@@ -15,8 +15,8 @@ src/Stela/Inst/DeclOp_Binary.h
 src/Stela/Inst/Type.h
 src/Stela/Inst/While.h
 src/Stela/Inst/ReplBits.h
-src/Stela/Inst/CppGetConstraint.h
 src/Stela/Inst/DeclOp_Unary.h
+src/Stela/Inst/Copy.h
 src/Stela/Inst/Callable.h
 src/Stela/Inst/Symbol.h
 src/Stela/Inst/Sourcefile.h
@@ -70,8 +70,8 @@ src/Stela/Ast/Ast_Break.h
 src/Stela/Ast/Ast_Return.h
 src/Stela/Ast/Ast_Import.h
 src/Stela/Ast/Ast_Primitive.h
-src/Stela/Ast/IrWriter.h
 src/Stela/Ast/Ast_New.h
+src/Stela/Ast/IrWriter.h
 src/Stela/Ast/Ast_For.h
 src/Stela/Ast/Ast_Call.h
 src/Stela/Ast/Ast_Class.h
@@ -85,6 +85,7 @@ src/Stela/Ast/Ast_Select.h
 src/Stela/Ast/Ast_While.h
 src/Stela/Codegen/Codegen.h
 src/Stela/Codegen/CC_SeqItemExpr.h
+src/Stela/Codegen/CppGetConstraint.h
 src/Stela/Codegen/CppOutReg.h
 src/Stela/Codegen/CC_SeqItemContinueOrBreak.h
 src/Stela/Codegen/CC_SeqItem.h
@@ -129,7 +130,6 @@ src/stela.cpp
 src/Stela/Inst/ReplBits.cpp
 src/Stela/Inst/Sourcefile.cpp
 src/Stela/Inst/Class.cpp
-src/Stela/Inst/CppGetConstraint.cpp
 src/Stela/Inst/Callable.cpp
 src/Stela/Inst/Room.cpp
 src/Stela/Inst/Slice.cpp
@@ -143,6 +143,7 @@ src/Stela/Inst/Uninitialized.cpp
 src/Stela/Inst/UnknownInst.cpp
 src/Stela/Inst/Inst.cpp
 src/Stela/Inst/GetNout.cpp
+src/Stela/Inst/Copy.cpp
 src/Stela/Inst/Conv.cpp
 src/Stela/Inst/Select.cpp
 src/Stela/Inst/NamedVarList.cpp
@@ -187,6 +188,7 @@ src/Stela/Codegen/CC_SeqItemContinueOrBreak.cpp
 src/Stela/Codegen/CC_SeqItemIf.cpp
 src/Stela/Codegen/CppOutReg.cpp
 src/Stela/Codegen/CC_SeqItemExpr.cpp
+src/Stela/Codegen/CppGetConstraint.cpp
 src/Stela/Codegen/Codegen_C.cpp
 src/Stela/Codegen/CC_SeqItemBlock.cpp
 src/Stela/Codegen/CC_SeqItem.cpp
@@ -204,3 +206,4 @@ src/Stela/Met/TypeChar.h.py
 tests/test_Ast.cpp
 tests/test_Inst.cpp
 tests/test.met
+tests/test_Vec.cpp

@@ -8,6 +8,7 @@
 #include "Assert.h"
 #include "N.h"
 #include <stdlib.h>
+#include <utility>
 #include <new>
 
 #ifdef ALLOW_Cpp0X
@@ -797,14 +798,14 @@ public:
 
     Vec operator+( const Vec &vec ) const {
         Vec res( Size(), ( size() < vec.size() ? size() : vec.size() ) );
-        for(int i=0;i<res.size();++i)
+        for( int i = 0; i < res.size(); ++i )
             res[ i ] = operator[]( i ) + vec[ i ];
         return res;
     }
 
     Vec left_to( ST end ) const {
         Vec res( Rese(), end );
-        for(int i=0;i<end;++i)
+        for( int i = 0; i < end; ++i )
             res << operator[]( i );
         return res;
     }
@@ -854,9 +855,9 @@ private:
         _rese = wanted_in_bytes;
         _data = _alloc();
         for( ST i = 0; i < _size; ++i )
-            new( _data + i ) T_( old_data[ i ] );
-        for( ST i = _size - 1; i >= 0; --i )
-            old_data[ i ].~T_();
+            new( _data + i ) T_( std::move( old_data[ i ] ) );
+        //for( ST i = _size - 1; i >= 0; --i )
+        //    old_data[ i ].~T_();
         __free( old_data, old_rese );
     }
 

@@ -5,6 +5,7 @@
 #include "../System/Assert.h"
 #include <stdlib.h>
 #include <string.h>
+#include <utility>
 #include <new>
 
 ///
@@ -76,6 +77,13 @@ public:
         return res;
     }
 
+    template<class T0>
+    T *push_back( T0 &&v0 ) {
+        T *res = get_room_for();
+        new( res ) T( std::move( v0 ) );
+        return res;
+    }
+
     template<class T0,class T1>
     T *push_back( const T0 &v0, const T1 &v1 ) {
         T *res = get_room_for();
@@ -111,6 +119,16 @@ public:
             if ( operator[]( i ) == val )
                 return &operator[]( i );
             return push_back( val );
+    }
+
+    template<class T2>
+    T *insert( ST index, const T2 &val ) {
+        if ( index == 0 )
+            return push_back( val );
+        push_back( std::move( back() ) );
+        for( int i = size() - 3; i >= index; --i )
+            operator[]( i + 1 ) = std::move( operator[]( i ) );
+        return &( operator[]( index ) = val );
     }
 
     ///

@@ -13,6 +13,7 @@ void CC_SeqItemExpr::write( Codegen_C *cc ) {
 }
 
 void CC_SeqItemExpr::get_constraints( CppGetConstraint &context ) {
+    expr->num_in_seq = context.seq.size();
     context.seq << this;
 
     expr->get_constraints();

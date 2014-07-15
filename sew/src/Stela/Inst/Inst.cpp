@@ -249,6 +249,8 @@ void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
 
     if ( when )
         when->write_to_stream( ss << "\n" );
+    if ( out_reg )
+        ss << ".R" << out_reg->num;
     //if ( IIC( this )->out_reg )
     //    IIC( this )->out_reg->write_to_stream( ss << " " );
 
@@ -397,6 +399,22 @@ void Inst::add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level )
 void Inst::add_diff_out(int src_ninp, Inst *dst_inst, int dst_ninp, int level ) {
     self_max( this->diff_out[ Port{ src_ninp, dst_inst, dst_ninp } ], level );
     self_max( dst_inst->diff_out[ Port{ dst_ninp, this, src_ninp } ], level );
+}
+
+int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
+    if ( ninp >= inp_reg.size() ) {
+        inp_reg.resize( inp.size(), (CppOutReg *)0 );
+        inp_reg[ ninp ] = reg;
+        return 1;
+    }
+    if ( not inp_reg[ ninp ] ) {
+        inp_reg[ ninp ] = reg;
+        return 1;
+    }
+    if ( inp_reg[ ninp ] != reg )
+        return -1;
+    inp_reg[ ninp ] = reg;
+    return 0;
 }
 
 void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {

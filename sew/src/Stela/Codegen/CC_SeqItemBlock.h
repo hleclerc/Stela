@@ -16,6 +16,7 @@ struct CC_SeqItemBlock : CC_SeqItem {
     virtual bool non_void();
 
     bool contains_a_cont_or_break();
+    void insert_before( CC_SeqItem *iter, CC_SeqItem *item );
 
     SplittedVec<AutoPtr<CC_SeqItem>,8> seq;
     Vec<CppOutReg *> reg_to_decl;

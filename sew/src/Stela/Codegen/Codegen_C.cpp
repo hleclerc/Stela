@@ -1,6 +1,7 @@
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
 #include "../Inst/Type.h"
+#include "../Inst/Copy.h"
 #include "../Inst/Ip.h"
 #include "CppGetConstraint.h"
 #include "CC_SeqItemExpr.h"
@@ -340,6 +341,41 @@ static void display_constraints( Vec<CC_SeqItemExpr *> &seq ) {
     }
 }
 
+static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, CppOutReg *out_reg ) {
+    // assignation
+    if ( ninp < 0 ) {
+        if ( inst->out_reg )
+            return inst->out_reg == out_reg;
+        inst->out_reg = out_reg;
+        assigned_out << inst;
+    } else {
+        int a = inst->set_inp_reg( ninp, out_reg );
+        if ( a <= 0 )
+            return a == 0;
+    }
+
+    // constraint propagation
+    for( std::pair<const Inst::Port,int> &c : inst->same_out )
+        if ( c.first.src_ninp == ninp and not assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+            return false;
+    return true; // OK
+}
+
+static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial ) {
+    Expr s = copy( trial );
+    s->num_in_seq = num_in_seq;
+    CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
+    CC_SeqItemExpr *c = new CC_SeqItemExpr( s, pb );
+    pb->insert_before( seq[ num_in_seq ], c );
+
+    for( Inst::Parent &p : trial->par )
+        if ( p.ninp >= 0 and p.inst->num_in_seq > num_in_seq )
+            p.inst->mod_inp( s, p.ninp );
+
+    for( int i = num_in_seq; i < seq.size(); ++i )
+        ++seq[ i ]->expr->num_in_seq;
+    seq.insert( num_in_seq - 1, c );
+}
 
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
@@ -362,10 +398,6 @@ void Codegen_C::make_code() {
             if ( e->par[ i ].inst->op_id != coi )
                 e->par.remove( i );
 
-    // display
-    if ( disp_inst_graph )
-        Inst::display_graph( out );
-
     // scheduling (-> list of SeqItem)
     CC_SeqItemBlock main_block;
     scheduling( &main_block, out );
@@ -375,14 +407,55 @@ void Codegen_C::make_code() {
     main_block.get_constraints( context );
     display_constraints( context.seq );
 
-    for( CC_SeqItemExpr *e : context.seq ) {
+    for( int n = 0; n < context.seq.size(); ++n ) {
+        CC_SeqItemExpr *e = context.seq[ n ];
         if ( e->expr->out_reg or not e->expr->need_a_register() )
             continue;
 
-        // assignation of a new reg
-        e->expr->out_reg = new_out_reg( e->expr->type(), e->parent_block );
+        // new reg
+        CppOutReg *out_reg = new_out_reg( e->expr->type(), e->parent_block );
+
+        // constraint propagation
+        Vec<Inst *> assigned_out;
+        assign_port_rec( assigned_out, e->expr.inst, -1, out_reg );
+
+        // edges ( out-> inp ) propagation
+        while ( assigned_out.size() ) {
+            // pop the earliest inst
+            int best_i = 0;
+            for( int i = 1; i < assigned_out.size(); ++i )
+                if ( assigned_out[ best_i ]->num_in_seq > assigned_out[ i ]->num_in_seq )
+                    best_i = i;
+            Inst *trial = assigned_out[ best_i ];
+            assigned_out.remove( best_i );
+
+            // last inp parent
+            int num_in_seq_last_inp_parent = 0;
+            for( Inst::Parent &p : trial->par )
+                if ( p.ninp >= 0 and num_in_seq_last_inp_parent < p.inst->num_in_seq )
+                    num_in_seq_last_inp_parent = p.inst->num_in_seq;
+
+            // propagate
+            for( int num_in_seq = trial->num_in_seq + 1; num_in_seq <= num_in_seq_last_inp_parent; ++num_in_seq ) {
+                Inst *cur = context.seq[ num_in_seq ]->expr.inst;
+
+                // if reached an inp
+                for( Inst::Parent &p : trial->par )
+                    if ( p.ninp >= 0 and p.inst == cur )
+                        if ( not assign_port_rec( assigned_out, cur, p.ninp, out_reg ) )
+                            insert_save_reg_before( context.seq, num_in_seq, trial );
+
+                // if out_reg is going to be modified by another instruction
+                if ( num_in_seq < num_in_seq_last_inp_parent and context.seq[ num_in_seq ]->expr->out_reg == out_reg )
+                    insert_save_reg_before( context.seq, num_in_seq, trial );
+            }
+        }
     }
 
+
+    // display
+    if ( disp_inst_graph )
+        Inst::display_graph( out );
 
     // specify where the registers have to be declared
     for( int n = 0; n < out_regs.size(); ++n ) {

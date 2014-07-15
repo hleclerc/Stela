@@ -68,3 +68,13 @@ bool CC_SeqItemBlock::contains_a_cont_or_break() {
             return true;
     return false;
 }
+
+void CC_SeqItemBlock::insert_before( CC_SeqItem *iter, CC_SeqItem *item ) {
+    for( int o = 0; o < seq.size(); ++o ) {
+        if ( seq[ o ] == iter ) {
+            seq.insert( o, item );
+            return;
+        }
+    }
+}
+

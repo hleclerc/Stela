@@ -108,6 +108,7 @@ public:
 
     void add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
+    int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -126,11 +127,14 @@ public:
     mutable Inst        *ext_par;
     int                  flags;
 
+    // codegen
     BoolOpSeq           *when; ///< used for code generation (to know when needed)
     CppOutReg           *out_reg;
+    Vec<CppOutReg *>     inp_reg;
     bool                 new_reg;
     std::map<Port,int>   same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
     std::map<Port,int>   diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
+    int                  num_in_seq;
 
     static  PI64         cur_op_id; ///<
     mutable PI64         op_id_vis; ///<

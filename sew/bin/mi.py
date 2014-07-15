@@ -19,7 +19,7 @@ c = r( """#include "NAME.h"
 */
 struct NAME : Inst {
     NAME() {} 
-    virtual void write_dot( Stream &os ) { os << "NAME"; }
+    virtual void write_dot( Stream &os ) const { os << "NAME"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new NAME(); }
     virtual Type *type() { return out_type; }
 };
