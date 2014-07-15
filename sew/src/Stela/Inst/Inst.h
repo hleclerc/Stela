@@ -109,6 +109,7 @@ public:
     void add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
+    CppOutReg *get_inp_reg( int ninp );
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );

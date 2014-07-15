@@ -401,6 +401,10 @@ void Inst::add_diff_out(int src_ninp, Inst *dst_inst, int dst_ninp, int level ) 
     self_max( dst_inst->diff_out[ Port{ dst_ninp, this, src_ninp } ], level );
 }
 
+CppOutReg *Inst::get_inp_reg( int ninp ) {
+    return ninp >= 0 and ninp < inp_reg.size() ? inp_reg[ ninp ] : 0;
+}
+
 int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
     if ( ninp >= inp_reg.size() ) {
         inp_reg.resize( inp.size(), (CppOutReg *)0 );

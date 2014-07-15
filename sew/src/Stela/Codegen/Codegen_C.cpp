@@ -446,11 +446,12 @@ void Codegen_C::make_code() {
         // a proposition for the out_reg ?
         CppOutReg *out_reg = 0;
         for( Inst::Parent &p : e->expr->par ) {
-            if ( p.ninp >= 0 ) {
-                if ( p.ninp < p.inst->inp_reg.size() and p.inst->inp_reg[ p.ninp ] ) {
-                    out_reg = p.inst->inp_reg[ p.ninp ];
-                    break;
-                }
+            if ( CppOutReg *prop = p.inst->get_inp_reg( p.ninp ) ) {
+                // valid ?
+
+                //
+                out_reg = prop;
+                break;
             }
         }
 
@@ -483,14 +484,29 @@ void Codegen_C::make_code() {
                 Inst *cur = context.seq[ num_in_seq ]->expr.inst;
 
                 // if reached an inp
-                for( Inst::Parent &p : trial->par )
-                    if ( p.ninp >= 0 and p.inst == cur )
+                bool cur_is_a_target = false;
+                for( Inst::Parent &p : trial->par ) {
+                    if ( p.ninp >= 0 and p.inst == cur ) {
+                        cur_is_a_target = true;
                         if ( not assign_port_rec( assigned_out, cur, p.ninp, out_reg ) )
                             insert_save_reg_before( context.seq, num_in_seq, trial );
+                    }
+                }
 
-                // if out_reg is going to be modified by another instruction
-                if ( num_in_seq < num_in_seq_last_inp_parent and context.seq[ num_in_seq ]->expr->out_reg == out_reg )
-                    insert_save_reg_before( context.seq, num_in_seq, trial );
+                if ( num_in_seq < num_in_seq_last_inp_parent ) {
+                    // if out_reg is going to be modified by another instruction
+                    if ( context.seq[ num_in_seq ]->expr->out_reg == out_reg )
+                        insert_save_reg_before( context.seq, num_in_seq, trial );
+                    // if out_reg is needed as an inp by an instruction
+                    else if ( not cur_is_a_target ) {
+                        for( CppOutReg *r : context.seq[ num_in_seq ]->expr->inp_reg ) {
+                            if ( r == out_reg ) {
+                                insert_save_reg_before( context.seq, num_in_seq, trial );
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
