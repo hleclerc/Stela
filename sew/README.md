@@ -89,9 +89,9 @@ def pow( a, b ) # -> default pertinence = 0
 def pow( a, b ) when a.is_diagonalizable # default pertinence = 1 (because there is 1 condition)
     ev := eig a
     return ev.P' * pow( ev.D, b ) * ev.P
-def pow( a, b ) when always( b == floor( b ) ) and b < 10 pertinence 2 # explicit pertinence
+def pow( a, b ) when always( b.is_integer ) and b < 10 pertinence 2 # explicit pertinence
     ev := eig a
-    return ev.P' * pow( ev.Vn b ) * ev.P
+    return ev.P' * pow( ev.V, b ) * ev.P
 ```
 
 It is also possible to add constraints on class/traits names, as in
@@ -214,9 +214,9 @@ TODO
 
 Actually a lot of things.
 
-Some experiments have been made with an interpreter. It has allowed for testing of the syntax, the helpfullness of such or such construct, notably with big programs (where C++ shines in front of e.g. python and javascript)... which lead now to something that can considered as convenient
+Some experiments have been made with an interpreter. It has allowed the testing of the syntax, the helpfullness of such or such construct, notably with big programs (where C++ shines in front of e.g. python and javascript)... which lead now to something that can considered as convenient
 
-Currently a compiler is under heavy development. The goal now is to validate that the execution speed are as expected. Currently, for testing purpose, it generate basic C++ code.
+Currently a compiler is under heavy development. The goal now is to validate that the execution speed are as expected. Currently, for testing purpose, it generates basic C++ code.
 
 
 

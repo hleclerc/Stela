@@ -415,7 +415,7 @@ void Codegen_C::make_code() {
     for( Expr inst : fresh )
         out << cloned( inst, created );
 
-    // simplifications
+    // simplifications (and insert Copy before Select)
     for( Expr &e : created )
         e->codegen_simplification( created, out );
 

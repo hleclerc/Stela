@@ -1,6 +1,7 @@
 #include "../System/AssignIfNeq.h"
 #include "BoolOpSeq.h"
 #include "Select.h"
+#include "Copy.h"
 #include "Ip.h"
 
 /**
@@ -45,14 +46,21 @@ struct Select : Inst {
         for( Expr inst : dep )
             inst->update_when( cond );
     }
-    virtual void get_constraints() {
-        inp[ 0 ]->add_same_out( 0, this,  1, COMPULSORY ); // inp[ 0 ] and inp[ 1 ]
-        inp[ 0 ]->add_same_out( 0, this, -1, COMPULSORY ); // inp[ 0 ] and out
-    }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     }
     virtual bool will_write_code() const {
         return false;
+    }
+    virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out ) {
+        Expr c0 = copy( inp[ 0 ] );
+        Expr c1 = copy( inp[ 1 ] );
+        mod_inp( c0, 0 );
+        mod_inp( c1, 1 );
+    }
+    virtual void get_constraints() {
+        // assuming codegen_simplification have added copy children
+        inp[ 0 ]->add_same_out( -1, this, -1, COMPULSORY ); // out of inp[ 0 ] <-> out of this
+        inp[ 1 ]->add_same_out( -1, this, -1, COMPULSORY ); // out of inp[ 1 ] <-> out of this
     }
 
     Vec<Vec<Bool> > pos;
