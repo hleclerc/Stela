@@ -5,6 +5,7 @@
 #include "Expr.h"
 #include <map>
 class CC_SeqItemBlock;
+class CC_SeqItemExpr;
 class CppOutReg;
 class BoolOpSeq;
 class Codegen_C;
@@ -136,6 +137,7 @@ public:
     std::map<Port,int>   same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
     std::map<Port,int>   diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
     int                  num_in_seq;
+    CC_SeqItemExpr      *cc_item_expr;
 
     static  PI64         cur_op_id; ///<
     mutable PI64         op_id_vis; ///<

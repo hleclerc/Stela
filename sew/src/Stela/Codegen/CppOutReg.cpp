@@ -4,8 +4,7 @@
 #include "CppOutReg.h"
 #include "Codegen_C.h"
 
-CppOutReg::CppOutReg( Type *type, int num, CC_SeqItemBlock *parent_block ) : type( type ), num( num ) {
-    provenance << parent_block;
+CppOutReg::CppOutReg( Type *type, int num ) : type( type ), num( num ) {
 }
 
 Stream &CppOutReg::write( Codegen_C *cc, bool new_reg ) {

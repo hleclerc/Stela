@@ -33,8 +33,8 @@ void Codegen_C::add_type( Type *type ) {
     types.insert( type );
 }
 
-CppOutReg *Codegen_C::new_out_reg( Type *type, CC_SeqItemBlock *parent_block ) {
-    return out_regs.push_back( type, out_regs.size(), parent_block );
+CppOutReg *Codegen_C::new_out_reg( Type *type ) {
+    return out_regs.push_back( type, out_regs.size() );
 }
 
 void Codegen_C::write_out( Expr expr ) {
@@ -383,6 +383,8 @@ static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, Cp
     // ok ?
     if ( _assign_port_rec( assigned_out_trial, inst, ninp, out_reg ) ) {
         assigned_out.append( assigned_out_trial );
+        for( Inst *a : assigned_out_trial )
+            a->out_reg->provenance << a->cc_item_expr->parent_block;
         return true;
     }
     // else, undo out_reg assignations
@@ -393,12 +395,17 @@ static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, Cp
 
 static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial, CppOutReg *out_reg = 0 ) {
     Expr s = copy( trial );
-    s->out_reg = out_reg;
+    if ( out_reg )
+        s->out_reg = out_reg;
+
 
     s->num_in_seq = num_in_seq;
     CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
     CC_SeqItemExpr *c = new CC_SeqItemExpr( s, pb );
     pb->insert_before( seq[ num_in_seq ], c );
+
+    if ( out_reg )
+        out_reg->provenance << pb;
 
     for( Inst::Parent &p : trial->par )
         if ( p.ninp >= 0 and p.inst->num_in_seq >= num_in_seq and p.inst != s.inst )
@@ -449,7 +456,7 @@ void Codegen_C::make_code() {
             continue;
 
         // make a new reg
-        CppOutReg *out_reg = new_out_reg( e->expr->type(), e->parent_block );
+        CppOutReg *out_reg = new_out_reg( e->expr->type() );
 
         // constraint propagation from e->expr
         Vec<Inst *> assigned_out;

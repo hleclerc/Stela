@@ -1,3 +1,4 @@
+#include "../Codegen/CC_SeqItemExpr.h"
 #include "../System/AssignIfNeq.h"
 #include "../Codegen/Codegen_C.h"
 #include "BoolOpSeq.h"

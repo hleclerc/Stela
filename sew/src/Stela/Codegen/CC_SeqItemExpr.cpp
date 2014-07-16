@@ -3,6 +3,7 @@
 #include "Codegen_C.h"
 
 CC_SeqItemExpr::CC_SeqItemExpr( Expr expr, CC_SeqItemBlock *parent_block ) : CC_SeqItem( parent_block, parent_block ), expr( expr ) {
+    expr->cc_item_expr = this;
 }
 
 void CC_SeqItemExpr::write( Codegen_C *cc ) {
