@@ -9,10 +9,10 @@ struct CC_SeqItemBlock : CC_SeqItem {
     CC_SeqItemBlock();
     virtual ~CC_SeqItemBlock();
     virtual void write( Codegen_C *cc );
-    virtual void get_constraints( CppGetConstraint &context );
     virtual void get_glo_cond_and_seq_of_sub_blocks( Vec<CC_SeqItemBlock *> &seq, const BoolOpSeq &cond );
     virtual bool ch_followed_by_something_to_execute( int &nb_evicted_blocks, CC_SeqItem *ch, const BoolOpSeq &cond );
     virtual void write_to_stream( Stream &os ) { os << "block"; }
+    virtual bool visit( Visitor &v );
     virtual bool non_void();
 
     bool contains_a_cont_or_break();

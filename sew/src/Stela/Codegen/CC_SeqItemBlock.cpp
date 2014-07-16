@@ -33,6 +33,13 @@ bool CC_SeqItemBlock::ch_followed_by_something_to_execute( int &nb_evicted_block
     return parent ? parent->ch_followed_by_something_to_execute( nb_evicted_blocks, this, cond ) : false;
 }
 
+bool CC_SeqItemBlock::visit( Visitor &v ) {
+    for( int i = 0; i < seq.size(); ++i )
+        if ( not seq[ i ]->visit( v ) )
+            return false;
+    return true;
+}
+
 bool CC_SeqItemBlock::non_void() {
     for( int i = 0; i < seq.size(); ++i )
         if ( seq[ i ]->non_void() )
@@ -55,11 +62,6 @@ void CC_SeqItemBlock::write( Codegen_C *cc ) {
     // instructions
     for( int i = 0; i < seq.size(); ++i )
         seq[ i ]->write( cc );
-}
-
-void CC_SeqItemBlock::get_constraints( CppGetConstraint &context ) {
-    for( int n = 0; n < seq.size(); ++n )
-        seq[ n ]->get_constraints( context );
 }
 
 bool CC_SeqItemBlock::contains_a_cont_or_break() {

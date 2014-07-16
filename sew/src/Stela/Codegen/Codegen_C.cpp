@@ -3,7 +3,6 @@
 #include "../Inst/Type.h"
 #include "../Inst/Copy.h"
 #include "../Inst/Ip.h"
-#include "CppGetConstraint.h"
 #include "CC_SeqItemExpr.h"
 #include "CC_SeqItemIf.h"
 #include "Codegen_C.h"
@@ -304,14 +303,18 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
 
 }
 
-static void display_constraints( Vec<CC_SeqItemExpr *> &seq ) {
-    for( CC_SeqItemExpr *c : seq ) {
-        Inst *i = c->expr.inst;
-        i->write_dot( std::cout );
-        std::cout << "\n";
+struct GetConstraint : CC_SeqItem::Visitor {
+    virtual bool operator()( CC_SeqItemExpr &ce ) {
+        ce.expr->get_constraints();
+        for( AutoPtr<CC_SeqItemBlock> &ext : ce.ext )
+            ext->visit( *this );
+        return true;
     }
-    for( CC_SeqItemExpr *c : seq ) {
-        Inst *i = c->expr.inst;
+};
+
+struct DisplayConstraints : CC_SeqItem::Visitor {
+    virtual bool operator()( CC_SeqItemExpr &ce ) {
+        Inst *i = ce.expr.inst;
         i->write_dot( std::cout );
         std::cout << " ->\n";
         for( auto o : i->same_out ) {
@@ -338,26 +341,28 @@ static void display_constraints( Vec<CC_SeqItemExpr *> &seq ) {
                 std::cout << "[" << o.first.dst_ninp << "] ";
             std::cout << "\n";
         }
+        return true;
     }
-}
+};
 
-static bool _assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, CppOutReg *out_reg ) {
+static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
     // assignation
     if ( ninp < 0 ) {
         if ( inst->out_reg )
             return inst->out_reg == out_reg;
         inst->out_reg = out_reg;
-        assigned_out << inst;
+        assigned_ports << std::pair<Inst *,int>( inst, -1 );
     } else {
         int a = inst->set_inp_reg( ninp, out_reg );
         if ( a <= 0 )
             return a == 0;
+        assigned_ports << std::pair<Inst *,int>( inst, ninp );
     }
 
     // constraint propagation
     for( std::pair<const Inst::Port,int> &c : inst->same_out )
         if ( c.first.src_ninp == ninp and
-             not _assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+             not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
             return false;
 
     // diff_out -> look if this assignation is not going to break a constraint
@@ -371,50 +376,137 @@ static bool _assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, C
                 if ( c.first.dst_inst->out_reg == out_reg )
                     return false;
             }
-            return false;
         }
     }
 
     return true; // OK
 }
 
-static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, CppOutReg *out_reg ) {
-    Vec<Inst *> assigned_out_trial;
+static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
+    Vec<std::pair<Inst *,int> > assigned_ports_trial;
+
     // ok ?
-    if ( _assign_port_rec( assigned_out_trial, inst, ninp, out_reg ) ) {
-        assigned_out.append( assigned_out_trial );
-        for( Inst *a : assigned_out_trial )
-            a->out_reg->provenance << a->cc_item_expr->parent_block;
+    if ( _assign_port_rec( assigned_ports_trial, inst, ninp, out_reg ) ) {
+        assigned_ports.append( assigned_ports_trial );
+        for( std::pair<Inst *,int> &a : assigned_ports_trial )
+            if ( a.second < 0 )
+                a.first->out_reg->provenance << a.first->cc_item_expr->parent_block;
         return true;
     }
+
     // else, undo out_reg assignations
-    for( Inst *inst : assigned_out_trial )
-        inst->out_reg = 0;
+    for( std::pair<Inst *,int> &a : assigned_ports_trial ) {
+        if ( a.second < 0 )
+            a.first->out_reg = 0;
+        else
+            a.first->inp_reg[ a.second ] = 0;
+    }
+
     return false;
 }
 
-static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial, CppOutReg *out_reg = 0 ) {
-    Expr s = copy( trial );
-    if ( out_reg )
-        s->out_reg = out_reg;
+//static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial, CppOutReg *out_reg = 0 ) {
+//    Expr s = copy( trial );
+//    if ( out_reg )
+//        s->out_reg = out_reg;
 
 
-    s->num_in_seq = num_in_seq;
-    CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
-    CC_SeqItemExpr *c = new CC_SeqItemExpr( s, pb );
-    pb->insert_before( seq[ num_in_seq ], c );
+//    s->num_in_seq = num_in_seq;
+//    CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
+//    CC_SeqItemExpr *c = new CC_SeqItemExpr( s, pb );
+//    pb->insert_before( seq[ num_in_seq ], c );
 
-    if ( out_reg )
-        out_reg->provenance << pb;
+//    if ( out_reg )
+//        out_reg->provenance << pb;
 
-    for( Inst::Parent &p : trial->par )
-        if ( p.ninp >= 0 and p.inst->num_in_seq >= num_in_seq and p.inst != s.inst )
-            p.inst->mod_inp( s, p.ninp );
+//    for( Inst::Parent &p : trial->par )
+//        if ( p.ninp >= 0 and p.inst->num_in_seq >= num_in_seq and p.inst != s.inst )
+//            p.inst->mod_inp( s, p.ninp );
 
-    for( int i = num_in_seq; i < seq.size(); ++i )
-        ++seq[ i ]->expr->num_in_seq;
-    seq.insert( num_in_seq, c );
-}
+//    for( int i = num_in_seq; i < seq.size(); ++i )
+//        ++seq[ i ]->expr->num_in_seq;
+//    seq.insert( num_in_seq, c );
+//}
+
+struct PropagateOutRegForward : CC_SeqItem::Visitor {
+    virtual bool operator()( CC_SeqItemExpr &ce ) {
+    }
+    Inst *inst;
+};
+
+struct AssignOutReg : CC_SeqItem::Visitor {
+    virtual bool operator()( CC_SeqItemExpr &ce ) {
+        if ( ce.expr->out_reg or not ce.expr->need_a_register() )
+            return true;
+
+        // make a new reg
+        CppOutReg *out_reg = cc->new_out_reg( ce.expr->type() );
+
+        // constraint propagation from ce.expr
+        Vec<std::pair<Inst *,int> > assigned_ports;
+        if ( not assign_port_rec( assigned_ports, ce.expr.inst, -1, out_reg ) )
+            ERROR( "base constraint cannot be fullfilled" );
+
+        // edges ( out -> inp ) propagation
+        while ( true ) {
+            Vec<std::pair<Inst *,int> > new_assigned_ports;
+            for( int num = 0; num < assigned_ports; ++num ) {
+
+            }
+
+            // if ( not new_assigned_ports.size() )
+        }
+
+//        while ( assigned_out.size() ) {
+//            // pop the earliest inst
+//            int best_i = 0;
+//            for( int i = 1; i < assigned_out.size(); ++i )
+//                if ( assigned_out[ best_i ]->num_in_seq > assigned_out[ i ]->num_in_seq )
+//                    best_i = i;
+//            Inst *trial = assigned_out[ best_i ];
+//            assigned_out.remove( best_i );
+
+//            // get num_in_seq of last inp parent
+//            int num_in_seq_last_inp_parent = 0;
+//            for( Inst::Parent &p : trial->par )
+//                if ( p.ninp >= 0 and num_in_seq_last_inp_parent < p.inst->num_in_seq )
+//                    num_in_seq_last_inp_parent = p.inst->num_in_seq;
+
+//            // propagate
+//            for( int num_in_seq = trial->num_in_seq + 1; num_in_seq <= num_in_seq_last_inp_parent; ++num_in_seq ) {
+//                Inst *cur = context.seq[ num_in_seq ]->expr.inst;
+
+//                // if reached an inp
+//                bool cur_is_a_target = false;
+//                for( Inst::Parent &p : trial->par ) {
+//                    if ( p.ninp >= 0 and p.inst == cur ) {
+//                        cur_is_a_target = true;
+//                        // try to inp[ ninp ] <- out_reg
+//                        if ( not assign_port_rec( assigned_out, p.inst, p.ninp, out_reg ) )
+//                            insert_save_reg_before( context.seq, num_in_seq, trial, p.inst->get_inp_reg( p.ninp ) );
+//                    }
+//                }
+
+//                if ( num_in_seq < num_in_seq_last_inp_parent ) {
+//                    // if out_reg is going to be modified by another instruction
+//                    if ( cur->out_reg == out_reg )
+//                        insert_save_reg_before( context.seq, num_in_seq, trial );
+//                    // if out_reg is needed as an inp by an instruction that is not a target
+//                    else if ( not cur_is_a_target ) {
+//                        for( CppOutReg *r : cur->inp_reg ) {
+//                            if ( r == out_reg ) {
+//                                insert_save_reg_before( context.seq, num_in_seq, trial );
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+        return true;
+    }
+    Codegen_C *cc;
+};
 
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
@@ -438,79 +530,23 @@ void Codegen_C::make_code() {
                 e->par.remove( i );
 
     // display
-    if ( disp_inst_graph )
-        Inst::display_graph( out );
+    // if ( disp_inst_graph )
+    //     Inst::display_graph( out );
 
-    // scheduling (-> list of SeqItem)
+    // scheduling
     CC_SeqItemBlock main_block;
     scheduling( &main_block, out );
 
-    // get reg for each output
-    CppGetConstraint context;
-    main_block.get_constraints( context );
-    display_constraints( context.seq );
+    // get reg constraints
+    GetConstraint gc;
+    main_block.visit( gc );
 
-    for( int n = 0; n < context.seq.size(); ++n ) {
-        CC_SeqItemExpr *e = context.seq[ n ];
-        if ( e->expr->out_reg or not e->expr->need_a_register() )
-            continue;
+    DisplayConstraints dv;
+    main_block.visit( dv );
 
-        // make a new reg
-        CppOutReg *out_reg = new_out_reg( e->expr->type() );
-
-        // constraint propagation from e->expr
-        Vec<Inst *> assigned_out;
-        assign_port_rec( assigned_out, e->expr.inst, -1, out_reg );
-
-        // edges ( out -> inp ) propagation
-        while ( assigned_out.size() ) {
-            // pop the earliest inst
-            int best_i = 0;
-            for( int i = 1; i < assigned_out.size(); ++i )
-                if ( assigned_out[ best_i ]->num_in_seq > assigned_out[ i ]->num_in_seq )
-                    best_i = i;
-            Inst *trial = assigned_out[ best_i ];
-            assigned_out.remove( best_i );
-
-            // get num_in_seq of last inp parent
-            int num_in_seq_last_inp_parent = 0;
-            for( Inst::Parent &p : trial->par )
-                if ( p.ninp >= 0 and num_in_seq_last_inp_parent < p.inst->num_in_seq )
-                    num_in_seq_last_inp_parent = p.inst->num_in_seq;
-
-            // propagate
-            for( int num_in_seq = trial->num_in_seq + 1; num_in_seq <= num_in_seq_last_inp_parent; ++num_in_seq ) {
-                Inst *cur = context.seq[ num_in_seq ]->expr.inst;
-
-                // if reached an inp
-                bool cur_is_a_target = false;
-                for( Inst::Parent &p : trial->par ) {
-                    if ( p.ninp >= 0 and p.inst == cur ) {
-                        cur_is_a_target = true;
-                        // try to inp[ ninp ] <- out_reg
-                        if ( not assign_port_rec( assigned_out, p.inst, p.ninp, out_reg ) )
-                            insert_save_reg_before( context.seq, num_in_seq, trial, p.inst->get_inp_reg( p.ninp ) );
-                    }
-                }
-
-                if ( num_in_seq < num_in_seq_last_inp_parent ) {
-                    // if out_reg is going to be modified by another instruction
-                    if ( cur->out_reg == out_reg )
-                        insert_save_reg_before( context.seq, num_in_seq, trial );
-                    // if out_reg is needed as an inp by an instruction that is not a target
-                    else if ( not cur_is_a_target ) {
-                        for( CppOutReg *r : cur->inp_reg ) {
-                            if ( r == out_reg ) {
-                                insert_save_reg_before( context.seq, num_in_seq, trial );
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+    // assign (missing) out_reg
+    AssignOutReg aor; aor.cc = this;
+    main_block.visit( aor );
 
     // display
     if ( disp_inst_graph )

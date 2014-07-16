@@ -13,6 +13,15 @@ void CC_SeqItemIf::get_glo_cond_and_seq_of_sub_blocks( Vec<CC_SeqItemBlock *> &r
     seq[ 0 ].get_glo_cond_and_seq_of_sub_blocks( res, cond and this->cond );
     seq[ 1 ].get_glo_cond_and_seq_of_sub_blocks( res, cond and not this->cond );
 }
+
+bool CC_SeqItemIf::visit( Visitor &v ) {
+    for( int i = 0; i < 2; ++i )
+        if ( not seq[ i ].visit( v ) )
+            return false;
+    return true;
+}
+
+
 bool CC_SeqItemIf::ch_followed_by_something_to_execute( int &nb_evicted_blocks, CC_SeqItem *ch, const BoolOpSeq &cond ) {
     return parent->ch_followed_by_something_to_execute( nb_evicted_blocks, this, cond );
 }
@@ -60,7 +69,3 @@ void CC_SeqItemIf::write( Codegen_C *cc ) {
 }
 
 
-void CC_SeqItemIf::get_constraints( CppGetConstraint &context ) {
-    for( int i = 0; i < 2; ++i )
-        seq[ i ].get_constraints( context );
-}
