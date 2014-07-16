@@ -22,6 +22,14 @@ struct Select : Inst {
             return inp[ 1 ];
         return this;
     }
+    virtual void set( Expr obj, const BoolOpSeq &cond ) {
+        TODO;
+    }
+
+    virtual Expr get( const BoolOpSeq &cond ) {
+        return select( get_bos() - cond, inp[ 0 ]->get( cond ), inp[ 1 ]->get( cond ) );
+    }
+
     BoolOpSeq get_bos() {
         BoolOpSeq res = True();
         for( int i = 0, o = 2; i < pos.size(); ++i ) {

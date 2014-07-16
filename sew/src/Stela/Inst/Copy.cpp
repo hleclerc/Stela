@@ -13,7 +13,7 @@ struct Copy : Inst {
         out_reg->write( cc, new_reg );
         *cc->os << " = ";
         inp[ 0 ]->out_reg->write( cc, false );
-        cc->on.write_end( ";" );
+        cc->on.write_end( "; // cp" );
     }
 };
 

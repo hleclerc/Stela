@@ -356,7 +356,8 @@ static bool _assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, C
 
     // constraint propagation
     for( std::pair<const Inst::Port,int> &c : inst->same_out )
-        if ( c.first.src_ninp == ninp and not _assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+        if ( c.first.src_ninp == ninp and
+             not _assign_port_rec( assigned_out, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
             return false;
 
     // diff_out -> look if this assignation is not going to break a constraint
@@ -390,9 +391,9 @@ static bool assign_port_rec( Vec<Inst *> &assigned_out, Inst *inst, int ninp, Cp
     return false;
 }
 
-static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial ) {
+static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial, CppOutReg *out_reg = 0 ) {
     Expr s = copy( trial );
-    PRINT( *trial );
+    s->out_reg = out_reg;
 
     s->num_in_seq = num_in_seq;
     CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
@@ -429,6 +430,10 @@ void Codegen_C::make_code() {
             if ( e->par[ i ].inst->op_id != coi )
                 e->par.remove( i );
 
+    // display
+    if ( disp_inst_graph )
+        Inst::display_graph( out );
+
     // scheduling (-> list of SeqItem)
     CC_SeqItemBlock main_block;
     scheduling( &main_block, out );
@@ -443,21 +448,8 @@ void Codegen_C::make_code() {
         if ( e->expr->out_reg or not e->expr->need_a_register() )
             continue;
 
-        // a proposition for the out_reg ?
-        CppOutReg *out_reg = 0;
-        for( Inst::Parent &p : e->expr->par ) {
-            if ( CppOutReg *prop = p.inst->get_inp_reg( p.ninp ) ) {
-                // valid ?
-
-                //
-                out_reg = prop;
-                break;
-            }
-        }
-
-        // else, make a new reg
-        if ( not out_reg )
-            out_reg = new_out_reg( e->expr->type(), e->parent_block );
+        // make a new reg
+        CppOutReg *out_reg = new_out_reg( e->expr->type(), e->parent_block );
 
         // constraint propagation from e->expr
         Vec<Inst *> assigned_out;
@@ -473,7 +465,7 @@ void Codegen_C::make_code() {
             Inst *trial = assigned_out[ best_i ];
             assigned_out.remove( best_i );
 
-            // last inp parent
+            // get num_in_seq of last inp parent
             int num_in_seq_last_inp_parent = 0;
             for( Inst::Parent &p : trial->par )
                 if ( p.ninp >= 0 and num_in_seq_last_inp_parent < p.inst->num_in_seq )
@@ -488,18 +480,19 @@ void Codegen_C::make_code() {
                 for( Inst::Parent &p : trial->par ) {
                     if ( p.ninp >= 0 and p.inst == cur ) {
                         cur_is_a_target = true;
-                        if ( not assign_port_rec( assigned_out, cur, p.ninp, out_reg ) )
-                            insert_save_reg_before( context.seq, num_in_seq, trial );
+                        // try to inp[ ninp ] <- out_reg
+                        if ( not assign_port_rec( assigned_out, p.inst, p.ninp, out_reg ) )
+                            insert_save_reg_before( context.seq, num_in_seq, trial, p.inst->get_inp_reg( p.ninp ) );
                     }
                 }
 
                 if ( num_in_seq < num_in_seq_last_inp_parent ) {
                     // if out_reg is going to be modified by another instruction
-                    if ( context.seq[ num_in_seq ]->expr->out_reg == out_reg )
+                    if ( cur->out_reg == out_reg )
                         insert_save_reg_before( context.seq, num_in_seq, trial );
-                    // if out_reg is needed as an inp by an instruction
+                    // if out_reg is needed as an inp by an instruction that is not a target
                     else if ( not cur_is_a_target ) {
-                        for( CppOutReg *r : context.seq[ num_in_seq ]->expr->inp_reg ) {
+                        for( CppOutReg *r : cur->inp_reg ) {
                             if ( r == out_reg ) {
                                 insert_save_reg_before( context.seq, num_in_seq, trial );
                                 break;

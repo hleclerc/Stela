@@ -1,6 +1,14 @@
-Sémantique du Store
-* on pourrait dire que pointer_on fait 
+Pour les contraintes sur inp, prop
+* on cherche la prochaine inst dont out_reg n'est pas assigné
+* on lui colle un nouveau out_reg
+* boucle: on propage les contraintes sur out et inp (en faisant l'hypothèse que c'est ok
+*   on continue tant qu'il y a des out dont il faut vérifier les contraintes
+*   s'il y a du inp, on regarde si on peut assigner inp[]->out_reg
+*     si oui, on boucle
+*     si non, on continue à tester d'autres inp 
 
+
+Attention aux stores, avec contraintes sur les registres
 
 class A
     size := 0
