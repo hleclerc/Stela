@@ -4,6 +4,7 @@
 #include "../System/Vec.h"
 #include "Expr.h"
 #include <map>
+#include <set>
 class CC_SeqItemBlock;
 class CC_SeqItemExpr;
 class CppOutReg;
@@ -112,7 +113,6 @@ public:
     void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
     CppOutReg *get_inp_reg( int ninp );
-    void validate_inp_edge( int ninp );
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -124,29 +124,28 @@ public:
     virtual Expr _simp_slice( Type *dst, Expr off );
     virtual void _mk_store_dep( Inst *dst );
 
-    Vec<Expr>            inp;
-    Vec<Expr>            ext;
-    Vec<Expr>            dep;
-    mutable Vec<Parent>  par; ///< parents
-    mutable Inst        *ext_par;
-    int                  flags;
+    Vec<Expr>             inp;
+    Vec<Expr>             ext;
+    Vec<Expr>             dep;
+    mutable Vec<Parent>   par; ///< parents
+    mutable Inst         *ext_par;
+    int                   flags;
 
     // codegen
-    BoolOpSeq           *when; ///< used for code generation (to know when needed)
-    CppOutReg           *out_reg;
-    Vec<CppOutReg *>     inp_reg;
-    bool                 new_reg;
-    std::map<Port,int>   same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
-    std::map<Port,int>   diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
-    int                  num_in_seq;
-    Vec<Bool>            valid_inp_edge;
-    CC_SeqItemExpr      *cc_item_expr;
+    BoolOpSeq            *when; ///< used for code generation (to know when needed)
+    CppOutReg            *out_reg;
+    Vec<CppOutReg *>      inp_reg;
+    bool                  new_reg;
+    std::map<Port,int>    same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
+    std::map<Port,int>    diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
+    CC_SeqItemExpr       *cc_item_expr;
+    std::set<CppOutReg *> reg_to_avoid; ///< could be replaced by a reg assignation date
 
-    static  PI64         cur_op_id; ///<
-    mutable PI64         op_id_vis; ///<
-    mutable PI64         op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
-    mutable void        *op_mp;     ///< result of current operations
-    mutable int          cpt_use;
+    static  PI64          cur_op_id; ///<
+    mutable PI64          op_id_vis; ///<
+    mutable PI64          op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
+    mutable void         *op_mp;     ///< result of current operations
+    mutable int           cpt_use;
 };
 
 #endif // INST_H

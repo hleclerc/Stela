@@ -347,9 +347,8 @@ struct DisplayConstraints : CC_SeqItem::Visitor {
 
 static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
     // look if cutting an validated edge using out_reg
-    // for( CC_SeqItemExpr *e : out_reg->provenance ) {
-
-    //    }
+    if ( inst->reg_to_avoid.count( out_reg ) )
+        return false;
 
     // assignation
     if ( ninp < 0 ) {
@@ -387,6 +386,13 @@ static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst 
     return true; // OK
 }
 
+static void clear_port( std::pair<Inst *,int> port ) {
+    if ( port.second < 0 )
+        port.first->out_reg = 0;
+    else
+        port.first->inp_reg[ port.second ] = 0;
+}
+
 static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
     Vec<std::pair<Inst *,int> > assigned_ports_trial;
 
@@ -400,38 +406,12 @@ static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *
     }
 
     // else, undo out_reg assignations
-    for( std::pair<Inst *,int> &a : assigned_ports_trial ) {
-        if ( a.second < 0 )
-            a.first->out_reg = 0;
-        else
-            a.first->inp_reg[ a.second ] = 0;
-    }
+    for( std::pair<Inst *,int> &a : assigned_ports_trial )
+        clear_port( a );
 
     return false;
 }
 
-//static void insert_save_reg_before( Vec<CC_SeqItemExpr *> &seq, int num_in_seq, Inst *trial, CppOutReg *out_reg = 0 ) {
-//    Expr s = copy( trial );
-//    if ( out_reg )
-//        s->out_reg = out_reg;
-
-
-//    s->num_in_seq = num_in_seq;
-//    CC_SeqItemBlock *pb = seq[ num_in_seq ]->parent_block;
-//    CC_SeqItemExpr *c = new CC_SeqItemExpr( s, pb );
-//    pb->insert_before( seq[ num_in_seq ], c );
-
-//    if ( out_reg )
-//        out_reg->provenance << pb;
-
-//    for( Inst::Parent &p : trial->par )
-//        if ( p.ninp >= 0 and p.inst->num_in_seq >= num_in_seq and p.inst != s.inst )
-//            p.inst->mod_inp( s, p.ninp );
-
-//    for( int i = num_in_seq; i < seq.size(); ++i )
-//        ++seq[ i ]->expr->num_in_seq;
-//    seq.insert( num_in_seq, c );
-//}
 static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
     CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
 
@@ -439,9 +419,9 @@ static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
     Expr n_expr = copy( start );
     CC_SeqItemExpr *n_seqi = new CC_SeqItemExpr( n_expr, par_blk );
 
-    // position of start inst
+    // position of start inst (inst will be inserted after, and in the same block)
     int pos_start = 0;
-    while ( par_blk->seq[ pos_start ].ptr() != inst->cc_item_expr )
+    while ( par_blk->seq[ pos_start ].ptr() != start->cc_item_expr )
         ++pos_start;
 
     // insertion in block
@@ -450,12 +430,8 @@ static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
             par_blk->seq << n_seqi;
             break;
         }
-        if ( par_blk->seq[ i ] == inst->cc_item_expr ) {
-            par_blk->seq.insert( i, n_seqi );
-            break;
-        }
 
-        // mod inp if use of start
+        // modify input of instructions using start
         struct ModInp : CC_SeqItem::Visitor {
             virtual bool operator()( CC_SeqItemExpr &ce ) {
                 for( int ninp = 0; ninp < ce.expr->inp.size(); ++ninp )
@@ -469,9 +445,15 @@ static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
         };
 
         ModInp mi;
-        mi.nexpr = n_expr.inst;
         mi.oexpr = start;
+        mi.nexpr = n_expr.inst;
         par_blk->seq[ i ]->visit( mi );
+
+        //
+        if ( par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
+            par_blk->seq.insert( i, n_seqi );
+            break;
+        }
     }
 
     // always return false
@@ -486,6 +468,8 @@ static bool insert_copy_inst_after( Inst *inst, Inst *start ) {
 struct RegPropagation : CC_SeqItem::Visitor {
     virtual bool operator()( CC_SeqItemExpr &ce ) {
         if ( port.second < 0 ) {
+            int old_assp_size = assigned_ports->size();
+
             // an instruction that uses the source inst ?
             bool is_a_target_inst = false;
             for( int n = 0; n < ce.expr->inp.size(); ++n ) {
@@ -493,9 +477,6 @@ struct RegPropagation : CC_SeqItem::Visitor {
                     // try to assign the input
                     if ( not assign_port_rec( *assigned_ports, ce.expr.inst, n, reg ) )
                         return insert_copy_inst_before( ce.expr.inst, port.first );
-
-                    // if inp_reg assigned
-                    ce.expr->validate_inp_edge( n );
 
                     // reached the final inst ?
                     if ( --nb_users_of_inst_to_reach == 0 )
@@ -505,17 +486,25 @@ struct RegPropagation : CC_SeqItem::Visitor {
             }
 
             // an instruction is going to produce something that will be stored on out_reg
-            if ( reg == ce.expr->out_reg )
+            if ( reg == ce.expr->out_reg ) {
+                for( int i = old_assp_size; i < assigned_ports->size(); ++i )
+                    clear_port( ( *assigned_ports )[ i ] );
+                assigned_ports->resize( old_assp_size );
                 return insert_copy_inst_before( ce.expr.inst, port.first );
+            }
 
             // an instruction want reg as input... but is not a target
             if ( not is_a_target_inst ) {
                 for( CppOutReg *inp_reg : ce.expr->inp_reg )
                     if ( reg == inp_reg )
                         return insert_copy_inst_before( ce.expr.inst, port.first );
+
+                // forbid the use of reg for ce.expr (because there is an active living edge with reg)
+                ce.expr->reg_to_avoid.insert( reg );
             }
         } else {
             Inst *src = port.first->inp[ port.second ].inst;
+            int old_assp_size = assigned_ports->size();
 
             // reached the source inst ?
             if ( ce.expr.inst == src ) {
@@ -524,24 +513,30 @@ struct RegPropagation : CC_SeqItem::Visitor {
                     return insert_copy_inst_after( ce.expr.inst, port.first );
 
                 // else, everything is ok
-                port.first->validate_inp_edge( port.second );
                 return false;
             }
 
             // an instruction was producing something that will be stored on out_reg (but os not the source inst)
-            if ( reg == ce.expr->out_reg )
+            if ( reg == ce.expr->out_reg ) {
+                for( int i = old_assp_size; i < assigned_ports->size(); ++i )
+                    clear_port( ( *assigned_ports )[ i ] );
+                assigned_ports->resize( old_assp_size );
                 return insert_copy_inst_after( ce.expr.inst, port.first );
+            }
 
             // an instruction has reg as input... but is not pointing to the source inst
             for( int i = 0; i < ce.expr->inp_reg.size(); ++i )
                 if ( reg == ce.expr->inp_reg[ i ] and ce.expr->inp[ i ].inst != src )
                     return insert_copy_inst_before( ce.expr.inst, port.first );
+
+            // forbid the use of reg for ce.expr (because there is an active living edge with reg)
+            ce.expr->reg_to_avoid.insert( reg );
         }
 
         return true;
     }
     int nb_users_of_inst_to_reach;
-                         Vec<std::pair<Inst *,int> > *assigned_ports;
+    Vec<std::pair<Inst *,int> > *assigned_ports;
     std::pair<Inst *,int> port;
     CppOutReg *reg;
 };
@@ -633,8 +628,8 @@ void Codegen_C::make_code() {
     GetConstraint gc;
     main_block.visit( gc );
 
-    DisplayConstraints dv;
-    main_block.visit( dv );
+    // DisplayConstraints dv;
+    // main_block.visit( dv );
 
     // assign (missing) out_reg
     AssignOutReg aor; aor.cc = this;

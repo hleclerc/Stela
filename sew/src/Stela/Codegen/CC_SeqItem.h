@@ -22,6 +22,10 @@ struct CC_SeqItem {
     virtual bool preceding_visit( Visitor &v, CC_SeqItem *avoid = 0 ); ///< visit all the preceding CC_SeqItemExpr
     virtual bool visit( Visitor &v ); ///< visit all the CC_SeqItemExpr children
     virtual bool non_void() = 0;
+
+    bool contains( CC_SeqItemExpr *expr );
+
+
     CC_SeqItemBlock *parent_block;
     CC_SeqItem *parent;
 

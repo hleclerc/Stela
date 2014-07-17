@@ -429,12 +429,6 @@ int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
     return 0;
 }
 
-void Inst::validate_inp_edge( int ninp ) {
-    if ( ninp >= valid_inp_edge.size() )
-        valid_inp_edge.resize( inp.size(), false );
-    valid_inp_edge[ ninp ] = true;
-}
-
 void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {
     cc->on.write_beg();
     if ( out_reg )

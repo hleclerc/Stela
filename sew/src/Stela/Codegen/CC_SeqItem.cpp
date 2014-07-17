@@ -13,6 +13,24 @@ bool CC_SeqItem::following_visit( Visitor &v, CC_SeqItem *avoid ) {
     return parent ? parent->following_visit( v, this ) : true;
 }
 
+bool CC_SeqItem::contains( CC_SeqItemExpr *expr ) {
+    struct Contains : Visitor {
+        virtual bool operator()( CC_SeqItemExpr &ce ) {
+            if ( &ce != expr )
+                return true;
+            found = true;
+            return false;
+        }
+        CC_SeqItemExpr *expr;
+        bool found;
+    };
+    Contains c;
+    c.expr = expr;
+    c.found = false;
+    visit( c );
+    return c.found;
+}
+
 bool CC_SeqItem::preceding_visit( Visitor &v, CC_SeqItem *avoid ) {
     return parent ? parent->preceding_visit( v, this ) : true;
 }
