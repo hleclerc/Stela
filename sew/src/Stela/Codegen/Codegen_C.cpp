@@ -438,8 +438,43 @@ static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
     // new Expr and CC_SeqItemExpr
     Expr n_expr = copy( start );
     CC_SeqItemExpr *n_seqi = new CC_SeqItemExpr( n_expr, par_blk );
-    par_blk->insert_before( seq[ num_in_seq ], c );
-    TODO;
+
+    // position of start inst
+    int pos_start = 0;
+    while ( par_blk->seq[ pos_start ].ptr() != inst->cc_item_expr )
+        ++pos_start;
+
+    // insertion in block
+    for( int i = pos_start + 1; ; ++i ) {
+        if ( i == par_blk->seq.size() ) {
+            par_blk->seq << n_seqi;
+            break;
+        }
+        if ( par_blk->seq[ i ] == inst->cc_item_expr ) {
+            par_blk->seq.insert( i, n_seqi );
+            break;
+        }
+
+        // mod inp if use of start
+        struct ModInp : CC_SeqItem::Visitor {
+            virtual bool operator()( CC_SeqItemExpr &ce ) {
+                for( int ninp = 0; ninp < ce.expr->inp.size(); ++ninp )
+                    if ( ce.expr->inp[ ninp ].inst == oexpr )
+                        ce.expr->mod_inp( nexpr, ninp );
+                return true;
+            }
+
+            Inst *nexpr;
+            Inst *oexpr;
+        };
+
+        ModInp mi;
+        mi.nexpr = n_expr.inst;
+        mi.oexpr = start;
+        par_blk->seq[ i ]->visit( mi );
+    }
+
+    // always return false
     return false;
 }
 
