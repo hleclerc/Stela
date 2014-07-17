@@ -33,6 +33,24 @@ bool CC_SeqItemBlock::ch_followed_by_something_to_execute( int &nb_evicted_block
     return parent ? parent->ch_followed_by_something_to_execute( nb_evicted_blocks, this, cond ) : false;
 }
 
+bool CC_SeqItemBlock::following_visit( Visitor &v, CC_SeqItem *avoid ) {
+    for( int i = 0; i < seq.size(); ++i )
+        if ( seq[ i ] == avoid )
+            for( int j = i + 1; j < seq.size(); ++j )
+                if ( not seq[ j ]->visit( v ) )
+                    return false;
+    return parent ? parent->following_visit( v, this ) : true;
+}
+
+bool CC_SeqItemBlock::preceding_visit( Visitor &v, CC_SeqItem *avoid ) {
+    for( int i = seq.size() - 1; i > 0; --i )
+        if ( seq[ i ] == avoid )
+            for( int j = i - 1; j >= 0; --j )
+                if ( not seq[ j ]->visit( v ) )
+                    return false;
+    return parent ? parent->preceding_visit( v, this ) : true;
+}
+
 bool CC_SeqItemBlock::visit( Visitor &v ) {
     for( int i = 0; i < seq.size(); ++i )
         if ( not seq[ i ]->visit( v ) )

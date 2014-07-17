@@ -12,6 +12,8 @@ struct CC_SeqItemBlock : CC_SeqItem {
     virtual void get_glo_cond_and_seq_of_sub_blocks( Vec<CC_SeqItemBlock *> &seq, const BoolOpSeq &cond );
     virtual bool ch_followed_by_something_to_execute( int &nb_evicted_blocks, CC_SeqItem *ch, const BoolOpSeq &cond );
     virtual void write_to_stream( Stream &os ) { os << "block"; }
+    virtual bool following_visit( Visitor &v, CC_SeqItem *avoid = 0 );
+    virtual bool preceding_visit( Visitor &v, CC_SeqItem *avoid = 0 );
     virtual bool visit( Visitor &v );
     virtual bool non_void();
 

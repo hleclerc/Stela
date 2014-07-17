@@ -84,8 +84,9 @@ public:
 
 
     // properties
-    virtual int  always_checked() const;
+    virtual bool has_inp_parent( Inst *inst ) const;
     virtual bool has_inp_parent() const;
+    virtual int  always_checked() const;
     virtual int  nb_inp_parents() const;
 
     virtual bool uninitialized() const;
@@ -111,6 +112,7 @@ public:
     void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
     CppOutReg *get_inp_reg( int ninp );
+    void validate_inp_edge( int ninp );
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -137,6 +139,7 @@ public:
     std::map<Port,int>   same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
     std::map<Port,int>   diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
     int                  num_in_seq;
+    Vec<Bool>            valid_inp_edge;
     CC_SeqItemExpr      *cc_item_expr;
 
     static  PI64         cur_op_id; ///<

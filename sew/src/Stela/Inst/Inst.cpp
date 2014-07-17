@@ -327,6 +327,13 @@ bool Inst::has_inp_parent() const {
     return false;
 }
 
+bool Inst::has_inp_parent( Inst *inst ) const {
+    for( int i = 0; i < par.size(); ++i )
+        if ( par[ i ].ninp >= 0 and par[ i ].inst == inst )
+            return true;
+    return false;
+}
+
 int Inst::nb_inp_parents() const {
     int res = 0;
     for( int i = 0; i < par.size(); ++i )
@@ -420,6 +427,12 @@ int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
         return -1;
     inp_reg[ ninp ] = reg;
     return 0;
+}
+
+void Inst::validate_inp_edge( int ninp ) {
+    if ( ninp >= valid_inp_edge.size() )
+        valid_inp_edge.resize( inp.size(), false );
+    valid_inp_edge[ ninp ] = true;
 }
 
 void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {
