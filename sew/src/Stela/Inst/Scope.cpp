@@ -1039,10 +1039,10 @@ Expr Scope::parse_AND( BinStreamReader bin ) {
     const PI8 *tok_b = bin.read_offset();
 
     Scope if_scope( this, 0, "and_" + to_string( tok_b ) );
-    if_scope.cond = not expr;
+    if_scope.cond = expr;
     Expr b = if_scope.parse( sf, tok_b, "2nd arg of and" );
 
-    return select( expr, a, b );
+    return select( expr, b, a );
 }
 Expr Scope::parse_OR( BinStreamReader bin ) {
     TODO;

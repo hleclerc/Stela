@@ -8,7 +8,12 @@ struct Copy : Inst {
     virtual void write_dot( Stream &os ) const { os << "Copy"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Copy; }
     virtual Type *type() { return inp[ 0 ]->type(); }
+    virtual bool will_write_code() const {
+        return out_reg != inp[ 0 ]->out_reg;
+    }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        if ( out_reg == inp[ 0 ]->out_reg )
+            return;
         cc->on.write_beg();
         out_reg->write( cc, new_reg );
         *cc->os << " = ";

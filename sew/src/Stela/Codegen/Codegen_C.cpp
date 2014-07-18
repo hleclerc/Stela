@@ -355,6 +355,7 @@ static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst 
         if ( inst->out_reg )
             return inst->out_reg == out_reg;
         inst->out_reg = out_reg;
+        out_reg->provenance << inst->cc_item_expr;
         assigned_ports << std::pair<Inst *,int>( inst, -1 );
     } else {
         int a = inst->set_inp_reg( ninp, out_reg );
@@ -387,9 +388,10 @@ static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst 
 }
 
 static void clear_port( std::pair<Inst *,int> port ) {
-    if ( port.second < 0 )
+    if ( port.second < 0 ) {
+        port.first->out_reg->provenance.pop_back();
         port.first->out_reg = 0;
-    else
+    } else
         port.first->inp_reg[ port.second ] = 0;
 }
 
@@ -399,9 +401,6 @@ static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *
     // ok ?
     if ( _assign_port_rec( assigned_ports_trial, inst, ninp, out_reg ) ) {
         assigned_ports.append( assigned_ports_trial );
-        for( std::pair<Inst *,int> &a : assigned_ports_trial )
-            if ( a.second < 0 )
-                a.first->out_reg->provenance << a.first->cc_item_expr;
         return true;
     }
 
@@ -412,12 +411,14 @@ static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *
     return false;
 }
 
-static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
+static bool insert_copy_inst_before( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, Inst *start ) {
     CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
 
     // new Expr and CC_SeqItemExpr
     Expr n_expr = copy( start );
     CC_SeqItemExpr *n_seqi = new CC_SeqItemExpr( n_expr, par_blk );
+    if ( not assign_port_rec( assigned_ports, n_expr.inst, 0, start->out_reg ) )
+         ERROR( "weird" );
 
     // position of start inst (inst will be inserted after, and in the same block)
     int pos_start = 0;
@@ -460,8 +461,34 @@ static bool insert_copy_inst_before( Inst *inst, Inst *start ) {
     return false;
 }
 
-static bool insert_copy_inst_after( Inst *inst, Inst *start ) {
-    TODO;
+/// to change input ninp of start
+static bool insert_copy_inst_after( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, Inst *start, int ninp ) {
+    CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
+    Expr inp = start->inp[ ninp ];
+
+    // new Expr and CC_SeqItemExpr
+    Expr n_expr = copy( inp );
+    start->mod_inp( n_expr, ninp );
+    CC_SeqItemExpr *n_seqi = new CC_SeqItemExpr( n_expr, par_blk );
+    if ( not assign_port_rec( assigned_ports, n_expr.inst, -1, start->inp_reg[ ninp ] ) )
+         ERROR( "weird" );
+    ASSERT( n_expr->out_reg, "???" );
+
+
+    // position of start inst (inst will be inserted before, and in the same block)
+    int pos_start = 0;
+    while ( par_blk->seq[ pos_start ].ptr() != start->cc_item_expr )
+        ++pos_start;
+
+    // insertion in block
+    for( int i = pos_start - 1; ; --i ) {
+        if ( i < 0 or par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
+            par_blk->seq.insert( i + 1, n_seqi );
+            break;
+        }
+    }
+
+    // always return false
     return false;
 }
 
@@ -476,7 +503,7 @@ struct RegPropagation : CC_SeqItem::Visitor {
                 if ( ce.expr->inp[ n ].inst == port.first ) {
                     // try to assign the input
                     if ( not assign_port_rec( *assigned_ports, ce.expr.inst, n, reg ) )
-                        return insert_copy_inst_before( ce.expr.inst, port.first );
+                        return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.first );
 
                     // reached the final inst ?
                     if ( --nb_users_of_inst_to_reach == 0 )
@@ -490,14 +517,14 @@ struct RegPropagation : CC_SeqItem::Visitor {
                 for( int i = old_assp_size; i < assigned_ports->size(); ++i )
                     clear_port( ( *assigned_ports )[ i ] );
                 assigned_ports->resize( old_assp_size );
-                return insert_copy_inst_before( ce.expr.inst, port.first );
+                return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.first );
             }
 
             // an instruction want reg as input... but is not a target
             if ( not is_a_target_inst ) {
                 for( CppOutReg *inp_reg : ce.expr->inp_reg )
                     if ( reg == inp_reg )
-                        return insert_copy_inst_before( ce.expr.inst, port.first );
+                        return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.first );
 
                 // forbid the use of reg for ce.expr (because there is an active living edge with reg)
                 ce.expr->reg_to_avoid.insert( reg );
@@ -510,7 +537,7 @@ struct RegPropagation : CC_SeqItem::Visitor {
             if ( ce.expr.inst == src ) {
                 // try to assign src->out_reg
                 if ( not assign_port_rec( *assigned_ports, ce.expr.inst, -1, reg ) )
-                    return insert_copy_inst_after( ce.expr.inst, port.first );
+                    return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.first, port.second );
 
                 // else, everything is ok
                 return false;
@@ -521,13 +548,13 @@ struct RegPropagation : CC_SeqItem::Visitor {
                 for( int i = old_assp_size; i < assigned_ports->size(); ++i )
                     clear_port( ( *assigned_ports )[ i ] );
                 assigned_ports->resize( old_assp_size );
-                return insert_copy_inst_after( ce.expr.inst, port.first );
+                return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.first, port.second );
             }
 
             // an instruction has reg as input... but is not pointing to the source inst
             for( int i = 0; i < ce.expr->inp_reg.size(); ++i )
                 if ( reg == ce.expr->inp_reg[ i ] and ce.expr->inp[ i ].inst != src )
-                    return insert_copy_inst_before( ce.expr.inst, port.first );
+                    return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.first, port.second );
 
             // forbid the use of reg for ce.expr (because there is an active living edge with reg)
             ce.expr->reg_to_avoid.insert( reg );
