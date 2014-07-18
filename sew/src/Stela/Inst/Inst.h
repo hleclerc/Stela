@@ -33,7 +33,8 @@ public:
     };
     ///< for same_out and diff_out level
     enum {
-        COMPULSORY = 100 ///< for
+        OPTIONNAL  = 0,
+        COMPULSORY = 100 ///< for same_out and diff_out
     };
     ///< for same_out and diff_out level
     struct Port {

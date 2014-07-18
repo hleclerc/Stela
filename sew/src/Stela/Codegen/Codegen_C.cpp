@@ -366,13 +366,13 @@ static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst 
 
     // constraint propagation
     for( std::pair<const Inst::Port,int> &c : inst->same_out )
-        if ( c.first.src_ninp == ninp and
+        if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp and
              not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
             return false;
 
     // diff_out -> look if this assignation is not going to break a constraint
     for( std::pair<const Inst::Port,int> &c : inst->diff_out ) {
-        if ( c.first.src_ninp == ninp ) {
+        if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp ) {
             if ( c.first.dst_ninp >= 0 ) {
                 if ( c.first.dst_ninp >= c.first.dst_inst->inp_reg.size() or
                      c.first.dst_inst->inp_reg[ c.first.dst_ninp ] == out_reg )
@@ -584,7 +584,7 @@ struct AssignOutReg : CC_SeqItem::Visitor {
         }
 
         // propagation
-        int num_edge = 0, num_good = 0, num_nice = 0;
+        int num_edge = 0, num_optionnal_constraint = 0;
         while ( true ) {
             // edge propagation
             if ( num_edge < assigned_ports.size() ) {
@@ -603,16 +603,16 @@ struct AssignOutReg : CC_SeqItem::Visitor {
             }
 
             // constraint that would be good to fullfill
-            if ( num_good < assigned_ports.size() ) {
-                std::pair<Inst *,int> port = assigned_ports[ num_good++ ];
+            if ( num_optionnal_constraint < assigned_ports.size() ) {
+                std::pair<Inst *,int> port = assigned_ports[ num_optionnal_constraint++ ];
+                for( std::pair<const Inst::Port,int> &c : inst->same_out )
+                    if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp and
+                         not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+                        return false;
+
                 continue;
             }
 
-            // constraint that would be nice to fullfill
-            if ( num_nice < assigned_ports.size() ) {
-                std::pair<Inst *,int> port = assigned_ports[ num_nice++ ];
-                continue;
-            }
 
             // nothing to propagate
             break;
