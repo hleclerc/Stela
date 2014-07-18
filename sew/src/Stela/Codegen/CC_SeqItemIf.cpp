@@ -14,9 +14,9 @@ void CC_SeqItemIf::get_glo_cond_and_seq_of_sub_blocks( Vec<CC_SeqItemBlock *> &r
     seq[ 1 ].get_glo_cond_and_seq_of_sub_blocks( res, cond and not this->cond );
 }
 
-bool CC_SeqItemIf::visit( Visitor &v ) {
+bool CC_SeqItemIf::visit( Visitor &v, bool forward ) {
     for( int i = 0; i < 2; ++i )
-        if ( not seq[ i ].visit( v ) )
+        if ( not seq[ i ].visit( v, forward ) )
             return false;
     return true;
 }
@@ -55,7 +55,7 @@ void CC_SeqItemIf::write( Codegen_C *cc ) {
         seq[ 0 ].write( cc );
 
     if ( not cond.always( true ) ) {
-        if ( seq[ 1 ].seq.size() ) {
+        if ( seq[ 1 ].non_void() ) {
             cc->on.nsp -= 4;
             cc->on << "} else {";
             cc->on.nsp += 4;

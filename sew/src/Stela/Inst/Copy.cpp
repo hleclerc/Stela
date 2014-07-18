@@ -17,8 +17,10 @@ struct Copy : Inst {
     }
 
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
-        if ( out_reg == inp[ 0 ]->out_reg )
+        if ( out_reg == inp[ 0 ]->out_reg ) {
+            // cc->on << "// cp " << ( out_reg ? out_reg->num : 666 );
             return;
+        }
         cc->on.write_beg();
         if ( out_reg )
             out_reg->write( cc, new_reg );

@@ -37,8 +37,8 @@ public:
         COMPULSORY = 100 ///< for same_out and diff_out
     };
     ///< for same_out and diff_out level
-    struct Port {
-        bool operator<( const Port &p ) const {
+    struct PortConstraint {
+        bool operator<( const PortConstraint &p ) const {
             if ( src_ninp != p.src_ninp ) return src_ninp < p.src_ninp;
             if ( dst_inst != p.dst_inst ) return dst_inst < p.dst_inst;
             return dst_ninp < p.dst_ninp;
@@ -137,8 +137,8 @@ public:
     CppOutReg            *out_reg;
     Vec<CppOutReg *>      inp_reg;
     bool                  new_reg;
-    std::map<Port,int>    same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
-    std::map<Port,int>    diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
+    std::map<PortConstraint,int>    same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
+    std::map<PortConstraint,int>    diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
     CC_SeqItemExpr       *cc_item_expr;
     std::set<CppOutReg *> reg_to_avoid; ///< could be replaced by a reg assignation date
 

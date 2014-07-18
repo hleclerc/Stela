@@ -400,13 +400,13 @@ static void self_max( int &src, int val ) {
 }
 
 void Inst::add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level ) {
-    self_max( this->same_out[ Port{ src_ninp, dst_inst, dst_ninp } ], level );
-    self_max( dst_inst->same_out[ Port{ dst_ninp, this, src_ninp } ], level );
+    self_max( this->same_out[ PortConstraint{ src_ninp, dst_inst, dst_ninp } ], level );
+    self_max( dst_inst->same_out[ PortConstraint{ dst_ninp, this, src_ninp } ], level );
 }
 
 void Inst::add_diff_out(int src_ninp, Inst *dst_inst, int dst_ninp, int level ) {
-    self_max( this->diff_out[ Port{ src_ninp, dst_inst, dst_ninp } ], level );
-    self_max( dst_inst->diff_out[ Port{ dst_ninp, this, src_ninp } ], level );
+    self_max( this->diff_out[ PortConstraint{ src_ninp, dst_inst, dst_ninp } ], level );
+    self_max( dst_inst->diff_out[ PortConstraint{ dst_ninp, this, src_ninp } ], level );
 }
 
 CppOutReg *Inst::get_inp_reg( int ninp ) {

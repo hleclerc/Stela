@@ -307,7 +307,7 @@ struct GetConstraint : CC_SeqItem::Visitor {
     virtual bool operator()( CC_SeqItemExpr &ce ) {
         ce.expr->get_constraints();
         for( AutoPtr<CC_SeqItemBlock> &ext : ce.ext )
-            ext->visit( *this );
+            ext->visit( *this, true );
         return true;
     }
 };
@@ -345,33 +345,47 @@ struct DisplayConstraints : CC_SeqItem::Visitor {
     }
 };
 
-static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
+struct InstAndPort {
+    int  ninp_constraint() const { return std::max( _num, -1 ); }
+    bool is_an_output() const { return _num <  0; }
+    bool is_an_input () const { return _num >= 0; }
+    int  nout() const { return -1 - _num; }
+    int  ninp() const { return _num; }
+
+    Inst *inst;
+    int   _num; ///  ninp if out==false, nout if out==true
+};
+
+
+static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
     // look if cutting an validated edge using out_reg
     if ( inst->reg_to_avoid.count( out_reg ) )
         return false;
 
     // assignation
-    if ( ninp < 0 ) {
+    if ( ninp < 0 ) { // output ?
         if ( inst->out_reg )
             return inst->out_reg == out_reg;
         inst->out_reg = out_reg;
         out_reg->provenance << inst->cc_item_expr;
-        assigned_ports << std::pair<Inst *,int>( inst, -1 );
+        for( int i = 0; i < inst->par.size(); ++i )
+            if ( inst->par[ i ].ninp >= 0 )
+                assigned_ports << InstAndPort{ inst, -1 - i };
     } else {
         int a = inst->set_inp_reg( ninp, out_reg );
         if ( a <= 0 )
             return a == 0;
-        assigned_ports << std::pair<Inst *,int>( inst, ninp );
+        assigned_ports << InstAndPort{ inst, ninp };
     }
 
     // constraint propagation
-    for( std::pair<const Inst::Port,int> &c : inst->same_out )
+    for( std::pair<const Inst::PortConstraint,int> &c : inst->same_out )
         if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp and
              not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
             return false;
 
-    // diff_out -> look if this assignation is not going to break a constraint
-    for( std::pair<const Inst::Port,int> &c : inst->diff_out ) {
+    // diff_out -> look if this assignation is going to break a constraint
+    for( std::pair<const Inst::PortConstraint,int> &c : inst->diff_out ) {
         if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp ) {
             if ( c.first.dst_ninp >= 0 ) {
                 if ( c.first.dst_ninp >= c.first.dst_inst->inp_reg.size() or
@@ -387,16 +401,16 @@ static bool _assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst 
     return true; // OK
 }
 
-static void clear_port( std::pair<Inst *,int> port ) {
-    if ( port.second < 0 ) {
-        port.first->out_reg->provenance.pop_back();
-        port.first->out_reg = 0;
+static void clear_port( InstAndPort port ) {
+    if ( port.is_an_output() ) {
+        port.inst->out_reg->provenance.pop_back();
+        port.inst->out_reg = 0;
     } else
-        port.first->inp_reg[ port.second ] = 0;
+        port.inst->inp_reg[ port.ninp() ] = 0;
 }
 
-static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
-    Vec<std::pair<Inst *,int> > assigned_ports_trial;
+static bool assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
+    Vec<InstAndPort> assigned_ports_trial;
 
     // ok ?
     if ( _assign_port_rec( assigned_ports_trial, inst, ninp, out_reg ) ) {
@@ -405,13 +419,15 @@ static bool assign_port_rec( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *
     }
 
     // else, undo out_reg assignations
-    for( std::pair<Inst *,int> &a : assigned_ports_trial )
+    for( InstAndPort &a : assigned_ports_trial )
         clear_port( a );
 
     return false;
 }
 
-static bool insert_copy_inst_before( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, Inst *start ) {
+static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *inst, Inst *start ) {
+    TODO;
+
     CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
 
     // new Expr and CC_SeqItemExpr
@@ -428,6 +444,7 @@ static bool insert_copy_inst_before( Vec<std::pair<Inst *,int> > &assigned_ports
     // insertion in block
     for( int i = pos_start + 1; ; ++i ) {
         if ( i == par_blk->seq.size() ) {
+            std::cout << "    bef1 " << *start  << " inst=" << *inst << "\n";
             par_blk->seq << n_seqi;
             break;
         }
@@ -448,10 +465,11 @@ static bool insert_copy_inst_before( Vec<std::pair<Inst *,int> > &assigned_ports
         ModInp mi;
         mi.oexpr = start;
         mi.nexpr = n_expr.inst;
-        par_blk->seq[ i ]->visit( mi );
+        par_blk->seq[ i ]->visit( mi, true );
 
         //
         if ( par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
+            std::cout << "    before2 " << *start  << " inst=" << *inst << "\n";
             par_blk->seq.insert( i, n_seqi );
             break;
         }
@@ -462,7 +480,9 @@ static bool insert_copy_inst_before( Vec<std::pair<Inst *,int> > &assigned_ports
 }
 
 /// to change input ninp of start
-static bool insert_copy_inst_after( Vec<std::pair<Inst *,int> > &assigned_ports, Inst *inst, Inst *start, int ninp ) {
+static bool insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *inst, Inst *start, int ninp, const char *reason ) {
+    TODO;
+
     CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
     Expr inp = start->inp[ ninp ];
 
@@ -483,6 +503,7 @@ static bool insert_copy_inst_after( Vec<std::pair<Inst *,int> > &assigned_ports,
     // insertion in block
     for( int i = pos_start - 1; ; --i ) {
         if ( i < 0 or par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
+            std::cout << "    after " << *inst << " insert copy of " << *start << "[" << ninp << "] reason=" << reason << "\n";
             par_blk->seq.insert( i + 1, n_seqi );
             break;
         }
@@ -492,79 +513,37 @@ static bool insert_copy_inst_after( Vec<std::pair<Inst *,int> > &assigned_ports,
     return false;
 }
 
+// propagation through an edge
 struct RegPropagation : CC_SeqItem::Visitor {
     virtual bool operator()( CC_SeqItemExpr &ce ) {
-        if ( port.second < 0 ) {
-            int old_assp_size = assigned_ports->size();
-
-            // an instruction that uses the source inst ?
-            bool is_a_target_inst = false;
-            for( int n = 0; n < ce.expr->inp.size(); ++n ) {
-                if ( ce.expr->inp[ n ].inst == port.first ) {
-                    // try to assign the input
-                    if ( not assign_port_rec( *assigned_ports, ce.expr.inst, n, reg ) )
-                        return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.first );
-
-                    // reached the final inst ?
-                    if ( --nb_users_of_inst_to_reach == 0 )
-                        return false;
-                    is_a_target_inst = true;
-                }
-            }
-
-            // an instruction is going to produce something that will be stored on out_reg
-            if ( reg == ce.expr->out_reg ) {
-                for( int i = old_assp_size; i < assigned_ports->size(); ++i )
-                    clear_port( ( *assigned_ports )[ i ] );
-                assigned_ports->resize( old_assp_size );
-                return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.first );
-            }
+        if ( port.is_an_output() ) { // -> going forward
+            // an instruction is going to produce something that will be stored in reg
+            if ( ce.expr->out_reg == reg )
+                return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.inst );
 
             // an instruction want reg as input... but is not a target
-            if ( not is_a_target_inst ) {
-                for( CppOutReg *inp_reg : ce.expr->inp_reg )
-                    if ( reg == inp_reg )
-                        return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.first );
-
-                // forbid the use of reg for ce.expr (because there is an active living edge with reg)
-                ce.expr->reg_to_avoid.insert( reg );
-            }
-        } else {
-            Inst *src = port.first->inp[ port.second ].inst;
-            int old_assp_size = assigned_ports->size();
-
-            // reached the source inst ?
-            if ( ce.expr.inst == src ) {
-                // try to assign src->out_reg
-                if ( not assign_port_rec( *assigned_ports, ce.expr.inst, -1, reg ) )
-                    return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.first, port.second );
-
-                // else, everything is ok
-                return false;
-            }
-
-            // an instruction was producing something that will be stored on out_reg (but os not the source inst)
-            if ( reg == ce.expr->out_reg ) {
-                for( int i = old_assp_size; i < assigned_ports->size(); ++i )
-                    clear_port( ( *assigned_ports )[ i ] );
-                assigned_ports->resize( old_assp_size );
-                return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.first, port.second );
-            }
+            for( int i = 0; i < ce.expr->inp_reg.size(); ++i )
+                if ( reg == ce.expr->inp_reg[ i ] and ce.expr->inp[ i ].inst != port.inst )
+                    return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.inst );
+        } else { // going backward
+            // an instruction was producing something that will be stored on out_reg (but is not the source inst)
+            if ( ce.expr->out_reg == reg )
+                return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.inst, port.ninp(), "out_reg used as output of another inst" );
 
             // an instruction has reg as input... but is not pointing to the source inst
+            Inst *src = port.inst->inp[ port.ninp() ].inst;
             for( int i = 0; i < ce.expr->inp_reg.size(); ++i )
                 if ( reg == ce.expr->inp_reg[ i ] and ce.expr->inp[ i ].inst != src )
-                    return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.first, port.second );
-
-            // forbid the use of reg for ce.expr (because there is an active living edge with reg)
-            ce.expr->reg_to_avoid.insert( reg );
+                    return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.inst, port.ninp(), "reg used as input of another inst" );
         }
 
+        // forbid the use of reg for ce.expr (because there is an active living edge with reg)
+        ce.expr->reg_to_avoid.insert( reg );
         return true;
     }
-    int nb_users_of_inst_to_reach;
-    Vec<std::pair<Inst *,int> > *assigned_ports;
-    std::pair<Inst *,int> port;
+    Vec<InstAndPort> *assigned_ports;
+    CC_SeqItemExpr *inst_to_reach;
+    InstAndPort port;
     CppOutReg *reg;
 };
 
@@ -577,7 +556,7 @@ struct AssignOutReg : CC_SeqItem::Visitor {
         CppOutReg *out_reg = cc->new_out_reg( ce.expr->type() );
 
         // constraint propagation from ce.expr
-        Vec<std::pair<Inst *,int> > assigned_ports;
+        Vec<InstAndPort> assigned_ports;
         if ( not assign_port_rec( assigned_ports, ce.expr.inst, -1, out_reg ) ) {
             std::cerr << "base constraint cannot be fullfilled\n";
             return false;
@@ -591,23 +570,30 @@ struct AssignOutReg : CC_SeqItem::Visitor {
                 RegPropagation rp;
                 rp.assigned_ports = &assigned_ports;
                 rp.port = assigned_ports[ num_edge++ ];
-                if ( rp.port.second < 0 ) {
-                    rp.reg = rp.port.first->out_reg;
-                    rp.nb_users_of_inst_to_reach = rp.port.first->nb_inp_parents();
-                    rp.port.first->cc_item_expr->following_visit( rp );
+                if ( rp.port.is_an_output() ) {
+                    Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
+                    rp.inst_to_reach = p.inst->cc_item_expr;
+                    rp.reg = rp.port.inst->out_reg;
+                    if ( rp.port.inst->cc_item_expr->following_visit_to( rp, rp.inst_to_reach ) )
+                        if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) )
+                            return insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst );
                 } else {
-                    rp.reg = rp.port.first->inp_reg[ rp.port.second ];
-                    rp.port.first->cc_item_expr->preceding_visit( rp );
+                    Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
+                    rp.reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
+                    rp.inst_to_reach = i->cc_item_expr;
+                    if ( rp.port.inst->cc_item_expr->preceding_visit_to( rp, rp.inst_to_reach ) )
+                        if ( not assign_port_rec( assigned_ports, i, -1, rp.reg ) )
+                            return insert_copy_inst_after( assigned_ports, i, rp.port.inst, rp.port.ninp(), "pb assignment out reg" );
                 }
                 continue;
             }
 
             // constraint that would be good to fullfill
             if ( num_optionnal_constraint < assigned_ports.size() ) {
-                std::pair<Inst *,int> port = assigned_ports[ num_optionnal_constraint++ ];
+                InstAndPort port = assigned_ports[ num_optionnal_constraint++ ];
 
-                for( std::pair<const Inst::Port,int> &c : port.first->same_out )
-                    if ( c.second != Inst::COMPULSORY and c.first.src_ninp == port.second )
+                for( std::pair<const Inst::PortConstraint,int> &c : port.inst->same_out )
+                    if ( c.second != Inst::COMPULSORY and c.first.src_ninp == port.ninp_constraint() )
                         assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg );
 
                 continue;
@@ -653,14 +639,14 @@ void Codegen_C::make_code() {
 
     // get reg constraints
     GetConstraint gc;
-    main_block.visit( gc );
+    main_block.visit( gc, true );
 
     // DisplayConstraints dv;
     // main_block.visit( dv );
 
     // assign (missing) out_reg
     AssignOutReg aor; aor.cc = this;
-    main_block.visit( aor );
+    main_block.visit( aor, true );
 
     // display
     if ( disp_inst_graph )

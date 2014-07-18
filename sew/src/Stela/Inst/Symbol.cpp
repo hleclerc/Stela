@@ -7,7 +7,7 @@ struct Symbol : Inst {
     virtual void write_dot( Stream &os ) const { os << name; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Symbol( out_type, name ); }
     virtual Type *type() { return out_type; }
-    Type *out_type;
+    Type  *out_type;
     String name;
 };
 

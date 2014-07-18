@@ -37,7 +37,7 @@ bool CC_SeqItemBlock::following_visit( Visitor &v, CC_SeqItem *avoid ) {
     for( int i = 0; i < seq.size(); ++i )
         if ( seq[ i ] == avoid )
             for( int j = i + 1; j < seq.size(); ++j )
-                if ( not seq[ j ]->visit( v ) )
+                if ( not seq[ j ]->visit( v, true ) )
                     return false;
     return parent ? parent->following_visit( v, this ) : true;
 }
@@ -46,15 +46,21 @@ bool CC_SeqItemBlock::preceding_visit( Visitor &v, CC_SeqItem *avoid ) {
     for( int i = seq.size() - 1; i > 0; --i )
         if ( seq[ i ] == avoid )
             for( int j = i - 1; j >= 0; --j )
-                if ( not seq[ j ]->visit( v ) )
+                if ( not seq[ j ]->visit( v, false ) )
                     return false;
     return parent ? parent->preceding_visit( v, this ) : true;
 }
 
-bool CC_SeqItemBlock::visit( Visitor &v ) {
-    for( int i = 0; i < seq.size(); ++i )
-        if ( not seq[ i ]->visit( v ) )
-            return false;
+bool CC_SeqItemBlock::visit( Visitor &v, bool forward ) {
+    if ( forward ) {
+        for( int i = 0; i < seq.size(); ++i )
+            if ( not seq[ i ]->visit( v, true ) )
+                return false;
+    } else {
+        for( int i = seq.size() - 1; i >= 0; --i )
+            if ( not seq[ i ]->visit( v, false ) )
+                return false;
+    }
     return true;
 }
 
@@ -88,13 +94,3 @@ bool CC_SeqItemBlock::contains_a_cont_or_break() {
             return true;
     return false;
 }
-
-void CC_SeqItemBlock::insert_before( CC_SeqItem *iter, CC_SeqItem *item ) {
-    for( int o = 0; o < seq.size(); ++o ) {
-        if ( seq[ o ] == iter ) {
-            seq.insert( o, item );
-            return;
-        }
-    }
-}
-

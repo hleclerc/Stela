@@ -1072,7 +1072,8 @@ Expr Scope::parse_disp( BinStreamReader bin ) {
         return ip->ret_error( "Expecting " #N " operand" );
 
 Expr Scope::parse_rand( BinStreamReader bin ) {
-    return room( symbol( ip->type_Bool, "rand()" ) );
+    static int num = 0;
+    return room( symbol( ip->type_Bool, "rand(/*" + to_string( num++ ) + "*/)" ) );
 }
 Expr Scope::parse_syscall( BinStreamReader bin ) {
     int n = bin.read_positive_integer();
