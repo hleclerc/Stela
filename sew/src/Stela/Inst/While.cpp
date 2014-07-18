@@ -46,7 +46,6 @@ struct WhileInst : Inst {
     virtual bool need_a_register() { return false; }
 
     virtual void get_constraints() {
-        PRINT( corr );
         for( int nout = 0; nout < corr.size(); ++nout ) {
             int ninp = corr[ nout ];
 

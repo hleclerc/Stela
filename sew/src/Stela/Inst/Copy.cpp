@@ -11,11 +11,17 @@ struct Copy : Inst {
     virtual bool will_write_code() const {
         return out_reg != inp[ 0 ]->out_reg;
     }
+
+    virtual void get_constraints() {
+        this->add_same_out( 0, this, -1, OPTIONNAL );
+    }
+
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
         if ( out_reg == inp[ 0 ]->out_reg )
             return;
         cc->on.write_beg();
-        out_reg->write( cc, new_reg );
+        if ( out_reg )
+            out_reg->write( cc, new_reg );
         *cc->os << " = ";
         inp[ 0 ]->out_reg->write( cc, false );
         cc->on.write_end( "; // cp" );

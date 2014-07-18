@@ -605,10 +605,10 @@ struct AssignOutReg : CC_SeqItem::Visitor {
             // constraint that would be good to fullfill
             if ( num_optionnal_constraint < assigned_ports.size() ) {
                 std::pair<Inst *,int> port = assigned_ports[ num_optionnal_constraint++ ];
-                for( std::pair<const Inst::Port,int> &c : inst->same_out )
-                    if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp and
-                         not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
-                        return false;
+
+                for( std::pair<const Inst::Port,int> &c : port.first->same_out )
+                    if ( c.second != Inst::COMPULSORY and c.first.src_ninp == port.second )
+                        assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg );
 
                 continue;
             }
