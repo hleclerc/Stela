@@ -1045,8 +1045,35 @@ Expr Scope::parse_AND( BinStreamReader bin ) {
     return select( expr, b, a );
 }
 Expr Scope::parse_OR( BinStreamReader bin ) {
-    TODO;
-    return ip->error_var();
+    Expr a = parse( sf, bin.read_offset(), "arg" );
+    if ( a.error() )
+        return ip->error_var();
+
+    // bool conversion
+    Expr bool_a = a;
+    if ( a->ptype() != ip->type_Bool ) {
+        bool_a = apply( find_var( STRING_Bool_NUM ), 1, &a );
+        if ( bool_a.error() )
+            return ip->error_var();
+    }
+
+    // simplified expression
+    BoolOpSeq expr( *bool_a->get( cond ) );
+
+    // known value
+    if ( expr.always( true ) )
+        return a;
+    if ( expr.always( false ) )
+        return parse( sf, bin.read_offset(), "2nd arg of and" );
+
+    // else
+    const PI8 *tok_b = bin.read_offset();
+
+    Scope if_scope( this, 0, "or_" + to_string( tok_b ) );
+    if_scope.cond = not expr;
+    Expr b = if_scope.parse( sf, tok_b, "2nd arg of and" );
+
+    return select( expr, a, b );
 }
 
 Expr Scope::parse_info( BinStreamReader bin ) {

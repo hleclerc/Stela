@@ -11,6 +11,10 @@ struct Conv : Inst {
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Conv( dst ); }
     virtual Type *type() { return dst; }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        if ( not this->out_reg ) {
+            cc->on << "conv reg pb";
+            return;
+        }
         cc->on.write_beg();
         out_reg->write( cc, new_reg ) << " = ";
         bool p = out_reg->type != dst;

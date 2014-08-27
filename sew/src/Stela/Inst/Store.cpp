@@ -8,6 +8,10 @@ struct Store : Inst {
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Store; }
     virtual Type *type() { return inp[ 0 ]->type(); }
     virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+        if ( not this->out_reg ) {
+            cc->on << "conv reg pb";
+            return;
+        }
         cc->on.write_beg();
         this->inp[ 0 ]->out_reg->write( cc, new_reg ) << " = (PI8 *)&";
         cc->write_out( this->inp[ 1 ] );

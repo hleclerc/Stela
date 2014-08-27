@@ -195,7 +195,7 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
     ++Inst::cur_op_id;
     while ( front.size() ) {
         Expr inst;
-        // try to find an instruction with the same condition set or an inst the is not going to write anything
+        // try to find an instruction with the same condition set or an inst that is not going to write anything
         BoolOpSeq cur_cond = anded( cond_stack );
         for( int i = 0; i < front.size(); ++i ) {
             if ( *front[ i ]->when == cur_cond ) {
@@ -204,7 +204,7 @@ void Codegen_C::scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out ) {
                 break;
             }
         }
-        // try to find an instruction with few changes on conditions
+        // else, try to find an instruction with few changes on conditions
         if ( not inst ) {
             int best_score = std::numeric_limits<int>::max(), best_index = -1;
             int best_nb_close = 0, best_nb_else = 0;
@@ -426,8 +426,6 @@ static bool assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int n
 }
 
 static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *inst, Inst *start ) {
-    TODO;
-
     CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
 
     // new Expr and CC_SeqItemExpr
@@ -443,39 +441,40 @@ static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *ins
 
     // insertion in block
     for( int i = pos_start + 1; ; ++i ) {
+        // we're at the end of the block
         if ( i == par_blk->seq.size() ) {
             std::cout << "    bef1 " << *start  << " inst=" << *inst << "\n";
             par_blk->seq << n_seqi;
             break;
         }
 
-        // modify input of instructions using start
-        struct ModInp : CC_SeqItem::Visitor {
-            virtual bool operator()( CC_SeqItemExpr &ce ) {
-                for( int ninp = 0; ninp < ce.expr->inp.size(); ++ninp )
-                    if ( ce.expr->inp[ ninp ].inst == oexpr )
-                        ce.expr->mod_inp( nexpr, ninp );
-                return true;
-            }
+        // modify input of instructions that use start
+//        struct ModInp : CC_SeqItem::Visitor {
+//            virtual bool operator()( CC_SeqItemExpr &ce ) {
+//                for( int ninp = 0; ninp < ce.expr->inp.size(); ++ninp )
+//                    if ( ce.expr->inp[ ninp ].inst == oexpr )
+//                        ce.expr->mod_inp( nexpr, ninp );
+//                return true;
+//            }
 
-            Inst *nexpr;
-            Inst *oexpr;
-        };
+//            Inst *nexpr;
+//            Inst *oexpr;
+//        };
 
-        ModInp mi;
-        mi.oexpr = start;
-        mi.nexpr = n_expr.inst;
-        par_blk->seq[ i ]->visit( mi, true );
+//        ModInp mi;
+//        mi.oexpr = start;
+//        mi.nexpr = n_expr.inst;
+//        par_blk->seq[ i ]->visit( mi, true );
 
         //
         if ( par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
-            std::cout << "    before2 " << *start  << " inst=" << *inst << "\n";
+            std::cout << "    before2 start=" << *start  << " inst=" << *inst << "\n";
             par_blk->seq.insert( i, n_seqi );
             break;
         }
     }
 
-    // always return false
+    // always return false (for convenience)
     return false;
 }
 
@@ -515,6 +514,7 @@ static bool insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *inst
 
 // propagation through an edge
 struct RegPropagation : CC_SeqItem::Visitor {
+    // return true if OK, false if use of reg is forbidden (due to ce that wants to do something with this register)
     virtual bool operator()( CC_SeqItemExpr &ce ) {
         if ( port.is_an_output() ) { // -> going forward
             // an instruction is going to produce something that will be stored in reg
@@ -555,17 +555,17 @@ struct AssignOutReg : CC_SeqItem::Visitor {
         // make a new reg
         CppOutReg *out_reg = cc->new_out_reg( ce.expr->type() );
 
-        // constraint propagation from ce.expr
+        // assign out_reg + constraint propagation ()
         Vec<InstAndPort> assigned_ports;
         if ( not assign_port_rec( assigned_ports, ce.expr.inst, -1, out_reg ) ) {
             std::cerr << "base constraint cannot be fullfilled\n";
             return false;
         }
 
-        // propagation
+        // edges and optionnal constraints
         int num_edge = 0, num_optionnal_constraint = 0;
         while ( true ) {
-            // edge propagation
+            // edge propagation (priority)
             if ( num_edge < assigned_ports.size() ) {
                 RegPropagation rp;
                 rp.assigned_ports = &assigned_ports;
@@ -574,8 +574,11 @@ struct AssignOutReg : CC_SeqItem::Visitor {
                     Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
                     rp.inst_to_reach = p.inst->cc_item_expr;
                     rp.reg = rp.port.inst->out_reg;
+                    //
                     if ( rp.port.inst->cc_item_expr->following_visit_to( rp, rp.inst_to_reach ) )
+                        // if not forbidden, assign port
                         if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) )
+                            // if not possible to assign, add a copy inst
                             return insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst );
                 } else {
                     Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
@@ -615,11 +618,12 @@ void Codegen_C::make_code() {
     for( Expr inst : fresh )
         out << cloned( inst, created );
 
-    // simplifications (and insert Copy before Select)
+    // simplifications (+ insert Copy before Select, ...)
     for( Expr &e : created )
         e->codegen_simplification( created, out );
 
-    // remove parents that are not part of the graph
+    // remove parents that are not part of the graph (after the simplifications)
+    // + update `created`
     PI64 coi = ++Inst::cur_op_id;
     created.resize( 0 );
     for( Expr &e : out )
