@@ -45,7 +45,6 @@ class SI8
     def init val
         ___reassign_rec self, val
     def reassign val
-        ___disp val
         ___reassign_rec self, val
     
 class PI8
@@ -150,13 +149,19 @@ def print val
 
 # v := Vec[ PI8, 3 ] 48
 # ___syscall &v
-print 120
-
+#for id in 0 .. 10
+#    print id
+z := ___rand()
+a := 10 + z
+if ___rand()
+    a = 20 + z
+___syscall a
 
 # a := Vec[SI8,3]()
 # a[ ___rand() ] = 48
 # b := a
 # b[ ___rand() ] = 49
 # ___syscall a, b
+
 
 

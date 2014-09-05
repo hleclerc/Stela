@@ -11,6 +11,10 @@ BoolOpSeq::BoolOpSeq( Expr expr, bool pos ) {
         or_seq.push_back()->push_back( Item{ expr, pos } );
 }
 
+BoolOpSeq::BoolOpSeq( Item item ) {
+    or_seq.push_back()->push_back( item );
+}
+
 BoolOpSeq::BoolOpSeq( False ) : val_if_not_or_seq( false ) {
 }
 
@@ -93,6 +97,15 @@ bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
                 break;
         }
     }
+    return true;
+}
+
+bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq::Item &item ) const {
+    if ( not or_seq.size() )
+        return false;
+    for( const Vec<Item> &ai : or_seq )
+        if ( not ai.contains( item ) )
+            return false;
     return true;
 }
 

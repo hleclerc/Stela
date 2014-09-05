@@ -73,6 +73,38 @@ bool CC_SeqItemExpr::preceding_visit_to( Visitor &v, CC_SeqItemExpr *goal ) {
     return vtm_2.reached;
 }
 
+void CC_SeqItemExpr::write_graphviz( Stream &os, int &level ) {
+    std::ostringstream ss;
+    expr->write_dot( ss );
+
+    std::string ls = ss.str();
+    static int p = 0;
+    os << "    { rank = same; " << level++ << " node" << this << " [pin=true pos=\"0," << p++ << "\" label=\"";
+    for( unsigned i = 0; i < ls.size(); ++i ) {
+        switch ( ls[ i ] ) {
+        case '<':
+        case '>':
+        case '\\':
+            os << '\\';
+        }
+        os << ls[ i ];
+    }
+    //if ( inp.size() > 1 )
+    //    for( int i = 0; i < inp.size(); ++i )
+    //        os << "|<f" << i << ">i";
+    os << "\"]; }\n";
+
+    for( Inst::Parent &p : expr->par ) {
+        os << "    node" << this << " -> node" << p.inst->cc_item_expr;
+        if ( expr->out_reg )
+            os << " [label=R" << expr->out_reg->num << "]";
+        os << ";\n";
+    }
+
+    for( int i = 0; i < ext.size(); ++i )
+        ext[ i ]->write_graphviz( os, level );
+}
+
 bool CC_SeqItemExpr::visit( Visitor &v, bool forward ) {
     return v( *this );
 }

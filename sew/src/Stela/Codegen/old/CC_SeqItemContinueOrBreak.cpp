@@ -14,6 +14,10 @@ bool CC_SeqItemContinueOrBreak::ch_followed_by_something_to_execute( int &nb_evi
     return false;
 }
 
+void CC_SeqItemContinueOrBreak::write_graphviz( Stream &os, int &level ) {
+    os << "    { rank = same; " << level++ << " node" << this << " [label=\"" << ( cont ? "cont" : "break" ) << "\"]; }\n";
+}
+
 bool CC_SeqItemContinueOrBreak::non_void() {
     return true;
 }

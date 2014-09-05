@@ -9,14 +9,14 @@ struct Copy : Inst {
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Copy; }
     virtual Type *type() { return inp[ 0 ]->type(); }
     virtual bool will_write_code() const {
-        return out_reg != inp[ 0 ]->out_reg;
+        return out_reg == 0 or out_reg != inp[ 0 ]->out_reg;
     }
 
     virtual void get_constraints() {
         this->add_same_out( 0, this, -1, OPTIONNAL );
     }
 
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
         if ( out_reg == inp[ 0 ]->out_reg ) {
             // cc->on << "// cp " << ( out_reg ? out_reg->num : 666 );
             return;

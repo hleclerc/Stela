@@ -11,8 +11,8 @@ exe: std
 std: ext/PrepArg install_dir
 	${MC} src/stela.cpp ${SRC}
 	cat out.cpp
+	metil_comp out.cpp
 
-# 	metil_comp out.cpp
 
 install:
 	sudo cp met.xml /usr/share/kde4/apps/katepart/syntax

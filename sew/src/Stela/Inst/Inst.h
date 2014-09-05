@@ -5,8 +5,6 @@
 #include "Expr.h"
 #include <map>
 #include <set>
-class CC_SeqItemBlock;
-class CC_SeqItemExpr;
 class CppOutReg;
 class BoolOpSeq;
 class Codegen_C;
@@ -104,8 +102,8 @@ public:
     // codegen
     virtual void get_constraints();
     virtual void update_when( const BoolOpSeq &cond );
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b );
-    virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
+    virtual void write( Codegen_C *cc );
+    // virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
     virtual bool will_write_code() const;
     virtual bool need_a_register();
     virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out );
@@ -134,12 +132,13 @@ public:
 
     // codegen
     BoolOpSeq            *when; ///< used for code generation (to know when needed)
+    Inst                 *next_sched;
+    Inst                 *prev_sched;
     CppOutReg            *out_reg;
     Vec<CppOutReg *>      inp_reg;
     bool                  new_reg;
-    std::map<PortConstraint,int>    same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
-    std::map<PortConstraint,int>    diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
-    CC_SeqItemExpr       *cc_item_expr;
+    std::map<PortConstraint,int> same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
+    std::map<PortConstraint,int> diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
     std::set<CppOutReg *> reg_to_avoid; ///< could be replaced by a reg assignation date
 
     static  PI64          cur_op_id; ///<

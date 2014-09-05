@@ -1,4 +1,3 @@
-#include "../Codegen/CC_SeqItemExpr.h"
 #include "../System/AssignIfNeq.h"
 #include "../Codegen/Codegen_C.h"
 #include "BoolOpSeq.h"
@@ -10,10 +9,12 @@
 PI64 Inst::cur_op_id = 0;
 
 Inst::Inst() {
-    ext_par   = 0;
-    when      = 0;
-    out_reg   = 0;
-    new_reg   = false;
+    ext_par    = 0;
+    when       = 0;
+    out_reg    = 0;
+    new_reg    = false;
+    next_sched = 0;
+    prev_sched = 0;
 
     op_id_vis = 0;
     op_id     = 0;
@@ -380,9 +381,9 @@ void Inst::update_when( const BoolOpSeq &cond ) {
 void Inst::get_constraints() {
 }
 
-void Inst::add_break_and_continue_internal( CC_SeqItemBlock **b ) {
-    ASSERT( ext.size() == 0, "inst with ext should have an add_break_and_continue_internal method" );
-}
+//void Inst::add_break_and_continue_internal( CC_SeqItemBlock **b ) {
+//    ASSERT( ext.size() == 0, "inst with ext should have an add_break_and_continue_internal method" );
+//}
 
 bool Inst::will_write_code() const {
     return true;
@@ -429,7 +430,7 @@ int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
     return 0;
 }
 
-void Inst::write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+void Inst::write( Codegen_C *cc ) {
     cc->on.write_beg();
     if ( out_reg )
         out_reg->write( cc, new_reg ) << " = ";

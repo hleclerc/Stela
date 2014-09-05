@@ -10,7 +10,7 @@ struct Conv : Inst {
     virtual void write_dot( Stream &os ) const { os << "Conv[" << *dst << "]"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Conv( dst ); }
     virtual Type *type() { return dst; }
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
         if ( not this->out_reg ) {
             cc->on << "conv reg pb";
             return;

@@ -9,7 +9,7 @@ struct GetNout : Inst {
     virtual Type *ptype() { return inp[ 0 ]->ptype( nout ); }
     virtual Type *type() { return inp[ 0 ]->type( nout ); }
     virtual int pointing_to_nout() { return nout; }
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {}
+    virtual void write( Codegen_C *cc ) {}
     int nout;
 };
 

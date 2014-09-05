@@ -207,3 +207,5 @@ tests/test_Ast.cpp
 tests/test_Inst.cpp
 tests/test_Vec.cpp
 tests/test.met
+src/Stela/Inst/If.h
+src/Stela/Inst/If.cpp

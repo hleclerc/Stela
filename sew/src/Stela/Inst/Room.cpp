@@ -55,7 +55,7 @@ struct Room : Inst {
         return false;
     }
 
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
     }
 
     Vec<Expr> future_dep;

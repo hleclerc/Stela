@@ -11,6 +11,7 @@ struct CC_SeqItemIf : CC_SeqItem {
     virtual void get_glo_cond_and_seq_of_sub_blocks( Vec<CC_SeqItemBlock *> &seq, const BoolOpSeq &cond );
     virtual bool ch_followed_by_something_to_execute( int &nb_evicted_blocks, CC_SeqItem *ch, const BoolOpSeq &cond );
     virtual void write_to_stream( Stream &os ) { os << "if"; }
+    virtual void write_graphviz( Stream &os, int &level );
     virtual bool visit( Visitor &v, bool forward );
 
     virtual bool non_void();

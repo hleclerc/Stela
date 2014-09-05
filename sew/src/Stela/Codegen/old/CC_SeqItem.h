@@ -21,6 +21,8 @@ struct CC_SeqItem {
     virtual bool following_visit( Visitor &v, CC_SeqItem *_avoid = 0 ); ///< visit all the following CC_SeqItemExpr
     virtual bool preceding_visit( Visitor &v, CC_SeqItem *_avoid = 0 ); ///< visit all the preceding CC_SeqItemExpr
     virtual bool visit( Visitor &v, bool forward ); ///< visit all the CC_SeqItemExpr children
+    virtual void write_graphviz( Stream &os, int &level ) = 0;
+    virtual int  display_graphviz();
     virtual bool non_void() = 0;
 
     bool contains( CC_SeqItemExpr *expr );
