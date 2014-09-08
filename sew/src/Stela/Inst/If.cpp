@@ -24,7 +24,7 @@ struct IfInp : Inst {
 struct IfOut : Inst {
     IfOut() {}
     virtual void write_dot( Stream &os ) const { os << "if_out"; }
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new IfOut( pos ); }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new IfOut; }
     virtual Type *type( int nout ) { return inp[ nout ]->type(); }
     virtual Type *type() { return ip->type_Void; }
     virtual bool need_a_register() { return false; }
@@ -36,7 +36,7 @@ struct IfOut : Inst {
 */
 struct IfInst : Inst {
     virtual void write_dot( Stream &os ) const { os << "if"; }
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new IfInst( corr ); }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new IfInst; }
     virtual Type *type( int nout ) { return ext[ 0 ]->type( nout ); }
     virtual Type *ptype( int nout ) { TODO; return 0; }
     virtual Type *type() { return ip->type_Void; }
@@ -110,8 +110,8 @@ Expr if_inp( const Vec<Type *> &types ) {
     return res;
 }
 
-Expr if_out( const Vec<Expr> &inp, const Vec<Vec<bool> > &pos ) {
-    IfOut *res = new IfOut( pos );
+Expr if_out( const Vec<Expr> &inp ) {
+    IfOut *res = new IfOut;
     for( Expr i : inp )
         res->add_inp( i );
     return res;

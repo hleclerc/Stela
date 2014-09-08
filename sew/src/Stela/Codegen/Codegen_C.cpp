@@ -184,7 +184,7 @@ static Vec<Expr> extract_inst_that_must_be_done_if( Expr &if_inp_inst, Expr &if_
     // make the if_inp instruction
     Vec<Type *> types( Size(), inputs.size() );
     for( const std::pair<Expr,int> &e : inputs )
-        types[ e.second ] = e.first->type();
+        types[ e.second ] = const_cast<Inst *>( e.first->inst )->type();
     if_inp_inst = if_inp( types );
 
     // outputs of the if_inp instruction
@@ -291,9 +291,6 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             best_item.pos = false;
             Expr if_inp_ko, if_out_ko;
             Vec<Expr> out_ko = extract_inst_that_must_be_done_if( if_inp_ko, if_out_ko, inputs, front, best_item );
-
-            PRINT( out_pos );
-            PRINT( out_neg );
 
             // complete the If instruction
             Expr if_ = if_inst( inp, if_inp_ok, if_inp_ko, if_out_ok, if_out_ko );

@@ -162,26 +162,28 @@ struct HashMap {
 
 
 struct Item {
-    int data;
+    void *data; ///< data
+    int   rese; ///< size of data in memory
+    int   data;
 };
 
+
 int main() {
-    std::vector<int > keys ( 1000 );
-    std::vector<Item> items( keys.size() );
+    std::vector<int> keys ( 1000 );
+    std::vector<int> items( keys.size() );
     for( unsigned i = 0; i < keys.size(); ++i ) {
         keys [ i ] = rand() % ( keys.size() / 2 );
-        items[ i ].data = keys [ i ];
+        items[ i ] = keys [ i ];
     }
 
-    HashMap<int,Item,16> hash_map;
-    // std::vector<int> res( keys.size() );
+    HashMap<int,int,16> hash_map;
 
     for( unsigned i = 0; i < keys.size(); ++i )
         hash_map.add( keys[ i ], &items[ i ] );
 
     for( unsigned i = 0; i < keys.size(); ++i )
-        if ( Item *it = hash_map.find( keys[ i ] )  )
-            ASSERT( keys[ i ] == it->data, "..." );
+        if ( int *it = hash_map.find( keys[ i ] )  )
+            ASSERT( keys[ i ] == *it, "..." );
         else
             ERROR( "not found" );
 }

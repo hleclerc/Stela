@@ -1,8 +1,8 @@
-MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src
+MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: test_HashMap # exe
+all: test_LecBuff # exe
 
 exe: std
 	
