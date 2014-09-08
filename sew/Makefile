@@ -2,7 +2,7 @@ MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: exe
+all: test_HashMap # exe
 
 exe: std
 	

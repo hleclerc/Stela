@@ -209,3 +209,4 @@ tests/test_Vec.cpp
 tests/test.met
 src/Stela/Inst/If.h
 src/Stela/Inst/If.cpp
+tests/test_HashMap.cpp
