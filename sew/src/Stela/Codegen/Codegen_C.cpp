@@ -615,6 +615,10 @@ void Codegen_C::make_code() {
     for( Expr inst : fresh )
         out << cloned( inst, created );
 
+    // display
+    if ( disp_inst_graph )
+        Inst::display_graph( out );
+
     // simplifications (and insert Copy before Select)
     for( Expr &e : created )
         e->codegen_simplification( created, out );
@@ -647,10 +651,6 @@ void Codegen_C::make_code() {
     // assign (missing) out_reg
     AssignOutReg aor; aor.cc = this;
     main_block.visit( aor, true );
-
-    // display
-    if ( disp_inst_graph )
-        Inst::display_graph( out );
 
     // specify where the registers have to be declared
     for( int n = 0; n < out_regs.size(); ++n ) {

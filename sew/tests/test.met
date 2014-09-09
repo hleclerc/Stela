@@ -152,7 +152,13 @@ def print val
 # ___syscall &v
 # print 120
 
-___syscall ___rand() and ___rand()
+# ___syscall ___rand() and ___rand()
+
+x := 1
+while x < 10
+    x *= 2
+
+___syscall x
 
 # a := Vec[SI8,3]()
 # a[ ___rand() ] = 48
