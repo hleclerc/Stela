@@ -44,7 +44,11 @@ struct ReplBits : Inst {
             use_bytes_for_codegen = true;
         }
     }
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
+        if ( this->out_reg == 0 or inp[ 2 ]->out_reg == 0 ) {
+            cc->on << "ReplBits PB";
+            return;
+        }
         cc->on.write_beg() << "*(" << cc->type_to_str( inp[ 2 ]->out_reg->type ) << " *)( (char *)&";
         out_reg->write( cc, false );
         *cc->os << " + ";

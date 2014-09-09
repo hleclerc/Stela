@@ -1,4 +1,5 @@
 #include "CC_SeqItem.h"
+#include <fstream>
 
 PI64 CC_SeqItem::cur_op_id = 0;
 
@@ -40,4 +41,25 @@ bool CC_SeqItem::contains( CC_SeqItemExpr *expr ) {
 
 bool CC_SeqItem::visit( Visitor &v, bool forward ) {
     return true;
+}
+
+int CC_SeqItem::display_graphviz() {
+    std::string filename = ".res.dot";
+    std::ofstream f( filename );
+    f << "digraph Instruction {\n";
+    // f << "  node [shape=plaintext];\n";
+    f << "  graph [rankdir=LR];\n";
+
+    int level = 0;
+    write_graphviz( f, level );
+
+    for( int i = 0; i <= level; ++i )
+        f << i << " [style=\"invis\"];\n";
+    for( int i = 1; i <= level; ++i )
+        f << i - 1 << " -> " << i << " [style=\"invis\"];\n";
+
+    f << "}";
+    f.close();
+
+    return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gscv " + std::string( filename ) + ".eps" ).c_str() );
 }

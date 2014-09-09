@@ -15,6 +15,7 @@ struct CC_SeqItemBlock : CC_SeqItem {
     virtual bool following_visit( Visitor &v, CC_SeqItem *_avoid = 0 );
     virtual bool preceding_visit( Visitor &v, CC_SeqItem *_avoid = 0 );
     virtual bool visit( Visitor &v, bool forward );
+    virtual void write_graphviz( Stream &os, int &level );
     virtual bool non_void();
 
     bool contains_a_cont_or_break();

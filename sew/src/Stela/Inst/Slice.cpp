@@ -59,7 +59,7 @@ struct Slice : Inst {
             replace_this_by_inp( 0, out );
     }
 
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
         if ( out_reg == inp[ 0 ]->out_reg )
             return;
         Type *t = inp[ 1 ]->type();

@@ -26,6 +26,16 @@ bool CC_SeqItemIf::ch_followed_by_something_to_execute( int &nb_evicted_blocks, 
     return parent->ch_followed_by_something_to_execute( nb_evicted_blocks, this, cond );
 }
 
+void CC_SeqItemIf::write_graphviz( Stream &os, int &level ) {
+    int m = level;
+    for( int i = 0; i < 2; ++i ) {
+        int l = level;
+        seq[ i ].write_graphviz( os, l );
+        m = std::max( m, l );
+    }
+    level = m;
+}
+
 bool CC_SeqItemIf::non_void() {
     return seq[ 0 ].non_void() or seq[ 1 ].non_void();
 }

@@ -63,7 +63,7 @@ void Type::parse() {
     _parsed = true;
 
     // parse block
-    Scope ns( &ip->main_scope, 0, "parsing type" );
+    Scope ns( &ip->main_scope, 0, "parsing type " + to_string( this ) );
     ns.class_scope = this;
     for( int i = 0; i < parameters.size(); ++i )
         ns.reg_var( orig->arg_names[ i ], parameters[ i ], true );

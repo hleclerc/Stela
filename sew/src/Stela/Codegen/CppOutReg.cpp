@@ -1,7 +1,7 @@
 #include "../Inst/Type.h"
 
-#include "CC_SeqItemBlock.h"
-#include "CC_SeqItemExpr.h"
+// #include "CC_SeqItemBlock.h"
+// #include "CC_SeqItemExpr.h"
 #include "CppOutReg.h"
 #include "Codegen_C.h"
 
@@ -19,20 +19,20 @@ Stream &CppOutReg::write( Codegen_C *cc, bool new_reg ) {
     return *cc->os << "R" << num;
 }
 
-CC_SeqItemBlock *CppOutReg::common_provenance_ancestor() {
-    for( CC_SeqItemExpr *e : provenance )
-        for( CC_SeqItemBlock *b = e->parent_block; b; b = b->parent_block )
-            b->n = 0;
+//CC_SeqItemBlock *CppOutReg::common_provenance_ancestor() {
+//    for( CC_SeqItemExpr *e : provenance )
+//        for( CC_SeqItemBlock *b = e->parent_block; b; b = b->parent_block )
+//            b->n = 0;
 
-    for( CC_SeqItemExpr *e : provenance )
-        for( CC_SeqItemBlock *b = e->parent_block; b; b = b->parent_block )
-            ++b->n;
+//    for( CC_SeqItemExpr *e : provenance )
+//        for( CC_SeqItemBlock *b = e->parent_block; b; b = b->parent_block )
+//            ++b->n;
 
-    for( CC_SeqItemBlock *b = provenance[ 0 ]->parent_block; b; b = b->parent_block )
-        if ( b->n == provenance.size() )
-            return b;
-    return 0;
-}
+//    for( CC_SeqItemBlock *b = provenance[ 0 ]->parent_block; b; b = b->parent_block )
+//        if ( b->n == provenance.size() )
+//            return b;
+//    return 0;
+//}
 
 
 

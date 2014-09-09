@@ -10,6 +10,7 @@ struct CC_SeqItemExpr : CC_SeqItem {
     virtual void write_to_stream( Stream &os ) { os << expr; }
     virtual bool following_visit_to( Visitor &v, CC_SeqItemExpr *goal ); ///< return true if reached the goal
     virtual bool preceding_visit_to( Visitor &v, CC_SeqItemExpr *goal ); ///< return true if reached the goal
+    virtual void write_graphviz( Stream &os, int &level );
     virtual bool visit( Visitor &v, bool forward );
     virtual bool non_void();
 

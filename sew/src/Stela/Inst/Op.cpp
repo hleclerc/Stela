@@ -58,7 +58,7 @@ template<class TO>
 struct UOp : Op<TO> {
     virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->op ); }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new UOp<TO>; }
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
         cc->on.write_beg();
         this->out_reg->write( cc, this->new_reg ) << " = ";
         to.write_oper( *cc->os );
@@ -121,7 +121,12 @@ struct BOp : Op<TO> {
         }
         return Inst::get( cond );
     }
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
+        if ( not this->out_reg ) {
+            to.write_oper( cc->on.write_beg() );
+            cc->on.write_end( " ??;" );
+            return;
+        }
         cc->on.write_beg();
         this->out_reg->write( cc, this->new_reg ) << " = ";
         if (  SameType<TO,Op_mod>::res and ip->is_integer( this->out_reg->type ) ) {

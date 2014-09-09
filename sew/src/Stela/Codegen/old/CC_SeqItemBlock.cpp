@@ -64,6 +64,13 @@ bool CC_SeqItemBlock::visit( Visitor &v, bool forward ) {
     return true;
 }
 
+void CC_SeqItemBlock::write_graphviz( Stream &os, int &level ) {
+    os << "    subgraph cluster_" << this <<" {\n    color=yellow;\n    style=dotted;\n";
+    for( int i = 0; i < seq.size(); ++i )
+        seq[ i ]->write_graphviz( os, level );
+    os << "    }\n";
+}
+
 bool CC_SeqItemBlock::non_void() {
     for( int i = 0; i < seq.size(); ++i )
         if ( seq[ i ]->non_void() )

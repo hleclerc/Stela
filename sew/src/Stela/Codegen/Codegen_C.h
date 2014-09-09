@@ -37,7 +37,7 @@ public:
 
 protected:
     void make_code();
-    void scheduling( CC_SeqItemBlock *cur_block, Vec<Expr> out );
+    Inst *scheduling( Vec<Expr> out ); ///< return the first inst to be scheduled
 
     SplittedVec<CppOutReg,32> out_regs;
     std::map<int,String>      spec_types;

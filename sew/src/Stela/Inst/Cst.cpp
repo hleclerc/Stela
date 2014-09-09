@@ -126,7 +126,7 @@ struct Cst : Inst {
     virtual bool need_a_register() {
         return len;
     }
-    virtual void write( Codegen_C *cc, CC_SeqItemBlock **b ) {
+    virtual void write( Codegen_C *cc ) {
         if ( not out_reg )
             return;
         if ( out_type->aryth ) {

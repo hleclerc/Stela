@@ -6,3 +6,4 @@
 * gerer les offsets dans des TOK_ADD_OFF et TOK_SUB_OFF et/ou apres chaque TOK_... pour eviter de se taper des sourcefile partout
 
 * constify -> vérifie que la variable n'est pas référencée ailleurs, et la met const...
+* Utiliser Scanner (pour Token) et Parser
