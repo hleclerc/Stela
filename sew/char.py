@@ -15,7 +15,9 @@ class Ch:
     
 chl = [ Ch( t[ i ], i ) for i in range( 256 ) ]
 chl = sorted( chl, key = lambda x: - x.freq  )
+s = 0
 for c in chl[ 1:64 ]:
+    s += c.freq
     if c.name >= 32 and c.name < 128:
         print c.freq, chr( c.name )
     else:

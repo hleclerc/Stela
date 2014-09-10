@@ -2,7 +2,7 @@ MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: test_LecBuff # exe
+all: test_Type # exe
 
 exe: std
 	
