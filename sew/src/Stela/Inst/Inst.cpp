@@ -22,6 +22,8 @@ Inst::Inst() {
 
     cpt_use   = 0;
     flags     = 0;
+
+    par_ext_sched = 0;
 }
 
 Inst::~Inst() {
@@ -416,6 +418,18 @@ void Inst::add_diff_out(int src_ninp, Inst *dst_inst, int dst_ninp, int level ) 
 
 CppOutReg *Inst::get_inp_reg( int ninp ) {
     return ninp >= 0 and ninp < inp_reg.size() ? inp_reg[ ninp ] : 0;
+}
+
+bool Inst::visit_sched( Inst::Visitor &v, bool with_ext ) {
+    for( Inst *b = this; b; b = b->next_sched ) {
+        if ( not v( b ) )
+            return false;
+        if ( with_ext )
+            for( int i = 0; i < b->ext_sched.size(); ++i )
+                if ( not b->ext_sched[ i ]->visit_sched( v, with_ext ) )
+                    return false;
+    }
+    return true;
 }
 
 int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {

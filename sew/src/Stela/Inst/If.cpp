@@ -44,64 +44,37 @@ struct IfInst : Inst {
     virtual bool need_a_register() { return false; }
 
     virtual void get_constraints() {
-        TODO;
-        //        for( int nout = 0; nout < corr.size(); ++nout ) {
-        //            int ninp = corr[ nout ];
+        for( int ok = 0; ok < 2; ++ok ) {
+            // IfOut->inp[ nout ] <-> out of GetNout( If, nout )
+            for( int nout = 0; nout < ext[ ok ]->inp.size(); ++nout )
+                if ( Inst *p = find_par_for_nout( nout ) )
+                    ext[ ok ]->add_same_out( nout, p, -1, COMPULSORY );
 
-        //            if ( ninp >= 0 ) {
-        //                if ( Inst *p = ext[ 1 ]->find_par_for_nout( ninp ) ) {
-        //                    // inp[ ninp ] of while <-> out[ ninp ] of while_inp
-        //                    this->add_same_out( ninp, p, -1, COMPULSORY );
-
-        //                    // out[ ninp ] of while_inp <-> inp[ nout ] of while out
-        //                    p->add_same_out( -1, ext[ 0 ].inst, nout, COMPULSORY );
-        //                }
-        //            }
-
-        //            // inp[ nout ] of while out <-> out[ nout ] of while
-        //            if ( Inst *p = this->find_par_for_nout( nout ) )
-        //                ext[ 0 ]->add_same_out( nout, p, -1, COMPULSORY );
-        //        }
+            // If->inp[ ninp ] <-> out of GetNout( IfInp, ninp )
+            for( int ninp = 0; ninp < inp.size(); ++ninp )
+                if ( Inst *p = ext[ 2 + ok ]->find_par_for_nout( ninp ) )
+                    add_same_out( ninp, p, -1, COMPULSORY );
+        }
     }
 
-    //    virtual void add_break_and_continue_internal( CC_SeqItemBlock **b ) {
-    //        Vec<CC_SeqItemBlock *> seq;
-    //        BoolOpSeq cont = get_cont(), need_a_break = not cont, cond = True();
-    //        b[ 0 ]->get_glo_cond_and_seq_of_sub_blocks( seq, cond );
-
-    //        for( int i = 0; i < seq.size(); ++i ) {
-    //            if ( not seq[ i ]->parent )
-    //                continue; // the main block
-    //            int nb_evicted_blocks = 0;
-    //            if ( not seq[ i ]->parent->ch_followed_by_something_to_execute( nb_evicted_blocks, seq[ i ], seq[ i ]->glo_cond ) ) {
-    //                if ( seq[ i ]->glo_cond.imply( need_a_break ) ) {
-    //                    seq[ i ]->seq << new CC_SeqItemContinueOrBreak( false, seq[ i ] );
-    //                    need_a_break = need_a_break - seq[ i ]->glo_cond; // no need to test seq[ i ]->glo_cond (already done)
-    //                } else if ( nb_evicted_blocks ) {
-    //                    if ( not seq[ i ]->glo_cond.imply( not need_a_break ) ) {
-    //                        // -> if ( rem_to_test ) break;
-    //                        CC_SeqItemIf *ci = new CC_SeqItemIf( seq[ i ] );
-    //                        ci->cond = need_a_break;
-    //                        ci->seq[ 0 ].seq << new CC_SeqItemContinueOrBreak( false, &ci->seq[ 0 ] );
-    //                        seq[ i ]->seq << ci;
-    //                    }
-    //                    // -> continue;
-    //                    seq[ i ]->seq << new CC_SeqItemContinueOrBreak( true, seq[ i ] );
-    //                }
-    //            }
-    //        }
-
-    //        if ( not need_a_break.always( false ) ) {
-    //            CC_SeqItemIf *cif = new CC_SeqItemIf( b[ 0 ] );
-    //            cif->cond = need_a_break;
-    //            cif->seq[ 0 ].seq << new CC_SeqItemContinueOrBreak( false, &cif->seq[ 0 ] );
-
-    //            b[ 0 ]->seq << cif;
-    //        }
-    //    }
-
     virtual void write( Codegen_C *cc ) {
-        TODO;
+        cc->on.write_beg() << "if ( ";
+        cc->write_out( this->inp[ 0 ] );
+        cc->on.write_end( " ) {" );
+
+        cc->on.nsp += 4;
+        for( Inst *inst = ext_sched[ 0 ]; inst; inst = inst->next_sched )
+            cc->write( inst );
+        cc->on.nsp -= 4;
+
+        cc->on << "} else {";
+
+        cc->on.nsp += 4;
+        for( Inst *inst = ext_sched[ 1 ]; inst; inst = inst->next_sched )
+            cc->write( inst );
+        cc->on.nsp -= 4;
+
+        cc->on << "}";
     }
 };
 

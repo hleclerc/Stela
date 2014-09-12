@@ -236,7 +236,6 @@ Expr make_if_inp( std::map<Expr,int> &inputs, const Vec<Expr> &inst_that_need_in
         if_inp_sel[ i ] = get_nout( res, i );
 
     // use the if_inp instruction
-    PRINT( inst_that_need_inp );
     for( Expr e : inst_that_need_inp )
         for( int ninp = 0; ninp < e->inp.size(); ++ninp )
             if ( inputs.count( e->inp[ ninp ] ) )
@@ -370,8 +369,11 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     // delayed operation (ext blocks)
     for( Inst *inst = beg; inst; inst = inst->next_sched ) {
         // schedule sub block (ext instructions)
-        for( int ind = 0; ind < inst->ext_disp_size(); ++ind )
-            inst->ext_sched << scheduling( inst->ext[ ind ] );
+        for( int ind = 0; ind < inst->ext_disp_size(); ++ind ) {
+            Inst *ext_beg = scheduling( inst->ext[ ind ] );
+            ext_beg->par_ext_sched = inst;
+            inst->ext_sched << ext_beg;
+        }
 
         // add internal break or continue if necessary
         //        CC_SeqItemBlock *b[ s ];
@@ -382,15 +384,6 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
 
     return beg;
 }
-
-//struct GetConstraint : CC_SeqItem::Visitor {
-//    virtual bool operator()( CC_SeqItemExpr &ce ) {
-//        ce.expr->get_constraints();
-//        for( AutoPtr<CC_SeqItemBlock> &ext : ce.ext )
-//            ext->visit( *this, true );
-//        return true;
-//    }
-//};
 
 //struct DisplayConstraints : CC_SeqItem::Visitor {
 //    virtual bool operator()( CC_SeqItemExpr &ce ) {
@@ -425,88 +418,86 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
 //    }
 //};
 
-//struct InstAndPort {
-//    int  ninp_constraint() const { return std::max( _num, -1 ); }
-//    bool is_an_output() const { return _num <  0; }
-//    bool is_an_input () const { return _num >= 0; }
-//    int  nout() const { return -1 - _num; }
-//    int  ninp() const { return _num; }
+struct InstAndPort {
+    int  ninp_constraint() const { return std::max( _num, -1 ); }
+    bool is_an_output() const { return _num <  0; }
+    bool is_an_input () const { return _num >= 0; }
+    int  nout() const { return -1 - _num; }
+    int  ninp() const { return _num; }
 
-//    Inst *inst;
-//    int   _num; ///  ninp if out==false, nout if out==true
-//};
+    Inst *inst;
+    int   _num; ///  ninp if out==false, nout if out==true
+};
 
 
-//static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
-//    // assignation
-//    if ( ninp < 0 ) { // output ?
-//        // if already assigned
-//        if ( inst->out_reg )
-//            return inst->out_reg == out_reg;
+static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
+    // assignation
+    if ( ninp < 0 ) { // output ?
+        // if already assigned
+        if ( inst->out_reg )
+            return inst->out_reg == out_reg;
 
-//        // look if cutting an validated edge using out_reg as an output
-//        if ( inst->reg_to_avoid.count( out_reg ) )
-//            return false;
+        // look if cutting an validated edge using out_reg as an output
+        if ( inst->reg_to_avoid.count( out_reg ) )
+            return false;
 
-//        inst->out_reg = out_reg;
-//        out_reg->provenance << inst->cc_item_expr;
-//        for( int i = 0; i < inst->par.size(); ++i )
-//            if ( inst->par[ i ].ninp >= 0 )
-//                assigned_ports << InstAndPort{ inst, -1 - i };
-//    } else {
-//        int a = inst->set_inp_reg( ninp, out_reg );
-//        if ( a <= 0 )
-//            return a == 0;
-//        assigned_ports << InstAndPort{ inst, ninp };
-//    }
+        inst->out_reg = out_reg;
+        out_reg->provenance << inst;
+        for( int i = 0; i < inst->par.size(); ++i )
+            if ( inst->par[ i ].ninp >= 0 )
+                assigned_ports << InstAndPort{ inst, -1 - i };
+    } else {
+        int a = inst->set_inp_reg( ninp, out_reg );
+        if ( a <= 0 )
+            return a == 0;
+        assigned_ports << InstAndPort{ inst, ninp };
+    }
 
-//    // constraint propagation
-//    for( std::pair<const Inst::PortConstraint,int> &c : inst->same_out )
-//        if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp and
-//             not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
-//            return false;
+    // constraint propagation
+    for( std::pair<const Inst::PortConstraint,int> &c : inst->same_out )
+        if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp and
+             not _assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg ) )
+            return false;
 
-//    // diff_out -> look if this assignation is going to break a constraint
-//    for( std::pair<const Inst::PortConstraint,int> &c : inst->diff_out ) {
-//        if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp ) {
-//            if ( c.first.dst_ninp >= 0 ) {
-//                if ( c.first.dst_ninp >= c.first.dst_inst->inp_reg.size() or
-//                     c.first.dst_inst->inp_reg[ c.first.dst_ninp ] == out_reg )
-//                    return false;
-//            } else {
-//                if ( c.first.dst_inst->out_reg == out_reg )
-//                    return false;
-//            }
-//        }
-//    }
+    // diff_out -> look if this assignation is going to break a constraint
+    for( std::pair<const Inst::PortConstraint,int> &c : inst->diff_out ) {
+        if ( c.second == Inst::COMPULSORY and c.first.src_ninp == ninp ) {
+            if ( c.first.dst_ninp >= 0 ) {
+                if ( c.first.dst_ninp >= c.first.dst_inst->inp_reg.size() or
+                     c.first.dst_inst->inp_reg[ c.first.dst_ninp ] == out_reg )
+                    return false;
+            } else {
+                if ( c.first.dst_inst->out_reg == out_reg )
+                    return false;
+            }
+        }
+    }
 
-//    return true; // OK
-//}
+    return true; // OK
+}
 
-//static void clear_port( InstAndPort port ) {
-//    if ( port.is_an_output() ) {
-//        port.inst->out_reg->provenance.pop_back();
-//        port.inst->out_reg = 0;
-//    } else
-//        port.inst->inp_reg[ port.ninp() ] = 0;
-//}
+static void clear_port( InstAndPort port ) {
+    if ( port.is_an_output() ) {
+        port.inst->out_reg->provenance.pop_back();
+        port.inst->out_reg = 0;
+    } else
+        port.inst->inp_reg[ port.ninp() ] = 0;
+}
 
-//static bool assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
-//    Vec<InstAndPort> assigned_ports_trial;
+static bool assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int ninp, CppOutReg *out_reg ) {
+    Vec<InstAndPort> assigned_ports_trial;
 
-//    // ok ?
-//    if ( _assign_port_rec( assigned_ports_trial, inst, ninp, out_reg ) ) {
-//        assigned_ports.append( assigned_ports_trial );
-//        return true;
-//    }
+    // ok ?
+    if ( _assign_port_rec( assigned_ports_trial, inst, ninp, out_reg ) ) {
+        assigned_ports.append( assigned_ports_trial );
+        return true;
+    }
 
-//    // else, undo out_reg assignations
-//    for( InstAndPort &a : assigned_ports_trial )
-//        clear_port( a );
-//    return false;
-//}
-
-//CC_SeqItemBlock *_main_block;
+    // else, undo out_reg assignations
+    for( InstAndPort &a : assigned_ports_trial )
+        clear_port( a );
+    return false;
+}
 
 //static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *inst, Inst *start, const char *reason ) {
 //    PRINT( "BEFORE" );
@@ -669,83 +660,32 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
 //    CppOutReg *reg;
 //};
 
-//struct AssignOutReg : CC_SeqItem::Visitor {
-//    virtual bool operator()( CC_SeqItemExpr &ce ) {
-//        if ( not exec( ce ) )
-//            return false;
-//        for( AutoPtr<CC_SeqItemBlock> &p : ce.ext )
-//            if ( not p->visit( *this, true ) )
-//                return false;
-//        return true;
-//    }
-//    virtual bool exec( CC_SeqItemExpr &ce ) {
-//        if ( ce.expr->out_reg or not ce.expr->need_a_register() )
-//            return true;
+void Codegen_C::write( Inst *inst ) {
+    // reg decl
+    std::map<String,Vec<CppOutReg *> > by_type;
+    for( CppOutReg *r : inst->reg_to_decl )
+        by_type[ type_to_str( r->type ) ] << r;
+    for( auto it : by_type ) {
+        on.write_beg() << it.first;
+        for( int i = 0; i < it.second.size(); ++i )
+            *os << ( i ? ", R" : " R" ) << it.second[ i ]->num;
+        on.write_end( ";" );
+    }
 
-//        // make a new reg
-//        CppOutReg *out_reg = cc->new_out_reg( ce.expr->type() );
+    // instruction
+    inst->write( this );
+}
 
-//        // assign out_reg + constraint propagation ()
-//        Vec<InstAndPort> assigned_ports;
-//        if ( not assign_port_rec( assigned_ports, ce.expr.inst, -1, out_reg ) ) {
-//            std::cerr << "base constraint cannot be fullfilled\n";
-//            return false;
-//        }
-
-//        // edges and optionnal constraints
-//        int num_edge = 0, num_optionnal_constraint = 0;
-//        while ( true ) {
-//            // there's an edge for propagation ?
-//            if ( num_edge < assigned_ports.size() ) {
-//                RegPropagation rp;
-//                rp.assigned_ports = &assigned_ports;
-//                rp.port = assigned_ports[ num_edge++ ];
-//                if ( rp.port.is_an_output() ) {
-//                    Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
-//                    rp.inst_to_reach = p.inst->cc_item_expr;
-//                    rp.reg = rp.port.inst->out_reg;
-//                    // RegPropagation may add a Copy inst and return false if inst is impossible to reach
-//                    if ( rp.port.inst->cc_item_expr->following_visit_to( rp, rp.inst_to_reach ) ) {
-//                        // if not forbidden, assign input port of reached inst
-//                        if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
-//                            // if not possible to assign, add a copy inst
-//                            insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
-//                            return true;
-//                        }
-//                    }
-//                } else {
-//                    Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
-//                    rp.reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
-//                    rp.inst_to_reach = i->cc_item_expr;
-//                    if ( rp.port.inst->cc_item_expr->preceding_visit_to( rp, rp.inst_to_reach ) ) {
-//                        if ( not assign_port_rec( assigned_ports, i, -1, rp.reg ) ) {
-//                            insert_copy_inst_after( assigned_ports, i, rp.port.inst, rp.port.ninp(), "pb assignment out reg" );
-//                            return true;
-//                        }
-//                    }
-//                }
-//                continue;
-//            }
-
-//            // constraint that would be good to fullfill
-//            //            if ( num_optionnal_constraint < assigned_ports.size() ) {
-//            //                InstAndPort port = assigned_ports[ num_optionnal_constraint++ ];
-
-//            //                for( std::pair<const Inst::PortConstraint,int> &c : port.inst->same_out )
-//            //                    if ( c.second != Inst::COMPULSORY and c.first.src_ninp == port.ninp_constraint() )
-//            //                        assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg );
-
-//            //                continue;
-//            //            }
-
-
-//            // nothing to propagate
-//            break;
-//        }
-//        return true;
-//    }
-//    Codegen_C *cc;
-//};
+static void update_created( Vec<Expr> &created, const Vec<Expr> &out ) {
+    PI64 coi = ++Inst::cur_op_id;
+    created.resize( 0 );
+    for( Expr e : out )
+        e->mark_children( &created );
+    for( Expr &e : created )
+        for( int i = 0; i < e->par.size(); ++i )
+            if ( e->par[ i ].inst->op_id != coi )
+                e->par.remove( i );
+}
 
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
@@ -759,17 +699,7 @@ void Codegen_C::make_code() {
     // slices that do not change the size
     for( Expr &e : created )
         e->codegen_simplification( created, out );
-
-    // update `created` list
-    // and remove parents that are not part of the graph (after the simplifications)
-    PI64 coi = ++Inst::cur_op_id;
-    created.resize( 0 );
-    for( Expr &e : out )
-        e->mark_children( &created );
-    for( Expr &e : created )
-        for( int i = 0; i < e->par.size(); ++i )
-            if ( e->par[ i ].inst->op_id != coi )
-                e->par.remove( i );
+    update_created( created, out );
 
     // display if necessary
     if ( disp_inst_graph )
@@ -777,40 +707,120 @@ void Codegen_C::make_code() {
 
     // scheduling (creation of IfInst)
     Inst *beg = scheduling( out );
-    for( Inst *i = beg; i; i = i->next_sched ) {
-        i->write_dot( std::cout << std::endl );
-    }
+    update_created( created, out );
+
+    // get reg constraints
+    struct GetConstraint : Inst::Visitor {
+        virtual bool operator()( Inst *inst ) {
+            inst->get_constraints();
+            return true;
+        }
+    };
+    GetConstraint gc;
+    beg->visit_sched( gc, true );
+
+    //
+    //    DisplayConstraints dv;
+    //    beg->visit_sched( dv );
+
+    // assign (missing) out_reg
+    struct AssignOutReg : Inst::Visitor {
+        virtual bool operator()( Inst *inst ) {
+            if ( inst->out_reg or not inst->need_a_register() )
+                return true;
+
+            // make a new reg
+            CppOutReg *out_reg = cc->new_out_reg( inst->type() );
+
+            // assign out_reg + constraint propagation ()
+            Vec<InstAndPort> assigned_ports;
+            if ( not assign_port_rec( assigned_ports, inst, -1, out_reg ) ) {
+                std::cerr << "base constraint cannot be fullfilled\n";
+                return false;
+            }
+
+            // edges and optionnal constraints
+            int num_edge = 0; // , num_optionnal_constraint = 0;
+            while ( true ) {
+                // there's an edge for propagation ?
+                if ( num_edge < assigned_ports.size() ) {
+                    InstAndPort port = assigned_ports[ num_edge++ ];
+                    if ( port.is_an_output() ) {
+                        CppOutReg *reg = port.inst->out_reg;
+                        Inst::Parent &p = port.inst->par[ port.nout() ];
+                        assign_port_rec( assigned_ports, p.inst, p.ninp, reg );
+                    } else {
+                        CppOutReg *reg = port.inst->inp_reg[ port.ninp() ];
+                        Inst *i = port.inst->inp[ port.ninp() ].inst;
+                        assign_port_rec( assigned_ports, i, -1, reg );
+                    }
+
+                    //                    RegPropagation rp;
+                    //                    rp.assigned_ports = &assigned_ports;
+                    //                    rp.port = assigned_ports[ num_edge++ ];
+                    //                    if ( rp.port.is_an_output() ) {
+                    //                        Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
+                    //                        rp.inst_to_reach = p.inst->cc_item_expr;
+                    //                        rp.reg = rp.port.inst->out_reg;
+                    //                        // RegPropagation may add a Copy inst and return false if inst is impossible to reach
+                    //                        if ( rp.port.inst->cc_item_expr->following_visit_to( rp, rp.inst_to_reach ) ) {
+                    //                            // if not forbidden, assign input port of reached inst
+                    //                            if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
+                    //                                // if not possible to assign, add a copy inst
+                    //                                insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
+                    //                                return true;
+                    //                            }
+                    //                        }
+                    //                    } else {
+                    //                        Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
+                    //                        rp.reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
+                    //                        rp.inst_to_reach = i->cc_item_expr;
+                    //                        if ( rp.port.inst->cc_item_expr->preceding_visit_to( rp, rp.inst_to_reach ) ) {
+                    //                            if ( not assign_port_rec( assigned_ports, i, -1, rp.reg ) ) {
+                    //                                insert_copy_inst_after( assigned_ports, i, rp.port.inst, rp.port.ninp(), "pb assignment out reg" );
+                    //                                return true;
+                    //                            }
+                    //                        }
+                    //                    }
+                    continue;
+                }
+
+                // constraint that would be good to fullfill
+                //            if ( num_optionnal_constraint < assigned_ports.size() ) {
+                //                InstAndPort port = assigned_ports[ num_optionnal_constraint++ ];
+
+                //                for( std::pair<const Inst::PortConstraint,int> &c : port.inst->same_out )
+                //                    if ( c.second != Inst::COMPULSORY and c.first.src_ninp == port.ninp_constraint() )
+                //                        assign_port_rec( assigned_ports, c.first.dst_inst, c.first.dst_ninp, out_reg );
+
+                //                continue;
+                //            }
+
+
+                // nothing to propagate
+                break;
+            }
+            return true;
+        }
+        Codegen_C *cc;
+    };
+    AssignOutReg aor; aor.cc = this;
+    beg->visit_sched( aor, true );
 
     // display if necessary
     if ( disp_inst_graph_wo_phi )
         Inst::display_graph( out );
 
-    //    // get reg constraints
-    //    GetConstraint gc;
-    //    main_block.visit( gc, true );
+    // specify where the registers have to be declared
+    for( int n = 0; n < out_regs.size(); ++n ) {
+        CppOutReg *reg = &out_regs[ n ];
+        Inst *anc = reg->common_provenance_ancestor();
+        anc->reg_to_decl << reg;
+    }
 
-    //    // DisplayConstraints dv;
-    //    // main_block.visit( dv );
-
-    //    // assign (missing) out_reg
-    //    AssignOutReg aor; aor.cc = this;
-    //    main_block.visit( aor, true );
-
-    //    main_block.display_graphviz();
-
-    //    // display
-    //    // if ( disp_inst_graph )
-    //    //    Inst::display_graph( out );
-
-    //    // specify where the registers have to be declared
-    //    for( int n = 0; n < out_regs.size(); ++n ) {
-    //        CppOutReg &reg = out_regs[ n ];
-    //        CC_SeqItemBlock *anc = reg.common_provenance_ancestor();
-    //        anc->reg_to_decl << &reg;
-    //    }
-
-    //    // write the code
-    //    main_block.write( this );
+    // write the code
+    for( Inst *inst = beg; inst; inst = inst->next_sched )
+        write( inst );
 }
 
 

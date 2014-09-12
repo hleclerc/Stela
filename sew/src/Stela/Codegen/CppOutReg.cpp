@@ -19,20 +19,22 @@ Stream &CppOutReg::write( Codegen_C *cc, bool new_reg ) {
     return *cc->os << "R" << num;
 }
 
-//CC_SeqItemBlock *CppOutReg::common_provenance_ancestor() {
-//    for( CC_SeqItemExpr *e : provenance )
-//        for( CC_SeqItemBlock *b = e->parent_block; b; b = b->parent_block )
-//            b->n = 0;
+#define GN( iter ) reinterpret_cast<int &>( (*iter)->op_mp )
 
-//    for( CC_SeqItemExpr *e : provenance )
-//        for( CC_SeqItemBlock *b = e->parent_block; b; b = b->parent_block )
-//            ++b->n;
+Inst *CppOutReg::common_provenance_ancestor() {
+    for( Inst::ParentBlockIterator iter( provenance[ 0 ] ); iter; ++iter )
+        GN( iter ) = 1;
 
-//    for( CC_SeqItemBlock *b = provenance[ 0 ]->parent_block; b; b = b->parent_block )
-//        if ( b->n == provenance.size() )
-//            return b;
-//    return 0;
-//}
+    for( int n = 1; n < provenance.size(); ++n )
+        for( Inst::ParentBlockIterator iter( provenance[ n ] ); iter; ++iter )
+            ++GN( iter );
+
+    for( Inst::ParentBlockIterator iter( provenance[ 0 ] ); iter; ++iter )
+        if ( GN( iter ) == provenance.size() )
+            return *iter;
+
+    return 0;
+}
 
 
 
