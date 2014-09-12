@@ -432,6 +432,11 @@ bool Inst::visit_sched( Inst::Visitor &v, bool with_ext ) {
     return true;
 }
 
+bool Inst::visit_sched_up_to( Inst::Visitor &v, Inst *end ) {
+    TODO;
+    return true;
+}
+
 int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
     if ( ninp >= inp_reg.size() ) {
         inp_reg.resize( inp.size(), (CppOutReg *)0 );

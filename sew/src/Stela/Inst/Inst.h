@@ -137,6 +137,7 @@ public:
     CppOutReg *get_inp_reg( int ninp );
 
     bool visit_sched( Visitor &v, bool with_ext = true );
+    bool visit_sched_up_to( Visitor &v, Inst *end );
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -158,9 +159,9 @@ public:
     // codegen
     BoolOpSeq            *when; ///< used for code generation (to know when needed)
     Inst                 *next_sched;
-    Vec<Inst *>           ext_sched;
-    Inst                 *par_ext_sched;
     Inst                 *prev_sched;
+    Inst                 *par_ext_sched;
+    Vec<Inst *>           ext_sched;
     CppOutReg            *out_reg;
     Vec<CppOutReg *>      inp_reg;
     bool                  new_reg;

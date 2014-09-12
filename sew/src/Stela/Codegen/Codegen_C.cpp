@@ -723,6 +723,17 @@ void Codegen_C::make_code() {
     //    DisplayConstraints dv;
     //    beg->visit_sched( dv );
 
+    //
+    struct RegProgagation : Inst::Visitor {
+        virtual bool operator()( Inst *inst ) {
+            return true;
+        }
+        Vec<InstAndPort> *assigned_ports;
+        Inst *inst_to_reach;
+        InstAndPort port;
+        CppOutReg *reg;
+    };
+
     // assign (missing) out_reg
     struct AssignOutReg : Inst::Visitor {
         virtual bool operator()( Inst *inst ) {
@@ -744,19 +755,28 @@ void Codegen_C::make_code() {
             while ( true ) {
                 // there's an edge for propagation ?
                 if ( num_edge < assigned_ports.size() ) {
-                    InstAndPort port = assigned_ports[ num_edge++ ];
-                    if ( port.is_an_output() ) {
-                        CppOutReg *reg = port.inst->out_reg;
-                        Inst::Parent &p = port.inst->par[ port.nout() ];
-                        assign_port_rec( assigned_ports, p.inst, p.ninp, reg );
+                    RegProgagation rp;
+                    rp.assigned_ports = &assigned_ports;
+                    rp.port = assigned_ports[ num_edge++ ];
+                    if ( rp.port.is_an_output() ) {
+                        Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
+                        rp.reg = rp.port.inst->out_reg;
+                        rp.inst_to_reach = p.inst;
+                        // RegPropagation may add a Copy inst and return false if inst is impossible to reach
+                        if ( rp.port.inst->visit_sched_up_to( rp, rp.inst_to_reach ) ) {
+                            if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
+                                TODO;
+                                // insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
+                                return true;
+                            }
+                        }
                     } else {
-                        CppOutReg *reg = port.inst->inp_reg[ port.ninp() ];
-                        Inst *i = port.inst->inp[ port.ninp() ].inst;
+                        CppOutReg *reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
+                        Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
                         assign_port_rec( assigned_ports, i, -1, reg );
                     }
 
                     //                    RegPropagation rp;
-                    //                    rp.assigned_ports = &assigned_ports;
                     //                    rp.port = assigned_ports[ num_edge++ ];
                     //                    if ( rp.port.is_an_output() ) {
                     //                        Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
