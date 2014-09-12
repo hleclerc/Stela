@@ -15,7 +15,8 @@ class Type;
 class Inst {
 public:
     struct Parent {
-        bool operator==( const Parent &p ) { return inst == p.inst and ninp == p.ninp; }
+        bool operator==( const Parent &p ) const { return inst == p.inst and ninp == p.ninp; }
+        bool operator< ( const Parent &p ) const { return inst != p.inst ? inst < p.inst : ninp < p.ninp; }
         Inst *inst;
         int   ninp; ///< input number (or TPAR_...)
     };
@@ -93,6 +94,8 @@ public:
     virtual bool is_surdef() const;
     virtual bool is_const() const;
 
+    virtual bool is_Select() const;
+
     virtual bool get_val( Type *type, void *data ) const;
     virtual operator BoolOpSeq();
     virtual int op_num() const; ///< only for Op<>
@@ -133,6 +136,7 @@ public:
     // codegen
     BoolOpSeq            *when; ///< used for code generation (to know when needed)
     Inst                 *next_sched;
+    Vec<Inst *>           ext_sched;
     Inst                 *prev_sched;
     CppOutReg            *out_reg;
     Vec<CppOutReg *>      inp_reg;

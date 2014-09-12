@@ -25,6 +25,9 @@ struct Select : Inst {
     virtual void set( Expr obj, const BoolOpSeq &cond ) {
         TODO;
     }
+    virtual bool is_Select() const {
+        return true;
+    }
 
     virtual Expr get( const BoolOpSeq &cond ) {
         return select( get_bos() - cond, inp[ 0 ]->get( cond ), inp[ 1 ]->get( cond ) );

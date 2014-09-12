@@ -167,40 +167,27 @@ static bool ready_to_be_scheduled( Expr inst ) {
     return true;
 }
 
-static Vec<Expr> extract_inst_that_must_be_done_if( Expr &if_inp_inst, Expr &if_out_inst, std::map<Expr,int> &inputs, Vec<Expr> &front, BoolOpSeq::Item best_item ) {
+struct OutCondFront {
+    Expr inp[ 2 ];
+    int  num_in_outputs;
+};
+
+static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront> &outputs, std::map<Expr,int> &inputs, Vec<Expr> &front, BoolOpSeq::Item best_item, bool ok ) {
     // inst in the front that must be done
-    Vec<Expr> cond_front;
+    Vec<Expr> cond_front, res;
     for( int i = 0; i < front.size(); ++i ) {
         if ( front[ i ]->when->can_be_factorized_by( best_item ) ) {
             Expr expr = front[ i ];
-            for( Expr inp : expr->inp )
-                if ( not inputs.count( inp ) )
-                    inputs[ inp ] = inputs.size();
+            res << expr;
+            // mv inst from front to cond_front
             cond_front << expr;
             front.remove_unordered( i-- );
         }
     }
 
-    // make the if_inp instruction
-    Vec<Type *> types( Size(), inputs.size() );
-    for( const std::pair<Expr,int> &e : inputs )
-        types[ e.second ] = const_cast<Inst *>( e.first->inst )->type();
-    if_inp_inst = if_inp( types );
-
-    // outputs of the if_inp instruction
-    Vec<Expr> if_inp_sel( Size(), types.size() );
-    for( int i = 0; i < if_inp_sel.size(); ++i )
-        if_inp_sel[ i ] = get_nout( if_inp_inst, i );
-
-    // use the if_inp instruction
-    for( Expr e : cond_front )
-        for( int ninp = 0; ninp < e->inp.size(); ++ninp )
-            e->mod_inp( if_inp_sel[ inputs[ e->inp[ ninp ] ] ], ninp );
 
     // expand the front
     Inst *inst;
-    Vec<Expr> out; // instructions
-    Vec<Expr> out_cond; //
     while ( cond_front.size() ) {
         // pick a random ready inst
         inst = cond_front.pop_back().inst;
@@ -209,28 +196,61 @@ static Vec<Expr> extract_inst_that_must_be_done_if( Expr &if_inp_inst, Expr &if_
         inst->op_id = Inst::cur_op_id;
 
         // update the front
-        bool has_a_diff_par = false;
         for( Inst::Parent &p : inst->par ) {
-            if ( ready_to_be_scheduled( p.inst ) ) {
+            // an instruction that cannot be executed under the condition best_item ?
+            if ( not p.inst->when->can_be_factorized_by( best_item ) ) {
+                // -> it will be computed under an IfInp, parents will use Nout(If,...)
+                Inst *to_be_replaced = inst->par.size() == 1 ? p.inst : inst;
+                if ( not outputs.count( to_be_replaced ) )
+                    outputs[ to_be_replaced ].num_in_outputs = outputs.size() - 1;
+                outputs[ to_be_replaced ].inp[ ok ] = inst;
+            } else if ( ready_to_be_scheduled( p.inst ) ) {
+                // else,
                 p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
-                if ( p.inst->when->can_be_factorized_by( best_item ) )
-                    cond_front << p.inst;
-                else {
-                    has_a_diff_par = true;
-                    out_cond << p.inst;
-                }
+                cond_front << p.inst;
+                res << p.inst;
             }
         }
-
-        if ( has_a_diff_par )
-            out << inst;
     }
 
-    if_out_inst = if_out( out );
+    // needed inputs (inp of produced inst that does not belong to the if block)
+    for( Expr expr : res )
+        for( Expr inp : expr->inp )
+            if ( not inp->when->can_be_factorized_by( best_item ) )
+                if ( not inputs.count( inp ) )
+                    inputs[ inp ] = inputs.size() - 1;
 
-    return out_cond;
+    return res;
 }
 
+Expr make_if_inp( std::map<Expr,int> &inputs, const Vec<Expr> &inst_that_need_inp ) {
+    // make the if_inp instruction
+    Vec<Type *> types( Size(), inputs.size() );
+    for( const std::pair<Expr,int> &e : inputs )
+        types[ e.second ] = const_cast<Inst *>( e.first.inst )->type();
+    Expr res = if_inp( types );
+
+    // nout( if_inp, ... ) instruction
+    Vec<Expr> if_inp_sel( Size(), types.size() );
+    for( int i = 0; i < if_inp_sel.size(); ++i )
+        if_inp_sel[ i ] = get_nout( res, i );
+
+    // use the if_inp instruction
+    PRINT( inst_that_need_inp );
+    for( Expr e : inst_that_need_inp )
+        for( int ninp = 0; ninp < e->inp.size(); ++ninp )
+            if ( inputs.count( e->inp[ ninp ] ) )
+                e->mod_inp( if_inp_sel[ inputs[ e->inp[ ninp ] ] ], ninp );
+
+    return res;
+}
+
+Expr make_if_out( const std::map<Inst *,OutCondFront> &outputs, bool ok ) {
+    Vec<Expr> lst( Size(), outputs.size() );
+    for( const std::pair<Inst *,OutCondFront> &e : outputs )
+        lst[ e.second.num_in_outputs ] = e.second.inp[ ok ];
+    return if_out( lst );
+}
 
 Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     // update inst->when
@@ -280,29 +300,49 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             }
 
             // start the input list with the conditions
+            std::map<Inst *,OutCondFront> outputs; // inst to replace -> replacement values + IfOut pos
             std::map<Expr,int> inputs;
             inputs[ best_item.expr ] = 0;
 
             // get a front of instructions that must be done under the condition `cond`
             best_item.pos = true;
-            Expr if_inp_ok, if_out_ok;
-            Vec<Expr> out_ok = extract_inst_that_must_be_done_if( if_inp_ok, if_out_ok, inputs, front, best_item );
+            Vec<Expr> ok_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, front, best_item, best_item.pos );
 
             best_item.pos = false;
-            Expr if_inp_ko, if_out_ko;
-            Vec<Expr> out_ko = extract_inst_that_must_be_done_if( if_inp_ko, if_out_ko, inputs, front, best_item );
+            Vec<Expr> ko_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, front, best_item, best_item.pos );
+
+            //            for( std::pair<Expr,int> i : inputs )
+            //                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;
+            //            for( std::pair<Inst *,OutCondFront> o : outputs )
+            //                std::cout << "  to_be_repl=" << *o.first << "\n    ok=" << o.second.inp[ 1 ] << "\n    ko=" << o.second.inp[ 0 ] << "\n    num=" << o.second.num_in_outputs << std::endl;
+
+            Expr if_inp_ok = make_if_inp( inputs, ok_we_inp );
+            Expr if_inp_ko = make_if_inp( inputs, ko_we_inp );
+
+            Expr if_out_ok = make_if_out( outputs, 1 );
+            Expr if_out_ko = make_if_out( outputs, 0 );
 
             // complete the If instruction
-            Expr if_ = if_inst( inp, if_inp_ok, if_inp_ko, if_out_ok, if_out_ko );
+            Vec<Expr> inp( Size(), inputs.size() );
+            for( std::pair<Expr,int> i : inputs )
+                inp[ i.second ] = i.first;
+            Expr if_expr = if_inst( inp, if_inp_ok, if_inp_ko, if_out_ok, if_out_ko );
+            if_expr->when = new BoolOpSeq( True() );
 
-            //
-            Vec<Expr> out = out_ok;
-            out.append( out_ko );
-            for( Expr o : out ) {
-                for( Inst::Parent &p : o->par ) {
-                    p.inst->mod_inp( if_sel, p->ninp );
-                }
+            // use the if instruction
+            Vec<Expr> if_out_sel( Size(), outputs.size() );
+            for( int i = 0; i < if_out_sel.size(); ++i ) {
+                if_out_sel[ i ] = get_nout( if_expr, i );
+                if_out_sel[ i ]->when = new BoolOpSeq( True() );
             }
+
+            for( std::pair<Inst *,OutCondFront> o : outputs )
+                for( Inst::Parent &p : o.first->par )
+                    p.inst->mod_inp( if_out_sel[ o.second.num_in_outputs ], p.ninp );
+
+            // push if_expr in the front
+            if_expr->op_id = Inst::cur_op_id - 1;
+            front << if_expr;
 
             continue;
         }
@@ -328,24 +368,17 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     }
 
     // delayed operation (ext blocks)
-    //    for( CC_SeqItemExpr *ne : seq_expr ) {
-    //        // schedule sub block (ext instructions)
-    //        int s = ne->expr->ext_disp_size();
-    //        ne->ext.resize( s );
-    //        for( int e = 0; e < s; ++e ) {
-    //            CC_SeqItemBlock *b = new CC_SeqItemBlock;
-    //            b->parent_block = ne->parent_block;
-    //            ne->ext[ e ] = b;
+    for( Inst *inst = beg; inst; inst = inst->next_sched ) {
+        // schedule sub block (ext instructions)
+        for( int ind = 0; ind < inst->ext_disp_size(); ++ind )
+            inst->ext_sched << scheduling( inst->ext[ ind ] );
 
-    //            scheduling( b, ne->expr->ext[ e ] );
-    //        }
-
-    //        // add internal break or continue if necessary
-    //        CC_SeqItemBlock *b[ s ];
-    //        for( int i = 0; i < s; ++i )
-    //            b[ i ] = ne->ext[ i ].ptr();
-    //        ne->expr->add_break_and_continue_internal( b );
-    //    }
+        // add internal break or continue if necessary
+        //        CC_SeqItemBlock *b[ s ];
+        //        for( int i = 0; i < s; ++i )
+        //            b[ i ] = ne->ext[ i ].ptr();
+        //        ne->expr->add_break_and_continue_internal( b );
+    }
 
     return beg;
 }
@@ -747,6 +780,10 @@ void Codegen_C::make_code() {
     for( Inst *i = beg; i; i = i->next_sched ) {
         i->write_dot( std::cout << std::endl );
     }
+
+    // display if necessary
+    if ( disp_inst_graph_wo_phi )
+        Inst::display_graph( out );
 
     //    // get reg constraints
     //    GetConstraint gc;

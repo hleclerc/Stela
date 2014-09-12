@@ -1,5 +1,6 @@
-import os
-s = os.popen( "find /", "r" ).read()
+import os, math
+
+s = os.popen( "find / -printf '%f'", "r" ).read()
 t = [ 0 for i in range( 256 ) ]
 for c in s:
     t[ ord( c ) ] += 1
@@ -15,74 +16,103 @@ class Ch:
     
 chl = [ Ch( t[ i ], i ) for i in range( 256 ) ]
 chl = sorted( chl, key = lambda x: - x.freq  )
+<<<<<<< HEAD
 s = 0
 for c in chl[ 1:64 ]:
     s += c.freq
+=======
+res = ""
+for c in chl[ 0:64 ]:
+>>>>>>> b1b8d534af43c71a8c3a7a1eb014c3263c0034cc
     if c.name >= 32 and c.name < 128:
         print c.freq, chr( c.name )
+        res += chr( c.name )
     else:
         print c.freq, c.name
+
+print res
+print len( res )
+for sep in [ 16, 32, 64, 128, 256 ]:
+    si = sum( c.freq for c in chl[0:sep] )
+    ss = sum( c.freq for c in chl[sep:]  )
+    sb = math.log( sep ) / math.log( 2 )
+    print "fixed size", sep, si, ss, si * sb + ss * ( sb * ( sep < 256 ) + 8 )
+
+def cs( d, sep ):
+    bs = 1 + math.log( sep ) / math.log( 2 )
+    res = bs
+    while d > sep:
+        res += bs
+        d /= sep
+    return res
     
-#4259403 e
-#3000689 s
-#2979835 r
-#2630552 a
-#2426584 i
-#2267751 t
-#2225290 o
-#2145789 c
-#2110400 l
-#1820934 n
-#1636404 u
-#1632342 d
-#1407394 -
-#1325629 .
-#1268955 h
-#1250062 m
-#1148081 p
-#1070914 0
-#937947 3
-#890866 10
-#877578 f
-#851064 g
-#850201 1
-#826798 x
-#762659 2
-#660515 b
-#637182 _
-#513651 v
-#448346 k
-#418316 4
-#363740 6
-#346924  
-#322737 8
-#308169 7
-#307157 5
-#293465 S
-#284303 y
-#276345 9
-#225539 P
-#189304 C
-#176644 M
-#170692 w
-#167911 E
-#150568 D
-#138009 T
-#126236 A
-#117469 N
-#109864 R
-#94277 L
-#84507 j
-#79012 z
-#70149 I
-#68672 G
-#62303 F
-#61903 O
-#60549 :
-#52093 q
-#47526 U
-#46239 V
-#40388 B
-#24766 H
-#24349 J
-#22343 Y
+for sep in [ 8, 16, 32, 64, 128, 256 ]:
+    si = 0
+    for i in range( 256 ):
+        si += chl[ i ].freq * cs( i, sep )
+    print "compressed", sep, si
+
+#429093 e
+#315169 a
+#308639 .
+#276552 t
+#268511 c
+#251651 o
+#250763 s
+#250505 i
+#231507 p
+#221345 n
+#215832 d
+#209018 r
+#184984 l
+#172835 m
+#155518 f
+#150129 b
+#149461 g
+#149003 0
+#148488 _
+#125802 h
+#119858 1
+#112440 3
+#110762 2
+#110470 6
+#108788 u
+#106438 4
+#100369 8
+#97800 -
+#97011 5
+#88302 7
+#87674 9
+#71650 k
+#57346 x
+#48830 y
+#46435 v
+#29359 w
+#20276 z
+#19797 j
+#17573 M
+#15275 S
+#15056 C
+#13535 A
+#13464  
+#12301 L
+#12008 D
+#11686 I
+#10422 :
+#10291 E
+#10203 q
+#10077 P
+#10005 T
+#8538 O
+#6412 B
+#5904 R
+#5101 K
+#4656 N
+#4261 F
+#4066 G
+#3495 H
+#2665 U
+#2637 W
+#2466 V
+#2123 X
+#1941 Q

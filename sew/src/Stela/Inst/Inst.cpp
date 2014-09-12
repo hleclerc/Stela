@@ -354,6 +354,10 @@ bool Inst::is_const() const {
     return flags & CONST;
 }
 
+bool Inst::is_Select() const {
+    return false;
+}
+
 bool Inst::get_val( Type *type, void *data ) const {
     return false;
 }
