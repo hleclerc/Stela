@@ -136,8 +136,8 @@ public:
     int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
     CppOutReg *get_inp_reg( int ninp );
 
-    bool visit_sched( Visitor &v, bool with_ext = true );
-    bool visit_sched_up_to( Visitor &v, Inst *end );
+    bool visit_sched( Visitor &v, bool with_ext = true, bool forward = true, Inst *end = 0 );
+    bool sched_contains( Inst *inst ); ///< if this of ext_sched contains inst
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );

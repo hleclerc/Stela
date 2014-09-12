@@ -687,6 +687,34 @@ static void update_created( Vec<Expr> &created, const Vec<Expr> &out ) {
                 e->par.remove( i );
 }
 
+static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *beg, Inst *end ) {
+    std::set<Inst *> avoid_par;
+    for( Inst *inst = beg->next_sched; inst; inst = inst->next_sched ) {
+        if ( inst == end ) {
+            Expr cp = copy( beg );
+            cp->when = new BoolOpSeq( True() );
+
+            for( Inst::Parent &p : beg->par )
+                if ( not avoid_par.count( p.inst ) )
+                    p.inst->mod_inp( cp, p.ninp );
+
+            assigned_ports << InstAndPort{ cp.inst, 0 };
+
+            cp.inst->prev_sched = end->prev_sched;
+            cp.inst->next_sched = end;
+            end->prev_sched->next_sched = cp.inst;
+            end->prev_sched = cp.inst;
+
+            return false;
+        }
+        // update avoid par
+        for( int ninp = 0; ninp < inst->inp.size(); ++ninp )
+            if ( inst->inp[ ninp ] == beg )
+                avoid_par.insert( inst );
+    }
+    return false;
+}
+
 void Codegen_C::make_code() {
     // a clone of the whole hierarchy
     ++Inst::cur_op_id;
@@ -725,7 +753,22 @@ void Codegen_C::make_code() {
 
     //
     struct RegProgagation : Inst::Visitor {
+        // return true if OK, false if use of reg is forbidden (due to the fact that `inst` wants to do something else with this register)
         virtual bool operator()( Inst *inst ) {
+            // avoid the originating inst
+            if ( inst == port.inst )
+                return true;
+
+            if ( port.is_an_output() ) {
+                // an inst is going to produce something else in reg
+                if ( inst->out_reg == reg )
+                    return insert_copy_inst_before( *assigned_ports, port.inst, inst );
+
+                //
+
+            } else {
+                TODO;
+            }
             return true;
         }
         Vec<InstAndPort> *assigned_ports;
@@ -763,7 +806,7 @@ void Codegen_C::make_code() {
                         rp.reg = rp.port.inst->out_reg;
                         rp.inst_to_reach = p.inst;
                         // RegPropagation may add a Copy inst and return false if inst is impossible to reach
-                        if ( rp.port.inst->visit_sched_up_to( rp, rp.inst_to_reach ) ) {
+                        if ( rp.port.inst->visit_sched( rp, true, true, rp.inst_to_reach ) ) {
                             if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
                                 TODO;
                                 // insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
