@@ -1,4 +1,5 @@
 #include "Uninitialized.h"
+#include "../Codegen/Codegen_C.h"
 #include "IpSnapshot.h"
 #include "BoolOpSeq.h"
 #include "ReplBits.h"
@@ -51,11 +52,23 @@ struct Room : Inst {
         val->add_store_dep( dst );
     }
 
-    virtual bool will_write_code() const {
-        return false;
-    }
+    //    virtual bool will_write_code() const {
+    //        return false;
+    //    }
 
     virtual void write( Codegen_C *cc ) {
+        // GTxx Rx_room;
+        cc->on.write_beg();
+        *cc->os << cc->type_to_str( val->type() ) << " ";
+        cc->write_out( this );
+        cc->on.write_end( "_room;" );
+
+        // Rx = &Rx_room;
+        cc->on.write_beg();
+        cc->write_out( this );
+        *cc->os << " = (TPTR)&";
+        cc->write_out( this );
+        cc->on.write_end( "_room;" );
     }
 
     Vec<Expr> future_dep;

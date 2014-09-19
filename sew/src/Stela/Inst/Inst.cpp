@@ -457,6 +457,12 @@ bool Inst::sched_contains( Inst *inst ) {
     return false;
 }
 
+void Inst::update_sched_num() {
+    int num = 0;
+    for( Inst *inst = this; inst; inst = inst->next_sched )
+        inst->sched_num = num++;
+}
+
 int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {
     if ( ninp >= inp_reg.size() ) {
         inp_reg.resize( inp.size(), (CppOutReg *)0 );

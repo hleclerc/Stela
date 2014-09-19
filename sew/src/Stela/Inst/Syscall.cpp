@@ -19,7 +19,7 @@ struct Syscall : Inst {
             if ( i )
                 *cc->os << ", ";
             if ( inp[ i ]->type() != ip->type_ST )
-                *cc->os << "(long int)";
+                *cc->os << "(long)";
             cc->write_out( inp[ i ] );
         }
         cc->on.write_end( " );" );

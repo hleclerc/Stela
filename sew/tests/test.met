@@ -148,10 +148,14 @@ def print val
     sys_write 0, &tmp + nbc, sit - nbc
 
 a := Vec[ PI8, 3 ] 48
+___syscall &a
 a[ 0 ] = ___rand()
-b := a
-b[ 0 ] = 15
-___syscall &a, &b
+___syscall &a
+
+# a := Vec[ PI8, 3 ] 48
+# ___syscall &a
+# a[ 0 ] = 15
+# ___syscall &a
 
 #for id in 0 .. 10
 #    print id

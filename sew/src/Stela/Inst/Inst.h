@@ -138,6 +138,7 @@ public:
 
     bool visit_sched( Visitor &v, bool with_ext = true, bool forward = true, Inst *end = 0 );
     bool sched_contains( Inst *inst ); ///< if this of ext_sched contains inst
+    void update_sched_num();
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -162,6 +163,7 @@ public:
     Inst                 *prev_sched;
     Inst                 *par_ext_sched;
     Vec<Inst *>           ext_sched;
+    int                   sched_num; ///< in local block (temporary variable, updated on demand)
     CppOutReg            *out_reg;
     Vec<CppOutReg *>      inp_reg;
     bool                  new_reg;

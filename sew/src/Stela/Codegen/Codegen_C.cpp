@@ -6,6 +6,7 @@
 #include "../Inst/If.h"
 #include "../Inst/Ip.h"
 #include "Codegen_C.h"
+#include <algorithm>
 #include <limits>
 
 Codegen_C::Codegen_C() : on( &main_os ), os( &main_os ) {
@@ -422,7 +423,7 @@ struct InstAndPort {
     int  ninp_constraint() const { return std::max( _num, -1 ); }
     bool is_an_output() const { return _num <  0; }
     bool is_an_input () const { return _num >= 0; }
-    int  nout() const { return -1 - _num; }
+    // int  nout() const { return -1 - _num; }
     int  ninp() const { return _num; }
 
     Inst *inst;
@@ -443,9 +444,7 @@ static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int 
 
         inst->out_reg = out_reg;
         out_reg->provenance << inst;
-        for( int i = 0; i < inst->par.size(); ++i )
-            if ( inst->par[ i ].ninp >= 0 )
-                assigned_ports << InstAndPort{ inst, -1 - i };
+        assigned_ports << InstAndPort{ inst, -1 };
     } else {
         int a = inst->set_inp_reg( ninp, out_reg );
         if ( a <= 0 )
@@ -698,7 +697,7 @@ static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *beg
                 if ( not avoid_par.count( p.inst ) )
                     p.inst->mod_inp( cp, p.ninp );
 
-            assigned_ports << InstAndPort{ cp.inst, 0 };
+            assign_port_rec( assigned_ports, cp.inst, 0, beg->out_reg );
 
             cp.inst->prev_sched = end->prev_sched;
             cp.inst->next_sched = end;
@@ -755,6 +754,10 @@ void Codegen_C::make_code() {
     struct RegProgagation : Inst::Visitor {
         // return true if OK, false if use of reg is forbidden (due to the fact that `inst` wants to do something else with this register)
         virtual bool operator()( Inst *inst ) {
+            static int cpt = 0;
+            if ( ++cpt >= 20 )
+                return true;
+
             // avoid the originating inst
             if ( inst == port.inst )
                 return true;
@@ -802,17 +805,30 @@ void Codegen_C::make_code() {
                     rp.assigned_ports = &assigned_ports;
                     rp.port = assigned_ports[ num_edge++ ];
                     if ( rp.port.is_an_output() ) {
-                        Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
+                        // sort parents by apparition order
+                        struct SortBySchedNum {
+                            bool operator()( const Inst::Parent &a, const Inst::Parent &b ) const {
+                                return a.inst->sched_num < b.inst->sched_num;
+                            }
+                        };
+                        rp.port.inst->update_sched_num();
+                        std::sort( rp.port.inst->par.begin(), rp.port.inst->par.end(), SortBySchedNum() );
+
                         rp.reg = rp.port.inst->out_reg;
-                        rp.inst_to_reach = p.inst;
-                        // RegPropagation may add a Copy inst and return false if inst is impossible to reach
-                        if ( rp.port.inst->visit_sched( rp, true, true, rp.inst_to_reach ) ) {
+                        for( Inst::Parent &p : rp.port.inst->par ) {
+                            rp.inst_to_reach = p.inst;
+                            // RegPropagation may add a Copy inst and return false if inst is impossible to reach
+                            if ( not rp.port.inst->visit_sched( rp, true, true, rp.inst_to_reach ) )
+                                break;
+
+                            // if propagation is ok so far
                             if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
                                 TODO;
                                 // insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
-                                return true;
+                                return true; // it's ok because we have inserted a copy inst
                             }
                         }
+
                     } else {
                         CppOutReg *reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
                         Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
