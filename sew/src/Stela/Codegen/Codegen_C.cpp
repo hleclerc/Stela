@@ -686,16 +686,21 @@ static void update_created( Vec<Expr> &created, const Vec<Expr> &out ) {
                 e->par.remove( i );
 }
 
-static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *beg, Inst *end ) {
+static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *beg, Inst *end, Inst::Parent &dst ) {
+    std::cout << "    *beg " << *beg << std::endl;
+    std::cout << "    *end " << *end << std::endl;
+
     std::set<Inst *> avoid_par;
     for( Inst *inst = beg->next_sched; inst; inst = inst->next_sched ) {
         if ( inst == end ) {
             Expr cp = copy( beg );
             cp->when = new BoolOpSeq( True() );
 
-            for( Inst::Parent &p : beg->par )
-                if ( not avoid_par.count( p.inst ) )
-                    p.inst->mod_inp( cp, p.ninp );
+            // avoid_par is here to avoid children changes of inst called before cp
+            //for( Inst::Parent &p : beg->par )
+            //    if ( p.inst != cp.inst and p.inst != end and not avoid_par.count( p.inst ) )
+            //        p.inst->mod_inp( cp, p.ninp );
+            dst.inst->mod_inp( cp, dst.ninp );
 
             assign_port_rec( assigned_ports, cp.inst, 0, beg->out_reg );
 
@@ -754,10 +759,6 @@ void Codegen_C::make_code() {
     struct RegProgagation : Inst::Visitor {
         // return true if OK, false if use of reg is forbidden (due to the fact that `inst` wants to do something else with this register)
         virtual bool operator()( Inst *inst ) {
-            static int cpt = 0;
-            if ( ++cpt >= 20 )
-                return true;
-
             // avoid the originating inst
             if ( inst == port.inst )
                 return true;
@@ -765,7 +766,7 @@ void Codegen_C::make_code() {
             if ( port.is_an_output() ) {
                 // an inst is going to produce something else in reg
                 if ( inst->out_reg == reg )
-                    return insert_copy_inst_before( *assigned_ports, port.inst, inst );
+                    return insert_copy_inst_before( *assigned_ports, port.inst );
 
                 //
 
@@ -815,15 +816,20 @@ void Codegen_C::make_code() {
                         std::sort( rp.port.inst->par.begin(), rp.port.inst->par.end(), SortBySchedNum() );
 
                         rp.reg = rp.port.inst->out_reg;
+                        PRINT( *rp.port.inst );
                         for( Inst::Parent &p : rp.port.inst->par ) {
                             rp.inst_to_reach = p.inst;
+                            std::cout << "   -> " << *rp.inst_to_reach << std::endl;
                             // RegPropagation may add a Copy inst and return false if inst is impossible to reach
-                            if ( not rp.port.inst->visit_sched( rp, true, true, rp.inst_to_reach ) )
+                            if ( not rp.port.inst->visit_sched( rp, true, true, rp.inst_to_reach ) ) {
+                                std::cout << "    BING"  << std::endl;
                                 break;
+                            }
 
-                            // if propagation is ok so far
+                            // try to assign input port
                             if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
-                                TODO;
+                                std::cout << "    BONG"  << std::endl;
+                                // TODO;
                                 // insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
                                 return true; // it's ok because we have inserted a copy inst
                             }
@@ -834,33 +840,6 @@ void Codegen_C::make_code() {
                         Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
                         assign_port_rec( assigned_ports, i, -1, reg );
                     }
-
-                    //                    RegPropagation rp;
-                    //                    rp.port = assigned_ports[ num_edge++ ];
-                    //                    if ( rp.port.is_an_output() ) {
-                    //                        Inst::Parent &p = rp.port.inst->par[ rp.port.nout() ];
-                    //                        rp.inst_to_reach = p.inst->cc_item_expr;
-                    //                        rp.reg = rp.port.inst->out_reg;
-                    //                        // RegPropagation may add a Copy inst and return false if inst is impossible to reach
-                    //                        if ( rp.port.inst->cc_item_expr->following_visit_to( rp, rp.inst_to_reach ) ) {
-                    //                            // if not forbidden, assign input port of reached inst
-                    //                            if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
-                    //                                // if not possible to assign, add a copy inst
-                    //                                insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
-                    //                                return true;
-                    //                            }
-                    //                        }
-                    //                    } else {
-                    //                        Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
-                    //                        rp.reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
-                    //                        rp.inst_to_reach = i->cc_item_expr;
-                    //                        if ( rp.port.inst->cc_item_expr->preceding_visit_to( rp, rp.inst_to_reach ) ) {
-                    //                            if ( not assign_port_rec( assigned_ports, i, -1, rp.reg ) ) {
-                    //                                insert_copy_inst_after( assigned_ports, i, rp.port.inst, rp.port.ninp(), "pb assignment out reg" );
-                    //                                return true;
-                    //                            }
-                    //                        }
-                    //                    }
                     continue;
                 }
 
