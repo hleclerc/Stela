@@ -147,21 +147,22 @@ def print val
             break
     sys_write 0, &tmp + nbc, sit - nbc
 
-# v := Vec[ PI8, 3 ] 48
-# ___syscall &v
+a := Vec[ PI8, 3 ] 48
+___syscall &a
+a[ 0 ] = ___rand()
+___syscall &a
+
+# a := Vec[ PI8, 3 ] 48
+# ___syscall &a
+# a[ 0 ] = 15
+# ___syscall &a
+
 #for id in 0 .. 10
 #    print id
-z := ___rand()
-a := 10 + z
-if ___rand()
-    a = 20 + z
-___syscall a
 
-# a := Vec[SI8,3]()
-# a[ ___rand() ] = 48
-# b := a
-# b[ ___rand() ] = 49
-# ___syscall a, b
-
-
+# z := ___rand()
+# a := 10 + z
+# if ___rand()
+    # a = 20 + z
+# ___syscall a
 

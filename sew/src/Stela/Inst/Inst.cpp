@@ -22,6 +22,8 @@ Inst::Inst() {
 
     cpt_use   = 0;
     flags     = 0;
+
+    par_ext_sched = 0;
 }
 
 Inst::~Inst() {
@@ -354,6 +356,10 @@ bool Inst::is_const() const {
     return flags & CONST;
 }
 
+bool Inst::is_Select() const {
+    return false;
+}
+
 bool Inst::get_val( Type *type, void *data ) const {
     return false;
 }
@@ -412,6 +418,49 @@ void Inst::add_diff_out(int src_ninp, Inst *dst_inst, int dst_ninp, int level ) 
 
 CppOutReg *Inst::get_inp_reg( int ninp ) {
     return ninp >= 0 and ninp < inp_reg.size() ? inp_reg[ ninp ] : 0;
+}
+
+bool Inst::visit_sched( Inst::Visitor &v, bool with_ext, bool forward, Inst *end ) {
+    if ( forward ) {
+        for( Inst *b = this; b; b = b->next_sched ) {
+            if ( b == end )
+                return true;
+            if ( not v( b ) )
+                return false;
+            if ( with_ext )
+                for( int i = 0; i < b->ext_sched.size(); ++i )
+                    if ( not b->ext_sched[ i ]->visit_sched( v, with_ext, forward, end ) )
+                        return false;
+        }
+    } else {
+        for( Inst *b = this; b; b = b->prev_sched ) {
+            if ( with_ext )
+                for( int i = 0; i < b->ext_sched.size(); ++i )
+                    if ( not b->ext_sched[ i ]->visit_sched( v, with_ext, forward, end ) )
+                        return false;
+            if ( b == end )
+                return true;
+            if ( not v( b ) )
+                return false;
+        }
+    }
+    return true;
+}
+
+bool Inst::sched_contains( Inst *inst ) {
+    if ( this == inst )
+        return true;
+    for( int i = 0; i < ext_sched.size(); ++i )
+        for( Inst *c = ext_sched[ i ]; c; c = c->next_sched )
+            if ( c->sched_contains( inst ) )
+                return true;
+    return false;
+}
+
+void Inst::update_sched_num() {
+    int num = 0;
+    for( Inst *inst = this; inst; inst = inst->next_sched )
+        inst->sched_num = num++;
 }
 
 int Inst::set_inp_reg( int ninp, CppOutReg *reg ) {

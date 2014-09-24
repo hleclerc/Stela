@@ -24,6 +24,7 @@ public:
     CppOutReg *new_out_reg( Type *type );
     String type_to_str( Type *type );
     void write_out( Expr expr );
+    void write( Inst *inst );
 
     StreamSepMaker<std::ostringstream> on;
     std::ostringstream main_os;

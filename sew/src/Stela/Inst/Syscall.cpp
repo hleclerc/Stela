@@ -18,6 +18,8 @@ struct Syscall : Inst {
         for( int i = 0; i < inp.size(); ++i ) {
             if ( i )
                 *cc->os << ", ";
+            if ( inp[ i ]->type() != ip->type_ST )
+                *cc->os << "(long)";
             cc->write_out( inp[ i ] );
         }
         cc->on.write_end( " );" );

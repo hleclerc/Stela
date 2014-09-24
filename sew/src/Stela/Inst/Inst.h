@@ -15,26 +15,27 @@ class Type;
 class Inst {
 public:
     struct Parent {
-        bool operator==( const Parent &p ) { return inst == p.inst and ninp == p.ninp; }
+        bool operator==( const Parent &p ) const { return inst == p.inst and ninp == p.ninp; }
+        bool operator< ( const Parent &p ) const { return inst != p.inst ? inst < p.inst : ninp < p.ninp; }
         Inst *inst;
         int   ninp; ///< input number (or TPAR_...)
     };
-    ///< flags
+    /// flags
     enum {
         CONST     = 1,
         SURDEF    = 2,
         PART_INST = 4 // partial instanciation
     };
-    ///< for Parent::ninp
+    /// for Parent::ninp
     enum {
         TPAR_DEP = -1
     };
-    ///< for same_out and diff_out level
+    /// for same_out and diff_out level
     enum {
         OPTIONNAL  = 0,
         COMPULSORY = 100 ///< for same_out and diff_out
     };
-    ///< for same_out and diff_out level
+    /// for same_out and diff_out level
     struct PortConstraint {
         bool operator<( const PortConstraint &p ) const {
             if ( src_ninp != p.src_ninp ) return src_ninp < p.src_ninp;
@@ -44,6 +45,26 @@ public:
         int   src_ninp; ///< -1 -> out
         Inst *dst_inst;
         int   dst_ninp; ///< -1 -> out
+    };
+    ///
+    struct Visitor {
+        virtual bool operator()( Inst *inst ) = 0;
+    };
+    ///
+    struct ParentBlockIterator {
+        ParentBlockIterator( Inst *b ) : inst( b ) {
+            while( inst->prev_sched )
+                inst = inst->prev_sched;
+        }
+        operator bool() const { return inst; }
+        Inst *operator*() { return inst; }
+        void operator++() {
+            inst = inst->par_ext_sched;
+            if ( inst )
+                while( inst->prev_sched )
+                    inst = inst->prev_sched;
+        }
+        Inst *inst;
     };
 
     Inst();
@@ -93,6 +114,8 @@ public:
     virtual bool is_surdef() const;
     virtual bool is_const() const;
 
+    virtual bool is_Select() const;
+
     virtual bool get_val( Type *type, void *data ) const;
     virtual operator BoolOpSeq();
     virtual int op_num() const; ///< only for Op<>
@@ -112,6 +135,10 @@ public:
     void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
     int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
     CppOutReg *get_inp_reg( int ninp );
+
+    bool visit_sched( Visitor &v, bool with_ext = true, bool forward = true, Inst *end = 0 );
+    bool sched_contains( Inst *inst ); ///< if this of ext_sched contains inst
+    void update_sched_num();
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -134,12 +161,17 @@ public:
     BoolOpSeq            *when; ///< used for code generation (to know when needed)
     Inst                 *next_sched;
     Inst                 *prev_sched;
+    Inst                 *par_ext_sched;
+    Vec<Inst *>           ext_sched;
+    int                   sched_num; ///< in local block (temporary variable, updated on demand)
     CppOutReg            *out_reg;
     Vec<CppOutReg *>      inp_reg;
     bool                  new_reg;
     std::map<PortConstraint,int> same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
     std::map<PortConstraint,int> diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
     std::set<CppOutReg *> reg_to_avoid; ///< could be replaced by a reg assignation date
+    Vec<CppOutReg *>      reg_to_decl;
+
 
     static  PI64          cur_op_id; ///<
     mutable PI64          op_id_vis; ///<

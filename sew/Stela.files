@@ -216,3 +216,4 @@ tests/test_HashMap.cpp
 tests/test.met
 tests/BinStreamWriter.h
 tests/BinStreamWriter.cpp
+tests/test_Type.cpp
