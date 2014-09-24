@@ -251,10 +251,11 @@ void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
     std::ostringstream ss;
     write_dot( ss );
 
-    if ( when )
-        when->write_to_stream( ss << "\n" );
+    //if ( when )
+    //    when->write_to_stream( ss << "\n" );
     if ( out_reg )
         ss << ".R" << out_reg->num;
+    ss << " " << sched_num;
     //if ( IIC( this )->out_reg )
     //    IIC( this )->out_reg->write_to_stream( ss << " " );
 
@@ -297,8 +298,12 @@ void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
             ext_buf << ch;
 
     // par
-    //for( int i = 0; i < par.size(); ++i )
-    //    os << "    node" << par[ i ].inst << " -> node" << this << " [color=red];\n";
+    //    for( int i = 0; i < par.size(); ++i ) {
+    //        if ( par[ i ].ninp >= 0 and par[ i ].inst->inp.size() > 1 )
+    //            os << "    node" << par[ i ].inst << ":f" << par[ i ].ninp << " -> node" << this << " [color=red,style=dotted];\n";
+    //        else
+    //            os << "    node" << par[ i ].inst << " -> node" << this << " [color=red,style=dotted];\n";
+    //    }
 }
 
 int Inst::ext_disp_size() const {

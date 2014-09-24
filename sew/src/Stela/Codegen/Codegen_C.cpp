@@ -438,8 +438,13 @@ static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int 
         if ( inst->out_reg )
             return inst->out_reg == out_reg;
 
+        // if out_reg is used for something else
+        if ( inst->used_regs.count( out_reg ) and inst->used_regs[ out_reg ] != inst )
+            return false;
+
         inst->out_reg = out_reg;
         out_reg->provenance << inst;
+        inst->used_regs[ out_reg ] = inst;
         assigned_ports << InstAndPort{ inst, -1 };
     } else {
         int a = inst->set_inp_reg( ninp, out_reg );
@@ -473,6 +478,7 @@ static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int 
 
 static void clear_port( InstAndPort port ) {
     if ( port.is_an_output() ) {
+        port.inst->used_regs.erase( port.inst->out_reg );
         port.inst->out_reg->provenance.pop_back();
         port.inst->out_reg = 0;
     } else
@@ -521,30 +527,27 @@ static void update_created( Vec<Expr> &created, const Vec<Expr> &out ) {
                 e->par.remove( i );
 }
 
-static void insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *beg, Inst *end, Inst *dst ) {
-    std::cout << "    *bef " << *beg << std::endl;
-    std::cout << "    *enf " << *end << std::endl;
-    TODO;
+static void insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *fence, InstAndPort port ) {
 }
 
 static void insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *fence, Inst::Parent dst ) {
-    TODO;
-
-    Expr cp = copy( beg );
+    //PRINT( *dst.inst );
+    //PRINT( *fence );
+    //PRINT( dst.inst->inp[ dst.ninp ] );
+    Expr cp = copy( dst.inst->inp[ dst.ninp ] );
     cp->when = new BoolOpSeq( True() );
 
-    // avoid_par is here to avoid children changes of inst called before cp
-    //for( Inst::Parent &p : beg->par )
-    //    if ( p.inst != cp.inst and p.inst != end and not avoid_par.count( p.inst ) )
-    //        p.inst->mod_inp( cp, p.ninp );
+    CppOutReg *reg = dst.inst->inp[ dst.ninp ]->out_reg;
+    if ( not assign_port_rec( assigned_ports, cp.inst, 0, reg ) )
+        ERROR( "weird" );
+
     dst.inst->mod_inp( cp, dst.ninp );
+    cp->used_regs = fence->prev_sched->used_regs;
 
-    assign_port_rec( assigned_ports, cp.inst, 0, beg->out_reg );
-
-    cp.inst->prev_sched = end->prev_sched;
-    cp.inst->next_sched = end;
-    end->prev_sched->next_sched = cp.inst;
-    end->prev_sched = cp.inst;
+    cp.inst->prev_sched = fence->prev_sched;
+    cp.inst->next_sched = fence;
+    fence->prev_sched->next_sched = cp.inst;
+    fence->prev_sched = cp.inst;
 }
 
 void Codegen_C::make_code() {
@@ -606,10 +609,6 @@ void Codegen_C::make_code() {
                 if ( num_edge < assigned_ports.size() ) {
                     InstAndPort port = assigned_ports[ num_edge++ ];
                     if ( port.is_an_output() ) {
-                        // -> forward (output -> input)
-                        //   chaque inst parcourue dit: tel reg doit être associé à tel output
-                        //   ça include l'inst de départ, et exclue l'inst d'arrivée
-
                         // sort parents by apparition order
                         struct SortBySchedNum {
                             bool operator()( const Inst::Parent &a, const Inst::Parent &b ) const {
@@ -620,9 +619,10 @@ void Codegen_C::make_code() {
                         std::sort( port.inst->par.begin(), port.inst->par.end(), SortBySchedNum() );
 
                         // try to propagate the reg through each output edge
-                        CppOutReg *reg = rp.port.inst->out_reg;
-                        for( Inst::Parent &p : rp.port.inst->par ) {
-                            for( Inst *inst = rp.port.inst; inst != p.inst; inst = inst->next_sched ) {
+                        CppOutReg *reg = port.inst->out_reg;
+                        for( Inst::Parent &p : port.inst->par ) {
+                            // std::cout << "    " << *port.inst << " -> " << *p.inst << std::endl;
+                            for( Inst *inst = port.inst; ; inst = inst->next_sched ) {
                                 // target is reached ?
                                 if ( inst == p.inst ) {
                                     // assign input port, or insert a copy instruction
@@ -631,10 +631,9 @@ void Codegen_C::make_code() {
                                     break;
                                 }
 
-                                // if there is a conflict
                                 if ( inst->used_regs.count( reg ) ) {
-                                    Inst *tgt = inst->used_regs[ reg ];
-                                    if ( tgt != port.inst ) {
+                                    // if there is a conflict
+                                    if ( inst->used_regs[ reg ] != port.inst ) {
                                         // add a copy inst
                                         insert_copy_inst_before( assigned_ports, inst, p );
                                         break;
@@ -645,13 +644,43 @@ void Codegen_C::make_code() {
                                 }
                             }
                         }
-
                     } else {
                         // -> backward, on propage
                         //   si reg est utilisé, on vérifie que c'est bien par l'inst cible (le inp[])
                         //   sinon, on insert une copie
                         //   on parcourt ensuite les inst dans le sens inverse pour remplir les tables de correspondance
-                        TODO;
+                        CppOutReg *reg = port.inst->inp_reg[ port.ninp() ];
+                        Inst *dst = port.inst->inp[ port.ninp() ].inst;
+                        // std::cout << "    " << *port.inst << " <- " << *dst << " " << reg << std::endl;
+                        for( Inst *inst = port.inst->prev_sched; ; inst = inst->prev_sched ) {
+                            if ( not inst ) {
+                                WARNING( "..." );
+                                break;
+                            }
+
+                            // target is reached ?
+                            if ( inst == dst ) {
+                                // assign output port, or insert a copy instruction
+                                if ( not assign_port_rec( assigned_ports, dst, -1, reg ) ) {
+                                    PRINT( __LINE__ );
+                                    insert_copy_inst_after( assigned_ports, dst, port );
+                                }
+                                break;
+                            }
+
+                            if ( inst->used_regs.count( reg ) ) {
+                                // if there is a conflict
+                                if ( inst->used_regs[ reg ] != dst ) {
+                                    // add a copy inst
+                                    PRINT( __LINE__ );
+                                    insert_copy_inst_after( assigned_ports, inst, port );
+                                    break;
+                                }
+                            } else {
+                                // -> register the use of reg as output of port.inst
+                                inst->used_regs[ reg ] = port.inst;
+                            }
+                        }
                     }
 
 
@@ -681,8 +710,10 @@ void Codegen_C::make_code() {
     beg->visit_sched( aor, true );
 
     // display if necessary
-    if ( disp_inst_graph_wo_phi )
+    if ( disp_inst_graph_wo_phi ) {
+        beg->update_sched_num();
         Inst::display_graph( out );
+    }
 
     // specify where the registers have to be declared
     for( int n = 0; n < out_regs.size(); ++n ) {
