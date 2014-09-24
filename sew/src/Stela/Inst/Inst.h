@@ -169,8 +169,8 @@ public:
     bool                  new_reg;
     std::map<PortConstraint,int> same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
     std::map<PortConstraint,int> diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
-    std::set<CppOutReg *> reg_to_avoid; ///< could be replaced by a reg assignation date
-    Vec<CppOutReg *>      reg_to_decl;
+    std::map<CppOutReg *,Inst *> used_regs; ///< for this inst, some regs must correspond to some inst outputs
+    Vec<CppOutReg *>      reg_to_decl; ///< used for Block instructions (If, ...)
 
 
     static  PI64          cur_op_id; ///<

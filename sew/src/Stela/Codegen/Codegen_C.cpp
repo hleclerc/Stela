@@ -438,10 +438,6 @@ static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int 
         if ( inst->out_reg )
             return inst->out_reg == out_reg;
 
-        // look if cutting an validated edge using out_reg as an output
-        if ( inst->reg_to_avoid.count( out_reg ) )
-            return false;
-
         inst->out_reg = out_reg;
         out_reg->provenance << inst;
         assigned_ports << InstAndPort{ inst, -1 };
@@ -498,167 +494,6 @@ static bool assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int n
     return false;
 }
 
-//static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *inst, Inst *start, const char *reason ) {
-//    PRINT( "BEFORE" );
-//    PRINT( reason );
-//    return false;
-
-//    // _main_block->display_graphviz();
-
-//    CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
-
-//    // new Expr and CC_SeqItemExpr
-//    Expr n_expr = copy( start );
-//    CC_SeqItemExpr *n_seqi = new CC_SeqItemExpr( n_expr, par_blk );
-//    if ( not assign_port_rec( assigned_ports, n_expr.inst, 0, start->out_reg ) )
-//         ERROR( "weird" );
-
-//    // position of start inst (inst will be inserted after, and in the same block)
-//    int pos_start = 0;
-//    while ( par_blk->seq[ pos_start ].ptr() != start->cc_item_expr )
-//        ++pos_start;
-
-//    // insertion in block
-//    for( int i = pos_start + 1; ; ++i ) {
-//        // we're at the end of the block
-//        if ( i == par_blk->seq.size() ) {
-//            par_blk->seq << n_seqi;
-//            break;
-//        }
-
-//        //
-//        if ( par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
-//            par_blk->seq.insert( i, n_seqi );
-//            break;
-//        }
-//    }
-
-//    // replace start->out by nexpt->out in expressions that use start->out
-//    // (if placed after copy)
-//    struct ModInp : public CC_SeqItemExpr::Visitor {
-//        virtual bool operator()( CC_SeqItemExpr &ce ) {
-//            for( int ninp = 0; ninp < ce.expr->inp.size(); ++ninp ) {
-//                if ( ce.expr->inp[ ninp ].inst == start )
-//                    ce.expr->mod_inp( n_expr, ninp );
-//            }
-//            return true;
-//        }
-//        Inst *start;
-//        Expr n_expr;
-//    };
-//    ModInp mod_inp;
-//    mod_inp.start  = start;
-//    mod_inp.n_expr = n_expr;
-//    n_seqi->following_visit( mod_inp ); // hum. Leads to O(n^2)
-
-//    // always return false (for convenience)
-//    return false;
-//}
-
-///// to change input ninp of start
-//static bool insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *inst, Inst *start, int ninp, const char *reason ) {
-//    PRINT( "AFTER" );
-//    PRINT( reason );
-//    return false;
-
-//    _main_block->display_graphviz();
-
-//    CC_SeqItemBlock *par_blk = start->cc_item_expr->parent_block;
-//    Expr inp = start->inp[ ninp ];
-
-//    // new Expr and CC_SeqItemExpr
-//    Expr n_expr = copy( inp );
-//    start->mod_inp( n_expr, ninp );
-//    CC_SeqItemExpr *n_seqi = new CC_SeqItemExpr( n_expr, par_blk );
-//    if ( not assign_port_rec( assigned_ports, n_expr.inst, -1, start->inp_reg[ ninp ] ) )
-//         ERROR( "weird" );
-//    ASSERT( n_expr->out_reg, "???" );
-
-
-//    // position of start inst (inst will be inserted before, and in the same block)
-//    int pos_start = 0;
-//    while ( par_blk->seq[ pos_start ].ptr() != start->cc_item_expr )
-//        ++pos_start;
-
-//    // insertion in block
-//    for( int i = pos_start - 1; ; --i ) {
-//        if ( i < 0 or par_blk->seq[ i ]->contains( inst->cc_item_expr ) ) {
-//            par_blk->seq.insert( i + 1, n_seqi );
-//            break;
-//        }
-//    }
-
-//    // always return false
-//    return false;
-//}
-
-//// propagation through an edge
-//struct RegPropagation : CC_SeqItem::Visitor {
-//    // return true if OK, false if use of reg is forbidden (due to the fact that `ce` wants to do something else with this register)
-//    virtual bool operator()( CC_SeqItemExpr &ce ) {
-//        if ( port.is_an_output() ) { // -> going forward
-//            // an instruction is going to produce something else, and it will be stored in reg
-//            if ( ce.expr->out_reg == reg ) {
-//                PRINT( *port.inst );
-//                PRINT( ce.expr );
-//                PRINT( *ce.expr->out_reg );
-//                PRINT( *reg );
-//                std::cout << std::endl;
-
-//                return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.inst, "concurrent out reg" );
-//            }
-
-//            // an instruction want reg as input... but is not a target
-//            int nb_same_reg_same_inp = 0;
-//            int nb_same_reg_diff_inp = 0;
-//            for( int i = 0; i < ce.expr->inp_reg.size(); ++i ) {
-//                if ( reg == ce.expr->inp_reg[ i ] ) {
-//                    if ( ce.expr->inp[ i ].inst == port.inst )
-//                        ++nb_same_reg_same_inp;
-//                    else
-//                        ++nb_same_reg_diff_inp;
-//                }
-//            }
-//            if ( nb_same_reg_diff_inp and not nb_same_reg_same_inp )
-//                return insert_copy_inst_before( *assigned_ports, ce.expr.inst, port.inst, "concurrent inp reg" );
-//        } else { // going backward
-//            // an instruction was producing something that will be stored on out_reg (but is not the source inst)
-//            if ( ce.expr->out_reg == reg )
-//                return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.inst, port.ninp(), "out_reg used as output of another inst" );
-
-//            // an instruction has reg as input... but is not pointing to the source inst
-//            Inst *src = port.inst->inp[ port.ninp() ].inst;
-//            int nb_same_reg_same_inp = 0;
-//            int nb_same_reg_diff_inp = 0;
-//            for( int i = 0; i < ce.expr->inp_reg.size(); ++i ) {
-//                if ( reg == ce.expr->inp_reg[ i ] ) {
-//                    if ( ce.expr->inp[ i ].inst == src )
-//                        ++nb_same_reg_same_inp;
-//                    else
-//                        ++nb_same_reg_diff_inp;
-//                }
-//            }
-//            if ( nb_same_reg_diff_inp and not nb_same_reg_same_inp ) {
-//                PRINT( *port.inst );
-//                PRINT( port.ninp() );
-//                PRINT( *src );
-//                PRINT( ce.expr );
-//                PRINT( *reg );
-//                std::cout << std::endl;
-//                return insert_copy_inst_after( *assigned_ports, ce.expr.inst, port.inst, port.ninp(), "reg used as input of another inst" );
-//            }
-//        }
-
-//        // forbid the use of reg for ce.expr (because there is an active living edge with reg)
-//        ce.expr->reg_to_avoid.insert( reg );
-//        return true;
-//    }
-//    Vec<InstAndPort> *assigned_ports;
-//    CC_SeqItemExpr *inst_to_reach;
-//    InstAndPort port;
-//    CppOutReg *reg;
-//};
-
 void Codegen_C::write( Inst *inst ) {
     // reg decl
     std::map<String,Vec<CppOutReg *> > by_type;
@@ -686,37 +521,30 @@ static void update_created( Vec<Expr> &created, const Vec<Expr> &out ) {
                 e->par.remove( i );
 }
 
-static bool insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *beg, Inst *end, Inst::Parent &dst ) {
-    std::cout << "    *beg " << *beg << std::endl;
-    std::cout << "    *end " << *end << std::endl;
+static void insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *beg, Inst *end, Inst *dst ) {
+    std::cout << "    *bef " << *beg << std::endl;
+    std::cout << "    *enf " << *end << std::endl;
+    TODO;
+}
 
-    std::set<Inst *> avoid_par;
-    for( Inst *inst = beg->next_sched; inst; inst = inst->next_sched ) {
-        if ( inst == end ) {
-            Expr cp = copy( beg );
-            cp->when = new BoolOpSeq( True() );
+static void insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *fence, Inst::Parent dst ) {
+    TODO;
 
-            // avoid_par is here to avoid children changes of inst called before cp
-            //for( Inst::Parent &p : beg->par )
-            //    if ( p.inst != cp.inst and p.inst != end and not avoid_par.count( p.inst ) )
-            //        p.inst->mod_inp( cp, p.ninp );
-            dst.inst->mod_inp( cp, dst.ninp );
+    Expr cp = copy( beg );
+    cp->when = new BoolOpSeq( True() );
 
-            assign_port_rec( assigned_ports, cp.inst, 0, beg->out_reg );
+    // avoid_par is here to avoid children changes of inst called before cp
+    //for( Inst::Parent &p : beg->par )
+    //    if ( p.inst != cp.inst and p.inst != end and not avoid_par.count( p.inst ) )
+    //        p.inst->mod_inp( cp, p.ninp );
+    dst.inst->mod_inp( cp, dst.ninp );
 
-            cp.inst->prev_sched = end->prev_sched;
-            cp.inst->next_sched = end;
-            end->prev_sched->next_sched = cp.inst;
-            end->prev_sched = cp.inst;
+    assign_port_rec( assigned_ports, cp.inst, 0, beg->out_reg );
 
-            return false;
-        }
-        // update avoid par
-        for( int ninp = 0; ninp < inst->inp.size(); ++ninp )
-            if ( inst->inp[ ninp ] == beg )
-                avoid_par.insert( inst );
-    }
-    return false;
+    cp.inst->prev_sched = end->prev_sched;
+    cp.inst->next_sched = end;
+    end->prev_sched->next_sched = cp.inst;
+    end->prev_sched = cp.inst;
 }
 
 void Codegen_C::make_code() {
@@ -755,32 +583,6 @@ void Codegen_C::make_code() {
     //    DisplayConstraints dv;
     //    beg->visit_sched( dv );
 
-    //
-    struct RegProgagation : Inst::Visitor {
-        // return true if OK, false if use of reg is forbidden (due to the fact that `inst` wants to do something else with this register)
-        virtual bool operator()( Inst *inst ) {
-            // avoid the originating inst
-            if ( inst == port.inst )
-                return true;
-
-            if ( port.is_an_output() ) {
-                // an inst is going to produce something else in reg
-                if ( inst->out_reg == reg )
-                    return insert_copy_inst_before( *assigned_ports, port.inst );
-
-                //
-
-            } else {
-                TODO;
-            }
-            return true;
-        }
-        Vec<InstAndPort> *assigned_ports;
-        Inst *inst_to_reach;
-        InstAndPort port;
-        CppOutReg *reg;
-    };
-
     // assign (missing) out_reg
     struct AssignOutReg : Inst::Visitor {
         virtual bool operator()( Inst *inst ) {
@@ -793,7 +595,7 @@ void Codegen_C::make_code() {
             // assign out_reg + constraint propagation ()
             Vec<InstAndPort> assigned_ports;
             if ( not assign_port_rec( assigned_ports, inst, -1, out_reg ) ) {
-                std::cerr << "base constraint cannot be fullfilled\n";
+                std::cerr << "base constraint cannot be fullfilled !\n";
                 return false;
             }
 
@@ -802,44 +604,57 @@ void Codegen_C::make_code() {
             while ( true ) {
                 // there's an edge for propagation ?
                 if ( num_edge < assigned_ports.size() ) {
-                    RegProgagation rp;
-                    rp.assigned_ports = &assigned_ports;
-                    rp.port = assigned_ports[ num_edge++ ];
-                    if ( rp.port.is_an_output() ) {
+                    InstAndPort port = assigned_ports[ num_edge++ ];
+                    if ( port.is_an_output() ) {
+                        // -> forward (output -> input)
+                        //   chaque inst parcourue dit: tel reg doit être associé à tel output
+                        //   ça include l'inst de départ, et exclue l'inst d'arrivée
+
                         // sort parents by apparition order
                         struct SortBySchedNum {
                             bool operator()( const Inst::Parent &a, const Inst::Parent &b ) const {
                                 return a.inst->sched_num < b.inst->sched_num;
                             }
                         };
-                        rp.port.inst->update_sched_num();
-                        std::sort( rp.port.inst->par.begin(), rp.port.inst->par.end(), SortBySchedNum() );
+                        port.inst->update_sched_num();
+                        std::sort( port.inst->par.begin(), port.inst->par.end(), SortBySchedNum() );
 
-                        rp.reg = rp.port.inst->out_reg;
-                        PRINT( *rp.port.inst );
+                        // try to propagate the reg through each output edge
+                        CppOutReg *reg = rp.port.inst->out_reg;
                         for( Inst::Parent &p : rp.port.inst->par ) {
-                            rp.inst_to_reach = p.inst;
-                            std::cout << "   -> " << *rp.inst_to_reach << std::endl;
-                            // RegPropagation may add a Copy inst and return false if inst is impossible to reach
-                            if ( not rp.port.inst->visit_sched( rp, true, true, rp.inst_to_reach ) ) {
-                                std::cout << "    BING"  << std::endl;
-                                break;
-                            }
+                            for( Inst *inst = rp.port.inst; inst != p.inst; inst = inst->next_sched ) {
+                                // target is reached ?
+                                if ( inst == p.inst ) {
+                                    // assign input port, or insert a copy instruction
+                                    if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, reg ) )
+                                        insert_copy_inst_before( assigned_ports, inst, p );
+                                    break;
+                                }
 
-                            // try to assign input port
-                            if ( not assign_port_rec( assigned_ports, p.inst, p.ninp, rp.reg ) ) {
-                                std::cout << "    BONG"  << std::endl;
-                                // TODO;
-                                // insert_copy_inst_before( assigned_ports, p.inst, rp.port.inst, "assignation not possible du to contraints on p.inst" );
-                                return true; // it's ok because we have inserted a copy inst
+                                // if there is a conflict
+                                if ( inst->used_regs.count( reg ) ) {
+                                    Inst *tgt = inst->used_regs[ reg ];
+                                    if ( tgt != port.inst ) {
+                                        // add a copy inst
+                                        insert_copy_inst_before( assigned_ports, inst, p );
+                                        break;
+                                    }
+                                } else {
+                                    // -> register the use of reg as output of port.inst
+                                    inst->used_regs[ reg ] = port.inst;
+                                }
                             }
                         }
 
                     } else {
-                        CppOutReg *reg = rp.port.inst->inp_reg[ rp.port.ninp() ];
-                        Inst *i = rp.port.inst->inp[ rp.port.ninp() ].inst;
-                        assign_port_rec( assigned_ports, i, -1, reg );
+                        // -> backward, on propage
+                        //   si reg est utilisé, on vérifie que c'est bien par l'inst cible (le inp[])
+                        //   sinon, on insert une copie
+                        //   on parcourt ensuite les inst dans le sens inverse pour remplir les tables de correspondance
+                        TODO;
                     }
+
+
                     continue;
                 }
 
