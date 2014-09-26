@@ -158,6 +158,10 @@ public:
     int                   flags;
 
     // codegen
+    bool                  used_reg_ok_for( CppOutReg *reg, Inst *inst );
+    void                  add_used_reg( CppOutReg *reg, Inst *inst );
+    void                  used_regs_erase( CppOutReg *out_reg );
+
     BoolOpSeq            *when; ///< used for code generation (to know when needed)
     Inst                 *next_sched;
     Inst                 *prev_sched;

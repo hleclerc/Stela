@@ -1,6 +1,7 @@
 #include "../System/AutoPtr.h"
 #include "../Inst/BoolOpSeq.h"
 #include "../Inst/GetNout.h"
+#include "../Inst/Symbol.h"
 #include "../Inst/Type.h"
 #include "../Inst/Copy.h"
 #include "../Inst/If.h"
@@ -249,6 +250,9 @@ Expr make_if_out( const std::map<Inst *,OutCondFront> &outputs, bool ok ) {
     Vec<Expr> lst( Size(), outputs.size() );
     for( const std::pair<Inst *,OutCondFront> &e : outputs )
         lst[ e.second.num_in_outputs ] = e.second.inp[ ok ];
+    for( Expr &e : lst )
+        if ( not e )
+            e = symbol( ip->type_ST, "pouet" );
     return if_out( lst );
 }
 
@@ -310,6 +314,12 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
 
             best_item.pos = false;
             Vec<Expr> ko_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, front, best_item, best_item.pos );
+
+            PRINT( ok_we_inp );
+            PRINT( ko_we_inp );
+            PRINT( ko_we_inp.size() );
+            for( Expr &e : ok_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
+            for( Expr &e : ko_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
 
             //            for( std::pair<Expr,int> i : inputs )
             //                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;
@@ -439,12 +449,13 @@ static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int 
             return inst->out_reg == out_reg;
 
         // if out_reg is used for something else
-        if ( inst->used_regs.count( out_reg ) and inst->used_regs[ out_reg ] != inst )
+        if ( not inst->used_reg_ok_for( out_reg, inst ) )
             return false;
 
         inst->out_reg = out_reg;
         out_reg->provenance << inst;
-        inst->used_regs[ out_reg ] = inst;
+
+        inst->add_used_reg( out_reg, inst );
         assigned_ports << InstAndPort{ inst, -1 };
     } else {
         int a = inst->set_inp_reg( ninp, out_reg );
@@ -478,7 +489,7 @@ static bool _assign_port_rec( Vec<InstAndPort> &assigned_ports, Inst *inst, int 
 
 static void clear_port( InstAndPort port ) {
     if ( port.is_an_output() ) {
-        port.inst->used_regs.erase( port.inst->out_reg );
+        port.inst->used_regs_erase( port.inst->out_reg );
         port.inst->out_reg->provenance.pop_back();
         port.inst->out_reg = 0;
     } else
@@ -528,12 +539,13 @@ static void update_created( Vec<Expr> &created, const Vec<Expr> &out ) {
 }
 
 static void insert_copy_inst_after( Vec<InstAndPort> &assigned_ports, Inst *fence, InstAndPort port ) {
+    TODO;
 }
 
 static void insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *fence, Inst::Parent dst ) {
-    //PRINT( *dst.inst );
-    //PRINT( *fence );
-    //PRINT( dst.inst->inp[ dst.ninp ] );
+    // PRINT( *dst.inst );
+    // PRINT( *fence );
+    // PRINT( dst.inst->inp[ dst.ninp ] );
     Expr cp = copy( dst.inst->inp[ dst.ninp ] );
     cp->when = new BoolOpSeq( True() );
 
@@ -568,9 +580,13 @@ void Codegen_C::make_code() {
     if ( disp_inst_graph )
         Inst::display_graph( out );
 
-    // scheduling (creation of IfInst)
+    // scheduling (and creation of IfInst)
     Inst *beg = scheduling( out );
     update_created( created, out );
+
+    // display if necessary
+    if ( disp_inst_graph_wo_phi )
+        Inst::display_graph( out );
 
     // get reg constraints
     struct GetConstraint : Inst::Visitor {
@@ -631,58 +647,49 @@ void Codegen_C::make_code() {
                                     break;
                                 }
 
-                                if ( inst->used_regs.count( reg ) ) {
-                                    // if there is a conflict
-                                    if ( inst->used_regs[ reg ] != port.inst ) {
-                                        // add a copy inst
-                                        insert_copy_inst_before( assigned_ports, inst, p );
-                                        break;
-                                    }
-                                } else {
-                                    // -> register the use of reg as output of port.inst
-                                    inst->used_regs[ reg ] = port.inst;
+                                // if there a conflict
+                                if ( not inst->used_reg_ok_for( reg, port.inst ) ) {
+                                    // add a copy inst
+                                    insert_copy_inst_before( assigned_ports, inst, p );
+                                    break;
                                 }
+                                // -> say that here, reg should be the output of port.inst (and nothing else)
+                                inst->add_used_reg( reg, port.inst );
                             }
                         }
                     } else {
-                        // -> backward, on propage
-                        //   si reg est utilisé, on vérifie que c'est bien par l'inst cible (le inp[])
-                        //   sinon, on insert une copie
-                        //   on parcourt ensuite les inst dans le sens inverse pour remplir les tables de correspondance
                         CppOutReg *reg = port.inst->inp_reg[ port.ninp() ];
                         Inst *dst = port.inst->inp[ port.ninp() ].inst;
                         // std::cout << "    " << *port.inst << " <- " << *dst << " " << reg << std::endl;
                         for( Inst *inst = port.inst->prev_sched; ; inst = inst->prev_sched ) {
-                            if ( not inst ) {
-                                WARNING( "..." );
-                                break;
-                            }
+                            if ( not inst )
+                                ERROR( "..." );
 
                             // target is reached ?
                             if ( inst == dst ) {
+                                Inst *beg_reg = dst;
                                 // assign output port, or insert a copy instruction
                                 if ( not assign_port_rec( assigned_ports, dst, -1, reg ) ) {
-                                    PRINT( __LINE__ );
                                     insert_copy_inst_after( assigned_ports, dst, port );
+                                    beg_reg = dst->next_sched; // reg will be used starting from the copy inst
                                 }
+                                // -> register the use of reg as output of beg_reg
+                                for( Inst *d = beg_reg; d != port.inst; d = d->next_sched )
+                                    inst->add_used_reg( reg, beg_reg );
                                 break;
                             }
 
-                            if ( inst->used_regs.count( reg ) ) {
-                                // if there is a conflict
-                                if ( inst->used_regs[ reg ] != dst ) {
-                                    // add a copy inst
-                                    PRINT( __LINE__ );
-                                    insert_copy_inst_after( assigned_ports, inst, port );
-                                    break;
-                                }
-                            } else {
-                                // -> register the use of reg as output of port.inst
-                                inst->used_regs[ reg ] = port.inst;
+                            // if there is a conflict
+                            if ( not inst->used_reg_ok_for( reg, dst ) ) {
+                                // add a copy inst
+                                insert_copy_inst_after( assigned_ports, inst, port );
+                                // -> register the use of reg as output of beg_reg
+                                for( Inst *c = inst->next_sched, *d = c; d != port.inst; d = d->next_sched )
+                                    inst->add_used_reg( reg, c );
+                                break;
                             }
                         }
                     }
-
 
                     continue;
                 }

@@ -103,7 +103,8 @@ void Inst::add_dep( const Expr &val ) {
 }
 
 void Inst::add_inp( const Expr &val ) {
-    val->par << Parent{ this, int( inp.size() ) };
+    if ( val )
+        val->par << Parent{ this, int( inp.size() ) };
     inp << val;
 }
 
@@ -131,11 +132,14 @@ void Inst::add_store_dep( Inst *dst ) {
 
 void Inst::rem_ref_to_this() {
     for( int num = 0; num < inp.size(); ++num )
-        inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
+        if ( inp[ num ] )
+            inp[ num ]->par.remove_first_unordered( Parent{ this, num } );
     for( int num = 0; num < dep.size(); ++num )
-        dep[ num ]->par.remove_first_unordered( Parent{ this, TPAR_DEP } );
+        if ( dep[ num ] )
+            dep[ num ]->par.remove_first_unordered( Parent{ this, TPAR_DEP } );
     for( int num = 0; num < ext.size(); ++num )
-        ext[ num ]->ext_par = 0;
+        if ( ext[ num ] )
+            ext[ num ]->ext_par = 0;
 }
 
 void Inst::replace_this_by_inp( int ninp, Vec<Expr> &out ) {
@@ -255,7 +259,7 @@ void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
     //    when->write_to_stream( ss << "\n" );
     if ( out_reg )
         ss << ".R" << out_reg->num;
-    ss << " " << sched_num;
+    // ss << " " << sched_num;
     //if ( IIC( this )->out_reg )
     //    IIC( this )->out_reg->write_to_stream( ss << " " );
 
@@ -322,6 +326,29 @@ Expr Inst::_simp_slice( Type *dst, Expr off ) {
 }
 
 void Inst::_mk_store_dep( Inst *dst ) {
+}
+
+bool Inst::used_reg_ok_for( CppOutReg *reg, Inst *inst ) {
+    std::map<CppOutReg *,Inst *>::iterator iter = used_regs.find( reg );
+    if ( iter != used_regs.end() and iter->second != inst )
+        return false;
+    // look in children
+    for( Inst *i : ext_sched )
+        if ( not i->used_reg_ok_for( reg, inst ) )
+            return false;
+    // look in parent
+    for( Inst *i = this; i; i = i->prev_sched )
+        if ( Inst *p = i->par_ext_sched )
+            return p->used_reg_ok_for( reg, inst );
+    return true;
+}
+
+void Inst::add_used_reg( CppOutReg *reg, Inst *inst ) {
+    used_regs[ reg ] = inst;
+}
+
+void Inst::used_regs_erase( CppOutReg *out_reg ) {
+    used_regs.erase( out_reg );
 }
 
 int Inst::always_checked() const {
