@@ -304,10 +304,12 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             std::map<BoolOpSeq::Item,int> possible_conditions;
             for( int i = 0; i < front.size(); ++i ) {
                 Vec<BoolOpSeq::Item> pc = front[ i ]->when->common_terms();
-                PRINT( *front[ i ]->when );
+                PRINT( front[ i ]->when );
+                //PRINT( pc.size() );
+                //PRINT( front[ i ]->when->simplify() );
                 for( int c = 0; c < pc.size(); ++c )
                     std::cout << "    " << pc[ c ];
-                PRINT( "" );
+                std::cout << "\n";
                 for( BoolOpSeq::Item &item : pc )
                     ++possible_conditions[ item ];
             }

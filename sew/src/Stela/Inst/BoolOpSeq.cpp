@@ -150,11 +150,11 @@ static bool eq_excepted( const Vec<BoolOpSeq::Item> &a, const Vec<BoolOpSeq::Ite
             ++n;
         }
     }
-    return n == 1;
+    return n == 1; // true if there is only expr with != pos
 }
 
 BoolOpSeq &BoolOpSeq::simplify() {
-    // simplify and_seqs
+    // simplify individual and_seqs
     if ( or_seq.size() ) {
         for( int i = 0; i < or_seq.size(); ++i )
             if ( not or_seq[ i ].size() )
@@ -168,34 +168,41 @@ BoolOpSeq &BoolOpSeq::simplify() {
     }
     for( int i = 0; i < or_seq.size(); ++i ) {
         for( int j = i + 1; j < or_seq.size(); ++j ) {
-            // c and c
+            // ( ( ... c ... ) or ( ... c ... ) ) / ( ( ... c ... ) or ( ... not c ... ) )
+            //if ( common_item(  ) )
+
             if ( or_seq[ i ] == or_seq[ j ] ) {
                 or_seq.remove( j-- );
                 continue;
             }
-            // A and c or B and (!)c
+
+            // ( A and c and B ) or ( A and not c and B ) must become ( A and B )
             int index;
             if ( eq_excepted( or_seq[ i ], or_seq[ j ], index ) ) {
-                // ( ... and c0 and ... ) or ( ... and not c0 and ... )
+                // ( ... and c and ... ) or ( ... and not c and ... )
                 if ( or_seq[ i ].size() > 1 ) {
                     or_seq[ i ].remove( index );
-                    or_seq.remove( j-- );
-                    continue;
+                    or_seq.remove( j );
+                    i = -1; // we need to retest everything because wa have modified an and_seq
+                    break;
                 }
-                // ...or c0 or not c0 or ...
+                // c or not c
                 val_if_not_or_seq = true;
                 or_seq.resize( 0 );
                 return *this;
             }
-            // ( C_i or C_j with C_i => C_j ) -> remove C_j
+
+            // ( C_i or C_j with C_i => C_j ) -> remove C_i
+            // e.g. ( A and B ) or A -> no need to keep the test for ( A and B )
             if ( or_seq[ j ].subset_of( or_seq[ i ] ) ) {
-                or_seq.remove( j-- );
-                continue;
-            }
-            // ( C_i or C_j with C_j => C_i ) -> remove C_i
-            if ( or_seq[ i ].subset_of( or_seq[ j ] ) ) {
                 or_seq.remove( i-- );
                 break;
+            }
+
+            // ( C_i or C_j with C_j => C_i ) -> remove C_j
+            if ( or_seq[ i ].subset_of( or_seq[ j ] ) ) {
+                or_seq.remove( j-- );
+                continue;
             }
         }
     }
