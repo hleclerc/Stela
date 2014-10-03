@@ -338,18 +338,20 @@ Expr Inst::_simp_slice( Type *dst, Expr off ) {
 void Inst::_mk_store_dep( Inst *dst ) {
 }
 
-bool Inst::used_reg_ok_for( CppOutReg *reg, Inst *inst ) {
+bool Inst::used_reg_ok_for( CppOutReg *reg, Inst *inst, int dir ) {
     std::map<CppOutReg *,Inst *>::iterator iter = used_regs.find( reg );
     if ( iter != used_regs.end() and iter->second != inst )
         return false;
     // look in children
-    for( Inst *i : ext_sched )
-        if ( not i->used_reg_ok_for( reg, inst ) )
-            return false;
+    if ( dir >= 0 )
+        for( Inst *i : ext_sched )
+            if ( not i->used_reg_ok_for( reg, inst, 1 ) )
+                return false;
     // look in parent
-    for( Inst *i = this; i; i = i->prev_sched )
-        if ( Inst *p = i->par_ext_sched )
-            return p->used_reg_ok_for( reg, inst );
+    if ( dir <= 0 )
+        for( Inst *i = this; i; i = i->prev_sched )
+            if ( Inst *p = i->par_ext_sched )
+                return p->used_reg_ok_for( reg, inst, -1 );
     return true;
 }
 

@@ -63,14 +63,14 @@ struct IfInst : Inst {
         cc->on.write_end( " ) {" );
 
         cc->on.nsp += 4;
-        for( Inst *inst = ext_sched[ 0 ]; inst; inst = inst->next_sched )
+        for( Inst *inst = ext_sched.size() ? ext_sched[ 0 ] : 0; inst; inst = inst->next_sched )
             cc->write( inst );
         cc->on.nsp -= 4;
 
         cc->on << "} else {";
 
         cc->on.nsp += 4;
-        for( Inst *inst = ext_sched[ 1 ]; inst; inst = inst->next_sched )
+        for( Inst *inst = ext_sched.size() ? ext_sched[ 1 ] : 0; inst; inst = inst->next_sched )
             cc->write( inst );
         cc->on.nsp -= 4;
 

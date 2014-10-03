@@ -387,11 +387,11 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     // delayed operation (ext blocks)
     for( Inst *inst = beg; inst; inst = inst->next_sched ) {
         // schedule sub block (ext instructions)
-        for( int ind = 0; ind < inst->ext_disp_size(); ++ind ) {
-            Inst *ext_beg = scheduling( inst->ext[ ind ] );
-            ext_beg->par_ext_sched = inst;
-            inst->ext_sched << ext_beg;
-        }
+//        for( int ind = 0; ind < inst->ext_disp_size(); ++ind ) {
+//            Inst *ext_beg = scheduling( inst->ext[ ind ] );
+//            ext_beg->par_ext_sched = inst;
+//            inst->ext_sched << ext_beg;
+//        }
 
         // add internal break or continue if necessary
         //        CC_SeqItemBlock *b[ s ];

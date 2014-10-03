@@ -159,7 +159,7 @@ public:
     int                   flags;
 
     // codegen
-    bool                  used_reg_ok_for( CppOutReg *reg, Inst *inst );
+    bool                  used_reg_ok_for( CppOutReg *reg, Inst *inst, int dir = 0 );
     void                  add_used_reg( CppOutReg *reg, Inst *inst );
     void                  used_regs_erase( CppOutReg *out_reg );
 
