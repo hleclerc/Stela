@@ -30,15 +30,19 @@ public:
     void write_to_stream( Stream &os ) const;
     BoolOpSeq &simplify();
 
+    Expr expr() const;
+
     bool operator==( const BoolOpSeq &b ) const { return or_seq == b.or_seq and ( or_seq.size() or val_if_not_or_seq == b.val_if_not_or_seq ); }
     bool operator!=( const BoolOpSeq &b ) const { return not operator==( b ); }
+    bool operator <( const BoolOpSeq &b ) const;
 
     bool always( bool b ) const { return or_seq.size() == 0 and val_if_not_or_seq == b; }
     bool error();
 
     bool imply( const BoolOpSeq &b ) const; ///< val of b knowing this == true
-    bool can_be_factorized_by( const Item &item ) const ;
-    Vec<Item> common_terms() const;
+    bool can_be_factorized_by( const BoolOpSeq &cond ) const;
+    bool can_be_factorized_by( const Item &item ) const;
+    Vec<BoolOpSeq> common_terms() const;
 
     int nb_sub_conds() const;
     void get_out( Vec<Expr> &exprs, Vec<Vec<Bool> > &pos );

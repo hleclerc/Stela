@@ -176,7 +176,7 @@ struct OutCondFront {
     int  num_in_outputs;
 };
 
-static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront> &outputs, std::map<Expr,int> &inputs, std::set<Expr> &deps, Vec<Expr> &front, BoolOpSeq::Item best_item, bool ok ) {
+static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront> &outputs, std::map<Expr,int> &inputs, std::set<Expr> &deps, Vec<Expr> &front, const BoolOpSeq &best_item, bool ok ) {
     // inst in the front that must be done
     Vec<Expr> cond_front, res;
     for( int i = 0; i < front.size(); ++i ) {
@@ -301,21 +301,20 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
                 break;
 
             // try to find the best condition to move forward
-            std::map<BoolOpSeq::Item,int> possible_conditions;
+            std::map<BoolOpSeq,int> possible_conditions;
             for( int i = 0; i < front.size(); ++i ) {
-                Vec<BoolOpSeq::Item> pc = front[ i ]->when->common_terms();
-                PRINT( front[ i ]->when );
-                //PRINT( pc.size() );
-                //PRINT( front[ i ]->when->simplify() );
+                Vec<BoolOpSeq> pc = front[ i ]->when->common_terms();
+                PRINT( *front[ i ]->when );
+                PRINT( pc.size() );
                 for( int c = 0; c < pc.size(); ++c )
                     std::cout << "    " << pc[ c ];
                 std::cout << "\n";
-                for( BoolOpSeq::Item &item : pc )
+                for( BoolOpSeq &item : pc )
                     ++possible_conditions[ item ];
             }
             int best_score = -1;
-            BoolOpSeq::Item best_item;
-            for( const std::pair<BoolOpSeq::Item,int> &p : possible_conditions ) {
+            BoolOpSeq best_item;
+            for( const std::pair<BoolOpSeq,int> &p : possible_conditions ) {
                 if ( best_score < p.second ) {
                     best_score = p.second;
                     best_item = p.first;
@@ -326,14 +325,11 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             std::map<Inst *,OutCondFront> outputs; // inst to replace -> replacement values + IfOut pos
             std::map<Expr,int> inputs;
             std::set<Expr> deps;
-            inputs[ best_item.expr ] = 0;
+            inputs[ best_item.expr() ] = 0;
 
             // get a front of instructions that must be done under the condition `cond`
-            best_item.pos = true;
-            Vec<Expr> ok_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, deps, front, best_item, best_item.pos );
-
-            best_item.pos = false;
-            Vec<Expr> ko_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, deps, front, best_item, best_item.pos );
+            Vec<Expr> ok_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, deps, front, best_item    , 1 );
+            Vec<Expr> ko_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, deps, front, not best_item, 0 );
 
             //            for( std::pair<Expr,int> i : inputs )
             //                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;

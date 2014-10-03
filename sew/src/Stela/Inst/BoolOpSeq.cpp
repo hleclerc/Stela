@@ -100,6 +100,11 @@ bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
     return true;
 }
 
+bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq &cond ) const {
+    TODO;
+    return false;
+}
+
 bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq::Item &item ) const {
     if ( not or_seq.size() )
         return false;
@@ -109,14 +114,15 @@ bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq::Item &item ) const {
     return true;
 }
 
-Vec<BoolOpSeq::Item> BoolOpSeq::common_terms() const {
+Vec<BoolOpSeq> BoolOpSeq::common_terms() const {
     if ( not or_seq.size() )
         return Vec<BoolOpSeq::Item>();
-    Vec<BoolOpSeq::Item> res = or_seq[ 0 ];
-    for( int i = 1; i < or_seq.size(); ++i )
-        for( int j = 0; j < res.size(); ++j )
-            if ( not or_seq[ i ].contains( res[ j ] ) )
-                res.remove( j-- );
+    TODO;
+    Vec<BoolOpSeq> res; // = or_seq[ 0 ];
+//    for( int i = 1; i < or_seq.size(); ++i )
+//        for( int j = 0; j < res.size(); ++j )
+//            if ( not or_seq[ i ].contains( res[ j ] ) )
+//                res.remove( j-- );
     return res;
 }
 
@@ -210,6 +216,16 @@ BoolOpSeq &BoolOpSeq::simplify() {
     std::sort( or_seq.begin(), or_seq.end() );
 
     return *this;
+}
+
+Expr BoolOpSeq::expr() const {
+    TODO;
+    return 0;
+}
+
+bool BoolOpSeq::operator<(const BoolOpSeq &b) const {
+    TODO;
+    return false;
 }
 
 struct SortByExpr {
