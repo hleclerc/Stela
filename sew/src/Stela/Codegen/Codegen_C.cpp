@@ -136,16 +136,18 @@ void get_front( Vec<Expr> &front, Expr inst ) {
 
     int nb_id = 0;
     for( Expr ch : inst->inp )
-        nb_id += not ch->when->always( false );
+        if ( ch )
+            nb_id += not ch->when->always( false );
     for( Expr ch : inst->dep )
-        nb_id += not ch->when->always( false );
+        if ( ch )
+            nb_id += not ch->when->always( false );
 
     if ( nb_id ) {
         for( Expr ch : inst->inp )
-            if ( not ch->when->always( false ) )
+            if ( ch and not ch->when->always( false ) )
                 get_front( front, ch );
         for( Expr ch : inst->dep )
-            if ( not ch->when->always( false ) )
+            if ( ch and not ch->when->always( false ) )
                 get_front( front, ch );
     } else
         front << inst;
@@ -174,7 +176,7 @@ struct OutCondFront {
     int  num_in_outputs;
 };
 
-static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront> &outputs, std::map<Expr,int> &inputs, Vec<Expr> &front, BoolOpSeq::Item best_item, bool ok ) {
+static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront> &outputs, std::map<Expr,int> &inputs, std::set<Expr> &deps, Vec<Expr> &front, BoolOpSeq::Item best_item, bool ok ) {
     // inst in the front that must be done
     Vec<Expr> cond_front, res;
     for( int i = 0; i < front.size(); ++i ) {
@@ -206,8 +208,8 @@ static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront
                 if ( not outputs.count( to_be_replaced ) )
                     outputs[ to_be_replaced ].num_in_outputs = outputs.size() - 1;
                 outputs[ to_be_replaced ].inp[ ok ] = inst;
+            // else, add to front if possible
             } else if ( ready_to_be_scheduled( p.inst ) ) {
-                // else,
                 p.inst->op_id = Inst::cur_op_id - 1; // -> in the front
                 cond_front << p.inst;
                 res << p.inst;
@@ -216,16 +218,20 @@ static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront
     }
 
     // needed inputs (inp of produced inst that does not belong to the if block)
-    for( Expr expr : res )
+    for( Expr expr : res ) {
         for( Expr inp : expr->inp )
             if ( not inp->when->can_be_factorized_by( best_item ) )
                 if ( not inputs.count( inp ) )
                     inputs[ inp ] = inputs.size() - 1;
+        for( Expr dep : expr->dep )
+            if ( not dep->when->can_be_factorized_by( best_item ) )
+                deps.insert( dep );
+    }
 
     return res;
 }
 
-Expr make_if_inp( std::map<Expr,int> &inputs, const Vec<Expr> &inst_that_need_inp ) {
+Expr make_if_inp( std::map<Expr,int> &inputs, std::set<Expr> &deps, const Vec<Expr> &inst_that_need_inp ) {
     // make the if_inp instruction
     Vec<Type *> types( Size(), inputs.size() );
     for( const std::pair<Expr,int> &e : inputs )
@@ -238,10 +244,14 @@ Expr make_if_inp( std::map<Expr,int> &inputs, const Vec<Expr> &inst_that_need_in
         if_inp_sel[ i ] = get_nout( res, i );
 
     // use the if_inp instruction
-    for( Expr e : inst_that_need_inp )
+    for( Expr e : inst_that_need_inp ) {
         for( int ninp = 0; ninp < e->inp.size(); ++ninp )
             if ( inputs.count( e->inp[ ninp ] ) )
                 e->mod_inp( if_inp_sel[ inputs[ e->inp[ ninp ] ] ], ninp );
+        for( const Expr &dep : e->dep )
+            if ( deps.count( dep ) )
+                e->mod_dep( res, dep.inst );
+    }
 
     return res;
 }
@@ -250,9 +260,6 @@ Expr make_if_out( const std::map<Inst *,OutCondFront> &outputs, bool ok ) {
     Vec<Expr> lst( Size(), outputs.size() );
     for( const std::pair<Inst *,OutCondFront> &e : outputs )
         lst[ e.second.num_in_outputs ] = e.second.inp[ ok ];
-    for( Expr &e : lst )
-        if ( not e )
-            e = symbol( ip->type_ST, "pouet" );
     return if_out( lst );
 }
 
@@ -260,7 +267,6 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     // update inst->when
     for( Expr inst : out )
         inst->update_when( BoolOpSeq() );
-
 
     // get the front
     ++Inst::cur_op_id;
@@ -306,32 +312,23 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             // start the input list with the conditions
             std::map<Inst *,OutCondFront> outputs; // inst to replace -> replacement values + IfOut pos
             std::map<Expr,int> inputs;
+            std::set<Expr> deps;
             inputs[ best_item.expr ] = 0;
 
             // get a front of instructions that must be done under the condition `cond`
             best_item.pos = true;
-            Vec<Expr> ok_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, front, best_item, best_item.pos );
+            Vec<Expr> ok_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, deps, front, best_item, best_item.pos );
 
             best_item.pos = false;
-            Vec<Expr> ko_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, front, best_item, best_item.pos );
+            Vec<Expr> ko_we_inp = extract_inst_that_must_be_done_if( outputs, inputs, deps, front, best_item, best_item.pos );
 
-            PRINT( ok_we_inp );
-            PRINT( ko_we_inp );
-            PRINT( ko_we_inp.size() );
-            //for( Expr &e : ok_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
-            //for( Expr &e : ko_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
-            for( std::pair<Inst *,OutCondFront> o : outputs )
-                for( int i = 0; i < 2; ++i )
-                    if ( not o.second.inp[ i ] )
-                        o.second.inp[ i ] = symbol( ip->type_ST, "pouet" );
+            //            for( std::pair<Expr,int> i : inputs )
+            //                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;
+            //            for( std::pair<Inst *,OutCondFront> o : outputs )
+            //                std::cout << "  to_be_repl=" << *o.first << "\n    ok=" << o.second.inp[ 1 ] << "\n    ko=" << o.second.inp[ 0 ] << "\n    num=" << o.second.num_in_outputs << std::endl;
 
-            for( std::pair<Expr,int> i : inputs )
-                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;
-            for( std::pair<Inst *,OutCondFront> o : outputs )
-                std::cout << "  to_be_repl=" << *o.first << "\n    ok=" << o.second.inp[ 1 ] << "\n    ko=" << o.second.inp[ 0 ] << "\n    num=" << o.second.num_in_outputs << std::endl;
-
-            Expr if_inp_ok = make_if_inp( inputs, ok_we_inp );
-            Expr if_inp_ko = make_if_inp( inputs, ko_we_inp );
+            Expr if_inp_ok = make_if_inp( inputs, deps, ok_we_inp );
+            Expr if_inp_ko = make_if_inp( inputs, deps, ko_we_inp );
 
             Expr if_out_ok = make_if_out( outputs, 1 );
             Expr if_out_ko = make_if_out( outputs, 0 );
@@ -343,7 +340,7 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             Expr if_expr = if_inst( inp, if_inp_ok, if_inp_ko, if_out_ok, if_out_ko );
             if_expr->when = new BoolOpSeq( True() );
 
-            // use the if instruction
+            // use the outputs of the if instruction
             Vec<Expr> if_out_sel( Size(), outputs.size() );
             for( int i = 0; i < if_out_sel.size(); ++i ) {
                 if_out_sel[ i ] = get_nout( if_expr, i );
@@ -356,6 +353,10 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
                         p.inst->mod_inp( if_out_sel[ o.second.num_in_outputs ], p.ninp );
                     else
                         p.inst->mod_dep( if_out_sel[ o.second.num_in_outputs ], o.first );
+
+            // add dep to the if instruction
+            for( Expr d : deps )
+                if_expr->add_dep( d );
 
             // push if_expr in the front
             if_expr->op_id = Inst::cur_op_id - 1;
@@ -387,11 +388,11 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     // delayed operation (ext blocks)
     for( Inst *inst = beg; inst; inst = inst->next_sched ) {
         // schedule sub block (ext instructions)
-//        for( int ind = 0; ind < inst->ext_disp_size(); ++ind ) {
-//            Inst *ext_beg = scheduling( inst->ext[ ind ] );
-//            ext_beg->par_ext_sched = inst;
-//            inst->ext_sched << ext_beg;
-//        }
+        for( int ind = 0; ind < inst->ext_disp_size(); ++ind ) {
+            Inst *ext_beg = scheduling( inst->ext[ ind ] );
+            ext_beg->par_ext_sched = inst;
+            inst->ext_sched << ext_beg;
+        }
 
         // add internal break or continue if necessary
         //        CC_SeqItemBlock *b[ s ];
@@ -666,34 +667,38 @@ void Codegen_C::make_code() {
                         }
                     } else {
                         CppOutReg *reg = port.inst->inp_reg[ port.ninp() ];
-                        Inst *dst = port.inst->inp[ port.ninp() ].inst;
-                        // std::cout << "    " << *port.inst << " <- " << *dst << " " << reg << std::endl;
-                        for( Inst *inst = port.inst->prev_sched; ; inst = inst->prev_sched ) {
-                            if ( not inst )
-                                ERROR( "..." );
-
-                            // target is reached ?
-                            if ( inst == dst ) {
-                                Inst *beg_reg = dst;
-                                // assign output port, or insert a copy instruction
-                                if ( not assign_port_rec( assigned_ports, dst, -1, reg ) ) {
-                                    insert_copy_inst_after( assigned_ports, dst, port );
-                                    beg_reg = dst->next_sched; // reg will be used starting from the copy inst
+                        if ( Inst *dst = port.inst->inp[ port.ninp() ].inst ) {
+                            // std::cout << "    " << *port.inst << " <- " << *dst << " " << reg << std::endl;
+                            for( Inst *inst = port.inst->prev_sched; ; inst = inst->prev_sched ) {
+                                if ( not inst ) {
+                                    PRINT( *port.inst );
+                                    PRINT( *dst );
+                                    ERROR( "..." );
                                 }
-                                // -> register the use of reg as output of beg_reg
-                                for( Inst *d = beg_reg; d != port.inst; d = d->next_sched )
-                                    inst->add_used_reg( reg, beg_reg );
-                                break;
-                            }
 
-                            // if there is a conflict
-                            if ( not inst->used_reg_ok_for( reg, dst ) ) {
-                                // add a copy inst
-                                insert_copy_inst_after( assigned_ports, inst, port );
-                                // -> register the use of reg as output of beg_reg
-                                for( Inst *c = inst->next_sched, *d = c; d != port.inst; d = d->next_sched )
-                                    inst->add_used_reg( reg, c );
-                                break;
+                                // target is reached ?
+                                if ( inst == dst ) {
+                                    Inst *beg_reg = dst;
+                                    // assign output port, or insert a copy instruction
+                                    if ( not assign_port_rec( assigned_ports, dst, -1, reg ) ) {
+                                        insert_copy_inst_after( assigned_ports, dst, port );
+                                        beg_reg = dst->next_sched; // reg will be used starting from the copy inst
+                                    }
+                                    // -> register the use of reg as output of beg_reg
+                                    for( Inst *d = beg_reg; d != port.inst; d = d->next_sched )
+                                        inst->add_used_reg( reg, beg_reg );
+                                    break;
+                                }
+
+                                // if there is a conflict
+                                if ( not inst->used_reg_ok_for( reg, dst ) ) {
+                                    // add a copy inst
+                                    insert_copy_inst_after( assigned_ports, inst, port );
+                                    // -> register the use of reg as output of beg_reg
+                                    for( Inst *c = inst->next_sched, *d = c; d != port.inst; d = d->next_sched )
+                                        inst->add_used_reg( reg, c );
+                                    break;
+                                }
                             }
                         }
                     }
@@ -724,10 +729,10 @@ void Codegen_C::make_code() {
     beg->visit_sched( aor, true );
 
     // display if necessary
-    if ( disp_inst_graph_wo_phi ) {
-        beg->update_sched_num();
-        Inst::display_graph( out );
-    }
+    //    if ( disp_inst_graph_wo_phi ) {
+    //        beg->update_sched_num();
+    //        Inst::display_graph( out );
+    //    }
 
     // specify where the registers have to be declared
     for( int n = 0; n < out_regs.size(); ++n ) {

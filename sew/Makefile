@@ -2,16 +2,15 @@ MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 SRC = tests/test.met
 INSTALL = `pwd`
 
-all: exe
+all: cmp
 
-exe: std
-	
-# 	
-
-std: ext/PrepArg install_dir
-	${MC} src/stela.cpp ${SRC}
+exe: cmp
+	./stela ${SRC}
 	cat out.cpp
 	metil_comp out.cpp
+
+cmp: ext/PrepArg install_dir
+	${MC} -o stela -ne src/stela.cpp
 
 
 install:
@@ -62,3 +61,4 @@ gen:
 	python bin/generation.py
 	# ${MC} bin/gen_base_class_wrapper.cpp met/base.met src/Stela/Vm/BaseStructs.h
 	
+.PHONY: cmp exe 

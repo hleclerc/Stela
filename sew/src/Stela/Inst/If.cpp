@@ -58,23 +58,49 @@ struct IfInst : Inst {
     }
 
     virtual void write( Codegen_C *cc ) {
-        cc->on.write_beg() << "if ( ";
-        cc->write_out( this->inp[ 0 ] );
-        cc->on.write_end( " ) {" );
+        if ( not ext_sched.size() )
+            return;
 
-        cc->on.nsp += 4;
-        for( Inst *inst = ext_sched.size() ? ext_sched[ 0 ] : 0; inst; inst = inst->next_sched )
-            cc->write( inst );
-        cc->on.nsp -= 4;
+        bool has_ok = false;
+        for( Inst *inst = ext_sched[ 0 ]; inst; inst = inst->next_sched )
+            has_ok |= inst->will_write_code();
 
-        cc->on << "} else {";
+        bool has_ko = false;
+        for( Inst *inst = ext_sched[ 1 ]; inst; inst = inst->next_sched )
+            has_ko |= inst->will_write_code();
 
-        cc->on.nsp += 4;
-        for( Inst *inst = ext_sched.size() ? ext_sched[ 1 ] : 0; inst; inst = inst->next_sched )
-            cc->write( inst );
-        cc->on.nsp -= 4;
+        if ( has_ok ) {
+            cc->on.write_beg() << "if ( ";
+            cc->write_out( this->inp[ 0 ] );
+            cc->on.write_end( " ) {" );
 
-        cc->on << "}";
+            cc->on.nsp += 4;
+            for( Inst *inst = ext_sched[ 0 ]; inst; inst = inst->next_sched )
+                cc->write( inst );
+            cc->on.nsp -= 4;
+
+            if ( has_ko ) {
+                cc->on << "} else {";
+
+                cc->on.nsp += 4;
+                for( Inst *inst = ext_sched[ 1 ]; inst; inst = inst->next_sched )
+                    cc->write( inst );
+                cc->on.nsp -= 4;
+            }
+
+            cc->on << "}";
+        } else if ( has_ko ) {
+            cc->on.write_beg() << "if ( not ";
+            cc->write_out( this->inp[ 0 ] );
+            cc->on.write_end( " ) {" );
+
+            cc->on.nsp += 4;
+            for( Inst *inst = ext_sched[ 1 ]; inst; inst = inst->next_sched )
+                cc->write( inst );
+            cc->on.nsp -= 4;
+
+            cc->on << "}";
+        }
     }
 };
 

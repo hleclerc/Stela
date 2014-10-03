@@ -127,6 +127,17 @@ void Inst::mod_dep( const Expr &val, Inst *d ) {
             d->par.remove_first_unordered( Parent{ this, -1 } );
             val->par << Parent{ this, -1 };
             dep[ i ] = val;
+            break;
+        }
+    }
+}
+
+void Inst::rem_dep( Inst *d ) {
+    for( int i = 0; i < dep.size(); ++i ) {
+        if ( dep[ i ] == d ) {
+            d->par.remove_first_unordered( Parent{ this, -1 } );
+            dep.remove( i );
+            break;
         }
     }
 }
@@ -188,11 +199,14 @@ void Inst::mark_children( Vec<Expr> *seq ) {
         *seq << this;
 
     for( Expr &e : inp )
-        e->mark_children( seq );
+        if ( e )
+            e->mark_children( seq );
     for( Expr &e : dep )
-        e->mark_children( seq );
+        if ( e )
+            e->mark_children( seq );
     for( Expr &e : ext )
-        e->mark_children( seq );
+        if ( e )
+            e->mark_children( seq );
 }
 
 
@@ -226,19 +240,40 @@ void Inst::clone( Vec<Expr> &created ) const {
 }
 
 int Inst::display_graph( Vec<Expr> outputs, const char *filename ) {
-    ++cur_op_id;
-
     std::ofstream f( filename );
     f << "digraph Instruction {\n";
     f << "  node [shape = record];\n";
 
-    Vec<Inst *> ext_buf;
+    // get the nodes (within clusters)
+    ++cur_op_id;
+    Vec<Inst *> ext_buf, seq;
     for( int i = 0; i < outputs.size(); ++i )
-        outputs[ i ]->write_graph_rec( ext_buf, f );
-
+        outputs[ i ]->write_graph_rec( ext_buf, seq, f );
     for( Inst *ch : ext_buf )
         if ( ch )
-            ch->write_sub_graph_rec( f );
+            ch->write_sub_graph_rec( seq, f );
+
+    // edges
+    for( Inst *i : seq ) {
+        // ext
+        for( int e = 0; e < i->ext_disp_size(); ++e )
+            f << "    node" << i << " -> node" << i->ext[ e ].inst << " [color=\"green\"];\n";
+
+        // sched
+        if ( Inst *n = i->next_sched )
+            f << "    node" << n << " -> node" << i << " [color=\"yellow\"];\n";
+
+        // parents
+        //    for( int i = 0; i < par.size(); ++i ) {
+        //        if ( par[ i ].ninp >= 0 and par[ i ].inst->inp.size() > 1 )
+        //            os << "    node" << par[ i ].inst << ":f" << par[ i ].ninp << " -> node" << this << " [color=red,style=dotted];\n";
+        //        else
+        //            os << "    node" << par[ i ].inst << " -> node" << this << " [color=red,style=dotted];\n";
+        //    }
+        //if ( par_ext_sched )
+        //    os << "    node" << par_ext_sched << " -> node" << this << " [color=yellow,style=dotted];\n";
+    }
+
 
     f << "}";
     f.close();
@@ -246,27 +281,28 @@ int Inst::display_graph( Vec<Expr> outputs, const char *filename ) {
     return system( ( "dot -Tps " + std::string( filename ) + " > " + std::string( filename ) + ".eps && gv " + std::string( filename ) + ".eps" ).c_str() );
 }
 
-void Inst::write_sub_graph_rec( Stream &os ) {
-    os << "    node" << ext_par << " -> node" << this << " [color=\"green\"];\n";
+void Inst::write_sub_graph_rec( Vec<Inst *> &seq, Stream &os ) {
     os << "    subgraph cluster_" << this <<" {\ncolor=yellow;\nstyle=dotted;\n";
     Vec<Inst *> ext_buf;
-    write_graph_rec( ext_buf, os );
+    write_graph_rec( ext_buf, seq, os );
     for( Inst *nch : ext_buf )
-        nch->write_sub_graph_rec( os );
+        if ( nch )
+            nch->write_sub_graph_rec( seq, os );
     os << "    }\n";
 }
 
-void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
+void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Vec<Inst *> &seq, Stream &os ) {
     if ( op_id_vis == cur_op_id )
         return;
     op_id_vis = cur_op_id;
+    seq << this;
 
     // label
     std::ostringstream ss;
     write_dot( ss );
 
-    //if ( when )
-    //    when->write_to_stream( ss << "\n" );
+    if ( when )
+        when->write_to_stream( ss << "\n" );
     if ( out_reg )
         ss << ".R" << out_reg->num;
     // ss << " " << sched_num;
@@ -292,32 +328,28 @@ void Inst::write_graph_rec( Vec<Inst *> &ext_buf, Stream &os ) {
 
     // children
     for( int i = 0; i < inp.size(); ++i ) {
-        os << "    node" << this;
-        if ( inp.size() > 1 )
-            os << ":f" << i;
-        os << " -> node" << inp[ i ].inst << ";\n";
+        if ( inp[ i ] ) {
+            os << "    node" << this;
+            if ( inp.size() > 1 )
+                os << ":f" << i;
+            os << " -> node" << inp[ i ].inst << ";\n";
 
-        inp[ i ]->write_graph_rec( ext_buf, os );
+            inp[ i ]->write_graph_rec( ext_buf, seq, os );
+        }
     }
 
     // dependencies
     for( int i = 0; i < dep.size(); ++i ) {
-        os << "    node" << this << " -> node" << dep[ i ].inst << " [style=dotted];\n";
-        dep[ i ]->write_graph_rec( ext_buf, os );
+        if ( dep[ i ] ) {
+            os << "    node" << this << " -> node" << dep[ i ].inst << " [style=dotted];\n";
+            dep[ i ]->write_graph_rec( ext_buf, seq, os );
+        }
     }
 
     // ext
     for( int i = 0; i < ext_disp_size(); ++i )
         if ( Inst *ch = ext[ i ].inst )
             ext_buf << ch;
-
-    // par
-    //    for( int i = 0; i < par.size(); ++i ) {
-    //        if ( par[ i ].ninp >= 0 and par[ i ].inst->inp.size() > 1 )
-    //            os << "    node" << par[ i ].inst << ":f" << par[ i ].ninp << " -> node" << this << " [color=red,style=dotted];\n";
-    //        else
-    //            os << "    node" << par[ i ].inst << " -> node" << this << " [color=red,style=dotted];\n";
-    //    }
 }
 
 int Inst::ext_disp_size() const {
@@ -423,9 +455,11 @@ void Inst::update_when( const BoolOpSeq &cond ) {
         return;
 
     for( Expr inst : inp )
-        inst->update_when( cond );
+        if ( inst )
+            inst->update_when( cond );
     for( Expr inst : dep )
-        inst->update_when( cond );
+        if ( inst )
+            inst->update_when( cond );
 }
 
 void Inst::get_constraints() {

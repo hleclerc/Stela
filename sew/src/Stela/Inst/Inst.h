@@ -85,6 +85,8 @@ public:
     void mod_inp( const Expr &val, int num );
     void mod_dep( const Expr &val, Inst *d );
 
+    void rem_dep( Inst *d );
+
     void add_store_dep( Inst *dst );
 
     virtual void write_to_stream( Stream &os, int prec = -1 );
@@ -143,8 +145,8 @@ public:
 
     // display
     static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
-    virtual void write_graph_rec( Vec<Inst *> &ext_buf, Stream &os );
-    virtual void write_sub_graph_rec( Stream &os );
+    virtual void write_graph_rec( Vec<Inst *> &ext_buf, Vec<Inst *> &seq, Stream &os );
+    virtual void write_sub_graph_rec( Vec<Inst *> &seq, Stream &os );
     virtual int ext_disp_size() const;
 
     virtual Expr _simp_repl_bits( Expr off, Expr val );
