@@ -121,6 +121,16 @@ void Inst::mod_inp( const Expr &val, int num ) {
     inp[ num ] = val;
 }
 
+void Inst::mod_dep( const Expr &val, Inst *d ) {
+    for( int i = 0; i < dep.size(); ++i ) {
+        if ( dep[ i ] == d ) {
+            d->par.remove_first_unordered( Parent{ this, -1 } );
+            val->par << Parent{ this, -1 };
+            dep[ i ] = val;
+        }
+    }
+}
+
 void Inst::add_store_dep( Inst *dst ) {
     if ( op_id == cur_op_id )
         return;

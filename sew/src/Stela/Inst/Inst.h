@@ -83,6 +83,7 @@ public:
     void add_ext( const Expr &val );
 
     void mod_inp( const Expr &val, int num );
+    void mod_dep( const Expr &val, Inst *d );
 
     void add_store_dep( Inst *dst );
 

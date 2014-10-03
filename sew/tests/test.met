@@ -150,6 +150,7 @@ def print val
 a := 10
 if ___rand()
     ___syscall a
+___syscall 5
 
 # a := Vec[ PI8, 3 ] 48
 # ___syscall &a

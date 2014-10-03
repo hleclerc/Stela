@@ -318,13 +318,17 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             PRINT( ok_we_inp );
             PRINT( ko_we_inp );
             PRINT( ko_we_inp.size() );
-            for( Expr &e : ok_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
-            for( Expr &e : ko_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
+            //for( Expr &e : ok_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
+            //for( Expr &e : ko_we_inp ) if ( not e ) e = symbol( ip->type_ST, "pouet" );
+            for( std::pair<Inst *,OutCondFront> o : outputs )
+                for( int i = 0; i < 2; ++i )
+                    if ( not o.second.inp[ i ] )
+                        o.second.inp[ i ] = symbol( ip->type_ST, "pouet" );
 
-            //            for( std::pair<Expr,int> i : inputs )
-            //                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;
-            //            for( std::pair<Inst *,OutCondFront> o : outputs )
-            //                std::cout << "  to_be_repl=" << *o.first << "\n    ok=" << o.second.inp[ 1 ] << "\n    ko=" << o.second.inp[ 0 ] << "\n    num=" << o.second.num_in_outputs << std::endl;
+            for( std::pair<Expr,int> i : inputs )
+                std::cout << "  inp=" << *i.first << " num=" << i.second << std::endl;
+            for( std::pair<Inst *,OutCondFront> o : outputs )
+                std::cout << "  to_be_repl=" << *o.first << "\n    ok=" << o.second.inp[ 1 ] << "\n    ko=" << o.second.inp[ 0 ] << "\n    num=" << o.second.num_in_outputs << std::endl;
 
             Expr if_inp_ok = make_if_inp( inputs, ok_we_inp );
             Expr if_inp_ko = make_if_inp( inputs, ko_we_inp );
@@ -348,7 +352,10 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
 
             for( std::pair<Inst *,OutCondFront> o : outputs )
                 for( Inst::Parent &p : o.first->par )
-                    p.inst->mod_inp( if_out_sel[ o.second.num_in_outputs ], p.ninp );
+                    if ( p.ninp >= 0 )
+                        p.inst->mod_inp( if_out_sel[ o.second.num_in_outputs ], p.ninp );
+                    else
+                        p.inst->mod_dep( if_out_sel[ o.second.num_in_outputs ], o.first );
 
             // push if_expr in the front
             if_expr->op_id = Inst::cur_op_id - 1;
