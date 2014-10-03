@@ -220,11 +220,11 @@ static Vec<Expr> extract_inst_that_must_be_done_if( std::map<Inst *,OutCondFront
     // needed inputs (inp of produced inst that does not belong to the if block)
     for( Expr expr : res ) {
         for( Expr inp : expr->inp )
-            if ( not inp->when->can_be_factorized_by( best_item ) )
+            if ( inp.inst and not inp->when->can_be_factorized_by( best_item ) )
                 if ( not inputs.count( inp ) )
                     inputs[ inp ] = inputs.size() - 1;
         for( Expr dep : expr->dep )
-            if ( not dep->when->can_be_factorized_by( best_item ) )
+            if ( dep and not dep->when->can_be_factorized_by( best_item ) )
                 deps.insert( dep );
     }
 
@@ -266,7 +266,7 @@ Expr make_if_out( const std::map<Inst *,OutCondFront> &outputs, bool ok ) {
 Inst *Codegen_C::scheduling( Vec<Expr> out ) {
     // update inst->when
     for( Expr inst : out )
-        inst->update_when( BoolOpSeq() );
+        inst->update_when( BoolOpSeq( True() ) );
 
     // get the front
     ++Inst::cur_op_id;
@@ -284,6 +284,10 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
         // try to find an instruction with the same condition set or an inst that is not going to write anything
         Inst *inst = 0;
         for( int i = 0; i < front.size(); ++i ) {
+            if ( front[ i ]->when->always( false ) ) {
+                front.remove_unordered( i-- );
+                continue;
+            }
             if ( front[ i ]->when->always( true ) ) {
                 inst = front[ i ].inst;
                 front.remove_unordered( i );
@@ -293,10 +297,17 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
 
         // if not possible to do more without a condition
         if ( not inst ) {
+            if ( not front.size() )
+                break;
+
             // try to find the best condition to move forward
             std::map<BoolOpSeq::Item,int> possible_conditions;
             for( int i = 0; i < front.size(); ++i ) {
                 Vec<BoolOpSeq::Item> pc = front[ i ]->when->common_terms();
+                PRINT( *front[ i ]->when );
+                for( int c = 0; c < pc.size(); ++c )
+                    std::cout << "    " << pc[ c ];
+                PRINT( "" );
                 for( BoolOpSeq::Item &item : pc )
                     ++possible_conditions[ item ];
             }
@@ -338,13 +349,13 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
             for( std::pair<Expr,int> i : inputs )
                 inp[ i.second ] = i.first;
             Expr if_expr = if_inst( inp, if_inp_ok, if_inp_ko, if_out_ok, if_out_ko );
-            if_expr->when = new BoolOpSeq( True() );
+            *if_expr->when = BoolOpSeq( True() );
 
             // use the outputs of the if instruction
             Vec<Expr> if_out_sel( Size(), outputs.size() );
             for( int i = 0; i < if_out_sel.size(); ++i ) {
                 if_out_sel[ i ] = get_nout( if_expr, i );
-                if_out_sel[ i ]->when = new BoolOpSeq( True() );
+                *if_out_sel[ i ]->when = BoolOpSeq( True() );
             }
 
             for( std::pair<Inst *,OutCondFront> o : outputs )
@@ -359,10 +370,10 @@ Inst *Codegen_C::scheduling( Vec<Expr> out ) {
                 if_expr->add_dep( d );
 
             // push if_expr in the front
-            if_expr->op_id = Inst::cur_op_id - 1;
-            front << if_expr;
+            // if_expr->op_id = Inst::cur_op_id - 1;
+            // front << if_expr;
 
-            continue;
+            inst = if_expr.inst;
         }
 
         // register
@@ -555,7 +566,6 @@ static void insert_copy_inst_before( Vec<InstAndPort> &assigned_ports, Inst *fen
     // PRINT( *fence );
     // PRINT( dst.inst->inp[ dst.ninp ] );
     Expr cp = copy( dst.inst->inp[ dst.ninp ] );
-    cp->when = new BoolOpSeq( True() );
 
     CppOutReg *reg = dst.inst->inp[ dst.ninp ]->out_reg;
     if ( not assign_port_rec( assigned_ports, cp.inst, 0, reg ) )

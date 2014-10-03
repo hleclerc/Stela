@@ -24,6 +24,8 @@ Inst::Inst() {
     flags     = 0;
 
     par_ext_sched = 0;
+
+    when = new BoolOpSeq( False() );
 }
 
 Inst::~Inst() {
@@ -449,9 +451,7 @@ bool Inst::referenced_more_than_one_time() const {
 }
 
 void Inst::update_when( const BoolOpSeq &cond ) {
-    if ( not when )
-        when = new BoolOpSeq( cond );
-    else if ( not assign_if_neq( *when, *when or cond ) )
+    if ( not assign_if_neq( *when, *when or cond ) )
         return;
 
     for( Expr inst : inp )

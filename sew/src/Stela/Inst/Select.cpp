@@ -43,9 +43,7 @@ struct Select : Inst {
         return res;
     }
     virtual void update_when( const BoolOpSeq &cond ) {
-        if ( not when )
-            when = new BoolOpSeq( cond );
-        else if ( not assign_if_neq( *when, *when or cond ) )
+        if ( not assign_if_neq( *when, *when or cond ) )
             return;
 
         BoolOpSeq bos = get_bos();
@@ -96,9 +94,7 @@ struct SelectDep : Select {
         return this;
     }
     virtual void update_when( const BoolOpSeq &cond ) {
-        if ( not when )
-            when = new BoolOpSeq( cond );
-        else if ( not assign_if_neq( *when, *when or cond ) )
+        if ( not assign_if_neq( *when, *when or cond ) )
             return;
 
         for( Expr inst : inp )
