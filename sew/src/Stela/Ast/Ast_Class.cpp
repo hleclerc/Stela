@@ -1,8 +1,21 @@
+#include "../Conv/ConvType.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_Class.h"
 
 Ast_Class::Ast_Class( int off ) : Ast_Callable( off ) {
+}
+
+ConvType *Ast_Class::make_type_for( Vec<Past> &args ) {
+    ConvType *res = new ConvType( this );
+    res->args = args;
+    res->parse();
+    return res;
+}
+
+ConvType *Ast_Class::make_type() {
+    Vec<Past> args;
+    return make_type_for( args );
 }
 
 void Ast_Class::_get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

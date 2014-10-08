@@ -19,11 +19,11 @@ protected:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-    String       name;
-    AutoPtr<Ast> obj;
-    bool         ptr;
-    bool         ask;
-    bool         ddo;
+    String name;
+    Past   obj;
+    bool   ptr;
+    bool   ask;
+    bool   ddo;
 };
 
 #endif // STELA_AST_GetAttr_H

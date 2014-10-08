@@ -17,7 +17,7 @@ protected:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-    AutoPtr<Ast> args[ 2 ];
+    Past args[ 2 ];
     bool want_and;
 };
 

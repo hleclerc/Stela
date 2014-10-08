@@ -159,7 +159,7 @@ struct Cst : Inst {
     int len;
 };
 
-Expr cst( Type *type, int len, void *data, void *knwn ) {
+Expr cst( Type *type, int len, const void *data, const void *knwn ) {
     Cst *res = new Cst;
     res->out_type = type;
     res->len = len;

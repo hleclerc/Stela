@@ -1,5 +1,8 @@
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
+
+#include "../Conv/ConvContext.h"
+#include "Ast_Variable.h"
 #include "Ast_Apply.h"
 
 Ast_Apply::Ast_Apply( int off ) : Ast_Call( off ) {

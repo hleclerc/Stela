@@ -2,6 +2,9 @@
 #include "Ast_Variable.h"
 #include "IrWriter.h"
 
+#include "../Conv/ConvContext.h"
+#include "../Conv/ConvScope.h"
+
 Ast_Variable::Ast_Variable( int off, String str ) : Ast( off ), str( str ) {
 }
 
@@ -99,4 +102,10 @@ void Ast_Variable::_get_info( IrWriter *aw ) const {
 
 PI8 Ast_Variable::_tok_number() const {
     return IR_TOK_VAR;
+}
+
+Past Ast_Variable::_parse_in( ConvScope &scope ) {
+    if ( Past res = scope.find_var( str ) )
+        return res;
+    return cc->error_var();
 }

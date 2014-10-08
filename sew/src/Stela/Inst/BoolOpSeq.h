@@ -40,6 +40,7 @@ public:
     bool error();
 
     bool imply( const BoolOpSeq &b ) const; ///< val of b knowing this == true
+    bool can_be_factorized_by( const Vec<Item> &and_seq ) const;
     bool can_be_factorized_by( const BoolOpSeq &cond ) const;
     bool can_be_factorized_by( const Item &item ) const;
     Vec<BoolOpSeq> common_terms() const;

@@ -10,9 +10,9 @@ class Ast_Class;
 class Ast_Def : public Ast_Callable {
 public:
     struct StartsWith_Item {
-        String                      attr;
-        SplittedVec<AutoPtr<Ast>,2> args;
-        Vec<String>                 names;
+        String              attr;
+        SplittedVec<Past,2> args;
+        Vec<String>         names;
     };
 
     Ast_Def( int off );
@@ -27,7 +27,7 @@ protected:
     virtual PI8  _tok_number() const;
     virtual int  _spec_flags() const;
 
-    AutoPtr<Ast>                   return_type;
+    Past                           return_type;
     String                         get;
     String                         set;
     String                         sop;

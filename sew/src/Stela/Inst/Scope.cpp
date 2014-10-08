@@ -78,7 +78,7 @@ Expr Scope::import( String file ) {
         return ip->error_var();
 
     // -> Ast
-    AutoPtr<Ast> a = make_ast( ip->error_list, l.root(), true );
+    Past a = make_ast( ip->error_list, l.root(), true );
     if ( ip->error_list )
         return ip->error_var();
 

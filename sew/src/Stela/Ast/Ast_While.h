@@ -19,8 +19,8 @@ protected:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-    AutoPtr<Ast> ok;
-    AutoPtr<Ast> ko;
+    Past ok;
+    Past ko;
 };
 
 #endif // STELA_AST_While_H

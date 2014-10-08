@@ -2,6 +2,7 @@
 #include "ReadFile.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 ErrorList::Provenance::Provenance( const char *beg, const char *pos, String provenance, std::string msg ) : provenance( provenance ), msg( msg ) {
     _init( beg, pos );
@@ -96,7 +97,8 @@ ErrorList::Error &ErrorList::Error::ac( const char *beg, const char *pos, std::s
 }
 
 ErrorList::Error &ErrorList::Error::ac( const char *src, int off ) {
-    caller_stack.push_back( src, off );
+    if ( src and strlen( src ) and off >= 0 )
+        caller_stack.push_back( src, off );
     return *this;
 }
 

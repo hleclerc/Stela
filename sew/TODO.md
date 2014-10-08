@@ -89,20 +89,73 @@ Pb en cours : le conditions apparaissent comme des dépendances dans les blocks a
   -> prop 1 : on remplace les inp par des instructions bidon
   -> prop 2 : les blocks sont représentés pas des instructions
 
+
+Type de taille variable
+  Ex1:
+    class Directory
+        class Item
+            name ~= CString
+            ptr  ~= Inode
+        icon ~= CString[ atomic = true ]
+        data ~= Item{...}
+        end ::= CompactString ""
+        
+    class CompactString
+        size ~= CompactUnsigned
+        data ~= repeat[ num = size ]
+            PI8 
+        def reassign val
+            size = val.size
+            memcpy &data, val.ptr, val.size
+            
+    -> oblige à garder les pointeurs sur les parents. Par exemple
+       d := Directory()
+       d.data[ 1 ].name = "toto" -> ok s'il ne faut pas faire de réallocation
+         
+  Question: comment faire des zones de "délestage" communes à plusieurs
+    class Delestage
+        a ~= CString
+        b ~= CString
+        r ~= CUnsigned
+        d ~= repeat[ size = r - sizeof( a ) - sizeof( b ) ]
+    ou
+    
+    class Delestage
+        a ~= CString
+        b ~= CString
+        r ~= CUnsigned
+        d ~= repeat[ size = r - sizeof( a ) - sizeof( b ) ]
   
-  
-  
-  
-  
-Concours scientifique -> pas de risque d'atteinte.
-- droit à 20% pour le concours scientifique
+  Si différentes possibilités
+    class Example
+        class A
+            d ~= Vec[SI32,16]
+        class B
+            d ~= SI32
+        type ~= PI8
+        data ~= union
+            a ~= A when type < 10
+            b ~= B
+        
+  Utilisations de if, for, while, ... ?
+    class Directory
+        icon ~= CString
+        data ~= while true
+            name ~= CString
+            if name == ""
+                break
+            inode ~= Inode
 
-- SARL -> 
-- SAS -> société pas action simplifié
-- 
-- 
-
-
-
-
-
+    d := Directory()
+    d.
+            
+    mais pourquoi ne pas écrire
+    
+        while true
+            if rand()
+            name ~= CString
+            if name == ""
+                break
+            inode ~= Inode
+    
+    

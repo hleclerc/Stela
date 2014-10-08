@@ -23,7 +23,7 @@ protected:
 
     int                         nb_dim;
     Vec<int>                    sizes; ///<
-    SplittedVec<AutoPtr<Ast>,8> lst;
+    SplittedVec<Past,8> lst;
 };
 
 #endif // STELA_AST_NdList_H

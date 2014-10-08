@@ -1,16 +1,19 @@
-MC = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
-SRC = tests/test.met
+MC      = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 INSTALL = `pwd`
+SRC     = --code-for-class "PI8" -o PI8.h tests/test_Ast.met
+MAIN    = stela_ast
+# tests/test.met
 
 all: cmp
 
 exe: cmp
-	./stela ${SRC}
-	cat out.cpp
-	metil_comp out.cpp
+	./${MAIN} ${SRC}
+	cat PI8.h
+	
+# 	metil_comp out.cpp
 
 cmp: ext/PrepArg install_dir
-	${MC} -o stela -ne src/stela.cpp
+	${MC} -o ${MAIN} -ne src/${MAIN}.cpp
 
 
 install:
@@ -21,24 +24,24 @@ install_dir:
 
 	
 lex: ext/PrepArg
-	${MC} src/stela.cpp --disp-lexems ${SRC}
+	${MC} src/${MAIN}.cpp --disp-lexems ${SRC}
 
 gr: ext/PrepArg
-	${MC} src/stela.cpp --disp-inst-g ${SRC}
+	${MC} src/${MAIN}.cpp --disp-inst-g ${SRC}
 	cat out.cpp
 
 tok: ext/PrepArg
-	${MC} src/stela.cpp --disp-tokens ${SRC}
+	${MC} src/${MAIN}.cpp --disp-tokens ${SRC}
 	
 gra: ext/PrepArg
-	${MC} src/stela.cpp --disp-inst-g-wo-phi ${SRC}
+	${MC} src/${MAIN}.cpp --disp-inst-g-wo-phi ${SRC}
 	cat out.cpp
 
 gravg: ext/PrepArg
-	${MC} --valgrind src/stela.cpp --disp-inst-g-wo-phi ${SRC}
+	${MC} --valgrind src/${MAIN}.cpp --disp-inst-g-wo-phi ${SRC}
 
 grag: ext/PrepArg
-	${MC} --gdb src/stela.cpp --disp-inst-g-wo-phi ${SRC}
+	${MC} --gdb src/${MAIN}.cpp --disp-inst-g-wo-phi ${SRC}
 
 
 test_%:
@@ -48,11 +51,11 @@ gest_%:
 	${MC} --gdb tests/test_$*.cpp
 
 vg:
-	${MC} --exec-using "valgrind --num-callers=24 --db-attach=yes" src/stela.cpp ${SRC}
+	${MC} --exec-using "valgrind --num-callers=24 --db-attach=yes" src/${MAIN}.cpp ${SRC}
 	# 	 --leak-check=full
 
 gdb:
-	${MC} --gdb src/stela.cpp ${SRC}
+	${MC} --gdb src/${MAIN}.cpp ${SRC}
 
 ext/PrepArg:
 	mkdir -p ext; cd ext; test -e PrepArg || git clone git@github.com:hleclerc/PrepArg.git

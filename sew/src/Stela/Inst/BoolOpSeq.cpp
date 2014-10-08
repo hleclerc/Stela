@@ -1,6 +1,7 @@
 #include "../Codegen/Codegen_C.h"
 #include "BoolOpSeq.h"
 #include <algorithm>
+#include "Cst.h"
 #include "Ip.h"
 #include "Op.h"
 
@@ -101,8 +102,19 @@ bool BoolOpSeq::imply( const BoolOpSeq &b ) const {
 }
 
 bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq &cond ) const {
-    TODO;
-    return false;
+    if ( cond.or_seq.size() == 0 )
+        return cond.val_if_not_or_seq;
+    if ( cond.or_seq.size() == 1 )
+        return can_be_factorized_by( cond.or_seq[ 0 ] );
+    // TODO: ( a and c ) or ( b and c ) can be factorized by ( a or b )
+    return *this == cond;
+}
+
+bool BoolOpSeq::can_be_factorized_by( const Vec<Item> &and_seq ) const {
+    for( const Item &item : and_seq )
+        if ( not can_be_factorized_by( item ) )
+            return false;
+    return true;
 }
 
 bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq::Item &item ) const {
@@ -117,13 +129,14 @@ bool BoolOpSeq::can_be_factorized_by( const BoolOpSeq::Item &item ) const {
 Vec<BoolOpSeq> BoolOpSeq::common_terms() const {
     if ( not or_seq.size() )
         return Vec<BoolOpSeq::Item>();
-    TODO;
-    Vec<BoolOpSeq> res; // = or_seq[ 0 ];
-//    for( int i = 1; i < or_seq.size(); ++i )
-//        for( int j = 0; j < res.size(); ++j )
-//            if ( not or_seq[ i ].contains( res[ j ] ) )
-//                res.remove( j-- );
-    return res;
+    Vec<BoolOpSeq::Item> seq = or_seq[ 0 ];
+    for( int i = 1; i < or_seq.size(); ++i )
+        for( int j = 0; j < seq.size(); ++j )
+            if ( not or_seq[ i ].contains( seq[ j ] ) )
+                seq.remove( j-- );
+    if ( seq.size() )
+        return seq;
+    return *this;
 }
 
 int BoolOpSeq::nb_sub_conds() const {
@@ -219,8 +232,20 @@ BoolOpSeq &BoolOpSeq::simplify() {
 }
 
 Expr BoolOpSeq::expr() const {
-    TODO;
-    return 0;
+    if ( or_seq.size() ) {
+        Bool f = false;
+        Expr res = cst( ip->type_Bool, 1, &f );
+        for( const Vec<BoolOpSeq::Item> &seq : or_seq ) {
+            Bool t = true;
+            Expr tmp = cst( ip->type_Bool, 1, &t );
+            for( const BoolOpSeq::Item &item : seq )
+                tmp = and_boolean( tmp, item.pos ? item.expr : not_boolean( item.expr ) );
+            res = or_boolean( res, tmp );
+        }
+        PRINT( res );
+        return res;
+    }
+    return cst( ip->type_Bool, 1, &val_if_not_or_seq );
 }
 
 bool BoolOpSeq::operator<(const BoolOpSeq &b) const {

@@ -9,6 +9,7 @@ class Ast_Number : public Ast {
 public:
     Ast_Number( int off );
     Ast_Number( int off, bool val );
+    Ast_Number( int off, String str );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:
@@ -16,6 +17,7 @@ protected:
 
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
+    virtual Past _parse_in( ConvScope &scope );
 
     bool l; ///< long
     bool p; ///< pointer

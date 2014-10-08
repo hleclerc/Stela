@@ -21,9 +21,9 @@ protected:
 
     virtual void _get_info( IrWriter *aw ) const;
 
-    AutoPtr<Ast>                 f;
-    SplittedVec<AutoPtr<Ast>,4 > args;
-    Vec<String>                  names;
+    Past                 f;
+    SplittedVec<Past,4 > args;
+    Vec<String>          names;
 };
 
 #endif // STELA_AST_Call_H

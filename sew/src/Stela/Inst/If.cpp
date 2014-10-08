@@ -37,7 +37,11 @@ struct IfOut : Inst {
 struct IfInst : Inst {
     virtual void write_dot( Stream &os ) const { os << "if"; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new IfInst; }
-    virtual Type *type( int nout ) { return ext[ 0 ]->type( nout ); }
+    virtual Type *type( int nout ) {
+        static int cpt = 0;
+        if ( cpt ++ >= 20 )
+            return ip->type_ST;
+        return ext[ 0 ]->type( nout ); }
     virtual Type *ptype( int nout ) { TODO; return 0; }
     virtual Type *type() { return ip->type_Void; }
     virtual int ext_disp_size() const { return 2; }

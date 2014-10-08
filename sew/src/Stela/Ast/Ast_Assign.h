@@ -16,16 +16,18 @@ public:
 
 protected:
     friend class AstMaker;
+    friend class ConvType;
 
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
+    virtual Past _parse_in( ConvScope &scope );
 
-    String       name;
-    AutoPtr<Ast> val;
-    bool         stat;
-    bool         cons;
-    bool         type; ///< ... ~= ...
-    bool         ref;
+    String name;
+    Past   val;
+    bool   stat;
+    bool   cons;
+    bool   type; ///< true if "... ~= ..."
+    bool   ref;
 };
 
 #endif // STELA_AST_Assign_H

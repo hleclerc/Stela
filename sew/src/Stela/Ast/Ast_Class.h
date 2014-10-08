@@ -10,6 +10,8 @@ public:
     Ast_Class( int off );
 
     virtual void write_callable_type( Stream &os ) const { os << "class"; }
+    virtual ConvType *make_type_for( Vec<Past> &args );
+    virtual ConvType *make_type();
 
 protected:
     friend class AstMaker;
@@ -19,7 +21,7 @@ protected:
     virtual PI8  _tok_number() const;
     virtual int  _spec_flags() const;
 
-    SplittedVec<AutoPtr<Ast>,2> inheritance;
+    SplittedVec<Past,2> inheritance;
 };
 
 #endif // STELA_AST_Class_H

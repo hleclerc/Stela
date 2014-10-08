@@ -29,6 +29,7 @@
 #include "Ast_For.h"
 #include "Ast_If.h"
 
+#include "../Conv/ConvContext.h"
 #include "IrWriter.h"
 
 Ast::Ast( int off ) : _off( off ) {
@@ -54,7 +55,33 @@ void Ast::write_to( IrWriter *aw ) const {
     }
 }
 
+Past Ast::parse_in( ConvScope &scope ) {
+    if ( cc->file_stack.size() )
+        cc->parse_stack << ConvContext::ParseData{ cc->file_stack.back(), _off };
+    Past res = _parse_in( scope );
+    if ( cc->file_stack.size() )
+        cc->parse_stack.pop_back();
+    return res;
+}
+
+bool Ast::may_be_surdefined() const {
+    return false;
+}
+
+ConvType *Ast::make_type() {
+    return 0;
+}
+
 void Ast::_get_info( IrWriter *aw ) const {
+}
+
+PI8 Ast::_tok_number() const {
+    ERROR( "..." );
+    return 255;
+}
+
+Past Ast::_parse_in( ConvScope &scope ) {
+    return cc->ret_error( "_parse_in not implemented for ..." );
 }
 
 void Ast::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -734,7 +761,7 @@ struct AstMaker {
     bool const_inst;
 };
 
-Ast *make_ast( ErrorList &e, const Lexem *l, bool sibling ) {
+Past make_ast( ErrorList &e, const Lexem *l, bool sibling ) {
     AstMaker am;
     am.error_list = &e;
 

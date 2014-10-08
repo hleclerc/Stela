@@ -21,9 +21,9 @@ protected:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-    Vec<String>                 names;
-    SplittedVec<AutoPtr<Ast>,2> objects;
-    AutoPtr<Ast>                block;
+    Vec<String>         names;
+    SplittedVec<Past,2> objects;
+    Past                block;
 };
 
 #endif // STELA_AST_For_H

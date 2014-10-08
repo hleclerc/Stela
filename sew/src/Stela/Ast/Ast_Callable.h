@@ -10,7 +10,7 @@
 */
 class Ast_Callable : public Ast {
 public:
-    typedef SplittedVec<AutoPtr<Ast>,4> DVT;
+    typedef SplittedVec<Past,4> DVT;
 
     Ast_Callable( int off );
 
@@ -20,25 +20,29 @@ public:
     virtual void write_callable_type( Stream &os ) const = 0;
 
 protected:
+    friend class ConvType;
     friend class AstMaker;
     friend class Ast_Def;
 
     virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const = 0;
     virtual void _get_info( IrWriter *aw ) const;
+    virtual Past _parse_in( ConvScope &scope );
     virtual int  _spec_flags() const = 0;
 
     String            name;
     bool              self_as_arg;
     bool              abstract;
     bool              varargs;
-    AutoPtr<Ast>      pertinence;
-    AutoPtr<Ast>      condition;
+    Past              pertinence;
+    Past              condition;
     int               def_pert_num;
     int               def_pert_den;
     Vec<String>       arguments;
     Vec<Vec<String> > arg_constraints; ///< same size than arguments
     DVT               default_values;
-    AutoPtr<Ast>      block;
+    Past              block;
+
+    String            sourcefile;
 };
 
 #endif // STELA_AST_Callable_H

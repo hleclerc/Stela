@@ -16,6 +16,7 @@
       <item> get_value_prop </item>
       <item> label </item>
       <item> catch </item>
+      <item> repeat </item>
       <item> assert </item>
       <item> const </item>
       <item> abstract </item>

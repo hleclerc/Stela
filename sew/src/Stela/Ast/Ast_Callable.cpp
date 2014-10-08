@@ -3,7 +3,12 @@
 #include "IrWriter.h"
 #include "Ast_Callable.h"
 
+#include "../Conv/ConvContext.h"
+#include "../Conv/ConvScope.h"
+
 Ast_Callable::Ast_Callable( int off ) : Ast( off ) {
+    if ( cc->file_stack.size() )
+        sourcefile = cc->file_stack.back();
 }
 
 void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -107,4 +112,9 @@ void Ast_Callable::_get_info( IrWriter *aw ) const {
 
     // catched var data
     aw->push_potential_catched_vars_from( this );
+}
+
+Past Ast_Callable::_parse_in( ConvScope &scope ) {
+    scope.reg_var( name, this, false, true );
+    return this;
 }

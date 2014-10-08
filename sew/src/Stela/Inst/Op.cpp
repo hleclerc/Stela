@@ -173,13 +173,25 @@ template<class TA,class TO>
 Expr _op_cst_unk( Type *ta, TA *a, Expr b, TO ) {
     return (Inst *)0;
 }
-template<class TA,class TO>
+template<class TA>
 Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_add o ) {
     if ( *a == 0 )
         return conv( type_promote( ta, b->type(), o ), b );
     return (Inst *)0;
 }
-template<class TA,class TO>
+template<class TA>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_and_boolean o ) {
+    if ( *a )
+        return b;
+    return (Inst *)0;
+}
+template<class TA>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_or_boolean o ) {
+    if ( not *a )
+        return b;
+    return (Inst *)0;
+}
+template<class TA>
 Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_mul o ) {
     if ( *a == 0 ) {
         Type *tr = type_promote( ta, b->type(), o );
