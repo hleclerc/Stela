@@ -47,9 +47,9 @@ void Ast_Assign::_get_info( IrWriter *aw ) const {
 
 Expr Ast_Assign::_parse_in( ParsingContext &context ) const {
     // rhs
-    Expr val = val->parse_in( context );
-    if ( not val )
-        return val;
+    Expr rhs = val->parse_in( context );
+    if ( not rhs )
+        return rhs;
 
     if ( type ) // ~=
         TODO;
@@ -58,8 +58,8 @@ Expr Ast_Assign::_parse_in( ParsingContext &context ) const {
     if ( cons )
         TODO;
 
-    context.reg_var( name, val, stat );
-    return val;
+    context.reg_var( name, rhs, stat );
+    return rhs;
 }
 
 PI8 Ast_Assign::_tok_number() const {

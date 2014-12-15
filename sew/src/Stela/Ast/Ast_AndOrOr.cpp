@@ -11,7 +11,7 @@ void Ast_AndOrOr::write_to_stream( Stream &os, int nsp ) const {
 }
 
 Expr Ast_AndOrOr::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }
 
 void Ast_AndOrOr::_get_info( IrWriter *aw ) const {

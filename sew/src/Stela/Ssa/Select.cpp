@@ -2,7 +2,7 @@
 
 struct Select : Inst {
     virtual void write_dot( Stream &os ) const { os << "Select"; }
-    virtual Expr forced_clone( Vec<Expr> &created ) const { return new Select( pos ); }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new Select; }
     // virtual Type *type() { return inp[ 0 ]->type(); }
     virtual Expr simplified( Expr cond ) {
         //        BoolOpSeq bos = get_bos();
@@ -31,5 +31,5 @@ Expr select( Expr cond, Expr ok, Expr ko ) {
     res->add_inp( cond );
     res->add_inp( ok );
     res->add_inp( ko );
-    return Inst::val_or_twin( res );
+    return Inst::twin_or_val( res );
 }

@@ -7,7 +7,7 @@ Ast_New::Ast_New( int off ) : Ast_Call( off ) {
 }
 
 Expr Ast_New::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }
 
 PI8 Ast_New::_tok_number() const {

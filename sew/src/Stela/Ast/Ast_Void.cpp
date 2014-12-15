@@ -11,7 +11,7 @@ void Ast_Void::write_to_stream( Stream &os, int nsp ) const {
 }
 
 Expr Ast_Void::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }
 
 PI8 Ast_Void::_tok_number() const {

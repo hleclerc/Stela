@@ -63,7 +63,7 @@ void Ast_Def::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_Def::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }
 
 PI8 Ast_Def::_tok_number() const {

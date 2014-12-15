@@ -44,6 +44,8 @@ public:
         ErrorList        error_list;
         Vec<String>      include_paths;
         std::set<String> already_parsed;
+        Type            *type_SI64;
+        Type            *type_SI32;
     };
     struct NamedVar {
         String name;

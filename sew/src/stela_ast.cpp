@@ -36,6 +36,8 @@ int main( int argc, char **argv ) {
     String cwd = get_cwd();
     for( int i = beg_files; i < argc; ++i )
         pc.parse( argv[ i ], cwd );
+    for( ParsingContext::NamedVar &nv : pc.variables )
+        PRINT( nv.expr );
     if ( gv.error_list )
         return gv.error_list;
 

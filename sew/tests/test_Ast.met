@@ -1,56 +1,56 @@
-class PI8
-    ___set_base_size_and_alig 8, 8
+# class PI8
+    # ___set_base_size_and_alig 8, 8
     
-class PI96
-    ___set_base_size_and_alig 96, 96
+# class PI96
+    # ___set_base_size_and_alig 96, 96
     
-class Inode
-    val ~= PI96
+# class Inode
+    # val ~= PI96
     
-class CUnsigned
-    beg ~= repeat PI8, cond = _0 >= 128
-    end ~= PI8
+# class CUnsigned
+    # beg ~= repeat PI8, cond = _0 >= 128
+    # end ~= PI8
     
-class CString
-    size ~= CUnsigned
-    data ~= repeat PI8, size
+# class CString
+    # size ~= CUnsigned
+    # data ~= repeat PI8, size
 
-class Directory
-    class Item
-        name ~= CString
-        file ~= Inode
-    icon ~= CString
-    data ~= repeat Item, cond = _0.name.size
+# class Directory
+    # class Item
+        # name ~= CString
+        # file ~= Inode
+    # icon ~= CString
+    # data ~= repeat Item, cond = _0.name.size
     
-    def find name
-        for item in data
-            if item.name == name
-                return item.file
-        Inode 0
+    # def find name
+        # for item in data
+            # if item.name == name
+                # return item.file
+        # Inode 0
         
-    def add name, inode
-        data.push_back name, inode
-        # -> data doit être connu pour que la génération de code fasse appel à la méthode...
+    # def add name, inode
+        # data.push_back name, inode
+        # # -> data doit être connu pour que la génération de code fasse appel à la méthode...
     
-class Directory_RedBlack
-    class Item
-        name ~= CString
-        file ~= Inode
-        lech ~= Offset
-        rich ~= Offset
+# class Directory_RedBlack
+    # class Item
+        # name ~= CString
+        # file ~= Inode
+        # lech ~= Offset
+        # rich ~= Offset
         
-    nb_items ~= CUnsigned
-    icon     ~= CString
-    data     ~= repeat Item, size = nb_items
+    # nb_items ~= CUnsigned
+    # icon     ~= CString
+    # data     ~= repeat Item, size = nb_items
     
-    def find name
-        for item in data
-            if item.name == name
-                return item.file
-        Inode 0
+    # def find name
+        # for item in data
+            # if item.name == name
+                # return item.file
+        # Inode 0
     
-    def add name, inode
-        #
+    # def add name, inode
+        # #
 
 a := 10
 static b := 20

@@ -16,7 +16,7 @@ void Ast_Break::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_Break::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }
 
 PI8 Ast_Break::_tok_number() const {

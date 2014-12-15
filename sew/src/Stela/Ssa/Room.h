@@ -3,6 +3,6 @@
 
 #include "Inst.h"
 
-Expr room( Expr val, bool cons );
+Expr room( Expr val, bool cons = false );
 
 #endif // ROOM_H

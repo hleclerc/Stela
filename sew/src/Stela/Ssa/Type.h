@@ -26,46 +26,19 @@
 **
 ****************************************************************************/
 
-#include "ParsingContext.h"
-#include "Inst.h"
-#include "Cst.h"
 
-Expr::Expr( const Expr &obj ) : inst( obj.inst ) {
-    if ( inst ) ++inst->cpt_use;
-}
+#ifndef TYPE_H
+#define TYPE_H
 
-Expr::Expr( Inst *inst ) : inst( inst ) {
-    if ( inst ) ++inst->cpt_use;
-}
+#include "../System/Stream.h"
 
-Expr::Expr( SI64 val ) : Expr( cst( ip->gv.type_SI64, 64, &val ) ) {
-}
+/**
+*/
+class Type {
+public:
+    Type();
+    void write_to_stream( Stream &os ) const;
+    int fixed_size();
+};
 
-Expr::~Expr() {
-    if ( inst and --inst->cpt_use <= 0 )
-        delete inst;
-}
-
-Expr &Expr::operator=( const Expr &obj ) {
-    if ( obj.inst )
-        ++obj.inst->cpt_use;
-    if ( inst and --inst->cpt_use <= 0 )
-        delete inst;
-    inst = obj.inst;
-    return *this;
-}
-
-bool Expr::operator==( const Expr &expr ) const {
-    return inst == expr.inst;
-}
-
-void Expr::write_to_stream( Stream &os ) const {
-    if ( inst )
-        os << *inst;
-    else
-        os << "NULL";
-}
-
-bool Expr::error() {
-    return inst == 0; // or inst->type() == ip->type_Error;
-}
+#endif // TYPE_H

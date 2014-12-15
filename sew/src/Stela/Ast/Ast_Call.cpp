@@ -24,7 +24,7 @@ void Ast_Call::write_to_stream( Stream &os, int nsp ) const {
 }
 
 Expr Ast_Call::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }
 
 void Ast_Call::_get_info( IrWriter *aw ) const {

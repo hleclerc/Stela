@@ -31,6 +31,7 @@
 
 #include "../System/Vec.h"
 #include "Expr.h"
+class Type;
 
 /**
 */
@@ -59,9 +60,6 @@ public:
     Inst();
     virtual ~Inst();
 
-    virtual bool same_cst( const Inst *inst ) const;
-    virtual bool emas_cst( const Inst *inst ) const;
-
     void add_dep( const Expr &val );
     void add_inp( const Expr &val );
     void add_ext( const Expr &val );
@@ -85,6 +83,8 @@ public:
     virtual void set( Expr obj, Expr cond );
     virtual Expr get( Expr cond );
     virtual Expr simplified( Expr cond );
+    virtual Type *type();
+    virtual Expr  size();
 
     virtual bool always( bool val ) const;
 

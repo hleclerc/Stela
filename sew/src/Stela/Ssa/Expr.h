@@ -39,6 +39,7 @@ class Expr {
 public:
     Expr( const Expr &obj );
     Expr( Inst *inst = 0 );
+    Expr( SI64 val );
     ~Expr();
 
     Expr &operator=( const Expr &obj );

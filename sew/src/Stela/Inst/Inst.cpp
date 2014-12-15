@@ -52,6 +52,11 @@ Expr Inst::simplified( const BoolOpSeq &cond ) {
     return this;
 }
 
+Type *Inst::type() {
+    TODO;
+    return 0;
+}
+
 bool Inst::same_cst( const Inst *inst ) const { return false; }
 bool Inst::emas_cst( const Inst *inst ) const { return false; }
 

@@ -247,3 +247,9 @@ src/Stela/Ssa/Select.h
 src/Stela/Ssa/Select.cpp
 src/Stela/Ssa/ReplBits.h
 src/Stela/Ssa/ReplBits.cpp
+src/Stela/Ssa/Type.h
+src/Stela/Ssa/Type.cpp
+src/Stela/Ssa/Cst.h
+src/Stela/Ssa/Cst.cpp
+src/Stela/Ssa/Rcast.h
+src/Stela/Ssa/Rcast.cpp

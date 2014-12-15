@@ -1,7 +1,10 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Room.h"
+#include "../Ssa/Cst.h"
 #include "../Ir/Numbers.h"
-#include "IrWriter.h"
 #include "Ast_Number.h"
+#include "IrWriter.h"
+#include <sstream>
 
 Ast_Number::Ast_Number( int off ) : Ast( off ) {
     l = false;
@@ -31,10 +34,16 @@ void Ast_Number::_get_info( IrWriter *aw ) const {
     aw->data << atoi( str.c_str() );
 }
 
-// penser aux pointeurs: les variables doivent être crées dans un espace mémoire
-// dans cette espace mémoire, on peut mettre
 Expr Ast_Number::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in" );
+    std::istringstream ss( str );
+    if ( l ) {
+        SI64 res;
+        ss >> res;
+        return room( cst( ip->gv.type_SI64, 64, &res ) );
+    }
+    SI32 res;
+    ss >> res;
+    return room( cst( ip->gv.type_SI32, 32, &res ) );
 }
 
 PI8 Ast_Number::_tok_number() const {

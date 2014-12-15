@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 #include "ParsingContext.h"
+#include "Type.h"
 #include "Inst.h"
 
 #include <fstream>
@@ -45,9 +46,6 @@ Inst::Inst() {
 Inst::~Inst() {
     rem_ref_to_this();
 }
-
-bool Inst::same_cst( const Inst *inst ) const { return false; }
-bool Inst::emas_cst( const Inst *inst ) const { return false; }
 
 void Inst::write_to_stream( Stream &os, int prec ) {
     write_dot( os );
@@ -68,6 +66,21 @@ Expr Inst::get( Expr cond ) {
 
 Expr Inst::simplified( Expr cond ) {
     return this;
+}
+
+Type *Inst::type() {
+    return 0;
+}
+
+Expr Inst::size() {
+    Type *t = type();
+    if ( not t )
+        return Expr();
+    int s = t->fixed_size();
+    if ( s >= 0 )
+        return s;
+    TODO;
+    return Expr();
 }
 
 bool Inst::always( bool val ) const {
