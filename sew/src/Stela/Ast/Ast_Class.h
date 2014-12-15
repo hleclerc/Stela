@@ -10,8 +10,6 @@ public:
     Ast_Class( int off );
 
     virtual void write_callable_type( Stream &os ) const { os << "class"; }
-    virtual ConvType *make_type_for( Vec<Past> &args );
-    virtual ConvType *make_type();
 
 protected:
     friend class AstMaker;

@@ -19,7 +19,6 @@ protected:
     
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
-    virtual Past _parse_in( ConvScope &scope );
 
     SplittedVec<Past,4> args;
     int tok_number;

@@ -5,5 +5,4 @@
 
 String get_cwd();
 
-
 #endif // GETCWD_H

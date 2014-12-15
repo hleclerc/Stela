@@ -244,3 +244,9 @@ src/Stela/Ast/Ast_SurdefList.cpp
 src/Stela/Ast/Ast_Symbol.h
 src/Stela/Ast/Ast_Symbol.cpp
 tests/test_ast_codegen.cpp
+src/Stela/Ssa/Inst.h
+src/Stela/Ssa/Inst.cpp
+src/Stela/Ssa/Expr.h
+src/Stela/Ssa/Expr.cpp
+src/Stela/Ssa/ParsingContext.h
+src/Stela/Ssa/ParsingContext.cpp

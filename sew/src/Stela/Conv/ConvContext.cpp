@@ -4,8 +4,6 @@
 #include "../Ast/Ast_Error.h"
 #include "../Ast/Ast_Void.h"
 #include "../Met/Lexer.h"
-#include "ConvContext.h"
-#include "ConvType.h"
 #include <sstream>
 
 ConvContext *cc;
@@ -39,7 +37,7 @@ void ConvContext::parse( String filename, String current_dir ) {
     // -> parse Ast
     file_stack << filename;
     Past ast = make_ast( error_list, lexer.root(), true );
-    ast->parse_in( main_scope );
+    // ast->parse_in( main_scope );
     file_stack.pop_back();
 
     sourcefiles[ filename ] = ast;

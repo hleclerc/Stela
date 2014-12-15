@@ -26,7 +26,6 @@ protected:
 
     virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const = 0;
     virtual void _get_info( IrWriter *aw ) const;
-    virtual Past _parse_in( ConvScope &scope );
     virtual int  _spec_flags() const = 0;
 
     String            name;

@@ -3,8 +3,6 @@
 #include "IrWriter.h"
 #include "Ast_Assign.h"
 
-#include "../Conv/ConvScope.h"
-
 Ast_Assign::Ast_Assign( int off ) : Ast( off ) {
 }
 
@@ -48,9 +46,4 @@ void Ast_Assign::_get_info( IrWriter *aw ) const {
 
 PI8 Ast_Assign::_tok_number() const {
     return IR_TOK_ASSIGN;
-}
-
-Past Ast_Assign::_parse_in( ConvScope &scope ) {
-    scope.reg_var( name, this, true, stat );
-    return this;
 }

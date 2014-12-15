@@ -1,16 +1,15 @@
 MC      = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 INSTALL = `pwd`
-SRC     = tests/test.met
-MAIN    = stela
-# SRC     = --code-for-class "PI8" -o PI8.h tests/test_Ast.met
-# MAIN    = stela_ast
+# SRC     = tests/test.met
+# MAIN    = stela
+SRC     = --code-for-class "PI8" -o PI8.h tests/test_Ast.met
+MAIN    = stela_ast
 # tests/test.met
 
 all: cmp
 
 exe: cmp
 	./${MAIN} ${SRC}
-	cat PI8.h
 	
 # 	metil_comp out.cpp
 

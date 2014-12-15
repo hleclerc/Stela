@@ -6,9 +6,7 @@
 #include "../System/Ptr.h"
 #include <set>
 class ErrorList;
-class ConvScope;
 class IrWriter;
-class ConvType;
 class Lexem;
 
 /***/
@@ -24,16 +22,11 @@ public:
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const = 0;
     void write_to( IrWriter *aw ) const;
 
-    Past parse_in( ConvScope &scope );
     virtual bool may_be_surdefined() const;
-    virtual ConvType *make_type();
 
 protected:
-    friend class ConvExpr;
-
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
-    virtual Past _parse_in( ConvScope &scope );
 
     int _off; ///< offset in sourcefile
 };

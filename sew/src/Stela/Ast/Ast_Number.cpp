@@ -40,6 +40,3 @@ PI8 Ast_Number::_tok_number() const {
     return IR_TOK_SI32;
 }
 
-Ast::Past Ast_Number::_parse_in( ConvScope &scope ) {
-    return this;
-}

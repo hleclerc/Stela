@@ -26,7 +26,7 @@ public:
     // errors
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );
-    Past              ret_error  ( String msg, bool warn = false, const char *file = 0, int line = -1 );
+    Past              ret_error ( String msg, bool warn = false, const char *file = 0, int line = -1 );
 
     // variables
     Past              error_var();
