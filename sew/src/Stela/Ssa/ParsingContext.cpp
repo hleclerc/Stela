@@ -32,11 +32,11 @@
 #include "../Ast/Ast.h"
 #include "ParsingContext.h"
 
-ParsingContext::ParsingContext( GlobalVariables &gv ) : parent( 0 ), gv( gv ) {
+ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ) {
 
 }
 
-ParsingContext::ParsingContext( ParsingContext *parent ) : parent( parent ), gv( gv ) {
+ParsingContext::ParsingContext( ParsingContext *parent ) : gv( gv ), parent( parent ) {
 
 }
 
@@ -66,8 +66,7 @@ void ParsingContext::parse( String filename, String current_dir ) {
 
     // -> parse Ast
     Past ast = make_ast( gv.error_list, lexer.root(), true );
-    // ast->parse_in( main_scope );
-    PRINT( *ast );
+    ast->parse_in( *this );
 }
 
 String ParsingContext::find_src( String filename, String current_dir ) const {

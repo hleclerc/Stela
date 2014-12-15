@@ -5,9 +5,11 @@
 #include "../System/Vec.h"
 #include "../System/Ptr.h"
 #include <set>
+class ParsingContext;
 class ErrorList;
 class IrWriter;
 class Lexem;
+class Expr;
 
 /***/
 class Ast : public ObjectWithCptUse {
@@ -24,7 +26,10 @@ public:
 
     virtual bool may_be_surdefined() const;
 
+    Expr parse_in( ParsingContext &context ) const;
+
 protected:
+    virtual void _parse_in( ParsingContext &context ) const = 0;
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 

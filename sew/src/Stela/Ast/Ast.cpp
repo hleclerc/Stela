@@ -3,8 +3,13 @@
 #include "../System/ErrorList.h"
 #include "../System/RaiiSave.h"
 #include "../System/Assert.h"
+
+#include "../Ssa/ParsingContext.h"
+
 #include "../Ir/Numbers.h"
+
 #include "../Met/Lexem.h"
+
 #include "Ast_Primitive.h"
 #include "Ast_Continue.h"
 #include "Ast_Variable.h"
@@ -56,6 +61,11 @@ void Ast::write_to( IrWriter *aw ) const {
 
 bool Ast::may_be_surdefined() const {
     return false;
+}
+
+Expr Ast::parse_in( ParsingContext &context ) const {
+    context.current_off = _off;
+    return _parse_in( context );
 }
 
 void Ast::_get_info( IrWriter *aw ) const {

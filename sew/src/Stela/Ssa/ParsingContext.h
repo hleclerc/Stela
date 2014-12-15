@@ -55,8 +55,10 @@ public:
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );
     // Past              ret_error ( String msg, bool warn = false, const char *file = 0, int line = -1 );
 
-    ParsingContext  *parent;
     GlobalVariables &gv;
+
+    ParsingContext  *parent;
+    int              current_off;
 };
 
 #endif // PARSINGCONTEXT_H
