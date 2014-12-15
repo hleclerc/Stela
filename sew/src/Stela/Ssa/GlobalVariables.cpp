@@ -26,21 +26,20 @@
 **
 ****************************************************************************/
 
+#include "GlobalVariables.h"
+#include "Type.h"
 
-#ifndef TYPE_H
-#define TYPE_H
-
-#include "../System/Stream.h"
-
-/**
-*/
-class Type {
-public:
-    Type();
-    void write_to_stream( Stream &os ) const;
-    int  fixed_size();
-
-    virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
+template<class T>
+struct Type_ : Type {
+    virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
+        os << *reinterpret_cast<const T *>( data );
+    }
 };
 
-#endif // TYPE_H
+static Type_<SI32> _type_SI32;
+static Type_<SI64> _type_SI64;
+
+GlobalVariables::GlobalVariables() {
+    type_SI32 = &_type_SI32;
+    type_SI64 = &_type_SI64;
+}

@@ -9,6 +9,9 @@ struct Room : Inst {
     virtual Expr forced_clone( Vec<Expr> &created ) const {
          return new Room( val, cons );
     }
+    virtual void write_to_stream( Stream &os, int prec = -1 ) {
+        os << "&(" << val << ")";
+    }
     virtual void write_dot( Stream &os ) const {
         os << "&";
     }

@@ -35,6 +35,7 @@
 ParsingContext *ip = 0;
 
 ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ) {
+    gv.main_parsing_context = this;
     _init();
 }
 
@@ -105,6 +106,13 @@ void ParsingContext::reg_var( String name, Expr expr, bool stat ) {
     nv->name = name;
     nv->expr = expr;
     nv->stat = stat;
+}
+
+Expr ParsingContext::get_var( String name ) {
+    for( NamedVar &nv : variables )
+        if ( nv.name == name )
+            return nv.expr;
+    return Expr();
 }
 
 void ParsingContext::disp_error( String msg, bool warn, const char *file, int line ) {

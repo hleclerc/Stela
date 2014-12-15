@@ -253,3 +253,5 @@ src/Stela/Ssa/Cst.h
 src/Stela/Ssa/Cst.cpp
 src/Stela/Ssa/Rcast.h
 src/Stela/Ssa/Rcast.cpp
+src/Stela/Ssa/GlobalVariables.h
+src/Stela/Ssa/GlobalVariables.cpp

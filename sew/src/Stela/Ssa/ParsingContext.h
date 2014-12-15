@@ -30,9 +30,8 @@
 #ifndef PARSINGCONTEXT_H
 #define PARSINGCONTEXT_H
 
-#include "../System/ErrorList.h"
+#include "GlobalVariables.h"
 #include "Inst.h"
-#include <set>
 
 class IpSnapshot;
 
@@ -40,13 +39,6 @@ class IpSnapshot;
 */
 class ParsingContext {
 public:
-    struct GlobalVariables {
-        ErrorList        error_list;
-        Vec<String>      include_paths;
-        std::set<String> already_parsed;
-        Type            *type_SI64;
-        Type            *type_SI32;
-    };
     struct NamedVar {
         String name;
         Expr   expr;
@@ -61,6 +53,7 @@ public:
     String            find_src( String filename, String current_dir = "" ) const;
 
     void              reg_var( String name, Expr expr, bool stat );
+    Expr              get_var( String name );
 
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );

@@ -26,7 +26,7 @@
 **
 ****************************************************************************/
 
-
+#include "../System/Assert.h"
 #include "Type.h"
 
 Type::Type() {
@@ -39,3 +39,18 @@ void Type::write_to_stream( Stream &os ) const {
 int Type::fixed_size() {
     return 8;
 }
+
+void Type::write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
+    int size = fixed_size();
+    if ( size < 0 )
+        TODO;
+    const char *c = "0123456789ABCDEF";
+    for( int i = 0; i < std::min( size / 8, 4 ); ++i ) {
+        if ( i )
+            os << ' ';
+        os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
+    }
+    if ( size / 8 > 4 )
+        os << "...";
+}
+

@@ -26,21 +26,23 @@
 **
 ****************************************************************************/
 
+#ifndef GLOBALVARIABLES_H
+#define GLOBALVARIABLES_H
 
-#ifndef TYPE_H
-#define TYPE_H
+#include "../System/ErrorList.h"
+#include <set>
+class ParsingContext;
+class Type;
 
-#include "../System/Stream.h"
-
-/**
-*/
-class Type {
-public:
-    Type();
-    void write_to_stream( Stream &os ) const;
-    int  fixed_size();
-
-    virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
+struct GlobalVariables {
+    GlobalVariables();
+    ParsingContext  *main_parsing_context;
+    ErrorList        error_list;
+    Vec<String>      include_paths;
+    std::set<String> already_parsed;
+    Type            *type_SI64;
+    Type            *type_SI32;
 };
 
-#endif // TYPE_H
+
+#endif // GLOBALVARIABLES_H

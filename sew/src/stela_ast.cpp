@@ -19,7 +19,7 @@ int main( int argc, char **argv ) {
         return usage( argv[ 0 ], "Please specify an input file", 2 );
     bool add_base_files = not ( disp_lexems or disp_tokens );
 
-    ParsingContext::GlobalVariables gv;
+    GlobalVariables gv;
     ParsingContext pc( gv );
 
     // predefs
@@ -36,10 +36,23 @@ int main( int argc, char **argv ) {
     String cwd = get_cwd();
     for( int i = beg_files; i < argc; ++i )
         pc.parse( argv[ i ], cwd );
-    for( ParsingContext::NamedVar &nv : pc.variables )
-        PRINT( nv.expr );
+    //for( ParsingContext::NamedVar &nv : pc.variables )
+    //    PRINT( nv.expr );
     if ( gv.error_list )
         return gv.error_list;
+
+    //SARG(  0 , code_for_class    , "optionnal name of a class for which we want code", 0 );
+    //SARG( 'o', output            , "", 0 );
+    // objectif: sortir du code pour les classes
+    if ( code_for_class ) {
+        Expr e = pc.get_var( code_for_class );
+        if ( not e ) {
+            std::cerr << "Impossible to find var " << code_for_class << std::endl;
+            return 1;
+        }
+        Type *c = e.get_type_for( Vec<Expr>() );
+    }
+
 
     return 0;
 }

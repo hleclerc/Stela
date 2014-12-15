@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 #include "../System/Memcpy.h"
+#include "Type.h"
 #include "Cst.h"
 #include <map>
 
@@ -58,14 +59,7 @@ public:
         write_dot( os );
     }
     virtual void write_dot( Stream &os ) const {
-        const char *c = "0123456789ABCDEF";
-        for( int i = 0; i < std::min( size / 8, 4 ); ++i ) {
-            if ( i )
-                os << ' ';
-            os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
-        }
-        if ( size / 8 > 4 )
-            os << "...";
+        type->write_val( os, data.ptr() );
     }
 
     Vec<PI8> data; ///< values and known (should not be changed directly)
