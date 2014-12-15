@@ -82,7 +82,16 @@ public:
     virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) const = 0;
 
+    virtual void set( Expr obj, Expr cond );
+    virtual Expr get( Expr cond );
+    virtual Expr simplified( Expr cond );
+
+    virtual bool always( bool val ) const;
+
     virtual void _mk_store_dep( Inst *dst );
+
+    static Inst *twin_or_val( Inst *inst ); ///< if there's already an inst doing the same thing, return this inst and delete `inst`
+
 
     // display
     static  int  display_graph( Vec<Expr> outputs, const char *filename = ".res" );

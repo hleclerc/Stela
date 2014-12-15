@@ -51,4 +51,6 @@ class Directory_RedBlack
     
     def add name, inode
         #
-    
+
+a := 10
+static b := 20

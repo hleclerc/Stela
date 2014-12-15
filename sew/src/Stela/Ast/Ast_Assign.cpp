@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/AssignFlags.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
@@ -42,6 +43,23 @@ void Ast_Assign::_get_info( IrWriter *aw ) const {
 
     // val
     aw->push_delayed_parse( val.ptr() );
+}
+
+Expr Ast_Assign::_parse_in( ParsingContext &context ) const {
+    // rhs
+    Expr val = val->parse_in( context );
+    if ( not val )
+        return val;
+
+    if ( type ) // ~=
+        TODO;
+    if ( ref ) // := ref
+        TODO;
+    if ( cons )
+        TODO;
+
+    context.reg_var( name, val, stat );
+    return val;
 }
 
 PI8 Ast_Assign::_tok_number() const {

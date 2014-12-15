@@ -26,8 +26,10 @@
 **
 ****************************************************************************/
 
-#include <fstream>
+#include "ParsingContext.h"
 #include "Inst.h"
+
+#include <fstream>
 
 PI64 Inst::cur_op_id = 0;
 
@@ -54,6 +56,35 @@ void Inst::write_to_stream( Stream &os, int prec ) {
             os << ( i ? "," : "(" ) << inp[ i ];
         os << ")";
     }
+}
+
+void Inst::set( Expr obj, Expr cond ) {
+    ip->disp_error( "setting a non pointer item" );
+}
+
+Expr Inst::get( Expr cond ) {
+    return ip->ret_error( "getting a non pointer item" );
+}
+
+Expr Inst::simplified( Expr cond ) {
+    return this;
+}
+
+bool Inst::always( bool val ) const {
+    return false;
+}
+
+Inst *Inst::twin_or_val( Inst *inst ) {
+    //    if ( inst->inp.size() ) {
+    //        const Vec<Inst::Out::Parent,-1,1> &p = inst->inp[ 0 ].parents();
+    //        for( Parent &p : inp[ 0 ]->parents ) {
+    //            if ( p.inst != inst and p.inst->equal( inst ) ) {
+    //                delete inst;
+    //                return p.inst;
+    //            }
+    //        }
+    //    }
+    return inst;
 }
 
 void Inst::add_dep( const Expr &val ) {

@@ -32,12 +32,20 @@
 #include "../Ast/Ast.h"
 #include "ParsingContext.h"
 
-ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ) {
+ParsingContext *ip = 0;
 
+ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ) {
+    _init();
 }
 
 ParsingContext::ParsingContext( ParsingContext *parent ) : gv( gv ), parent( parent ) {
+    _init();
+    ip_snapshot = parent->ip_snapshot;
+}
 
+void ParsingContext::_init() {
+    ip_snapshot = 0;
+    class_mode = false;
 }
 
 void ParsingContext::add_inc_path( String path ) {
@@ -92,6 +100,13 @@ String ParsingContext::find_src( String filename, String current_dir ) const {
     return String();
 }
 
+void ParsingContext::reg_var( String name, Expr expr, bool stat ) {
+    NamedVar *nv = variables.push_back();
+    nv->name = name;
+    nv->expr = expr;
+    nv->stat = stat;
+}
+
 void ParsingContext::disp_error( String msg, bool warn, const char *file, int line ) {
     std::cerr << error_msg( msg, warn, file, line );
 }
@@ -103,4 +118,13 @@ ErrorList::Error &ParsingContext::error_msg( String msg, bool warn, const char *
     //for( int i = parse_stack.size() - 1; i >= 0; --i )
     //    res.ac( parse_stack[ i ].filename.c_str(), parse_stack[ i ].offset );
     return res;
+}
+
+Expr ParsingContext::ret_error( String msg, bool warn, const char *file, int line ) {
+    disp_error( msg, warn, file, line );
+    return error_var();
+}
+
+Expr ParsingContext::error_var() {
+    return Expr();
 }

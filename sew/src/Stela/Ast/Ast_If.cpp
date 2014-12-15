@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_If.h"
@@ -36,6 +37,10 @@ void Ast_If::_get_info( IrWriter *aw ) const {
     aw->push_delayed_parse( cond.ptr() );
     aw->push_delayed_parse( ok.ptr() );
     aw->push_delayed_parse( ko.ptr() );
+}
+
+Expr Ast_If::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_If::_tok_number() const {

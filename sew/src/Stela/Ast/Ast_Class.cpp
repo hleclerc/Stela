@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_Class.h"
@@ -17,6 +18,10 @@ void Ast_Class::_get_info( IrWriter *aw ) const {
     aw->data << inheritance.size();
     for( int i = 0; i < inheritance.size(); ++i )
         aw->push_delayed_parse( inheritance[ i ].ptr() );
+}
+
+Expr Ast_Class::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_Class::_tok_number() const {

@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "Ast_Variable.h"
 #include "IrWriter.h"
@@ -95,6 +96,10 @@ void Ast_Variable::write_to_stream( Stream &os, int nsp ) const {
 
 void Ast_Variable::_get_info( IrWriter *aw ) const {
     aw->push_nstring( str );
+}
+
+Expr Ast_Variable::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_Variable::_tok_number() const {

@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_Continue.h"
@@ -13,6 +14,10 @@ void Ast_Continue::write_to_stream( Stream &os, int nsp ) const {
 
 void Ast_Continue::_get_info( IrWriter *aw ) const {
     aw->data << n;
+}
+
+Expr Ast_Continue::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_Continue::_tok_number() const {

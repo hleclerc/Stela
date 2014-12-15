@@ -64,6 +64,7 @@ bool Ast::may_be_surdefined() const {
 }
 
 Expr Ast::parse_in( ParsingContext &context ) const {
+    RaiiSave<ParsingContext *> old_ip( ip, &context );
     context.current_off = _off;
     return _parse_in( context );
 }

@@ -18,6 +18,7 @@ protected:
     friend class AstMaker;
     friend class ConvType;
 
+    virtual Expr _parse_in( ParsingContext &context ) const;
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 

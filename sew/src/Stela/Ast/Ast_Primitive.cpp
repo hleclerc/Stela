@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "Ast_Primitive.h"
 #include "IrWriter.h"
@@ -18,6 +19,10 @@ void Ast_Primitive::_get_info( IrWriter *aw ) const {
     aw->data << args.size();
     for( int i = 0; i < args.size(); ++i )
         aw->push_delayed_parse( args[ i ].ptr() );
+}
+
+Expr Ast_Primitive::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_Primitive::_tok_number() const {

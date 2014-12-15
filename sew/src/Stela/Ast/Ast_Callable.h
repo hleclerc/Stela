@@ -25,6 +25,7 @@ protected:
     friend class Ast_Def;
 
     virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const = 0;
+    virtual Expr _parse_in( ParsingContext &context ) const;
     virtual void _get_info( IrWriter *aw ) const;
     virtual int  _spec_flags() const = 0;
 

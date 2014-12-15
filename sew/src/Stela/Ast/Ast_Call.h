@@ -19,6 +19,7 @@ public:
 protected:
     friend class AstMaker;
 
+    virtual Expr _parse_in( ParsingContext &context ) const;
     virtual void _get_info( IrWriter *aw ) const;
 
     Past                 f;

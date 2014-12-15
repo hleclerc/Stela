@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_NdList.h"
@@ -19,6 +20,10 @@ void Ast_NdList::write_to_stream( Stream &os, int nsp ) const {
 
 void Ast_NdList::_get_info( IrWriter *aw ) const {
     TODO;
+}
+
+Expr Ast_NdList::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_NdList::_tok_number() const {

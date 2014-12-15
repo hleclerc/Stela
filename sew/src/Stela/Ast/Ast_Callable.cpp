@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
@@ -67,6 +68,10 @@ void Ast_Callable::write_to_stream( Stream &os, int nsp ) const {
         pertinence->write_to_stream( os << " pertinence ", nsp + 2 );
 
     block->write_to_stream( os << " ", nsp + 2 );
+}
+
+Expr Ast_Callable::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 void Ast_Callable::_get_info( IrWriter *aw ) const {

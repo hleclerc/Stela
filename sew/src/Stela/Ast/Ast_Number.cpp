@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_Number.h"
@@ -28,6 +29,12 @@ void Ast_Number::_get_info( IrWriter *aw ) const {
     if ( b )
         return;
     aw->data << atoi( str.c_str() );
+}
+
+// penser aux pointeurs: les variables doivent être crées dans un espace mémoire
+// dans cette espace mémoire, on peut mettre
+Expr Ast_Number::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_Number::_tok_number() const {

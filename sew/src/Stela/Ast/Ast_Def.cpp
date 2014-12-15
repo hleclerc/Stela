@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
 #include "Ast_Class.h"
@@ -59,6 +60,10 @@ void Ast_Def::_get_info( IrWriter *aw ) const {
     if ( get.size() ) aw->push_nstring( get );
     if ( set.size() ) aw->push_nstring( set );
     if ( sop.size() ) aw->push_nstring( sop );
+}
+
+Expr Ast_Def::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 PI8 Ast_Def::_tok_number() const {

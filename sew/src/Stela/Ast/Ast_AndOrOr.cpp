@@ -1,3 +1,4 @@
+#include "../Ssa/ParsingContext.h"
 #include "../Ir/Numbers.h"
 #include "Ast_AndOrOr.h"
 #include "IrWriter.h"
@@ -7,6 +8,10 @@ Ast_AndOrOr::Ast_AndOrOr( int off, bool want_and ) : Ast( off ), want_and( want_
 
 void Ast_AndOrOr::write_to_stream( Stream &os, int nsp ) const {
     os << ( want_and ? "and" : "or" );
+}
+
+Expr Ast_AndOrOr::_parse_in( ParsingContext &context ) const {
+    return context.ret_error( "TODO: _parse_in" );
 }
 
 void Ast_AndOrOr::_get_info( IrWriter *aw ) const {
