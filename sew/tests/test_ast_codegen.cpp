@@ -1,32 +1,20 @@
 #include "../PI8.h"
 
 /**
+  SocaDB object.
 */
-template<class T>
-struct Ref {};
-
-/**
-*/
-struct Model {
-    Model( char  *__ptr, Model *__par, char __bof ) : __ptr( __ptr ), __par( __par ), __bof( __bof ) {
+struct SO {
+    SO( char *ptr, int type_num, int type_inst ) : ptr( ptr ), type_num( type_num ), type_inst( type_inst ) {
     }
-
-    char  *__ptr;
-    Model *__par;
-    char   __bof;
+    char *ptr;
+    int   type_num;
+    int   type_inst;
 };
 
 /**
 */
-struct PI8 {};
-
-/**
-  Rq: on ne pourra pas générer du code pour des méthodes libres, à moins de spécifier le type des arguments en entrée
-  -> type model ou pas type model ?
-*/
-template<class T>
-struct Ref<PI8> : public Model {
-    Ref( char  *__ptr, Model *__par, char __bof ) : Model( __ptr, __par, __bof ) {
+struct PI8 {
+    PI8( SO __par, char  *__ptr, char __bof ) : __par( __par ), __ptr( ptr ), __bof( __bof ) {
     }
     int __size() const {
         return 8;
@@ -34,18 +22,41 @@ struct Ref<PI8> : public Model {
     int __alig() const {
         return 8;
     }
-    operator PI8() const {
-        return *reinterpret_cast<const PI8 *>( __ptr ); // +- bof
-    }
+    //operator PI8() const {
+    //    return *reinterpret_cast<const PI8 *>( __ptr ); // +- bof
+    //}
+    SO     __par;
+    char  *__ptr;
+    char   __bof;
 };
 
+namespace SocaDB {
+int __size( PI8 ) const {
+    return 8;
+}
+int __alig() const {
+    return 8;
+}
+}
+
+/**
+  Workflow pour les clients
+    SB::Directory dir( "/home" );
+    SB::User john( dir.find( "john" ) );
+    PRINT( john.surname() );
+    john.surname() = "yuki"; ///< -> envoie à la db
+    dir
+
+  Workflow côté serveur
+    utilisation des fonctions de communication
+      apply_patch...
+    + utilisation ponctuelle des fonctions client (par exemple du find sur un répértoire)
+*/
 int main() {
     PI8 a, b;
     PRINT( a + b );
 
     // allocation sur la pile -> va poser de gros soucis pour les resize, etc...
-    // faut-il
-    NEW_CUnsigned( a, 17 );
-
+    // prop: on ne l'autorise pas
 
 }
