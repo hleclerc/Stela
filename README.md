@@ -5,7 +5,6 @@ Stela is a general purpose programming language, designed for performance, or to
 
 Of course, C++ is currently a great match for these goals, thanks to the incredible work on compilers and constructs like e.g. templates, permitting to obtain genericity, flexibility at no cost at all (at least in terms of execution speed).
 
-
 Nevertheless, staying with the later example, the syntax for C++ template meta-programming is not really convenient. At least, one can say that if meta-programming is possible with templates, templates do not really seem to be designed for meta-programming.
 
 Stela is an experimental language with the following goals
@@ -39,15 +38,14 @@ print map m, x => x + 7 # should give '22 17 b7'
 
 A compilation server
 ====================
-(work in progress)
 
-To reduce the compilation time, Stela runs as a server with a permanent database containing the code for each class or method specialization. 
+To reduce the compilation time, Stela runs as a server with a database containing the code for each class or method specialization.
 
-It dramatically reduces the compilation time, giving the opportunity to rely heavily on the compile-time passes to help the user.
+It significantly reduces the compilation time, giving the opportunity to rely heavily on the compiler to help the user.
 
-To take an example, the return types are found according to the function code and the input parameters, recursively. With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation passes (with C++ templates, each modification implies that everything has to be recompiled).
+To take an example, the return types are found according to function code and input parameters (using the code of the definition). With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation passes.
 
-More generally, *it allows to use template everywhere*. Actually, every function or method is template. Classes can of course easilly be templated.
+More generally, *it allows to use template everywhere*. Actually, unless explicitely specified, functions and methods are template. Classes can easilly be templated (as shown in the above example).
 
 
 Some details on the meta-programming model
@@ -125,27 +123,23 @@ Compared to iterators
 * execution is almost always faster (state is stored in the program counter without additional variables, ...)
 * code passed to `for` methods (as the variable `block` in the previous example) can be analyzed (TODO).
 
-Object of variable sizes (TODO)
--------------------------------
+Object of variable sizes
+------------------------
 
 Let say that we want to create an array object with, in memory, the size, followed right after by the data.
 
 In a C code, it is possible to do this manually with `malloc`s or `alloca`s of size `sizeof( int ) + len * sizeof( T )`. But with `struct`s or `class`es, it's not that easy or natural.
 
-Here is an example of how to create a class which size is known during the compilation.
+Here is an example of how to create a class with size not known during the compilation.
 
 ```python
 class MyVec
-    def init( size ) : _size( size )
-        ...
-    def _nb_T
-        _size
-    _size := 0
-    _data ~= T * _nb_T
+    size := CUnsigned # compressed unsigned
+    data := repeat PI8, n = size
 ```
 
-Dynamic polymorphism (TODO)
----------------------------
+Dynamic polymorphism
+--------------------
 
 Works basically as with C++
 ```python
@@ -161,8 +155,8 @@ It means that the vtable are extensibles (stored as a list of arrays).
 Tools for optimization
 ======================
 
-Auto-tuning (TODO)
-------------------
+Auto-tuning
+-----------
 
 Example
 ```python
@@ -174,18 +168,18 @@ def f( range )
     for v in simd_loop( range, simd_size.val )
         ...
 ```
-in auto-tuning mode, the compiler generate code for each parameters to be optimized and keep the values that permit to minimize the output of the test functions. Test function can measure total execution time, or other parameters like memory usage, cpu-time, ...
+in auto-tuning mode, the compiler generate code for each parameters to be optimized and keep the values that permit to minimize the output value of the test functions. Test function can measure total execution time, or other parameters like memory usage, cpu-time, ...
 
 Garbage collection (heap and stack)
 ===================================
 
-As with C++, there is no garbage collection for the heap. Or at least at a language level.
+As with C++, there is no garbage collection for the heap. Or at least at the language level.
 
 If one really wants a GC, one can use reflexion, specific pointers (it's possible to surdefine how references on specific objects are transformed to pointer), ... But it's a library concern, not a language one.
 
 Nevertheless, for the stack(s), there is a garbage collector. But it's managed statically by the compiler.
 
-Actually, for standard cases, it allows for obtaining exactly the same behavior than the C++ (the stacks are managed the same way). The point here is that Stela encourages the use of references from the stack (to avoid wastefull copies, transient wrapper classes, ...), which leads to break the simple LIFO rules for variables in the stack. (work in progress)
+Actually, for standard cases, it allows for obtaining exactly the same behavior than the C++ (the stacks are managed the same way). The point here is that Stela encourages the use of references from the stack (to avoid wastefull copies, transient wrapper classes, ...), which leads to break the simple LIFO rules for variables in the stack. Beware netherveless, it is a work in progress, is works only for simple cases (and the compiler shouts if the case is too "complicated").
 
 In this example
 ```python
@@ -206,7 +200,7 @@ def f
 ```
 classes in this case cannot be created in the heap.
 
-This is a work in progress. All the implementation details have not been defined.
+This is a work in progress.
 
 
 TODO
@@ -214,9 +208,9 @@ TODO
 
 Actually a lot of things.
 
-Some experiments have been made with an interpreter. It has allowed for testing of the syntax, the helpfullness of such or such construct, notably with big programs (where C++ shines in front of e.g. python and javascript)... which lead now to something that can considered as convenient
+Some experiments have been made with an interpreter. It has allowed for testing of the syntax, the helpfullness of such or such construct, notably with big programs (where C++ shines in front of e.g. python and javascript)... which leads now to something that has considered as convenient by us.
 
-Currently a compiler is under heavy development. The goal now is to validate that the execution speed are as expected. Currently, for testing purpose, it generate basic C++ code.
+Currently a compiler is under heavy development. The goal now is to validate that the execution speeds are as expected. Currently, for testing purpose, it generate C++ code.
 
 
 
