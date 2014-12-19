@@ -20,6 +20,9 @@ public:
     virtual void write_callable_type( Stream &os ) const = 0;
     double       default_pertinence() const;
 
+    int min_nb_args() const;
+    int max_nb_args() const;
+
     virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const = 0;
     virtual Expr _parse_in( ParsingContext &context ) const;
     virtual void _get_info( IrWriter *aw ) const;

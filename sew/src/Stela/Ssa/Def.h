@@ -40,13 +40,13 @@ public:
     struct TrialDef : Trial {
         TrialDef( ParsingContext *caller, Def *orig );
         virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
+        virtual Expr call( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
         ParsingContext ns;
         Def           *orig;
     };
 
     Def( Ast_Callable *ast_item );
-    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self );
+    virtual Trial *test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
 };
 
 #endif // DEF_H

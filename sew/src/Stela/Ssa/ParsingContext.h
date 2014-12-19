@@ -62,7 +62,7 @@ public:
     Expr              get_var( String name );
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
-    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, int *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
+    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
 
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );

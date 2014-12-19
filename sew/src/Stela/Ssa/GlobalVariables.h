@@ -30,6 +30,7 @@
 #define GLOBALVARIABLES_H
 
 #include "../System/ErrorList.h"
+#include "../Ast/Ast.h"
 #include "Inst.h"
 #include <map>
 #include <set>
@@ -59,8 +60,9 @@ struct GlobalVariables {
     #include "DeclBaseClass.h"
     #undef DECL_BT
 
-    Type *type_ST;
-    int   ptr_size;
+    Type               *type_ST;
+    int                 ptr_size;
+    SplittedVec<Past,4> ast_lst; ///< allows to save Ast trees for later use
 
 };
 

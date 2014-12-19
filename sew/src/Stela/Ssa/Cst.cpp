@@ -71,12 +71,12 @@ public:
         return true;
     }
     virtual bool always( bool val ) const {
-        TODO;
-        return false;
+        int sb = ( _size + 7 ) / 8;
+        return _type->always( val, _data.ptr(), _data.ptr() + sb );
     }
     virtual bool always_equal( Type *t, const void *d ) {
-        TODO;
-        return false;
+        int sb = ( _size + 7 ) / 8;
+        return _type->always_equal( t, d, _data.ptr(), _data.ptr() + sb );
     }
 
     Vec<PI8> _data; ///< values and known (should not be changed directly)

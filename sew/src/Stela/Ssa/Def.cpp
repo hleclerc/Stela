@@ -45,7 +45,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pn
 Def::Def( Ast_Callable *ast_item ) : Callable( ast_item ) {
 }
 
-Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
+Callable::Trial *Def::test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
     TODO;
     if ( ast_item->pertinence )
         TODO;

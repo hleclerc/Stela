@@ -42,6 +42,9 @@ public:
     int  size(); ///< size in bits, or -1 if not known
     int  sb(); ///< size in bytes, or -1 if not known
 
+    virtual bool always( bool val, const PI8 *data, const PI8 *knwn );
+    virtual bool always_equal( Type *t, const void *d, const PI8 *data, const PI8 *knwn );
+
     virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
     void parse();
 

@@ -37,7 +37,7 @@ Class::TrialClass::TrialClass( ParsingContext *caller, Class *orig ) : ns( 0, ca
 Class::TrialClass::~TrialClass() {
 }
 
-Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
     TODO;
     return Expr();
 }
@@ -45,9 +45,63 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, in
 Class::Class( const Ast_Callable *ast_item ) : Callable( ast_item ) {
 }
 
-Callable::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
-    TODO;
+Callable::Trial *Class::test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
     if ( ast_item->pertinence )
         TODO;
-    return 0;
+    TrialClass *res = new TrialClass( caller, this );
+
+    // nb arguments
+    if ( pnu + pnn < ast_item->min_nb_args() ) return res->wr( "no enough arguments" );
+    if ( pnu + pnn > ast_item->max_nb_args() ) return res->wr( "To much arguments" );
+
+    if ( ast_item->varargs ) {
+        TODO;
+    } else {
+        // unnamed args
+        for( int i = 0; i < pnu; ++i )
+            res->ns.reg_var( ast_item->arguments[ i ], pvu[ i ] );
+        // named args
+        Vec<bool> used_arg( Size(), pnn, false );
+        for( int i = pnu; i < ast_item->arguments.size(); ++i ) {
+            String arg_name = ast_item->arguments[ i ];
+            for( int n = 0; ; ++n ) {
+                if ( n == pnn ) {
+                    // unspecified arg
+                    int j = i - ( ast_item->arguments.size() - ast_item->default_values.size() );
+                    if ( j < 0 )
+                        return res->wr( "unspecified mandatory argument" );
+                    Expr v = ast_item->default_values[ j ]->parse_in( res->ns );
+                    res->ns.reg_var( arg_name, v );
+                    break;
+                }
+                if ( arg_name == pnames[ n ] ) {
+                    res->ns.reg_var( arg_name, pvn[ n ] );
+                    used_arg[ n ] = true;
+                    break;
+                }
+            }
+        }
+        for( int n = 0; n < pnn; ++n ) {
+            if ( not used_arg[ n ] ) {
+                for( int m = 0; m < n; ++m )
+                    if ( pnames[ n ] == pnames[ m ] )
+                        caller->disp_error( "arg assigned twice", true );
+                return res->wr( "name=... does not appear in def args" );
+            }
+        }
+    }
+
+    // condition
+    if ( ast_item->condition ) {
+        res->cond = ast_item->condition->parse_in( res->ns )->get( res->ns.cond );
+        if ( res->cond->always( false ) )
+            return res->wr( "condition = false" );
+        if ( not res->cond->always( true ) ) {
+            caller->disp_error( "class conditions must be known at compile time" );
+            return res->wr( "condition not known at compile time" );
+        }
+    } else
+        res->cond = true;
+
+    return res;
 }

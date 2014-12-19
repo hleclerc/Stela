@@ -1,8 +1,9 @@
 #include "../Ssa/ParsingContext.h"
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
-#include "IrWriter.h"
 #include "Ast_Callable.h"
+#include "IrWriter.h"
+#include <limits>
 
 Ast_Callable::Ast_Callable( int off ) : Ast( off ) {
 }
@@ -72,6 +73,16 @@ void Ast_Callable::write_to_stream( Stream &os, int nsp ) const {
 
 double Ast_Callable::default_pertinence() const {
     return def_pert_num / double( def_pert_den );
+}
+
+int Ast_Callable::min_nb_args() const {
+    return arguments.size() - default_values.size();
+}
+
+int Ast_Callable::max_nb_args() const {
+    if ( varargs )
+        return std::numeric_limits<int>::max();
+    return arguments.size();
 }
 
 Expr Ast_Callable::_parse_in( ParsingContext &context ) const {

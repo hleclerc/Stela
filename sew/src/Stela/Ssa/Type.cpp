@@ -56,6 +56,16 @@ int Type::sb() {
     return size() >= 0 ? ( size() + 7 ) / 8 : -1;
 }
 
+bool Type::always( bool val, const PI8 *data, const PI8 *knwn ) {
+    TODO;
+    return false;
+}
+
+bool Type::always_equal( Type *t, const void *d, const PI8 *data, const PI8 *knwn ) {
+    TODO;
+    return false;
+}
+
 void Type::write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
     // if ( orig and )
     int len = size();

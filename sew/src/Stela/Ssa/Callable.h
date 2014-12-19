@@ -42,7 +42,7 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *ParsingContext, const Expr &cond, Expr self );
+        virtual Expr call( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, int apply_mode, ParsingContext *ParsingContext, const Expr &cond, Expr self );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 
@@ -52,7 +52,7 @@ public:
     };
 
     Callable( const Ast_Callable *ast_item );
-    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self ) = 0;
+    virtual Trial *test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self ) = 0;
 
     const Ast_Callable *ast_item;
 };

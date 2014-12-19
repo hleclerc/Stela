@@ -52,8 +52,11 @@ ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ), c
 ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, String add_scope_name ) : gv( gv ), parent( parent ), caller( caller ) {
     _init();
 
-    scope_name = parent->scope_name + to_string( add_scope_name.size() ) + "_" + add_scope_name;
-    ip_snapshot = parent->ip_snapshot;
+    if ( parent ) {
+        ip_snapshot = parent->ip_snapshot;
+        scope_name = parent->scope_name;
+    }
+    scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
 }
 
 void ParsingContext::_init() {
@@ -88,6 +91,7 @@ void ParsingContext::parse( String filename, String current_dir ) {
     // -> parse Ast
     Past ast = make_ast( gv.error_list, lexer.root(), true );
     ast->parse_in( *this );
+    gv.ast_lst << ast;
 }
 
 String ParsingContext::find_src( String filename, String current_dir ) const {
@@ -164,7 +168,7 @@ Expr ParsingContext::get_var( String name ) {
     return res;
 }
 
-Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_args, ApplyMode am ) {
+Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, String *n_name, Expr *n_args, ApplyMode am ) {
     if ( f.error() )
         return f;
     for( int i = 0; i < nu; ++i )
@@ -213,7 +217,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, E
         }
 
         // parm
-        Vec<int> pn_names;
+        Vec<String> pn_names;
         Vec<Expr> pu_args, pn_args;
         //        Type *parm_type = ip->type_from_type_var( f_type->parameters[ 1 ] );
         //        if ( parm_type != ip->type_Void ) {
@@ -396,7 +400,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, E
 Expr ParsingContext::_make_surdef_list( const Vec<Expr> &lst ) {
     SurdefList *res = new SurdefList;
     res->callables = lst;
-    SI64 val = (SI64)res;
+    SI64 val = ST( res );
     return room( cst( gv.type_SurdefList, 64, &val ) );
 }
 
