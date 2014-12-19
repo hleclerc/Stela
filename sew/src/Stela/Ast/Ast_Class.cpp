@@ -1,4 +1,7 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Class.h"
+#include "../Ssa/Room.h"
+#include "../Ssa/Cst.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_Class.h"
@@ -21,7 +24,28 @@ void Ast_Class::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_Class::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    std::set<String> res;
+    if ( context.parent ) {
+        std::set<String> avail;
+        avail.insert( name );
+        get_potentially_needed_ext_vars( res, avail );
+    }
+
+    //
+    Class *c = 0;
+    #define DECL_BT( T ) if ( name == #T ) { c = context.gv.class_##T; c->ast_item = this; }
+    #include "../Ssa/DeclBaseClass.h"
+    #include "../Ssa/DeclParmClass.h"
+    #undef DECL_BT
+    if ( not c )
+        c = new Class( this );
+
+    //
+    SI64 ptr = SI64( ST( c ) );
+    Expr val = cst( context.gv.type_Class, 64, &ptr );
+    Expr out = room( val );
+    out->flags |= Inst::SURDEF;
+    return context.reg_var( name, out, true );
 }
 
 PI8 Ast_Class::_tok_number() const {

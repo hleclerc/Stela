@@ -20,8 +20,8 @@ struct Room : Inst {
     }
     virtual void set( Expr obj, Expr cond ) {
         if ( cons )
-            return ip->disp_error( "attempting to modify a const value" );
-        if ( IpSnapshot *is = ip->ip_snapshot ) {
+            return ip->pc->disp_error( "attempting to modify a const value" );
+        if ( IpSnapshot *is = ip->pc->ip_snapshot ) {
             TODO;
             PRINT( is );
             //if ( creation_date < is->date and not is->rooms.count( this ) )
@@ -32,6 +32,14 @@ struct Room : Inst {
     virtual Expr get( Expr cond ) {
         return val->simplified( cond );
     }
+    virtual Type *ptype() {
+        return val ? val->type() : 0;
+    }
+    virtual Type *type() {
+        TODO;
+        return 0;
+    }
+
     Expr val;
     bool cons;
 };

@@ -28,25 +28,37 @@
 
 #include "../System/FileExists.h"
 #include "../System/ReadFile.h"
+#include "../Ast/Ast_Callable.h"
 #include "../Met/Lexer.h"
-#include "../Ast/Ast.h"
 #include "ParsingContext.h"
+#include "SurdefList.h"
+#include "Callable.h"
+#include "Select.h"
+#include "Type.h"
+#include "Room.h"
+#include "Cst.h"
+#include "Op.h"
+#include <algorithm>
+#include <limits>
 
-ParsingContext *ip = 0;
-
-ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ) {
+ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ), caller( 0 ) {
     gv.main_parsing_context = this;
+    ip = &gv;
     _init();
+
+    scope_type = SCOPE_TYPE_MAIN;
 }
 
-ParsingContext::ParsingContext( ParsingContext *parent ) : gv( gv ), parent( parent ) {
+ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, String add_scope_name ) : gv( gv ), parent( parent ), caller( caller ) {
     _init();
+
+    scope_name = parent->scope_name + to_string( add_scope_name.size() ) + "_" + add_scope_name;
     ip_snapshot = parent->ip_snapshot;
 }
 
 void ParsingContext::_init() {
     ip_snapshot = 0;
-    class_mode = false;
+    scope_type = SCOPE_TYPE_STD;
 }
 
 void ParsingContext::add_inc_path( String path ) {
@@ -101,18 +113,291 @@ String ParsingContext::find_src( String filename, String current_dir ) const {
     return String();
 }
 
-void ParsingContext::reg_var( String name, Expr expr, bool stat ) {
+Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
+    if ( scope_type == SCOPE_TYPE_MAIN ) {
+        Vec<GlobalVariables::Variable,-1,1> &v = gv.main_scope[ name ];
+        if ( v.size() and not expr->is_surdef() )
+            disp_error( "Variable " + name + " is already defined" );
+        v << GlobalVariables::Variable{ expr };
+        return expr;
+    }
+
+    // std case
     NamedVar *nv = variables.push_back();
     nv->name = name;
     nv->expr = expr;
     nv->stat = stat;
+    return expr;
+}
+
+Expr ParsingContext::_find_first_var_with_name( String name ) {
+    for( ParsingContext *c = this; c; c = c->parent ) {
+        for( NamedVar &nv : variables )
+            if ( nv.name == name )
+                return nv.expr;
+    }
+    std::map<String,Vec<GlobalVariables::Variable,-1,1> >::const_iterator iter = gv.main_scope.find( name );
+    if ( iter != gv.main_scope.end() )
+        return iter->second[ 0 ].expr;
+    return Expr();
+}
+
+void ParsingContext::_find_list_of_vars_with_name( Vec<Expr> &res, String name ) {
+    for( ParsingContext *c = this; c; c = c->parent ) {
+        for( NamedVar &nv : variables )
+            if ( nv.name == name )
+                res << nv.expr;
+    }
+    std::map<String,Vec<GlobalVariables::Variable,-1,1> >::const_iterator iter = gv.main_scope.find( name );
+    if ( iter != gv.main_scope.end() )
+        for( const GlobalVariables::Variable &v : iter->second )
+            res << v.expr;
 }
 
 Expr ParsingContext::get_var( String name ) {
-    for( NamedVar &nv : variables )
-        if ( nv.name == name )
-            return nv.expr;
+    Expr res = _find_first_var_with_name( name );
+    if ( res and res->is_surdef() ) {
+        Vec<Expr> lst;
+        _find_list_of_vars_with_name( lst, name );
+        return _make_surdef_list( lst );
+    }
+    return res;
+}
+
+Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, int *n_name, Expr *n_args, ApplyMode am ) {
+    if ( f.error() )
+        return f;
+    for( int i = 0; i < nu; ++i )
+        if ( u_args[ i ].error() )
+            return u_args[ i ];
+    for( int i = 0; i < nn; ++i )
+        if ( n_args[ i ].error() )
+            return u_args[ i ];
+
+    // SurdefList( ... )
+    Type *f_type = f->ptype();
+    if ( f_type->orig == gv.class_SurdefList ) {
+        //        // Callable * list
+        //        Vec<Callable *> ci;
+        //        Vec<Expr> surdefs = ip->get_args_in_varargs( slice( ip->type_from_type_var( f_type->parameters[ 0 ] ), f->get(), 0 )->get( cond ) );
+        //        for( Expr surdef : surdefs ) {
+        //            SI64 cptr_val;
+        //            Expr cptr = rcast( ip->type_SI64, surdef->get( cond ) );
+        //            if ( not cptr->get_val( ip->type_SI64, &cptr_val ) )
+        //                return ip->ret_error( "exp. cst" );
+        //            ci << reinterpret_cast<Callable *>( ST( cptr_val ) );
+        //        }
+
+        SI64 sp;
+        Expr rf = f->get( cond );
+        if ( not rf or not rf->get_val( &sp, 64 ) )
+            return ret_error( "expecting a cst" );
+        SurdefList *s = reinterpret_cast<SurdefList *>( ST( sp ) );
+
+        // Callable * list
+        struct CallableAndPertinence {
+            CallableAndPertinence( SI64 sp ) {
+                c = reinterpret_cast<Callable *>( ST( sp ) );
+                pertinence = c->ast_item->pertinence ? std::numeric_limits<double>::max() : c->ast_item->default_pertinence();
+            }
+
+            Callable *c;
+            double    pertinence;
+        };
+        Vec<CallableAndPertinence> ci( Rese(), s->callables.size() );
+        for( Expr e : s->callables ) {
+            Expr re = e->get( cond );
+            if ( not re->get_val( &sp, 64 ) )
+                return ret_error( "expecting a cst for surdefs" );
+            ci.push_back( sp );
+        }
+
+        // parm
+        Vec<int> pn_names;
+        Vec<Expr> pu_args, pn_args;
+        //        Type *parm_type = ip->type_from_type_var( f_type->parameters[ 1 ] );
+        //        if ( parm_type != ip->type_Void ) {
+        //            Expr parm_val = slice( parm_type, f->get( cond ), 1 * ip->ptr_size )->get( cond );
+        //            Type *pt = parm_val->type();
+        //            if ( pt->orig != ip->class_VarargsItemBeg and pt->orig != ip->class_VarargsItemEnd ) {
+        //                return ip->ret_error( "expecting a vararg type (or void) as third arg of a callable type" );
+        //            }
+
+        //            int o = 0;
+        //            //Expr vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
+        //            while ( pt->orig != ip->class_VarargsItemEnd ) {
+        //                //Expr p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
+
+        //                SI32 tn;
+        //                if ( not pt->parameters[ 1 ]->get( cond )->get_val( ip->type_SI32, &tn ) )
+        //                    return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
+        //                if ( tn >= 0 ) {
+        //                    pn_args << slice( ip->type_from_type_var( pt->parameters[ 0 ] ), parm_val, o * ip->ptr_size );
+        //                    pn_names << tn;
+        //                } else {
+        //                    pu_args << slice( ip->type_from_type_var( pt->parameters[ 0 ] ), parm_val, o * ip->ptr_size );
+        //                }
+
+        //                // iteration
+        //                ++o;
+        //                pt = ip->type_from_type_var( pt->parameters[ 2 ] );
+        //                if ( pt->orig != ip->class_VarargsItemBeg and pt->orig != ip->class_VarargsItemEnd )
+        //                    return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
+        //            }
+        //        }
+        int pnu = pu_args.size(), pnn = pn_args.size();
+
+        // self
+        Expr self_ptr = s->self;
+        //        Type *self_type = ip->type_from_type_var( f_type->parameters[ 2 ] );
+        //        Expr self_ptr;
+        //        if ( self_type != ip->type_Void )
+        //            self_ptr = slice( self_type, f->get( cond ), ip->ptr_size * ( parm_type != ip->type_Void ) + ip->ptr_size );
+
+        // computed pertinences
+        int nb_surdefs = ci.size();
+        AutoPtr<Callable::Trial> trials[ nb_surdefs ];
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            if ( ci[ i ].c->ast_item->pertinence ) {
+                trials[ i ] = ci[ i ].c->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
+                ci[ i ].pertinence = trials[ i ]->computed_pertinence;
+            }
+        }
+
+        // sort by pertinence
+        struct CmpCallableInfobyPertinence {
+            bool operator()( const CallableAndPertinence &a, const CallableAndPertinence &b ) const {
+                return a.pertinence > b.pertinence;
+            }
+        };
+        std::sort( ci.begin(), ci.end(), CmpCallableInfobyPertinence() );
+
+        // test items without computed pertinence
+        int nb_ok = 0;
+        double guaranted_pertinence = 0;
+        bool has_guaranted_pertinence = false;
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            if ( has_guaranted_pertinence and guaranted_pertinence > ci[ i ].pertinence ) {
+                for( int j = i; j < nb_surdefs; ++j )
+                    trials[ j ] = new Callable::Trial( "Already a more pertinent solution" );
+                break;
+            }
+
+            if ( not ci[ i ].c->ast_item->pertinence ) // if test not done during the computed pertinence step
+                trials[ i ] = ci[ i ].c->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
+
+            if ( trials[ i ]->cond.error() )
+                return trials[ i ]->cond;
+
+            if ( trials[ i ]->ok() ) {
+                if ( trials[ i ]->cond->always( true ) ) {
+                    has_guaranted_pertinence = true;
+                    guaranted_pertinence = ci[ i ].pertinence;
+                }
+                ++nb_ok;
+            }
+        }
+
+        // no valid surdef ?
+        if ( nb_ok == 0 ) {
+            std::ostringstream ss;
+            ss << "No matching surdef";
+            //            if ( self ) {
+            //                ss << " (looking for '" << *self.type;
+            //                if ( lst_def.size() )
+            //                    ss << "." << glob_nstr_cor.str( lst_def[ 0 ]->name );
+            //                ss << "' with " << na << " argument";
+            //                ss << ")";
+            //            }
+            ErrorList::Error &err = error_msg( ss.str() );
+            for( int i = 0; i < nb_surdefs; ++i )
+                err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
+            std::cerr << err;
+            return Expr();
+        }
+
+        // valid surdefs, but only with runtime conditions
+        if ( not has_guaranted_pertinence ) {
+            std::ostringstream ss;
+            ss << "There is no failback surdefinition (only runtime conditions)";
+            ErrorList::Error &err = ip->pc->error_msg( ss.str() );
+            for( int i = 0; i < nb_surdefs; ++i ) {
+                if ( trials[ i ]->ok() )
+                    err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, "accepted" );
+                else
+                    err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+            }
+            std::cerr << err;
+            return Expr();
+        }
+
+        // ambiguous overload ?
+        if ( nb_ok > 1 ) {
+            double best_pertinence = - std::numeric_limits<double>::max();
+            for( int i = 0; i < nb_surdefs; ++i )
+                best_pertinence = std::max( best_pertinence, ci[ i ].pertinence );
+            int nb_wp = 0;
+            for( int i = 0; i < nb_surdefs; ++i )
+                nb_wp += trials[ i ]->ok() and ci[ i ].pertinence == best_pertinence;
+            if ( nb_wp > 1 ) {
+                std::ostringstream ss;
+                ss << "Ambiguous overload";
+                ErrorList::Error &err = error_msg( ss.str() );
+                for( int i = 0; i < nb_surdefs; ++i )
+                    if ( trials[ i ]->ok() and ci[ i ].pertinence == best_pertinence )
+                        err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, "possibility" );
+                std::cerr << err;
+                return Expr();
+            }
+        }
+
+        Expr cond( true ); // additional cond
+        Vec<std::pair<Expr,Expr> > res; // cond -> result of apply
+        for( int i = 0; i < nb_surdefs; ++i ) {
+            if ( trials[ i ]->ok() ) {
+                Expr loc_cond = and_boolean( cond, trials[ i ]->cond );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, self_ptr );
+                res << std::make_pair( loc_cond, loc );
+
+                if ( trials[ i ]->cond->always( true ) )
+                    break;
+                cond = and_boolean( cond, not_boolean( trials[ i ]->cond ) );
+            }
+        }
+        Expr res_expr = res.back().second;
+        for( int i = res.size() - 2; i >= 0; --i )
+            res_expr = select( res[ i ].first, res[ i ].second, res_expr );
+        return res_expr;
+    }
+
+    //
+    if ( f_type == gv.type_Type ) {
+        //        Expr res = room( cst( ip->type_from_type_var( f ) ) );
+        //        if ( am == APPLY_MODE_NEW )
+        //            TODO;
+
+        //        // call init
+        //        if ( am != APPLY_MODE_PARTIAL_INST )
+        //            apply( get_attr( res, STRING_init_NUM ), nu, u_args, nn, n_name, n_args, Scope::APPLY_MODE_STD );
+        //        return res;
+    }
+
+    // f.apply ...
+    //    Expr applier = get_attr( f, STRING_apply_NUM );
+    //    if ( applier.error() )
+    //        return ip->error_var();
+
+    //    return apply( applier, nu, u_args, nn, n_name, n_args, am );
+    TODO;
     return Expr();
+}
+
+
+Expr ParsingContext::_make_surdef_list( const Vec<Expr> &lst ) {
+    SurdefList *res = new SurdefList;
+    res->callables = lst;
+    SI64 val = (SI64)res;
+    return room( cst( gv.type_SurdefList, 64, &val ) );
 }
 
 void ParsingContext::disp_error( String msg, bool warn, const char *file, int line ) {

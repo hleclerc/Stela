@@ -26,44 +26,28 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
 
-#include "../System/Stream.h"
-class Inst;
+#include "../Ast/Ast_Class.h"
+#include "Class.h"
 
-/**
-  Pointer to an Inst
-*/
-class Expr {
-public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
+Class::TrialClass::TrialClass( ParsingContext *caller, Class *orig ) : ns( 0, caller, "TrialClass_" + to_string( orig ) ), orig( orig ) {
+    // ns.catched_vars = &orig->catched_vars;
+}
 
-    Expr &operator=( const Expr &obj );
+Class::TrialClass::~TrialClass() {
+}
 
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
+    TODO;
+    return Expr();
+}
 
-    bool error() const { return not inst; }
+Class::Class( const Ast_Callable *ast_item ) : Callable( ast_item ) {
+}
 
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
-};
-
-#endif // EXPR_H
+Callable::Trial *Class::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
+    TODO;
+    if ( ast_item->pertinence )
+        TODO;
+    return 0;
+}

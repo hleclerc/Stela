@@ -1,6 +1,13 @@
-# class PI8
-    # ___set_base_size_and_alig 8, 8
+class Class
+    ptr ~= SI64 # pointer to C++ data
     
+class SurdefList
+    ptr ~= SI64 # pointer to C++ data
+    
+    
+class PI8
+    ___set_base_size_and_alig 8, 8
+
 # class PI96
     # ___set_base_size_and_alig 96, 96
     
@@ -52,5 +59,4 @@
     # def add name, inode
         # #
 
-a := 10
-static b := 20
+    

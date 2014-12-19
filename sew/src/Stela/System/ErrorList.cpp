@@ -8,9 +8,9 @@ ErrorList::Provenance::Provenance( const char *beg, const char *pos, String prov
     _init( beg, pos );
 }
 
-ErrorList::Provenance::Provenance( const char *src, int off, std::string msg ) : provenance( src ), msg( msg ) {
-    if ( src and off >= 0 ) {
-        ReadFile rf( src );
+ErrorList::Provenance::Provenance( const String &src, int off, std::string msg ) : provenance( src ), msg( msg ) {
+    if ( src.size() and off >= 0 ) {
+        ReadFile rf( src.c_str() );
         _init( rf.data, rf.data + off );
     } else {
         line = -1;
@@ -107,7 +107,7 @@ ErrorList::Error &ErrorList::Error::ap( const char *beg, const char *pos, std::s
     return *this;
 }
 
-ErrorList::Error &ErrorList::Error::ap( const char *src, int off, std::string msg ) {
+ErrorList::Error &ErrorList::Error::ap( const String &src, int off, std::string msg ) {
     possibilities.push_back( src, off, msg );
     return *this;
 }

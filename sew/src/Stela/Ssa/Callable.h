@@ -26,44 +26,35 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
 
-#include "../System/Stream.h"
-class Inst;
+#ifndef CALLABLE_H
+#define CALLABLE_H
+
+#include "Inst.h"
+class Ast_Callable;
+class ParsingContext;
 
 /**
-  Pointer to an Inst
 */
-class Expr {
+class Callable {
 public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
+    struct Trial {
+        Trial( const char *reason = 0 );
+        virtual ~Trial();
 
-    Expr &operator=( const Expr &obj );
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *ParsingContext, const Expr &cond, Expr self );
+        Trial *wr( const char *r ) { reason = r; return this; }
+        bool ok() const { return not reason; }
 
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
+        Expr        cond;
+        const char *reason;
+        double      computed_pertinence;
+    };
 
-    bool error() const { return not inst; }
+    Callable( const Ast_Callable *ast_item );
+    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self ) = 0;
 
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
+    const Ast_Callable *ast_item;
 };
 
-#endif // EXPR_H
+#endif // CALLABLE_H

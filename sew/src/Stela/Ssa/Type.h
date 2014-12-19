@@ -31,16 +31,25 @@
 #define TYPE_H
 
 #include "../System/Stream.h"
+class Class;
 
 /**
 */
 class Type {
 public:
-    Type();
+    Type( Class *orig );
     void write_to_stream( Stream &os ) const;
-    int  fixed_size();
+    int  size(); ///< size in bits, or -1 if not known
+    int  sb(); ///< size in bytes, or -1 if not known
 
     virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
+    void parse();
+
+    Class *orig;
+    int    _len;
+    int    _ali;
+    int    _pod;
+    bool   aryth;
 };
 
 #endif // TYPE_H

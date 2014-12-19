@@ -26,44 +26,17 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
+// name, C++ op, is_oper, return bool, prec
+DECL_OP( or_boolean , or , 1, 1, 14 )
+DECL_OP( and_boolean, and, 1, 1, 15 )
+DECL_OP( add        , +  , 1, 0, 20 )
+DECL_OP( sub        , -  , 1, 0, 20 )
+DECL_OP( mul        , *  , 1, 0, 21 )
+DECL_OP( div        , /  , 1, 0, 21 )
 
-#include "../System/Stream.h"
-class Inst;
-
-/**
-  Pointer to an Inst
-*/
-class Expr {
-public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
-
-    Expr &operator=( const Expr &obj );
-
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
-
-    bool error() const { return not inst; }
-
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
-};
-
-#endif // EXPR_H
+DECL_OP( equ        , == , 1, 1, 17 )
+DECL_OP( neq        , != , 1, 1, 17 )
+DECL_OP( inf        , <  , 1, 1, 17 )
+DECL_OP( sup        , >  , 1, 1, 17 )
+DECL_OP( sup_eq     , <= , 1, 1, 17 )
+DECL_OP( inf_eq     , >= , 1, 1, 17 )

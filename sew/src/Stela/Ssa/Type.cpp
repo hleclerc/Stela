@@ -26,31 +26,51 @@
 **
 ****************************************************************************/
 
+#include "../Ast/Ast_Callable.h"
 #include "../System/Assert.h"
+#include "Class.h"
 #include "Type.h"
 
-Type::Type() {
+Type::Type( Class *orig ) : orig( orig ) {
+    _len = -1;
+    _ali = -1;
+    _pod = -1;
+
+    aryth = false;
 }
 
 void Type::write_to_stream( Stream &os ) const {
-    os << "type";
+    if ( this and orig and orig->ast_item )
+        os << orig->ast_item->name;
+    else
+        os << "NULL";
 }
 
-int Type::fixed_size() {
-    return 8;
+int Type::size() {
+    if ( _len < 0 )
+        parse();
+    return _len;
+}
+
+int Type::sb() {
+    return size() >= 0 ? ( size() + 7 ) / 8 : -1;
 }
 
 void Type::write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
-    int size = fixed_size();
-    if ( size < 0 )
+    // if ( orig and )
+    int len = size();
+    if ( len < 0 )
         TODO;
     const char *c = "0123456789ABCDEF";
-    for( int i = 0; i < std::min( size / 8, 4 ); ++i ) {
+    for( int i = 0; i < std::min( len / 8, 4 ); ++i ) {
         if ( i )
             os << ' ';
         os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
     }
-    if ( size / 8 > 4 )
+    if ( len / 8 > 4 )
         os << "...";
 }
 
+void Type::parse() {
+    TODO;
+}

@@ -26,44 +26,32 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
 
-#include "../System/Stream.h"
-class Inst;
+#ifndef CLASS_H
+#define CLASS_H
+
+#include "../System/Vec.h"
+#include "ParsingContext.h"
+#include "Callable.h"
+class Type;
 
 /**
-  Pointer to an Inst
+  Internal representation of a class variable. One day or another, it will be replaced by a pure Stela representation
 */
-class Expr {
+class Class : public Callable {
 public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
+    struct TrialClass : Trial {
+        TrialClass( ParsingContext *caller, Class *orig );
+        virtual ~TrialClass();
+        virtual Expr call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
+        ParsingContext ns;
+        Class *orig;
+    };
 
-    Expr &operator=( const Expr &obj );
+    Class( const Ast_Callable *ast_item = 0 );
+    virtual Trial *test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self );
 
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
-
-    bool error() const { return not inst; }
-
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
+    Vec<Type *,-1,1> types;
 };
 
-#endif // EXPR_H
+#endif // CLASS_H

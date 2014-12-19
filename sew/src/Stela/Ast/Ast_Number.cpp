@@ -39,11 +39,11 @@ Expr Ast_Number::_parse_in( ParsingContext &context ) const {
     if ( l ) {
         SI64 res;
         ss >> res;
-        return room( cst( ip->gv.type_SI64, 64, &res ) );
+        return room( cst( ip->type_SI64, 64, &res ) );
     }
     SI32 res;
     ss >> res;
-    return room( cst( ip->gv.type_SI32, 32, &res ) );
+    return room( cst( ip->type_SI32, 32, &res ) );
 }
 
 PI8 Ast_Number::_tok_number() const {

@@ -38,8 +38,9 @@ Expr::Expr( Inst *inst ) : inst( inst ) {
     if ( inst ) ++inst->cpt_use;
 }
 
-Expr::Expr( SI64 val ) : Expr( cst( ip->gv.type_SI64, 64, &val ) ) {
-}
+#define DECL_BT( T ) Expr::Expr( T val ) { TODO; }
+#include "DeclArytTypes.h"
+#undef DECL_BT
 
 Expr::~Expr() {
     if ( inst and --inst->cpt_use <= 0 )

@@ -57,15 +57,19 @@ void Inst::write_to_stream( Stream &os, int prec ) {
 }
 
 void Inst::set( Expr obj, Expr cond ) {
-    ip->disp_error( "setting a non pointer item" );
+    ip->pc->disp_error( "setting a non pointer item" );
 }
 
 Expr Inst::get( Expr cond ) {
-    return ip->ret_error( "getting a non pointer item" );
+    return ip->pc->ret_error( "getting a non pointer item" );
 }
 
 Expr Inst::simplified( Expr cond ) {
     return this;
+}
+
+Type *Inst::ptype() {
+    return 0;
 }
 
 Type *Inst::type() {
@@ -76,15 +80,50 @@ Expr Inst::size() {
     Type *t = type();
     if ( not t )
         return Expr();
-    int s = t->fixed_size();
+    SI64 s = t->size();
     if ( s >= 0 )
         return s;
     TODO;
     return Expr();
 }
 
+bool Inst::get_val( void *res, Type *type ) {
+    TODO;
+    return false;
+}
+
+bool Inst::get_val( void *res, int size ) {
+    return false;
+}
+
+bool Inst::is_surdef() const {
+    return flags & SURDEF;
+}
+
+bool Inst::is_const() const {
+    return flags & CONST;
+}
+
 bool Inst::always( bool val ) const {
     return false;
+}
+
+bool Inst::always_equal( Type *t, void *d ) {
+    return false;
+}
+
+#define DECL_BT( T ) bool Inst::always_equal( T val ) { return always_equal( ip->type_##T, &val ); }
+#include "DeclArytTypes.h"
+#undef DECL_BT
+
+Expr Inst::_simp_repl_bits( Expr off, Expr val ) {
+    return Expr();
+}
+
+Expr Inst::_simp_slice( Type *dst, Expr off ) {
+    if ( type() == dst and off->always_equal( 0 ) )
+        return this;
+    return Expr();
 }
 
 Inst *Inst::twin_or_val( Inst *inst ) {

@@ -26,44 +26,36 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
 
-#include "../System/Stream.h"
-class Inst;
+#ifndef OP_H
+#define OP_H
 
-/**
-  Pointer to an Inst
-*/
-class Expr {
-public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
+#include "Inst.h"
 
-    Expr &operator=( const Expr &obj );
-
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
-
-    bool error() const { return not inst; }
-
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
+enum {
+    #define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) ID_OP_##NAME,
+    #include "DeclOp_Binary.h"
+    #include "DeclOp_Unary.h"
+    #undef DECL_OP
+    ID_OP_
 };
 
-#endif // EXPR_H
+
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    struct Op_##NAME { void write_to_stream( Stream &os ) const { os << #NAME; } enum { is_oper = OPER, n = 2, prec = PREC, b = BOOL, op_id = ID_OP_##NAME }; void write_oper( Stream &os ) const { os << #GEN; } }; \
+    Expr op( Expr a, Expr b, Op_##NAME ); \
+    Expr NAME( Expr a, Expr b ); \
+    enum { PREC_##NAME = PREC };
+#include "DeclOp_Binary.h"
+#undef DECL_OP
+
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    struct Op_##NAME { void write_to_stream( Stream &os ) const { os << #NAME; } enum { is_oper = OPER, n = 1, prec = PREC, b = BOOL, op_id = ID_OP_##NAME }; void write_oper( Stream &os ) const { os << #GEN; } }; \
+    Expr op( Expr a, Op_##NAME ); \
+    Expr NAME( Expr a ); \
+    enum { PREC_##NAME = PREC };
+#include "DeclOp_Unary.h"
+#undef DECL_OP
+
+
+#endif // OP_H

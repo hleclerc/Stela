@@ -26,44 +26,21 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
 
-#include "../System/Stream.h"
-class Inst;
+#include "Callable.h"
 
-/**
-  Pointer to an Inst
-*/
-class Expr {
-public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
+Callable::Trial::Trial( const char *reason ) : reason( reason ) {
+    computed_pertinence = 0;
+}
 
-    Expr &operator=( const Expr &obj );
+Callable::Trial::~Trial() {
+}
 
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
+Expr Callable::Trial::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *ParsingContext, const Expr &cond, Expr self ) {
+    ERROR( "..." );
+    return Expr();
+}
 
-    bool error() const { return not inst; }
+Callable::Callable( const Ast_Callable *ast_item ) : ast_item( ast_item ) {
+}
 
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
-};
-
-#endif // EXPR_H

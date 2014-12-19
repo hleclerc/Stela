@@ -83,11 +83,26 @@ public:
     virtual void set( Expr obj, Expr cond );
     virtual Expr get( Expr cond );
     virtual Expr simplified( Expr cond );
+    virtual Type *ptype();
     virtual Type *type();
     virtual Expr  size();
 
-    virtual bool always( bool val ) const;
+    virtual bool get_val( void *res, Type *type );
+    virtual bool get_val( void *res, int size );
 
+
+    bool is_surdef() const;
+    bool is_const() const;
+
+    virtual bool always( bool val ) const;
+    virtual bool always_equal( Type *t, void *d );
+
+    #define DECL_BT( T ) bool always_equal( T val );
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+
+    virtual Expr _simp_repl_bits( Expr off, Expr val );
+    virtual Expr _simp_slice( Type *dst, Expr off );
     virtual void _mk_store_dep( Inst *dst );
 
     static Inst *twin_or_val( Inst *inst ); ///< if there's already an inst doing the same thing, return this inst and delete `inst`

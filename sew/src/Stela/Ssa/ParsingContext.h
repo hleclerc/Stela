@@ -44,32 +44,47 @@ public:
         Expr   expr;
         bool   stat; ///< static variable ?
     };
+    enum {
+        SCOPE_TYPE_CLASS, ///< first level (methods and attributes) of a class content
+        SCOPE_TYPE_MAIN,
+        SCOPE_TYPE_STD
+    };
+
     ParsingContext( GlobalVariables &gv );
-    ParsingContext( ParsingContext *parent );
+    ParsingContext( ParsingContext *parent, ParsingContext *caller = 0, String add_scope_name = "" );
 
     void              parse( String filename, String current_dir );
 
     void              add_inc_path( String path );
     String            find_src( String filename, String current_dir = "" ) const;
 
-    void              reg_var( String name, Expr expr, bool stat );
+    Expr              reg_var( String name, Expr expr, bool stat = false );
     Expr              get_var( String name );
+
+    enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
+    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, int *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
 
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );
     Expr              ret_error ( String msg, bool warn = false, const char *file = 0, int line = -1 );
     Expr              error_var ();
 
+
     void              _init();
+    Expr              _make_surdef_list( const Vec<Expr> &lst );
+    Expr              _find_first_var_with_name( String name );
+    void              _find_list_of_vars_with_name( Vec<Expr> &res, String name );
 
     GlobalVariables &gv;
     ParsingContext  *parent;
+    ParsingContext  *caller;
+    String           scope_name; ///< used to find static scope
     int              current_off;
     Vec<NamedVar>    variables;
-    bool             class_mode; ///< true is parsing first level of a class content
+    int              scope_type;
     IpSnapshot      *ip_snapshot;
+    Expr             cond;
 };
 
-extern ParsingContext *ip; ///< current parsing context
 
 #endif // PARSINGCONTEXT_H

@@ -27,19 +27,44 @@
 ****************************************************************************/
 
 #include "GlobalVariables.h"
+#include "Class.h"
 #include "Type.h"
+
+GlobalVariables *ip = 0;
 
 template<class T>
 struct Type_ : Type {
+    Type_( Class *c ) : Type( c ) {}
     virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
         os << *reinterpret_cast<const T *>( data );
     }
 };
 
-static Type_<SI32> _type_SI32;
-static Type_<SI64> _type_SI64;
-
 GlobalVariables::GlobalVariables() {
-    type_SI32 = &_type_SI32;
-    type_SI64 = &_type_SI64;
+    #define DECL_BT( T ) class_##T = new Class;
+    #include "DeclParmClass.h"
+    #include "DeclBaseClass.h"
+    #undef DECL_BT
+
+    #define DECL_BT( T ) type_##T = new Type_<T>( class_##T ); class_##T->types << type_##T; type_##T->aryth = true;
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
+
+    #define DECL_BT( T ) type_##T = new Type( class_##T ); class_##T->types << type_##T;
+    #define DONT_WANT_DeclArytTypes_h
+    #include "DeclBaseClass.h"
+    #undef DONT_WANT_DeclArytTypes_h
+    #undef DECL_BT
+
+    type_Type      ->_len = 64; type_Type      ->_ali = 32; type_Type      ->_pod = 1;
+    type_Void      ->_len =  0; type_Void      ->_ali =  1; type_Void      ->_pod = 1;
+    type_Error     ->_len =  0; type_Error     ->_ali =  1; type_Error     ->_pod = 1;
+    type_Def       ->_len = 64; type_Def       ->_ali = 32; type_Def       ->_pod = 1;
+    type_Class     ->_len = 64; type_Class     ->_ali = 32; type_Class     ->_pod = 1;
+    type_SurdefList->_len = 64; type_SurdefList->_ali = 32; type_SurdefList->_pod = 1;
+
+    type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
+    ptr_size = 8 * sizeof( void * );
+
+    pc = 0;
 }

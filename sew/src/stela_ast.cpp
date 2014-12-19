@@ -2,6 +2,7 @@
   main file for the stela interpreter / compiler
 */
 #include <Stela/Ssa/ParsingContext.h>
+#include <Stela/Ssa/Type.h>
 #include <Stela/System/InstallDir.h>
 #include <Stela/System/GetCwd.h>
 #include <fstream>
@@ -50,7 +51,10 @@ int main( int argc, char **argv ) {
             std::cerr << "Impossible to find var " << code_for_class << std::endl;
             return 1;
         }
-        Type *c = e.get_type_for( Vec<Expr>() );
+        Expr res = pc.apply( e, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
+        PRINT( *res->ptype() );
+
+        //Type *c = e.get_type_for( Vec<Expr>() );
     }
 
 

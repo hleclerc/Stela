@@ -70,6 +70,10 @@ void Ast_Callable::write_to_stream( Stream &os, int nsp ) const {
     block->write_to_stream( os << " ", nsp + 2 );
 }
 
+double Ast_Callable::default_pertinence() const {
+    return def_pert_num / double( def_pert_den );
+}
+
 Expr Ast_Callable::_parse_in( ParsingContext &context ) const {
     return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
 }

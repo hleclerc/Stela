@@ -26,44 +26,28 @@
 **
 ****************************************************************************/
 
-#ifndef EXPR_H
-#define EXPR_H
 
-#include "../System/Stream.h"
-class Inst;
+#include "Inst.h"
+#include "Def.h"
 
-/**
-  Pointer to an Inst
-*/
-class Expr {
-public:
-    Expr( const Expr &obj );
-    Expr( Inst *inst = 0 );
-    #define DECL_BT( T ) Expr( T val );
-    #include "DeclArytTypes.h"
-    #undef DECL_BT
-    ~Expr();
+Def::TrialDef::TrialDef( ParsingContext *caller, Def *orig ) : ns( caller ), orig( orig ), ns( 0, caller, "TrialDef_" + to_string( orig ) ) {
+    // ns.catched_vars = &orig->catched_vars;
+}
 
-    Expr &operator=( const Expr &obj );
+Def::TrialDef::~TrialDef() {
+}
 
-    bool operator==( const Expr &expr ) const;
-    bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
-    bool operator<( const Expr &expr ) const { return inst < expr.inst; }
-    operator bool() const { return inst; }
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
+    TODO;
+    return Expr();
+}
 
-    bool error() const { return not inst; }
+Def::Def( Ast_Callable *ast_item ) : Callable( ast_item ) {
+}
 
-    const Inst *operator->() const { return inst; }
-    Inst *operator->() { return inst; }
-
-    const Inst &operator*() const { return *inst; }
-    Inst &operator*() { return *inst; }
-
-    void write_to_stream( Stream &os ) const;
-
-    bool error();
-
-    Inst *inst;
-};
-
-#endif // EXPR_H
+Callable::Trial *Def::test( int nu, Expr *vu, int nn, int *names, Expr *vn, int pnu, Expr *pvu, int pnn, int *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
+    TODO;
+    if ( ast_item->pertinence )
+        TODO;
+    return 0;
+}

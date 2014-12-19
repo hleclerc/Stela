@@ -37,50 +37,67 @@ static std::map<Type *,Vec<class Cst *> > cst_set;
 ///
 class Cst : public Inst {
 public:
-    Cst( Type *type, SI64 size, const void *value, const void *known ) : type( type ), size( size ) {
+    Cst( Type *type, SI64 size, const void *value, const void *known ) : _type( type ), _size( size ) {
         int sb = ( size + 7 ) / 8;
-        data.resize( 2 * sb );
-        memcpy_bit( data.ptr() + 0 * sb, 0, value, 0, size );
+        _data.resize( 2 * sb );
+        memcpy_bit( _data.ptr() + 0 * sb, 0, value, 0, size );
         if ( known )
-            memcpy_bit( data.ptr() + 1 * sb, 0, known, 0, size );
+            memcpy_bit( _data.ptr() + 1 * sb, 0, known, 0, size );
         else
             for( int i = 1 * sb; i < 2 * sb; ++i )
-                data[ i ] = 0xFF;
+                _data[ i ] = 0xFF;
         cst_set[ type ] << this;
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
-        int sb = ( size + 7 ) / 8;
-        return new Cst( type, size, data.ptr(), data.ptr() + sb );
+        int sb = ( _size + 7 ) / 8;
+        return new Cst( _type, _size, _data.ptr(), _data.ptr() + sb );
     }
     virtual ~Cst() {
-        cst_set[ type ].remove_first_unordered( this );
+        cst_set[ _type ].remove_first_unordered( this );
     }
     virtual void write_to_stream( Stream &os ) const {
         write_dot( os );
     }
     virtual void write_dot( Stream &os ) const {
-        type->write_val( os, data.ptr() );
+        _type->write_val( os, _data.ptr() );
+    }
+    virtual Type *type() {
+        return _type;
+    }
+    virtual bool get_val( void *res, int size ) {
+        if ( _size < size )
+            return false;
+        memcpy_bit( res, 0, _data.ptr(), 0, size );
+        return true;
+    }
+    virtual bool always( bool val ) const {
+        TODO;
+        return false;
+    }
+    virtual bool always_equal( Type *t, const void *d ) {
+        TODO;
+        return false;
     }
 
-    Vec<PI8> data; ///< values and known (should not be changed directly)
-    Type    *type;
-    int      size;
+    Vec<PI8> _data; ///< values and known (should not be changed directly)
+    Type    *_type;
+    int      _size;
 };
 
 static bool equal_cst( const Cst *cst, int size, const PI8 *value, const PI8 *known ) {
-    if ( cst->size != size )
+    if ( cst->_size != size )
         return false;
     int sb = ( size + 7 ) / 8;
     for( int i = 0; i < sb; ++i )
-        if ( ( cst->data[ i ] & cst->data[ sb + i ] ) != ( value[ i ] & cst->data[ sb + i ] ) )
+        if ( ( cst->_data[ i ] & cst->_data[ sb + i ] ) != ( value[ i ] & cst->_data[ sb + i ] ) )
             return false;
     if ( known ) {
         for( int i = 0; i < sb; ++i )
-            if ( cst->data[ sb + i ] != known[ i ] )
+            if ( cst->_data[ sb + i ] != known[ i ] )
                 return false;
     } else {
         for( int i = 0; i < sb; ++i )
-            if ( cst->data[ sb + i ] != 0xFF )
+            if ( cst->_data[ sb + i ] != 0xFF )
                 return false;
     }
     return true;

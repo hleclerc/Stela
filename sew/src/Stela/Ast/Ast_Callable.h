@@ -18,16 +18,13 @@ public:
     virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
     virtual void write_callable_type( Stream &os ) const = 0;
-
-protected:
-    friend class ConvType;
-    friend class AstMaker;
-    friend class Ast_Def;
+    double       default_pertinence() const;
 
     virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const = 0;
     virtual Expr _parse_in( ParsingContext &context ) const;
     virtual void _get_info( IrWriter *aw ) const;
     virtual int  _spec_flags() const = 0;
+
 
     String            name;
     bool              self_as_arg;
