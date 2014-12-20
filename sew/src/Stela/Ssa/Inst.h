@@ -80,8 +80,8 @@ public:
     virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) const = 0;
 
-    virtual void set( Expr obj, Expr cond );
-    virtual Expr get( Expr cond );
+    virtual void set( Expr obj, Expr cond = Expr() );
+    virtual Expr get( Expr cond = Expr() );
     virtual Expr simplified( Expr cond );
     virtual Type *ptype();
     virtual Type *type();

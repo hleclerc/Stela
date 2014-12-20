@@ -41,6 +41,10 @@ struct GlobalVariables {
     struct Variable {
         Expr expr;
     };
+    struct NamedVar {
+        String name;
+        Expr   expr;
+    };
 
     GlobalVariables();
 
@@ -63,7 +67,6 @@ struct GlobalVariables {
     Type               *type_ST;
     int                 ptr_size;
     SplittedVec<Past,4> ast_lst; ///< allows to save Ast trees for later use
-
 };
 
 extern GlobalVariables *ip; ///<

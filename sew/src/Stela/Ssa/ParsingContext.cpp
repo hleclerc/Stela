@@ -44,24 +44,31 @@
 ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ), caller( 0 ) {
     gv.main_parsing_context = this;
     ip = &gv;
-    _init();
 
+    _init( "" );
     scope_type = SCOPE_TYPE_MAIN;
 }
 
 ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, String add_scope_name ) : gv( gv ), parent( parent ), caller( caller ) {
-    _init();
+    _init( add_scope_name );
+}
 
+void ParsingContext::_init( String add_scope_name ) {
     if ( parent ) {
         ip_snapshot = parent->ip_snapshot;
         scope_name = parent->scope_name;
+        cond = parent->cond;
+    } else {
+        ip_snapshot = 0;
+        cond = true;
     }
-    scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
-}
-
-void ParsingContext::_init() {
-    ip_snapshot = 0;
+    base_size = 0;
+    base_alig = 1;
     scope_type = SCOPE_TYPE_STD;
+    scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
+
+    static std::map<String,Vec<NamedVar> > static_variables_map;
+    static_variables = &static_variables_map[ scope_name ];
 }
 
 void ParsingContext::add_inc_path( String path ) {
@@ -127,16 +134,18 @@ Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
     }
 
     // std case
-    NamedVar *nv = variables.push_back();
+    NamedVar *nv = stat ? static_variables->push_back() : variables.push_back();
     nv->name = name;
     nv->expr = expr;
-    nv->stat = stat;
     return expr;
 }
 
 Expr ParsingContext::_find_first_var_with_name( String name ) {
     for( ParsingContext *c = this; c; c = c->parent ) {
         for( NamedVar &nv : variables )
+            if ( nv.name == name )
+                return nv.expr;
+        for( NamedVar &nv : *static_variables )
             if ( nv.name == name )
                 return nv.expr;
     }
@@ -149,6 +158,9 @@ Expr ParsingContext::_find_first_var_with_name( String name ) {
 void ParsingContext::_find_list_of_vars_with_name( Vec<Expr> &res, String name ) {
     for( ParsingContext *c = this; c; c = c->parent ) {
         for( NamedVar &nv : variables )
+            if ( nv.name == name )
+                res << nv.expr;
+        for( NamedVar &nv : *static_variables )
             if ( nv.name == name )
                 res << nv.expr;
     }
@@ -392,6 +404,16 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, String *n_name
     //        return ip->error_var();
 
     //    return apply( applier, nu, u_args, nn, n_name, n_args, am );
+    TODO;
+    return Expr();
+}
+
+Expr ParsingContext::make_type_var( Type *type ) {
+    TODO;
+    return Expr();
+}
+
+Expr ParsingContext::copy( Expr var ) {
     TODO;
     return Expr();
 }

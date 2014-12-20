@@ -49,6 +49,15 @@ struct Type_ : Type {
     virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
         os << *reinterpret_cast<const T *>( data );
     }
+    virtual bool get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn ) {
+        if ( not all( S<T>(), knwn ) )
+            return false;
+        #define DECL_BT( TT ) if ( type == ip->type_##TT ) { *reinterpret_cast<TT *>( res ) = *reinterpret_cast<const T *>( data ); return true; }
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+        return false;
+    }
+
     virtual bool always( bool val, const PI8 *data, const PI8 *knwn ) {
         return bool( *reinterpret_cast<const T *>( data ) ) == val and all( S<T>(), knwn );
     }
@@ -61,8 +70,8 @@ struct Type_ : Type {
 
 GlobalVariables::GlobalVariables() {
     #define DECL_BT( T ) class_##T = new Class;
-    #include "DeclParmClass.h"
     #include "DeclBaseClass.h"
+    #include "DeclParmClass.h"
     #undef DECL_BT
 
     #define DECL_BT( T ) type_##T = new Type_<T>( class_##T ); class_##T->types << type_##T; type_##T->aryth = true; type_##T->_len = 8 * sizeof( T ); type_##T->_ali = 8 * sizeof( T ); type_##T->_pod = 1;

@@ -28,15 +28,16 @@
 
 #include "../Ast/Ast_Callable.h"
 #include "../System/Assert.h"
+#include "../System/Math.h"
 #include "Class.h"
 #include "Type.h"
 
 Type::Type( Class *orig ) : orig( orig ) {
-    _len = -1;
-    _ali = -1;
-    _pod = -1;
-
-    aryth = false;
+    _len    = -1;
+    _ali    = -1;
+    _pod    = -1;
+    _parsed = false;
+    aryth   = false;
 }
 
 void Type::write_to_stream( Stream &os ) const {
@@ -44,6 +45,12 @@ void Type::write_to_stream( Stream &os ) const {
         os << orig->ast_item->name;
     else
         os << "NULL";
+}
+
+int Type::alig() {
+    if ( _ali < 0 )
+        parse();
+    return _ali;
 }
 
 int Type::size() {
@@ -54,6 +61,10 @@ int Type::size() {
 
 int Type::sb() {
     return size() >= 0 ? ( size() + 7 ) / 8 : -1;
+}
+
+bool Type::get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn ) {
+    return false;
 }
 
 bool Type::always( bool val, const PI8 *data, const PI8 *knwn ) {
@@ -82,5 +93,36 @@ void Type::write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
 }
 
 void Type::parse() {
-    TODO;
+    if ( _parsed )
+        return;
+    _parsed = true;
+
+    // parse block
+    ParsingContext ns( 0, 0, "parsing type " + to_string( this ) );
+    // ns.class_scope = this;
+    ASSERT( orig->ast_item->arguments.size() == parameters.size(), "..." );
+    for( int i = 0; i < parameters.size(); ++i )
+        ns.reg_var( orig->ast_item->arguments[ i ], parameters[ i ], true );
+    orig->ast_item->block->parse_in( ns );
+
+    _len = ns.base_size;
+    _ali = ns.base_alig;
+
+    for( ParsingContext::NamedVar &nv : ns.variables ) {
+        if ( nv.expr->flags & Inst::SURDEF ) {
+            attributes << Attr{ -1, nv.expr, nv.name };
+        } else {
+            _ali = ppcm( _ali, nv.expr->ptype()->alig() );
+            _len = ceil( _len, _ali );
+
+            attributes << Attr{ _len, nv.expr, nv.name };
+
+            if ( nv.expr->ptype()->size() < 0 )
+                TODO;
+            _len += nv.expr->ptype()->size();
+        }
+    }
+
+    for( ParsingContext::NamedVar &nv : *ns.static_variables )
+        attributes << Attr{ -1, nv.expr, nv.name };
 }

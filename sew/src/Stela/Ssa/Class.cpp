@@ -29,6 +29,10 @@
 
 #include "../Ast/Ast_Class.h"
 #include "Class.h"
+#include "Type.h"
+#include "Room.h"
+#include "Cst.h"
+#include "Op.h"
 
 Class::TrialClass::TrialClass( ParsingContext *caller, Class *orig ) : ns( 0, caller, "TrialClass_" + to_string( orig ) ), orig( orig ) {
     // ns.catched_vars = &orig->catched_vars;
@@ -38,8 +42,29 @@ Class::TrialClass::~TrialClass() {
 }
 
 Expr Class::TrialClass::call( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
-    TODO;
-    return Expr();
+    Vec<Expr> args;
+    for( String n : orig->ast_item->arguments )
+        args << ns.get_var( n );
+
+    Type *type = orig->type_for( args );
+    ns.cond         = and_boolean( ns.cond, cond );
+    // ns.class_scope  = type;
+
+    // start with a unknown cst
+    if ( type->size() < 0 )
+        TODO;
+    Expr ret = room( cst( type, type->size(), 0, 0 ) );
+
+    //
+    if ( apply_mode == ParsingContext::APPLY_MODE_NEW )
+        TODO;
+
+    // call init
+    if ( apply_mode == ParsingContext::APPLY_MODE_STD )
+        TODO;
+        // ns.apply( ns.get_attr( ret, STRING_init_NUM ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD );
+
+    return ret;
 }
 
 Class::Class( const Ast_Callable *ast_item ) : Callable( ast_item ) {
@@ -105,3 +130,45 @@ Callable::Trial *Class::test( int nu, Expr *vu, int nn, String *names, Expr *vn,
 
     return res;
 }
+
+static Expr const_or_copy( Expr &var ) {
+    if ( var->cpt_use == 1 )
+        var->flags |= Inst::CONST;
+    if ( var->flags & Inst::CONST )
+        return var;
+
+    if ( var->type()->orig == ip->class_SurdefList ) {
+        Expr i = ip->pc->apply( var, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
+        Expr v = ip->pc->make_type_var( i->type() );
+        return const_or_copy( v );
+    }
+    if ( var.inst->flags & Inst::CONST )
+        return var;
+    Expr res = ip->pc->copy( var );
+    res.inst->flags |= Inst::CONST;
+    return res;
+}
+
+static bool all_eq( Vec<Expr> &a, Vec<Expr> &b ) {
+    if ( a.size() != b.size() )
+        return false;
+    for( int i = 0; i < a.size(); ++i )
+        if ( a[ i ]->get() != b[ i ]->get() )
+            return false;
+    return true;
+}
+
+Type *Class::type_for( Vec<Expr> args ) {
+    for( Type *t : types )
+        if ( all_eq( t->parameters, args ) )
+            return t;
+
+    Type *res = new Type( this );
+    for( int i = 0; i < args.size(); ++i )
+        res->parameters << const_or_copy( args[ i ] );
+    types << res;
+
+    return res;
+}
+
+

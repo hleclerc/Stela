@@ -52,7 +52,7 @@ int main( int argc, char **argv ) {
             return 1;
         }
         Expr res = pc.apply( e, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
-        PRINT( res );
+        res->ptype()->parse();
         PRINT( *res->ptype() );
 
         //Type *c = e.get_type_for( Vec<Expr>() );

@@ -39,11 +39,7 @@ class IpSnapshot;
 */
 class ParsingContext {
 public:
-    struct NamedVar {
-        String name;
-        Expr   expr;
-        bool   stat; ///< static variable ?
-    };
+    typedef GlobalVariables::NamedVar NamedVar;
     enum {
         SCOPE_TYPE_CLASS, ///< first level (methods and attributes) of a class content
         SCOPE_TYPE_MAIN,
@@ -63,6 +59,8 @@ public:
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
+    Expr              make_type_var( Type *type );
+    Expr              copy( Expr var );
 
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );
@@ -70,7 +68,7 @@ public:
     Expr              error_var ();
 
 
-    void              _init();
+    void              _init( String add_scope_name );
     Expr              _make_surdef_list( const Vec<Expr> &lst );
     Expr              _find_first_var_with_name( String name );
     void              _find_list_of_vars_with_name( Vec<Expr> &res, String name );
@@ -81,9 +79,12 @@ public:
     String           scope_name; ///< used to find static scope
     int              current_off;
     Vec<NamedVar>    variables;
+    Vec<NamedVar>   *static_variables;
     int              scope_type;
     IpSnapshot      *ip_snapshot;
     Expr             cond;
+    int              base_size;
+    int              base_alig;
 };
 
 

@@ -88,7 +88,6 @@ Expr Inst::size() {
 }
 
 bool Inst::get_val( void *res, Type *type ) {
-    TODO;
     return false;
 }
 

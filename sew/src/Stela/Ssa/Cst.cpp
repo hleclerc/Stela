@@ -64,6 +64,10 @@ public:
     virtual Type *type() {
         return _type;
     }
+    virtual bool get_val( void *res, Type *type ) {
+        int sb = ( _size + 7 ) / 8;
+        return _type->get_val( res, type, _data.ptr(), _data.ptr() + sb );
+    }
     virtual bool get_val( void *res, int size ) {
         if ( _size < size )
             return false;

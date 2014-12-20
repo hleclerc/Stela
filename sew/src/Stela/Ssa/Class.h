@@ -50,6 +50,7 @@ public:
 
     Class( const Ast_Callable *ast_item = 0 );
     virtual Trial *test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
+    Type *type_for( Vec<Expr> args );
 
     Vec<Type *,-1,1> types;
 };
