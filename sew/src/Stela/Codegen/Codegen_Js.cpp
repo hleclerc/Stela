@@ -47,12 +47,12 @@ void Codegen_Js::gen_type( Stream &out, Type *type ) {
     Expr obj = symbol( type, "this" );
     set_os( &out );
 
-    on << "function " << n << " () {";
+    on << "function " << n << "( array_buffer, offset ) {";
+    on << "    this.array_buffer = array_buffer == null ? new ArrayBuffer( 1 ) : array_buffer;";
+    on << "    this.offset = offset == null ? 0 : offset;";
     on << "}";
     on << n << ".prototype.size_in_bits = function() {";
-    on.nsp += 4;
     write_expr( type->size( obj ) );
-    on.nsp -= 4;
     on << "}";
 
     on << "module.exports = {";
@@ -109,8 +109,10 @@ AutoPtr<Codegen::Writable> Codegen_Js::var_decl( OutReg *reg ) {
 }
 
 void Codegen_Js::write_expr( Expr expr ) {
+    on << "    \"use asm\";";
+
     Codegen_Js cjs;
-    cjs.set_os( os, on.nsp );
+    cjs.set_os( os, on.nsp + 4 );
     cjs << expr;
     Vec<Expr> res = cjs.make_code();
     cjs.on << "return " << *res[ 0 ]->out_reg << ";";
