@@ -31,6 +31,7 @@
 #include "../System/Math.h"
 #include "Class.h"
 #include "Type.h"
+#include "Op.h"
 
 Type::Type( Class *orig ) : orig( orig ) {
     _len    = -1;
@@ -61,6 +62,17 @@ int Type::size() {
 
 int Type::sb() {
     return size() >= 0 ? ( size() + 7 ) / 8 : -1;
+}
+
+Expr Type::size( Expr obj ) {
+    int s = size();
+    if ( s >= 0 )
+        return Expr( s );
+    Expr res( 0 );
+    for( Attr &attr : attributes ) {
+        TODO;
+    }
+    return res;
 }
 
 bool Type::get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn ) {

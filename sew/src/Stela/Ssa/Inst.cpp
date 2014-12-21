@@ -26,6 +26,7 @@
 **
 ****************************************************************************/
 
+#include "../Codegen/Codegen.h"
 #include "ParsingContext.h"
 #include "Type.h"
 #include "Inst.h"
@@ -41,6 +42,9 @@ Inst::Inst() {
     op_mp      = 0;
     cpt_use    = 0;
     flags      = 0;
+    next_sched = 0;
+    prev_sched = 0;
+    out_reg    = 0;
 }
 
 Inst::~Inst() {
@@ -93,6 +97,10 @@ bool Inst::get_val( void *res, Type *type ) {
 
 bool Inst::get_val( void *res, int size ) {
     return false;
+}
+
+void Inst::write( Codegen *c ) {
+    c->on << "// TODO: write " << *this;
 }
 
 bool Inst::is_surdef() const {

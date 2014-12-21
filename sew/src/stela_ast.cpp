@@ -1,6 +1,7 @@
 /**
   main file for the stela interpreter / compiler
 */
+#include <Stela/Codegen/Codegen_Js.h>
 #include <Stela/Ssa/ParsingContext.h>
 #include <Stela/Ssa/Type.h>
 #include <Stela/System/InstallDir.h>
@@ -37,13 +38,9 @@ int main( int argc, char **argv ) {
     String cwd = get_cwd();
     for( int i = beg_files; i < argc; ++i )
         pc.parse( argv[ i ], cwd );
-    //for( ParsingContext::NamedVar &nv : pc.variables )
-    //    PRINT( nv.expr );
     if ( gv.error_list )
         return gv.error_list;
 
-    //SARG(  0 , code_for_class    , "optionnal name of a class for which we want code", 0 );
-    //SARG( 'o', output            , "", 0 );
     // objectif: sortir du code pour les classes
     if ( code_for_class ) {
         Expr e = pc.get_var( code_for_class );
@@ -53,9 +50,11 @@ int main( int argc, char **argv ) {
         }
         Expr res = pc.apply( e, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
         res->ptype()->parse();
-        PRINT( *res->ptype() );
 
-        //Type *c = e.get_type_for( Vec<Expr>() );
+        Codegen_Js cjs;
+        std::ofstream out( output );
+        cjs.gen_type( out, res->ptype() );
+
     }
 
 

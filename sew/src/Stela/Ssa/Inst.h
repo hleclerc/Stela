@@ -30,7 +30,10 @@
 #define INST_H
 
 #include "../System/Vec.h"
+#include "BoolOpSeq.h"
 #include "Expr.h"
+class Codegen;
+class OutReg;
 class Type;
 
 /**
@@ -90,6 +93,7 @@ public:
     virtual bool get_val( void *res, Type *type );
     virtual bool get_val( void *res, int size );
 
+    virtual void write( Codegen *c );
 
     bool is_surdef() const;
     bool is_const() const;
@@ -114,6 +118,7 @@ public:
     virtual void write_sub_graph_rec( Vec<Inst *> &seq, Stream &os );
     virtual int  ext_disp_size() const;
 
+    // children
     Vec<Expr>             inp;
     Vec<Expr>             ext;
     Vec<Expr>             dep;
@@ -121,6 +126,13 @@ public:
     mutable Inst         *ext_par;
     int                   flags;
 
+    // codegen
+    BoolOpSeq             when;
+    Inst                 *next_sched;
+    Inst                 *prev_sched;
+    OutReg               *out_reg;
+
+    // graph
     static  PI64          cur_op_id; ///<
     mutable PI64          op_id_vis; ///<
     mutable PI64          op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).

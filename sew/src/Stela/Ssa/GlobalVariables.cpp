@@ -30,6 +30,8 @@
 #include "../System/S.h"
 #include "Class.h"
 #include "Type.h"
+#include "Room.h"
+#include "Cst.h"
 
 GlobalVariables *ip = 0;
 
@@ -96,4 +98,8 @@ GlobalVariables::GlobalVariables() {
     ptr_size = 8 * sizeof( void * );
 
     pc = 0;
+}
+
+Expr GlobalVariables::void_var() {
+    return room( cst( type_Void, 0, 0 ) );
 }

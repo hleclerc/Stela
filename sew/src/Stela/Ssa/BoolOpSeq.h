@@ -27,46 +27,18 @@
 ****************************************************************************/
 
 
-#ifndef TYPE_H
-#define TYPE_H
-
-#include "../System/Stream.h"
-#include "Inst.h"
-class Class;
+#ifndef BOOLOPSEQ_H
+#define BOOLOPSEQ_H
 
 /**
 */
-class Type {
+class BoolOpSeq {
 public:
-    struct Attr {
-        int    off; ///< less than 0 => static
-        Expr   val; ///< flags may contain to Inst::PART_INST
-        String name;
-    };
+    BoolOpSeq( bool default_val = true );
 
-    Type( Class *orig );
-    void write_to_stream( Stream &os ) const;
-    int  alig(); ///< size in bits, or -1 if not known
-    int  size(); ///< size in bits, or -1 if not known
-    int  sb(); ///< size in bytes, or -1 if not known
-    Expr size( Expr obj );
+    bool always( bool val ) const;
 
-    virtual bool get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn );
-    virtual bool always( bool val, const PI8 *data, const PI8 *knwn );
-    virtual bool always_equal( Type *t, const void *d, const PI8 *data, const PI8 *knwn );
-
-    virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
-    void parse();
-
-    Class    *orig;
-    Vec<Expr> parameters;
-
-    int       _len;
-    int       _ali;
-    int       _pod;
-    bool      _parsed;
-    bool      aryth;
-    Vec<Attr> attributes;
+    bool default_val;
 };
 
-#endif // TYPE_H
+#endif // BOOLOPSEQ_H

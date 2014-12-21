@@ -47,6 +47,7 @@ struct GlobalVariables {
     };
 
     GlobalVariables();
+    Expr void_var();
 
     ParsingContext                      *pc; ///< current parsing context
     ParsingContext                      *main_parsing_context;

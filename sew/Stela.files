@@ -213,3 +213,11 @@ src/Stela/Ssa/Conv.h
 src/Stela/Ssa/Conv.cpp
 src/Stela/Ssa/Slice.h
 src/Stela/Ssa/Slice.cpp
+src/Stela/Codegen/Codegen_Js.h
+src/Stela/Codegen/Codegen_Js.cpp
+src/Stela/Ssa/Symbol.h
+src/Stela/Ssa/Symbol.cpp
+src/Stela/Ssa/BoolOpSeq.h
+src/Stela/Ssa/BoolOpSeq.cpp
+src/Stela/Codegen/OutReg.h
+src/Stela/Codegen/OutReg.cpp

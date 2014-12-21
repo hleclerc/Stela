@@ -27,46 +27,29 @@
 ****************************************************************************/
 
 
-#ifndef TYPE_H
-#define TYPE_H
+#ifndef CODEGEN_JS_H
+#define CODEGEN_JS_H
 
-#include "../System/Stream.h"
-#include "Inst.h"
-class Class;
+#include "Codegen.h"
+
+class Type;
 
 /**
 */
-class Type {
+class Codegen_Js : public Codegen {
 public:
-    struct Attr {
-        int    off; ///< less than 0 => static
-        Expr   val; ///< flags may contain to Inst::PART_INST
-        String name;
-    };
+    Codegen_Js();
 
-    Type( Class *orig );
-    void write_to_stream( Stream &os ) const;
-    int  alig(); ///< size in bits, or -1 if not known
-    int  size(); ///< size in bits, or -1 if not known
-    int  sb(); ///< size in bytes, or -1 if not known
-    Expr size( Expr obj );
+    void              gen_type( Stream &out, Type *type );
 
-    virtual bool get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn );
-    virtual bool always( bool val, const PI8 *data, const PI8 *knwn );
-    virtual bool always_equal( Type *t, const void *d, const PI8 *data, const PI8 *knwn );
+    virtual void      write_to( Stream &os );
+    virtual Vec<Expr> make_code();
+    virtual void      exec();
 
-    virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
-    void parse();
+    virtual AutoPtr<Writable> var_decl( OutReg *reg );
 
-    Class    *orig;
-    Vec<Expr> parameters;
-
-    int       _len;
-    int       _ali;
-    int       _pod;
-    bool      _parsed;
-    bool      aryth;
-    Vec<Attr> attributes;
+    void              write_expr( Expr expr );
+    Inst             *scheduling( Vec<Expr> &out );
 };
 
-#endif // TYPE_H
+#endif // CODEGEN_JS_H

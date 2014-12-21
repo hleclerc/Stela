@@ -21,41 +21,46 @@ void Ast_Primitive::_get_info( IrWriter *aw ) const {
         aw->push_delayed_parse( args[ i ].ptr() );
 }
 
-#define CHECK_NB_ARGS( N ) if ( a->args.size() != N ) return ip->pc->ret_error( "Expecting " #N " args" )
+#define CHECK_NB_ARGS( N ) if ( p->args.size() != N ) return ip->pc->ret_error( "Expecting " #N " args" )
 
-static Expr parse_info( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_disp( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_rand( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_syscall( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_set_base_size_and_alig( const Ast_Primitive *a ) {
+static Expr parse_info( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_disp( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_rand( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_syscall( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_set_base_size_and_alig( ParsingContext &context, const Ast_Primitive *p ) {
     CHECK_NB_ARGS( 2 );
-    TODO;
-    return Expr();
+    Expr a = p->args[ 0 ]->parse_in( context )->get( context.cond );
+    Expr b = p->args[ 1 ]->parse_in( context )->get( context.cond );
+    if ( a.error() or b.error() )
+        return a;
+    if ( a->get_val( &context.base_size, ip->type_SI32 ) == false or b->get_val( &context.base_alig, ip->type_SI32 ) == false )
+        return context.ret_error( "set_base_size_and_alig -> SI32/SI64 known values" );
+    return ip->void_var();
 }
-static Expr parse_set_RawRef_dependancy ( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_reassign_rec( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_assign_rec( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_set_ptr_val( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_select_SurdefList( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_ptr_size( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_ptr_alig( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_size_of( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_alig_of( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_typeof( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_address( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_get_slice( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_pointed_value( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_pointer_on( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_block_exec( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_get_argc( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_get_argv( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_apply_LambdaFunc( const Ast_Primitive *a ) { TODO; return Expr(); }
-static Expr parse_inst_of( const Ast_Primitive *a ) { TODO; return Expr(); }
+static Expr parse_set_RawRef_dependancy ( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_reassign_rec( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_assign_rec( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_set_ptr_val( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_select_SurdefList( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_ptr_size( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_ptr_alig( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_size_of( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_alig_of( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_typeof( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_address( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_get_slice( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_pointed_value( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_pointer_on( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_block_exec( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_get_argc( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_get_argv( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_apply_LambdaFunc( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_inst_of( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 
 
 Expr Ast_Primitive::_parse_in( ParsingContext &context ) const {
     switch ( tok_number ) {
-    #define DECL_IR_TOK( N ) case IR_TOK_##N: return parse_##N( this );
+    #define DECL_IR_TOK( N ) case IR_TOK_##N: return parse_##N( context, this );
     #include "../Ir/Decl_Primitives.h"
     #undef DECL_IR_TOK
     }

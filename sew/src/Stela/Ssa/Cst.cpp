@@ -26,6 +26,7 @@
 **
 ****************************************************************************/
 
+#include "../Codegen/Codegen.h"
 #include "../System/Memcpy.h"
 #include "Type.h"
 #include "Cst.h"
@@ -81,6 +82,9 @@ public:
     virtual bool always_equal( Type *t, const void *d ) {
         int sb = ( _size + 7 ) / 8;
         return _type->always_equal( t, d, _data.ptr(), _data.ptr() + sb );
+    }
+    virtual void write( Codegen *c ) {
+        c->on << *c->var_decl( out_reg ) << " = " << *this << ";";
     }
 
     Vec<PI8> _data; ///< values and known (should not be changed directly)
