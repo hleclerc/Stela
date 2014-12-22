@@ -15,6 +15,11 @@ exe: cmp
 	
 # 	metil_comp out.cpp
 
+js:
+	cd test_js; for i in `find . -name "*.coffee"`; do coffee -b -c $$i; done
+	cd test_js; nodejs test.js
+	
+
 cmp: ext/PrepArg install_dir
 	${MC} -o ${MAIN} -ne src/${MAIN}.cpp
 

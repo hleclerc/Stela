@@ -222,3 +222,7 @@ src/Stela/Ssa/BoolOpSeq.cpp
 src/Stela/Codegen/OutReg.h
 src/Stela/Codegen/OutReg.cpp
 bench.js
+test_js/PI8.js
+test_js/Model.js
+test_js/Am.js
+test_js/CUnsigned.js
