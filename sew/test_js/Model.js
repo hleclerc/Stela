@@ -5,7 +5,7 @@ Model = (function() {
 
   Model.__counter = 0;
 
-  Model.__modlist = [];
+  Model.__modlist = new WeakSet;
 
   Model.__n_views = {};
 
@@ -13,7 +13,7 @@ Model = (function() {
 
   Model.__force_m = false;
 
-  Model.__id_map = new WeakMap();
+  Model.__id_map = new WeakMap;
 
   Model.__cur_id = 1;
 
@@ -30,12 +30,43 @@ Model = (function() {
     }
   });
 
-  Model.prototype.bind = function(view) {
+  Model.prototype.bind = function(f, onchange_construction) {
     var views;
-    views = this.__container.__views;
-    if (views.indexOf(view) < 0) {
-      return views.push(view);
+    if (onchange_construction == null) {
+      onchange_construction = true;
     }
+    if (f instanceof View) {
+      views = this.__container.__views;
+      if (views.indexOf(f) < 0) {
+        views.push(view);
+      }
+      if (onchange_construction) {
+        Model.__n_views[f.view_id] = f;
+        return Model._need_sync_views();
+      }
+    } else {
+      return new FunctionBinder(this, onchange_construction, f);
+    }
+  };
+
+  Model.prototype._signal_change = function(change_level) {
+    var p, _i, _len, _ref;
+    if (change_level == null) {
+      change_level = 2;
+    }
+    Model.__modlist[this.__id] = this;
+    if (!(this.__orig.__modified_attributes[this.__numsub] != null) || this.__orig.__modified_attributes[this.__numsub] < change_level) {
+      this.__orig.__modified_attributes[this.__numsub] = change_level;
+    }
+    if (this.__orig.__date_last_modification <= Model.__counter) {
+      this.__orig.__date_last_modification = Model.__counter + change_level;
+      _ref = this.__orig.__parents;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        p = _ref[_i];
+        p._signal_change(1);
+      }
+    }
+    return Model._need_sync_views();
   };
 
   Object.defineProperty(Model.prototype, "__container", {
