@@ -221,3 +221,4 @@ src/Stela/Ssa/BoolOpSeq.h
 src/Stela/Ssa/BoolOpSeq.cpp
 src/Stela/Codegen/OutReg.h
 src/Stela/Codegen/OutReg.cpp
+bench.js
