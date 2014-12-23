@@ -2,15 +2,9 @@
 #
 # Each view has an unique id called "view_id"
 class View
-    @__cur_view_id: 0
-    
     # m can be a model or a list of models
     constructor: ( m, onchange_construction = true ) ->
-        #
-        @view_id = View.__cur_view_id
-        View.__cur_view_id += 1
-        
-        # what `this` is observing
+        # what the view is observing
         @__models = []
         
         # bind
@@ -20,14 +14,12 @@ class View
             for i in m
                 i.bind this, onchange_construction
         else if m?
-            console.error "View constructor doesn't know what to do with", m
+            console.error "The View constructor doesn't know what to do with", m
 
     #
     destructor: ->
         for m in @__models
-            i = m.__views.indexOf this
-            if i >= 0
-                m.__views.splice i, 1
+            m.unbind this
 
 
     # called if at least one of the corresponding models has changed in the previous round

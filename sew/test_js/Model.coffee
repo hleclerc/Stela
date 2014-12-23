@@ -1,67 +1,99 @@
 class Model
     # static attributes
     @__counter: 0  # nb "change rounds" since the beginning ( * 2 to differenciate direct and indirect changes )
-    @__modlist: new WeakSet # models changed models during the current round
-    @__n_views: {} # new views (that will need a first onchange call in "force" mode)
+    @__modlist: new Set # models changed models during the current round
+    @__n_views: [] # new views created during the current round (that will need a first onchange call)
     @__timeout: undefined # timer used to create a new "round" (to call View.on_change)
     @__force_m: false # if __force_m == true, every has_been_modified function will return true (used to call onchange of new views)
-    @__id_map : new WeakMap # __id -> model
     @__cur_id : 1 # current model id (the one that will be used for the next created base model)
     
     constructor: ( @__ptr = asm_mod.allocate( 1 ), parent ) ->
         if parent?
             @__parent = parent
+        else
+            @__pardeps                = new Set # -> objects that directly depends on this
+            @__views                  = new Set # views observing this
+            @__id                     = 0 # global id (local at the beginning, if not saved in SocaDB)
+            @__date_last_modification = 0 # Model.current_date+2 for a direct modification. Model.current_date+1 for a modification that comes from a child.
+
+    #
+    bind: ( view, onchange_construction = true ) ->
+        if view instanceof View
+            @__container().__views.add view
+
+            if onchange_construction
+                Model.__n_views.push view
+                Model.__need_sync_views()
+        else
+            new FunctionBinder this, onchange_construction, f
+            
+    #
+    unbind: ( view ) ->
+        @__container().__views.delete view
 
     # attr_names -> list with name of attributes. May be surdefined
     Object.defineProperty Model.prototype, "attr_names",
-        get: () -> []
+        get: -> @get_attr_names()
 
-    #
-    bind: ( f, onchange_construction = true ) ->
-        if f instanceof View
-            views = @__container.__views
-            if views.indexOf( f ) < 0
-                views.push view
-                # f.__models.push this
+    Object.defineProperty Model.prototype, "size_in_bits",
+        get: -> @get_size_in_bits()
 
-            if onchange_construction
-                Model.__n_views[ f.view_id ] = f
-                Model._need_sync_views()
-        else
-            new FunctionBinder this, onchange_construction, f
+    Object.defineProperty Model.prototype, "val",
+        get: ->
+            @get_val()
+        set: ( val ) ->
+            if @set_val val
+                @__signal_change()
+            
+    get_attr_names: ->
+        []
 
     # called by set. change_level should not be defined by the user (it permits to != change from child of from this)
-    _signal_change: ( change_level = 2 ) ->
-        # register this as a modified model
-        Model.__modlist[ @__id ] = this
+    __signal_change: ( change_level = 2 ) ->
+        container = @__container()
 
-        #
-        if not @__orig.__modified_attributes[ @__numsub ]? or @__orig.__modified_attributes[ @__numsub ] < change_level
-            @__orig.__modified_attributes[ @__numsub ] = change_level
-
-        # do the same thing for the parents
-        if @__orig.__date_last_modification <= Model.__counter
-            @__orig.__date_last_modification = Model.__counter + change_level
-            for p in @__orig.__parents
-                p._signal_change 1
+        if container.__date_last_modification <= Model.__counter
+            container.__date_last_modification = Model.__counter + change_level
+            Model.__modlist.add container
+            
+            if container.__pardeps?
+                for p in container.__pardeps
+                    p.__signal_change 1
                 
-        # start if not done a timer
-        Model._need_sync_views()
+            # start a timer (if not already done)
+            Model.__need_sync_views()
+
+    #
+    @__need_sync_views: ->
+        if not Model.__timeout?
+            Model.__timeout = setTimeout Model.__sync_views, 1
+
+    # the function that is called after the (very short) timeout, when at least one object has been modified
+    @__sync_views: ->
+        # view -> forced onchange
+        views = new Map 
+        
+        Model.__modlist.forEach ( model ) ->
+            model.__views.forEach ( view ) ->
+                views.set view, false
+
+        for view in Model.__n_views
+            views.set view, true
+
+        # reset list of changed stiff
+        Model.__timeout = undefined
+        Model.__modlist = new Set
+        Model.__n_views = []
+        Model.__counter += 2
+        
+        # call onchange
+        views.forEach ( force, view ) ->
+            Model.__force_m = force
+            view.onchange()
+        Model.__force_m = false
 
     # __container -> get elder
-    Object.defineProperty Model.prototype, "__container",
-        get: () ->
-            if @parent?
-                @parent.__container
-            else
-                @__add_mv_attr()
-                this
-    
-    # __mv_attr -> add attributes needed for model/view manipulations
-    __add_mv_attr: ( view ) ->
-        if @__views?
-            return
-        @__views                  = []
-        @__id                     = 0 # global by default (local if not saved in SocaDB)
-        @__date_last_modification = 0 # Model.current_date+2 for a direct modification. Model.current_date+1 for a modification that comes from a child.
-
+    __container: ->
+        if @__parent?
+            return @__parent.__container()
+        this

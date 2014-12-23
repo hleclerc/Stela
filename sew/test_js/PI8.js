@@ -4,56 +4,58 @@ var PI8,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 PI8 = (function(_super) {
-  var am;
 
   __extends(PI8, _super);
 
-  am = asm_mod.push(function(stdlib, foreign, buffer) {
-    "use asm";
+  
+    var am = asm_mod.push( function( stdlib, foreign, buffer ) {
+        "use asm";
 
-    var get_val, set_val, size_in_bits, values;
-    values = new stdlib.Uint8Array(buffer);
-    size_in_bits = function(start) {
-      start = start | 0;
-      return 8;
-    };
-    get_val = function(start) {
-      start = start | 0;
-      return values[start] | 0;
-    };
-    set_val = function(start, val) {
-      start = start | 0;
-      val = val | 0;
-      return values[start] = val;
-    };
-    return {
-      size_in_bits: size_in_bits,
-      get_val: get_val,
-      set_val: set_val
-    };
-  });
+        var values = new stdlib.Uint8Array( buffer );
 
-  function PI8(offset) {
-    PI8.__super__.constructor.call(this, offset);
+        function size_in_bits( start ) {
+            start = start | 0;
+            return 8;
+        }
+
+        function get_val( start ) {
+            start = start | 0;
+            return values[ start ] | 0;
+        }
+
+        function set_val( start, val ) {
+            start = start | 0;
+            val   = val   | 0;
+            res   = values[ start ] != val;
+            values[ start ] = val;
+            return res | 0;
+        }
+
+        return {
+            size_in_bits: size_in_bits,
+            get_val     : get_val,
+            set_val     : set_val
+        };
+    } );
+    ;
+
+
+  function PI8(ptr) {
+    PI8.__super__.constructor.call(this, ptr);
+    console.log("ptr:", this.__ptr);
   }
 
-  Object.defineProperty(PI8.prototype, "size_in_bits", {
-    get: function() {
-      return am.size_in_bits(this.offset);
-    }
-  });
+  PI8.prototype.get_size_in_bits = function() {
+    return am.size_in_bits(this.__ptr);
+  };
 
-  Object.defineProperty(PI8.prototype, "val", {
-    get: function() {
-      return am.get_val(this.offset);
-    },
-    set: function(val) {
-      if (typeof this.__sig_change === "function") {
-        this.__sig_change();
-      }
-      return am.set_val(this.offset, val);
-    }
-  });
+  PI8.prototype.get_val = function() {
+    return am.get_val(this.__ptr);
+  };
+
+  PI8.prototype.set_val = function(val) {
+    return am.set_val(this.__ptr, val);
+  };
 
   return PI8;
 

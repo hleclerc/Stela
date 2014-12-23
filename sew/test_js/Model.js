@@ -5,15 +5,13 @@ Model = (function() {
 
   Model.__counter = 0;
 
-  Model.__modlist = new WeakSet;
+  Model.__modlist = new Set;
 
-  Model.__n_views = {};
+  Model.__n_views = [];
 
   Model.__timeout = void 0;
 
   Model.__force_m = false;
-
-  Model.__id_map = new WeakMap;
 
   Model.__cur_id = 1;
 
@@ -21,72 +19,115 @@ Model = (function() {
     this.__ptr = __ptr != null ? __ptr : asm_mod.allocate(1);
     if (parent != null) {
       this.__parent = parent;
+    } else {
+      this.__pardeps = new Set;
+      this.__views = new Set;
+      this.__id = 0;
+      this.__date_last_modification = 0;
     }
   }
 
-  Object.defineProperty(Model.prototype, "attr_names", {
-    get: function() {
-      return [];
-    }
-  });
-
-  Model.prototype.bind = function(f, onchange_construction) {
-    var views;
+  Model.prototype.bind = function(view, onchange_construction) {
     if (onchange_construction == null) {
       onchange_construction = true;
     }
-    if (f instanceof View) {
-      views = this.__container.__views;
-      if (views.indexOf(f) < 0) {
-        views.push(view);
-      }
+    if (view instanceof View) {
+      this.__container().__views.add(view);
       if (onchange_construction) {
-        Model.__n_views[f.view_id] = f;
-        return Model._need_sync_views();
+        Model.__n_views.push(view);
+        return Model.__need_sync_views();
       }
     } else {
       return new FunctionBinder(this, onchange_construction, f);
     }
   };
 
-  Model.prototype._signal_change = function(change_level) {
-    var p, _i, _len, _ref;
-    if (change_level == null) {
-      change_level = 2;
-    }
-    Model.__modlist[this.__id] = this;
-    if (!(this.__orig.__modified_attributes[this.__numsub] != null) || this.__orig.__modified_attributes[this.__numsub] < change_level) {
-      this.__orig.__modified_attributes[this.__numsub] = change_level;
-    }
-    if (this.__orig.__date_last_modification <= Model.__counter) {
-      this.__orig.__date_last_modification = Model.__counter + change_level;
-      _ref = this.__orig.__parents;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        p = _ref[_i];
-        p._signal_change(1);
-      }
-    }
-    return Model._need_sync_views();
+  Model.prototype.unbind = function(view) {
+    return this.__container().__views["delete"](view);
   };
 
-  Object.defineProperty(Model.prototype, "__container", {
+  Object.defineProperty(Model.prototype, "attr_names", {
     get: function() {
-      if (this.parent != null) {
-        return this.parent.__container;
-      } else {
-        this.__add_mv_attr();
-        return this;
+      return this.get_attr_names();
+    }
+  });
+
+  Object.defineProperty(Model.prototype, "size_in_bits", {
+    get: function() {
+      return this.get_size_in_bits();
+    }
+  });
+
+  Object.defineProperty(Model.prototype, "val", {
+    get: function() {
+      return this.get_val();
+    },
+    set: function(val) {
+      if (this.set_val(val)) {
+        return this.__signal_change();
       }
     }
   });
 
-  Model.prototype.__add_mv_attr = function(view) {
-    if (this.__views != null) {
-      return;
+  Model.prototype.get_attr_names = function() {
+    return [];
+  };
+
+  Model.prototype.__signal_change = function(change_level) {
+    var container, p, _i, _len, _ref;
+    if (change_level == null) {
+      change_level = 2;
     }
-    this.__views = [];
-    this.__id = 0;
-    return this.__date_last_modification = 0;
+    container = this.__container();
+    if (container.__date_last_modification <= Model.__counter) {
+      container.__date_last_modification = Model.__counter + change_level;
+      Model.__modlist.add(container);
+      if (container.__pardeps != null) {
+        _ref = container.__pardeps;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          p = _ref[_i];
+          p.__signal_change(1);
+        }
+      }
+      return Model.__need_sync_views();
+    }
+  };
+
+  Model.__need_sync_views = function() {
+    if (!(Model.__timeout != null)) {
+      return Model.__timeout = setTimeout(Model.__sync_views, 1);
+    }
+  };
+
+  Model.__sync_views = function() {
+    var view, views, _i, _len, _ref;
+    views = new Map;
+    Model.__modlist.forEach(function(model) {
+      return model.__views.forEach(function(view) {
+        return views.set(view, false);
+      });
+    });
+    _ref = Model.__n_views;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      view = _ref[_i];
+      views.set(view, true);
+    }
+    Model.__timeout = void 0;
+    Model.__modlist = new Set;
+    Model.__n_views = [];
+    Model.__counter += 2;
+    views.forEach(function(force, view) {
+      Model.__force_m = force;
+      return view.onchange();
+    });
+    return Model.__force_m = false;
+  };
+
+  Model.prototype.__container = function() {
+    if (this.__parent != null) {
+      return this.__parent.__container();
+    }
+    return this;
   };
 
   return Model;

@@ -1,12 +1,17 @@
-a = new PI8 0
-console.log a.size_in_bits
-console.log a.val
-a.val = 17
-console.log a.val
+for i in [ 0 .. 10 ]
+    console.log asm_mod.allocate( 2048 ).ptr
 
-class MyView extends View 
-    onchange: ->
-        console.log "pouet"
-        
-v = new MyView a
-a.val = 10
+# a = new PI8 asm_mod.allocate 1
+# # console.log a.size_in_bits
+# # console.log a.val
+# # a.val = 17
+# # console.log a.val
+# 
+# class MyView extends View 
+#     onchange: ->
+#         console.log a.val
+#         
+# v = new MyView a
+# a.val = 10
+# 
+# Model.__timeout = setTimeout ( -> a.val = 20 ), 2000
