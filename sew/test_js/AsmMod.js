@@ -7,35 +7,54 @@ AsmMod = (function() {
 
   AsmMod.global = typeof window !== "undefined" && window !== null ? window : global;
 
+  AsmMod.sizes = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+
   function AsmMod() {
-    var e, i, s, _i;
+    var i;
     this.modules = [];
     this.heap = new ArrayBuffer(0x10000);
-    this.busy_pages = new Map;
-    for (e = _i = 2; _i <= 12; e = ++_i) {
-      s = 1 << e;
-      this.busy_pages.set(s, {
-        free: [],
-        full: []
-      });
-    }
-    this.free_pages = (function() {
-      var _j, _ref, _ref1, _results;
+    this.free_ptrs = (function() {
+      var _i, _results;
       _results = [];
-      for (i = _j = 0, _ref = this.get_heap_size(), _ref1 = AsmMod.page_size; 0 <= _ref ? _j < _ref : _j > _ref; i = _j += _ref1) {
+      for (i = _i = 0; _i < 11; i = ++_i) {
+        _results.push(1);
+      }
+      return _results;
+    })();
+    this.free_pages = (function() {
+      var _i, _ref, _ref1, _results;
+      _results = [];
+      for (i = _i = 0, _ref = this.get_heap_size(), _ref1 = AsmMod.page_size; 0 <= _ref ? _i < _ref : _i > _ref; i = _i += _ref1) {
         _results.push(i);
+      }
+      return _results;
+    }).call(this);
+    this.pages_info = (function() {
+      var _i, _ref, _ref1, _results;
+      _results = [];
+      for (i = _i = 0, _ref = this.get_heap_size(), _ref1 = AsmMod.page_size; 0 <= _ref ? _i < _ref : _i > _ref; i = _i += _ref1) {
+        _results.push({
+          occupation: 0,
+          size: 0
+        });
       }
       return _results;
     }).call(this);
   }
 
+  AsmMod.prototype.push = function(module) {
+    this.modules.push(module);
+    return module(AsmMod.global, null, this.heap);
+  };
+
   AsmMod.prototype.get_heap_size = function() {
     return this.heap.byteLength;
   };
 
-  AsmMod.prototype.push = function(module) {
-    this.modules.push(module);
-    return module(AsmMod.global, null, this.heap);
+  AsmMod.prototype.get_occupation = function() {
+    var nb_pages, res;
+    nb_pages = (this.get_heap_size() / AsmMod.page_size) | 0;
+    return res = (nb_pages - this.free_pages.length) * AsmMod.page_size;
   };
 
   AsmMod.prototype.resize_heap = function(new_size) {
@@ -43,7 +62,6 @@ AsmMod = (function() {
     old_heap = this.heap;
     old_size = this.heap.byteLength;
     this.heap = new ArrayBuffer(new_size);
-    console.log("new size", new_size);
     new Uint8Array(this.heap, 0, old_heap.byteLength).set(new Uint8Array(old_heap));
     _ref = this.modules;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -53,46 +71,77 @@ AsmMod = (function() {
     _results = [];
     while (old_size < new_size) {
       this.free_pages.push(old_size);
+      this.pages_info.push({
+        occupation: 0,
+        size: 0
+      });
       _results.push(old_size += AsmMod.page_size);
     }
     return _results;
   };
 
   AsmMod.prototype.allocate = function(size) {
-    var f, next_power_of_two, num_free_list, o, p, res;
+    var num_list, pi, ptr;
     if (size >= AsmMod.page_size) {
-      return this._allocate_pages((size / AsmMod.page_size) | 0);
+      return this._allocate_pages(((size + AsmMod.page_size - 1) / AsmMod.page_size) | 0);
     }
-    next_power_of_two = function(v) {
-      --v;
-      v |= v >> 1;
-      v |= v >> 2;
-      v |= v >> 4;
-      v |= v >> 8;
-      v |= v >> 16;
-      return ++v;
-    };
-    size = size <= 4 ? 4 : next_power_of_two(size);
-    p = this.busy_pages.get(size);
-    if (!p.free.length) {
-      o = this._allocate_chuncks(size);
-      p.free.push({
-        offset: o,
-        ptr_last_free_elem: o
-      });
+    num_list = this._num_list_for_size(size);
+    ptr = this.free_ptrs[num_list];
+    if (ptr === 1) {
+      ptr = this._allocate_chuncks(size);
     }
-    num_free_list = 0;
-    f = p.free[num_free_list];
-    res = f.ptr_last_free_elem;
-    f.ptr_last_free_elem = (new Uint32Array(this.heap, res, 4))[0];
-    if (f.ptr_last_free_elem === 1) {
-      p.full.push(f.offset);
-      p.free.splice(num_free_list, 1);
-    }
+    this.free_ptrs[num_list] = (new Uint32Array(this.heap, ptr, 4))[0];
+    pi = this.pages_info[(ptr / AsmMod.page_size) | 0];
+    pi.occupation++;
     return {
-      ptr: res,
-      rese: size
+      ptr: ptr,
+      rese: AsmMod.sizes[num_list]
     };
+  };
+
+  AsmMod.prototype.free = function(rese, ptr) {
+    var nb_pages, num_list, num_page;
+    if (size >= AsmMod.page_size) {
+      num_page = (ptr / AsmMod.page_size) | 0;
+      nb_pages = ((size + AsmMod.page_size - 1) / AsmMod.page_size) | 0;
+      return this._desallocate_pages(num_page, nb_pages);
+    }
+    num_list = this._num_list_for_size(size);
+    return todo();
+  };
+
+  AsmMod.prototype._num_list_for_size = function(s) {
+    if (s <= 32) {
+      if (s <= 8) {
+        if (s <= 4) {
+          return 0;
+        }
+        return 1;
+      }
+      if (s <= 16) {
+        return 2;
+      }
+      return 3;
+    }
+    if (s <= 256) {
+      if (s <= 128) {
+        if (s <= 64) {
+          return 4;
+        }
+        return 5;
+      }
+      return 6;
+    }
+    if (s <= 1024) {
+      if (s <= 512) {
+        return 7;
+      }
+      return 8;
+    }
+    if (s <= 2048) {
+      return 9;
+    }
+    return 10;
   };
 
   AsmMod.prototype._allocate_pages = function(nb_pages) {
@@ -118,14 +167,20 @@ AsmMod = (function() {
     }
   };
 
+  AsmMod.prototype._desallocate_pages = function(num_page, nb_pages) {
+    return todo();
+  };
+
   AsmMod.prototype._allocate_chuncks = function(size) {
-    var a32, i, res, _i, _ref;
+    var a32, i, pi, res, _i, _ref;
     res = this._allocate_pages(1);
     a32 = new Uint32Array(this.heap, res, AsmMod.page_size);
     for (i = _i = 0, _ref = AsmMod.page_size - 1; 0 <= _ref ? _i < _ref : _i > _ref; i = _i += size) {
       a32[i / 4] = res + i + size;
     }
     a32[(AsmMod.page_size - size) / 4] = 1;
+    pi = this.pages_info[(res / AsmMod.page_size) | 0];
+    pi.size = size;
     return res;
   };
 

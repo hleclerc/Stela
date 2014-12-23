@@ -2,5 +2,7 @@
 var i, _i;
 
 for (i = _i = 0; _i <= 10; i = ++_i) {
-  console.log(asm_mod.allocate(2048).ptr);
+  asm_mod.allocate(16).ptr;
 }
+
+console.log(asm_mod.get_occupation());

@@ -18,7 +18,7 @@ class PI8 extends Model
         function set_val( start, val ) {
             start = start | 0;
             val   = val   | 0;
-            res   = values[ start ] != val;
+            res   = ( values[ start ] | 0 ) != val;
             values[ start ] = val;
             return res | 0;
         }
