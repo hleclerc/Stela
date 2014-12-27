@@ -10,7 +10,7 @@ class AsmMod
         @modules = [] # asm.js modules (where the code is defined)
         @heap    = new ArrayBuffer 0x10000 # must be a multiple of AsmMod.page_size
         
-        # map size -> free: [{ offset: ..., ptr_last_free_elem: ..., occupation_ratio: ... }}, full: [ offsets ]
+        # num size => ptr_last_free_elem
         @free_ptrs = ( 1 for i in [ 0 ... 11 ] )
         
         # ordered list of free pages

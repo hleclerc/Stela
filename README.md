@@ -3,14 +3,14 @@ What is Stela ?
 
 Stela is a general purpose programming language, designed for performance, or to be more accurate, designed to simplify the design of flexible and performant programs.
 
-Of course, C++ is currently a great match for these goals, thanks to the incredible work on compilers and constructs like e.g. templates, permitting to obtain genericity, flexibility at no cost at all (at least in terms of execution speed).
+Of course, C++ is currently a great match for these goals, thanks to constructs like `templates`, enabling genericity and flexibility at no cost at all (at least in terms of execution speed).
 
 Nevertheless, staying with the later example, the syntax for C++ template meta-programming is not really convenient. At least, one can say that if meta-programming is possible with templates, templates do not really seem to be designed for meta-programming.
 
 Stela is an experimental language with the following goals
 * steal all the things that make C++(11) such a great language (memory model, templates, ...)
 * a coffeescript/python like syntax
-* a compilation working at a function level, with a server, to dramatically reduce compilation time, in order to let the user specify only the things the compiler cannot guess_
+* a compilation working at a function level, with a server, to dramatically reduce compilation time, in order to let the user specify only the things the compiler cannot guess (the user still has to know what he is doing, but the compiler won't need trivial information)
     - return types, type of declared variables,
     - constexpr functions or not, pure or not, ...
     - ...
@@ -36,17 +36,6 @@ m := MyClass[ sum 0 .. 5 ]()
 print map m, x => x + 7 # should give '22 17 b7'
 ```
 
-A compilation server
-====================
-
-To reduce the compilation time, Stela runs as a server with a database containing the code for each class or method specialization.
-
-It significantly reduces the compilation time, giving the opportunity to rely heavily on the compiler to help the user.
-
-To take an example, the return types are found according to function code and input parameters (using the code of the definition). With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation passes.
-
-More generally, *it allows to use template everywhere*. Actually, unless explicitely specified, functions and methods are template. Classes can easilly be templated (as shown in the above example).
-
 
 Some details on the meta-programming model
 ==========================================
@@ -57,7 +46,7 @@ Within Stela, meta-program can work as with C++, with template (const) parameter
 
 If you want Stela to execute code during the compilation, you can either
 * declare variables with `::=` (`a ::= b` means that `a` will be equal to `b`, and the type *and* the value will be known at compile time)
-* send results to template class parameters (e.g. MyClass[ expr ])
+* use the values for template class parameters (e.g. MyClass[ expr ])
 * or use the `as_a_known_value` function (which basically returns a reference on a `::=` variable)
 
 Example:
@@ -70,6 +59,22 @@ t ::= l
 A[ l ]( ... )
 print as_a_known_value l
 ```
+
+It basically enables a kind of "integrated code generation": if values are known during the compilation (for instance if there's is a `if`), the code is simplified. The user can specify what to do using known values (which may be arbitrarily complex to compute), the resulting code only contains the things to be done during the execution.
+
+Furthermore, Stela gives access to the SSA-representions (mainly with substitution rules).
+
+
+A compilation server
+====================
+
+To reduce the compilation time, Stela runs as a server with a database containing the code for each class or method specialization.
+
+It significantly reduces the compilation time, giving the opportunity to rely heavily on the compiler to help the user for the trivial stiff (while letting him or her do the interesting stuff -- for the functionnalities, the execution speed, ...).
+
+To take an example, the return types are found according to function code and input parameters (using the code of the definition). With a compilation model as the standard C++ one, it would be impossible to generalize that with non prohibitive compilation passes.
+
+More generally, *it allows to use template everywhere*. Actually, unless explicitely specified, functions and methods are template. Classes can easilly be templated (as shown in the above example).
 
 
 Tools to simplify the everyday life

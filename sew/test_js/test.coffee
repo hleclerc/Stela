@@ -1,6 +1,10 @@
-for i in [ 0 .. 10 ]
+ptrs = for i in [ 0 .. 10 ]
     asm_mod.allocate( 16 ).ptr
 console.log asm_mod.get_occupation()
+for ptr in ptrs
+    asm_mod.free ptr, 16
+console.log asm_mod.get_occupation()
+
 # a = new PI8 asm_mod.allocate 1
 # # console.log a.size_in_bits
 # # console.log a.val

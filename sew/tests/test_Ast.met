@@ -59,4 +59,15 @@ class PI8
     # def add name, inode
         # #
 
+# 
+class N[ val ]
+
+# Heap allocation
     
+    
+def heap_allocation size
+    
+
+        
+        
+        
