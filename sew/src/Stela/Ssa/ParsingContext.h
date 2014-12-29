@@ -46,8 +46,7 @@ public:
         SCOPE_TYPE_STD
     };
 
-    ParsingContext( GlobalVariables &gv );
-    ParsingContext( ParsingContext *parent, ParsingContext *caller = 0, String add_scope_name = "" );
+    ParsingContext( ParsingContext *parent = 0, ParsingContext *caller = 0, String add_scope_name = "" );
 
     void              parse( String filename, String current_dir );
 
@@ -55,10 +54,10 @@ public:
     String            find_src( String filename, String current_dir = "" ) const;
 
     Expr              reg_var( String name, Expr expr, bool stat = false );
-    Expr              get_var( String name );
+    Expr              get_var( String name, bool disp_err = true );
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
-    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
+    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
     Expr              make_type_var( Type *type );
     Expr              copy( Expr var );
 
@@ -68,14 +67,13 @@ public:
     Expr              error_var ();
 
 
-    void              _init( String add_scope_name );
     Expr              _make_surdef_list( const Vec<Expr> &lst );
     Expr              _find_first_var_with_name( String name );
     void              _find_list_of_vars_with_name( Vec<Expr> &res, String name );
 
-    GlobalVariables &gv;
     ParsingContext  *parent;
     ParsingContext  *caller;
+    Expr             self;
     String           scope_name; ///< used to find static scope
     int              current_off;
     Vec<NamedVar>    variables;

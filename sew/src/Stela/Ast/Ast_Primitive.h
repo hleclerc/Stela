@@ -21,6 +21,7 @@ public:
     virtual PI8  _tok_number() const;
 
     SplittedVec<Past,4> args;
+    Vec<String>         names;
     int tok_number;
 };
 

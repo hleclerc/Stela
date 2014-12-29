@@ -43,13 +43,13 @@ public:
     struct TrialClass : Trial {
         TrialClass( ParsingContext *caller, Class *orig );
         virtual ~TrialClass();
-        virtual Expr call( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
+        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
         ParsingContext ns;
         Class *orig;
     };
 
     Class( const Ast_Callable *ast_item = 0 );
-    virtual Trial *test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
+    virtual Trial *test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
     Type *type_for( Vec<Expr> args );
 
     Vec<Type *,-1,1> types;

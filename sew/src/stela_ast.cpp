@@ -22,7 +22,11 @@ int main( int argc, char **argv ) {
     bool add_base_files = not ( disp_lexems or disp_tokens );
 
     GlobalVariables gv;
-    ParsingContext pc( gv );
+    ip = &gv;
+
+    ParsingContext pc;
+    pc.scope_type = ParsingContext::SCOPE_TYPE_MAIN;
+    ip->main_parsing_context = &pc;
 
     // predefs
     pc.add_inc_path( base_met_files );

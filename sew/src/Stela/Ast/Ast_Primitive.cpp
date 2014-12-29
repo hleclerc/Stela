@@ -1,4 +1,6 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Room.h"
+#include "../Ssa/Cst.h"
 #include "../Ir/Numbers.h"
 #include "Ast_Primitive.h"
 #include "IrWriter.h"
@@ -23,7 +25,11 @@ void Ast_Primitive::_get_info( IrWriter *aw ) const {
 
 #define CHECK_NB_ARGS( N ) if ( p->args.size() != N ) return ip->pc->ret_error( "Expecting " #N " args" )
 
-static Expr parse_info( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_info( ParsingContext &context, const Ast_Primitive *p ) {
+    for( int i = 0; i < p->args.size(); ++i )
+        std::cout << p->args[ i ]->parse_in( context ) << std::endl;
+    return Expr();
+}
 static Expr parse_disp( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_rand( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_syscall( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
@@ -56,6 +62,22 @@ static Expr parse_get_argc( ParsingContext &context, const Ast_Primitive *p ) { 
 static Expr parse_get_argv( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_apply_LambdaFunc( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_inst_of( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_repeat( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr tvar = context.apply( p->args[ 0 ]->parse_in( context ), 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
+    Expr func = p->args[ 1 ]->parse_in( context ); ++func.inst->cpt_use;
+    SI64 res[ 2 ];
+    res[ 0 ] = ST( tvar->ptype() );
+    res[ 1 ] = ST( func.inst );
+    return room( cst( ip->type_Repeated, 2 * 64, res ) );
+}
+static Expr parse_code( ParsingContext &context, const Ast_Primitive *p ) {
+    if ( p->args.size() == 0 )
+        return ip->pc->ret_error( "Expecting at least ine arg" );
+    Expr f = p->args[ 0 ]->parse_in( context );
+    PRINT( f );
+    return Expr();
+}
 
 
 Expr Ast_Primitive::_parse_in( ParsingContext &context ) const {

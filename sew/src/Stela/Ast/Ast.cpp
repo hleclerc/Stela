@@ -22,6 +22,7 @@
 #include "Ast_Select.h"
 #include "Ast_ChBeBa.h"
 #include "Ast_Import.h"
+#include "Ast_Lambda.h"
 #include "Ast_Return.h"
 #include "Ast_Class.h"
 #include "Ast_Apply.h"
@@ -266,13 +267,16 @@ struct AstMaker {
         if ( f->type == Lexem::VARIABLE ) {
             int np = num_primitive( f->str() );
             if ( np >= 0 ) {
-                if ( nb_named_children )
-                    return add_error( "a primitive do not accept named children", f, res );
                 delete res;
 
                 Ast_Primitive *nres = new Ast_Primitive( f->off(), np );
                 for( int i = 0; i < nb_unnamed_children; ++i )
                     nres->args << make_ast_single( ch[ i ] );
+                for( int i = 0; i < nb_named_children; ++i ) {
+                    const Lexem *n = ch[ nb_unnamed_children + i ]->children[ 0 ];
+                    nres->names << String( n->beg, n->beg + n->len );
+                    nres->args << make_ast_single( ch[ nb_unnamed_children + i ]->children[ 1 ] );
+                }
                 return nres;
             }
         }
@@ -470,6 +474,7 @@ struct AstMaker {
         res->self_as_arg  = self_as_arg;
         res->varargs      = varargs;
         res->abstract     = abstract;
+        res->stat         = static_inst;
         res->pertinence   = make_ast_single( pertinence  );
         res->condition    = make_ast_single( condition   );
         res->def_pert_num = default_pertinence_num;
@@ -664,8 +669,18 @@ struct AstMaker {
     }
 
     Ast *make_ast_lambda( const Lexem *l ) {
-        TODO;
-        return 0;
+        SplittedVec<const Lexem *,8> ch;
+        get_children_of_type( child_if_paren( l->children[ 0 ] ), STRING_comma_NUM, ch );
+
+        Ast_Lambda *res = new Ast_Lambda( l->off() );
+        for( int i = 0; i < ch.size(); ++i ) {
+            if ( ch[ i ]->type != Lexem::VARIABLE )
+                return add_error( "expecting a name", ch[ i ], res );
+            res->names << ch[ i ]->str();
+        }
+        res->body = make_ast_block( l->children[ 1 ] );
+
+        return res;
     }
 
     Ast *make_ast_and( const Lexem *l ) {

@@ -33,6 +33,7 @@ public:
     bool              self_as_arg;
     bool              abstract;
     bool              varargs;
+    bool              stat;
     Past              pertinence;
     Past              condition;
     int               def_pert_num;

@@ -1,6 +1,9 @@
 #include "../Ssa/ParsingContext.h"
 #include "../Ir/CallableFlags.h"
 #include "../Ir/Numbers.h"
+#include "../Ssa/Room.h"
+#include "../Ssa/Def.h"
+#include "../Ssa/Cst.h"
 #include "Ast_Class.h"
 #include "IrWriter.h"
 #include "Ast_Def.h"
@@ -63,7 +66,23 @@ void Ast_Def::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_Def::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    std::set<String> res;
+    if ( context.parent ) {
+        std::set<String> avail;
+        avail.insert( name );
+        get_potentially_needed_ext_vars( res, avail );
+    }
+
+    //
+    Def *c = new Def( this );
+
+    //
+    SI64 ptr = SI64( ST( c ) );
+    Expr out = room( cst( ip->type_Def, 64, &ptr ) );
+    out->flags |= Inst::SURDEF;
+    if ( stat )
+        out->flags |= Inst::STATIC;
+    return context.reg_var( name, out, true );
 }
 
 PI8 Ast_Def::_tok_number() const {

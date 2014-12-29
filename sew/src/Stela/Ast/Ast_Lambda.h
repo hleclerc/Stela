@@ -27,26 +27,29 @@
 ****************************************************************************/
 
 
-#ifndef DEF_H
-#define DEF_H
+#ifndef AST_LAMBDA_H
+#define AST_LAMBDA_H
 
-#include "ParsingContext.h"
-#include "Callable.h"
+#include "Ast.h"
 
 /**
 */
-class Def : public Callable {
+class Ast_Lambda : public Ast {
 public:
-    struct TrialDef : Trial {
-        TrialDef( ParsingContext *caller, Def *orig );
-        virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
-        Def           *orig;
-        ParsingContext ns;
-    };
+    Ast_Lambda( int off );
+    virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
+    virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
+    virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
-    Def( const Ast_Callable *ast_item );
-    virtual Trial *test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
+    virtual Expr _parse_in( ParsingContext &context ) const;
+    virtual void _get_info( IrWriter *aw ) const;
+    virtual PI8  _tok_number() const;
+
+protected:
+    friend class AstMaker;
+
+    Vec<String> names;
+    Past        body;
 };
 
-#endif // DEF_H
+#endif // AST_LAMBDA_H

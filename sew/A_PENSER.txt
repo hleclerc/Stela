@@ -1,5 +1,23 @@
-* Callable[ ..., VarargsItemEnd plutÃ´t que Void ]
-* ne pas utiliser le to_string( *type ) pour dÃ©terminer le scope statique (deux val != peuvent avoir la mÃªme repr)
+* Callable[ ..., VarargsItemEnd plutot que Void ]
+* ne pas utiliser le to_string( *type ) pour dÃ©terminer le scope statique (deux val != peuvent avoir la meme repr)
 * faire une représentation en Lexem et IR (genre Ast) pour gérer plus facilement les catched_vars...
-* Ir ne sert ¨¤ rien: tout est dans Ast
-* Room qui contient un Type * pour led version clonées (parce que cloner le val à un intérêt limité)
+* Ir ne sert à rien: tout est dans Ast
+* Room qui contient un Type * pour les version clonées (parce que cloner le val à un intérêt limité)
+* dans le fond, que Lambda ou SurdefList aient des types différents, on s'en fout. Ce qu'on veut c'est que ça soit connu/trouvable à la compilation. On peut envisager d'avoir un truc du style ::= qui empeche de faire autre chose que de l'inline dans les appels successifs.
+    -> functions are inlined by default. Some instructions may prevent offlining.
+    -> ça peut se repérer par le fait que quand on tente de faire la version offline, certaines valeurs ne sont pas connues alors qu'elles devraient l'être.
+    
+    
+Question: comment repérer les références qui survivent la pile ? Le truc, c'est que la place pour ces variables devraient etre réservée avant de rentrer dans la portée lexicale.
+    def f         -> 
+        x := 10
+        def g
+            x++
+        return g
+
+Remarque: si on doit modifier souvent un CString, il lui faudrait un attibut rese, pour avoir de la place pour faire les changements
+    Mais ce champ `rese`, ou en tous cas les valeurs non utilisées, ne devraient pas être envoyées
+    Ça milite en faveur de procédures de sérialisation: certaines variables ne sont intéressantes que en RAM.
+    Rq: modifier une ref de taille variable nécessite un pointeur sur la classe parente.
+        -> en C++/JS, a.b.c renvoie une ref sur c + un pointeur sur le modèle a si modification de la taille de c
+        -> si réservé sur la pile, on doit interdire les changements 

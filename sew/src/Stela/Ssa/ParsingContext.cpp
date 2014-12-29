@@ -41,19 +41,7 @@
 #include <algorithm>
 #include <limits>
 
-ParsingContext::ParsingContext( GlobalVariables &gv ) : gv( gv ), parent( 0 ), caller( 0 ) {
-    gv.main_parsing_context = this;
-    ip = &gv;
-
-    _init( "" );
-    scope_type = SCOPE_TYPE_MAIN;
-}
-
-ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, String add_scope_name ) : gv( gv ), parent( parent ), caller( caller ) {
-    _init( add_scope_name );
-}
-
-void ParsingContext::_init( String add_scope_name ) {
+ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, String add_scope_name ) : parent( parent ), caller( caller ) {
     if ( parent ) {
         ip_snapshot = parent->ip_snapshot;
         scope_name = parent->scope_name;
@@ -62,27 +50,28 @@ void ParsingContext::_init( String add_scope_name ) {
         ip_snapshot = 0;
         cond = true;
     }
+
+    scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
+    scope_type = SCOPE_TYPE_STD;
     base_size = 0;
     base_alig = 1;
-    scope_type = SCOPE_TYPE_STD;
-    scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
 
     static std::map<String,Vec<NamedVar> > static_variables_map;
     static_variables = &static_variables_map[ scope_name ];
 }
 
 void ParsingContext::add_inc_path( String path ) {
-    gv.include_paths.push_back_unique( path );
+    ip->include_paths.push_back_unique( path );
 }
 
 void ParsingContext::parse( String filename, String current_dir ) {
-    int old_error_list_size = gv.error_list.size();
+    int old_error_list_size = ip->error_list.size();
 
     // find the file
     filename = find_src( filename, current_dir );
-    if ( filename.size() == 0 or gv.already_parsed.count( filename ) )
+    if ( filename.size() == 0 or ip->already_parsed.count( filename ) )
         return;
-    gv.already_parsed.insert( filename );
+    ip->already_parsed.insert( filename );
 
     // -> source data
     ReadFile r( filename.c_str() );
@@ -90,15 +79,15 @@ void ParsingContext::parse( String filename, String current_dir ) {
         return disp_error( "Impossible to open " + filename );
 
     // -> lexical data
-    Lexer lexer( gv.error_list );
+    Lexer lexer( ip->error_list );
     lexer.parse( r.data, filename.c_str() );
-    if ( gv.error_list.size() != old_error_list_size )
+    if ( ip->error_list.size() != old_error_list_size )
         return;
 
     // -> parse Ast
-    Past ast = make_ast( gv.error_list, lexer.root(), true );
+    Past ast = make_ast( ip->error_list, lexer.root(), true );
     ast->parse_in( *this );
-    gv.ast_lst << ast;
+    ip->ast_lst << ast;
 }
 
 String ParsingContext::find_src( String filename, String current_dir ) const {
@@ -114,7 +103,7 @@ String ParsingContext::find_src( String filename, String current_dir ) const {
     }
 
     // try with inc_paths
-    for( String path : gv.include_paths ) {
+    for( String path : ip->include_paths ) {
         String trial = path + '/' + filename;
         if ( file_exists( trial ) )
             return trial;
@@ -126,7 +115,7 @@ String ParsingContext::find_src( String filename, String current_dir ) const {
 
 Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
     if ( scope_type == SCOPE_TYPE_MAIN ) {
-        Vec<GlobalVariables::Variable,-1,1> &v = gv.main_scope[ name ];
+        Vec<GlobalVariables::Variable,-1,1> &v = ip->main_scope[ name ];
         if ( v.size() and not expr->is_surdef() )
             disp_error( "Variable " + name + " is already defined" );
         v << GlobalVariables::Variable{ expr };
@@ -149,8 +138,8 @@ Expr ParsingContext::_find_first_var_with_name( String name ) {
             if ( nv.name == name )
                 return nv.expr;
     }
-    std::map<String,Vec<GlobalVariables::Variable,-1,1> >::const_iterator iter = gv.main_scope.find( name );
-    if ( iter != gv.main_scope.end() )
+    std::map<String,Vec<GlobalVariables::Variable,-1,1> >::const_iterator iter = ip->main_scope.find( name );
+    if ( iter != ip->main_scope.end() )
         return iter->second[ 0 ].expr;
     return Expr();
 }
@@ -164,23 +153,25 @@ void ParsingContext::_find_list_of_vars_with_name( Vec<Expr> &res, String name )
             if ( nv.name == name )
                 res << nv.expr;
     }
-    std::map<String,Vec<GlobalVariables::Variable,-1,1> >::const_iterator iter = gv.main_scope.find( name );
-    if ( iter != gv.main_scope.end() )
+    std::map<String,Vec<GlobalVariables::Variable,-1,1> >::const_iterator iter = ip->main_scope.find( name );
+    if ( iter != ip->main_scope.end() )
         for( const GlobalVariables::Variable &v : iter->second )
             res << v.expr;
 }
 
-Expr ParsingContext::get_var( String name ) {
+Expr ParsingContext::get_var( String name, bool disp_err ) {
     Expr res = _find_first_var_with_name( name );
     if ( res and res->is_surdef() ) {
         Vec<Expr> lst;
         _find_list_of_vars_with_name( lst, name );
         return _make_surdef_list( lst );
     }
+    if ( disp_err and not res )
+        disp_error( "Impossible to find variable '" + name + "'' from current scope" );
     return res;
 }
 
-Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, String *n_name, Expr *n_args, ApplyMode am ) {
+Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *n_name, Expr *n_args, ApplyMode am ) {
     if ( f.error() )
         return f;
     for( int i = 0; i < nu; ++i )
@@ -192,7 +183,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, String *n_name
 
     // SurdefList( ... )
     Type *f_type = f->ptype();
-    if ( f_type->orig == gv.class_SurdefList ) {
+    if ( f_type->orig == ip->class_SurdefList ) {
         //        // Callable * list
         //        Vec<Callable *> ci;
         //        Vec<Expr> surdefs = ip->get_args_in_varargs( slice( ip->type_from_type_var( f_type->parameters[ 0 ] ), f->get(), 0 )->get( cond ) );
@@ -387,7 +378,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, String *n_name
     }
 
     //
-    if ( f_type == gv.type_Type ) {
+    if ( f_type == ip->type_Type ) {
         //        Expr res = room( cst( ip->type_from_type_var( f ) ) );
         //        if ( am == APPLY_MODE_NEW )
         //            TODO;
@@ -404,6 +395,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, String *n_name
     //        return ip->error_var();
 
     //    return apply( applier, nu, u_args, nn, n_name, n_args, am );
+    PRINT( f );
     TODO;
     return Expr();
 }
@@ -423,7 +415,7 @@ Expr ParsingContext::_make_surdef_list( const Vec<Expr> &lst ) {
     SurdefList *res = new SurdefList;
     res->callables = lst;
     SI64 val = ST( res );
-    return room( cst( gv.type_SurdefList, 64, &val ) );
+    return room( cst( ip->type_SurdefList, 64, &val ) );
 }
 
 void ParsingContext::disp_error( String msg, bool warn, const char *file, int line ) {
@@ -431,7 +423,7 @@ void ParsingContext::disp_error( String msg, bool warn, const char *file, int li
 }
 
 ErrorList::Error &ParsingContext::error_msg( String msg, bool warn, const char *file, int line ) {
-    ErrorList::Error &res = gv.error_list.add( msg, warn );
+    ErrorList::Error &res = ip->error_list.add( msg, warn );
     if ( file )
         res.caller_stack.push_back( line, file );
     //for( int i = parse_stack.size() - 1; i >= 0; --i )

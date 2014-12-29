@@ -39,21 +39,29 @@ class Class;
 class Type {
 public:
     struct Attr {
-        int    off; ///< less than 0 => static
+        int    off; ///< -1 => static; -2 => not known because of a repeated
         Expr   val; ///< flags may contain to Inst::PART_INST
         String name;
     };
 
     Type( Class *orig );
-    void write_to_stream( Stream &os ) const;
-    int  alig(); ///< size in bits, or -1 if not known
-    int  size(); ///< size in bits, or -1 if not known
-    int  sb(); ///< size in bytes, or -1 if not known
-    Expr size( Expr obj );
 
+    void  write_to_stream( Stream &os ) const;
+    int   alig(); ///< needed alignement in bits
+    int   size(); ///< size in bits, or -1 if not known
+    int   sb(); ///< size in bytes, or -1 if not known
+    Expr  size( Expr obj ); ///< size in bits (return an expr to be computed if not known)
+    void  find_attr( Vec<Attr *> &attr_list, String name );
+    Attr *find_attr( String name );
+    Expr  find_static_attr( String name );
+
+    // numeric/known values
     virtual bool get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn );
     virtual bool always( bool val, const PI8 *data, const PI8 *knwn );
     virtual bool always_equal( Type *t, const void *d, const PI8 *data, const PI8 *knwn );
+
+    //
+
 
     virtual void write_val( Stream &os, const PI8 *data, const PI8 *knwn = 0 );
     void parse();

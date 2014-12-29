@@ -9,7 +9,13 @@ Ast_Apply::Ast_Apply( int off ) : Ast_Call( off ) {
 }
 
 Expr Ast_Apply::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    Expr f_expr = f->parse_in( context );
+    Expr a_expr[ args.size() ];
+    for( int i = 0; i < args.size(); ++i )
+        a_expr[ i ] = args[ i ]->parse_in( context );
+
+    int nu = args.size() - names.size();
+    return context.apply( f_expr, nu, a_expr, names.size(), names.ptr(), a_expr + nu );
 }
 
 PI8 Ast_Apply::_tok_number() const {

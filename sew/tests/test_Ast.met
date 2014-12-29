@@ -1,6 +1,9 @@
 class Class
     ptr ~= SI64 # pointer to C++ data
     
+class Def
+    ptr ~= SI64 # pointer to C++ data
+    
 class SurdefList
     ptr ~= SI64 # pointer to C++ data
     
@@ -37,7 +40,7 @@ class PI8
         
     # def add name, inode
         # data.push_back name, inode
-        # # -> data doit Ãªtre connu pour que la gÃ©nÃ©ration de code fasse appel Ã  la mÃ©thode...
+        # # -> data doit Ãªtre connu pour que la gÃ©nÃ©ration de code fasse appel Ã  la mÃ©thode...
     
 # class Directory_RedBlack
     # class Item
@@ -59,15 +62,54 @@ class PI8
     # def add name, inode
         # #
 
-# 
-class N[ val ]
+# # 
+# class N[ val ]
 
-# Heap allocation
-    
-    
-def heap_allocation size
-    
+# #
+# class JsHeap
+    # def size
+        # ___code "heap.byteLength"
 
+# # Heap allocation
+# js_heap := JsHeap()
+    
+# def heap_allocation size
+    
+# def test
+    # ___code "heap.byteLength"
         
-        
-        
+# st := ___gen_ssa_tree test
+# class CString
+    # size := CUInt 0
+    # data := repeat PI8, n = size
+
+# ___code "heap.byteLength"
+def init self
+    # init wo args -> do nothing
+    
+class Lambda
+    ast  := 0l # pointer to Ast_Lambda
+    refs := 0l # catched references
+   
+class Repeated
+    type := 0l # pointer to type
+    func := 0l # pointer to func that gives the size
+
+class CUInt
+    data := ___repeat PI8, x => ( res := 1; while x.data[ res ] >= 128; ++res; res )
+    
+    static def size_init _val
+        res := 1
+        val := _val
+        while val >= 128
+            val /= 128
+            ++res
+        res
+
+    
+a := CUInt 0
+# Comment instancier une classe de taille variable ?
+# -> init est censé démarrer sur de la mémoire déjà réservée...
+# -> prop 1: une procédure supplémentaire pour donner la taille à réserver, fonction des arguments
+___info a
+

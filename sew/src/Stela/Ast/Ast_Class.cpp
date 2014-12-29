@@ -33,7 +33,7 @@ Expr Ast_Class::_parse_in( ParsingContext &context ) const {
 
     //
     Class *c = 0;
-    #define DECL_BT( T ) if ( name == #T ) { c = context.gv.class_##T; c->ast_item = this; }
+    #define DECL_BT( T ) if ( name == #T ) { c = ip->class_##T; c->ast_item = this; }
     #include "../Ssa/DeclBaseClass.h"
     #include "../Ssa/DeclParmClass.h"
     #undef DECL_BT
@@ -42,7 +42,7 @@ Expr Ast_Class::_parse_in( ParsingContext &context ) const {
 
     //
     SI64 ptr = SI64( ST( c ) );
-    Expr val = cst( context.gv.type_Class, 64, &ptr );
+    Expr val = cst( ip->type_Class, 64, &ptr );
     Expr out = room( val );
     out->flags |= Inst::SURDEF;
     return context.reg_var( name, out, true );

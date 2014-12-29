@@ -41,18 +41,26 @@ Class::TrialClass::TrialClass( ParsingContext *caller, Class *orig ) : ns( 0, ca
 Class::TrialClass::~TrialClass() {
 }
 
-Expr Class::TrialClass::call( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
     Vec<Expr> args;
     for( String n : orig->ast_item->arguments )
         args << ns.get_var( n );
 
     Type *type = orig->type_for( args );
-    ns.cond         = and_boolean( ns.cond, cond );
-    // ns.class_scope  = type;
+    ns.cond = and_boolean( ns.cond, cond );
+    // ns.class_scope = type;
 
     // start with a unknown cst
-    if ( type->size() < 0 )
+    if ( type->size() < 0 ) {
+        Expr func = type->find_static_attr( "size_init" );
+        if ( not func )
+            return caller->ret_error( "Impossible to find a static variable named 'size_init' in type (of variable size) to be instancied" );
+        PRINT( *func->ptype() );
+        Expr val = caller->apply( func, nu, vu, nn, names, vn );
+        PRINT( func );
+        PRINT( val );
         TODO;
+    }
     Expr ret = room( cst( type, type->size(), 0, 0 ) );
 
     //
@@ -70,7 +78,7 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, String *names, Expr *vn,
 Class::Class( const Ast_Callable *ast_item ) : Callable( ast_item ) {
 }
 
-Callable::Trial *Class::test( int nu, Expr *vu, int nn, String *names, Expr *vn, int pnu, Expr *pvu, int pnn, String *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
+Callable::Trial *Class::test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
     if ( ast_item->pertinence )
         TODO;
     TrialClass *res = new TrialClass( caller, this );

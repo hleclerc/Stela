@@ -27,26 +27,38 @@
 ****************************************************************************/
 
 
-#ifndef DEF_H
-#define DEF_H
+#include "../Ssa/GlobalVariables.h"
+#include "../Ssa/Room.h"
+#include "../Ssa/Cst.h"
+#include "../Ir/Numbers.h"
+#include "Ast_Lambda.h"
 
-#include "ParsingContext.h"
-#include "Callable.h"
+Ast_Lambda::Ast_Lambda( int off ) : Ast( off ) {
+}
 
-/**
-*/
-class Def : public Callable {
-public:
-    struct TrialDef : Trial {
-        TrialDef( ParsingContext *caller, Def *orig );
-        virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
-        Def           *orig;
-        ParsingContext ns;
-    };
+void Ast_Lambda::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
+    TODO;
+}
 
-    Def( const Ast_Callable *ast_item );
-    virtual Trial *test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
-};
+void Ast_Lambda::prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const {
+    TODO;
+}
 
-#endif // DEF_H
+void Ast_Lambda::write_to_stream( Stream &os, int nsp ) const {
+    os << "Lambda";
+}
+
+Expr Ast_Lambda::_parse_in( ParsingContext &context ) const {
+    SI64 res[ 2 ];
+    res[ 0 ] = ST( this );
+    res[ 1 ] = 0;
+    return room( cst( ip->type_Lambda, 2 * 64, res ) );
+}
+
+void Ast_Lambda::_get_info( IrWriter *aw ) const {
+    TODO;
+}
+
+PI8 Ast_Lambda::_tok_number() const {
+    return IR_TOK_LAMBDA;
+}

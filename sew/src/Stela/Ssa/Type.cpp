@@ -70,9 +70,40 @@ Expr Type::size( Expr obj ) {
         return Expr( s );
     Expr res( 0 );
     for( Attr &attr : attributes ) {
+        PRINT( attr.name );
         TODO;
     }
     return res;
+}
+
+void Type::find_attr( Vec<Type::Attr *> &attr_list, String name ) {
+    for( Attr &attr : attributes )
+        if ( attr.name == name )
+            attr_list << &attr;
+}
+
+Type::Attr *Type::find_attr( String name ) {
+    for( Attr &attr : attributes )
+        if ( attr.name == name )
+            return &attr;
+    return 0;
+}
+
+Expr Type::find_static_attr( String name ) {
+    Attr *attr = find_attr( name );
+    if ( attr == 0 or attr->off != -1 )
+        return Expr();
+    if ( attr->val->flags & Inst::SURDEF ) {
+        // SurdefList
+        Vec<Attr *> attr_list;
+        find_attr( attr_list, name );
+        Vec<Expr> expr_list;
+        for( Attr *attr : attr_list )
+            if ( attr->val->flags & Inst::STATIC )
+                expr_list << attr->val;
+        return ip->main_parsing_context->_make_surdef_list( expr_list );
+    }
+    return attr->val;
 }
 
 bool Type::get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn ) {
@@ -112,6 +143,7 @@ void Type::parse() {
     // parse block
     ParsingContext ns( 0, 0, "parsing type " + to_string( this ) );
     // ns.class_scope = this;
+    ASSERT( orig->ast_item, "Base class not defined in .met" );
     ASSERT( orig->ast_item->arguments.size() == parameters.size(), "..." );
     for( int i = 0; i < parameters.size(); ++i )
         ns.reg_var( orig->ast_item->arguments[ i ], parameters[ i ], true );
@@ -124,14 +156,29 @@ void Type::parse() {
         if ( nv.expr->flags & Inst::SURDEF ) {
             attributes << Attr{ -1, nv.expr, nv.name };
         } else {
-            _ali = ppcm( _ali, nv.expr->ptype()->alig() );
-            _len = ceil( _len, _ali );
+            int ali = 0;
+            if ( nv.expr->ptype() == ip->type_Repeated ) {
+                SI64 p_type; if ( not nv.expr->get()->get_val( &p_type, 64 ) ) ERROR( "..." );
+                Type *type = reinterpret_cast<Type *>( (ST)p_type );
+                ali = type->alig();
+                _len = -2;
+            } else {
+                ali = nv.expr->ptype()->alig();
+            }
+
+            _ali = ppcm( _ali, ali );
+            if ( _len >= 0 )
+                _len = ceil( _len, ali );
 
             attributes << Attr{ _len, nv.expr, nv.name };
 
-            if ( nv.expr->ptype()->size() < 0 )
-                TODO;
-            _len += nv.expr->ptype()->size();
+            if ( _len >= 0 ) {
+                int s = nv.expr->ptype()->size();
+                if ( s >= 0 )
+                    _len += s;
+                else
+                    _len = -2;
+            }
         }
     }
 

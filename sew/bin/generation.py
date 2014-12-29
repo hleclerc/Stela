@@ -483,6 +483,8 @@ base_primitives = string.split( """
     get_argv
     apply_LambdaFunc
     inst_of
+    repeat
+    code
 """ ) #
 
 std_strings = string.split( """

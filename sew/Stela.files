@@ -226,3 +226,5 @@ test_js/PI8.js
 test_js/Model.js
 test_js/Am.js
 test_js/CUnsigned.js
+src/Stela/Ast/Ast_Lambda.h
+src/Stela/Ast/Ast_Lambda.cpp

@@ -49,7 +49,8 @@ public:
     /// flags
     enum {
         CONST     = 1,
-        SURDEF    = 2
+        SURDEF    = 2,
+        STATIC    = 4
     };
     /// for Parent::ninp
     enum {
