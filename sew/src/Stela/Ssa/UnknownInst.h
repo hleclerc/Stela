@@ -26,30 +26,11 @@
 **
 ****************************************************************************/
 
+#ifndef UNKNOWNINST_H
+#define UNKNOWNINST_H
 
-#include "Rcast.h"
-#include "Type.h"
+#include "Inst.h"
 
-struct Rcast : Inst {
-    Rcast( Type *type ) : _type( type ) {
-    }
-    virtual void write_dot( Stream &os ) const {
-        os << "rcast(" << *_type << " &)";
-    }
-    virtual Expr forced_clone( Vec<Expr> &created ) const {
-        return new Rcast( _type );
-    }
-    virtual Type *type() {
-        return _type;
-    }
+Expr unknown_inst( Type *type, int num );
 
-    Type *_type;
-};
-
-Expr rcast( Type *type, Expr val ) {
-    if ( val->type() == type )
-        return val;
-    Rcast *res = new Rcast( type );
-    res->add_inp( val );
-    return Inst::twin_or_val( res );
-}
+#endif // UNKNOWNINST_H

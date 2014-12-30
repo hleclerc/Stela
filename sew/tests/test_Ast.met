@@ -106,10 +106,20 @@ class CUInt
             ++res
         res
 
-    
-a := CUInt 0
+def not_boolean val
+    ___not_boolean val
+
+def reassign a, b
+    ___reassign_rec a, b
+        
+# a := CUInt 0
 # Comment instancier une classe de taille variable ?
 # -> init est censé démarrer sur de la mémoire déjà réservée...
 # -> prop 1: une procédure supplémentaire pour donner la taille à réserver, fonction des arguments
-___info a
+# ___info a
+a := 10
+a = 20
+# while true
+    # a = 20
+    # a = 30
 

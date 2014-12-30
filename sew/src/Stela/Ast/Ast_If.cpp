@@ -1,4 +1,6 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Select.h"
+#include "../Ssa/Op.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_If.h"
@@ -40,7 +42,48 @@ void Ast_If::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_If::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    Expr cond_if = cond->parse_in( context );
+    if ( cond_if.error() )
+        return cond_if;
+
+    // bool conversion
+    if ( cond_if->ptype() != ip->type_Bool ) {
+        cond_if = context.apply( context.get_var( "Bool" ), 1, &cond_if );
+        if ( cond_if.error() )
+            return cond_if;
+    }
+
+    // simplified expression
+    Expr expr = simplified_cond( cond_if->get( context.cond ) );
+
+    // known value
+    if ( expr->always( true ) ) {
+        ParsingContext if_scope( &context, 0, "if_" + to_string( ok ) );
+        return ok->parse_in( if_scope );
+    }
+    if ( expr->always( false ) ) {
+        if ( ko ) {
+            ParsingContext if_scope( &context, 0, "fi_" + to_string( ko ) );
+            return ko->parse_in( if_scope );
+        }
+        return ip->void_var();
+    }
+
+    Expr res_ok;
+    if ( ok ) {
+        ParsingContext if_scope( &context, 0, "if_" + to_string( ok ) );
+        if_scope.cond = expr;
+        res_ok = ok->parse_in( if_scope );
+    }
+
+    Expr res_ko;
+    if ( ko ) {
+        ParsingContext fi_scope( &context, 0, "fi_" + to_string( ko ) );
+        fi_scope.cond = not_boolean( expr );
+        res_ko =  ko->parse_in( fi_scope );
+    }
+
+    return select( expr, res_ok, res_ko );
 }
 
 PI8 Ast_If::_tok_number() const {

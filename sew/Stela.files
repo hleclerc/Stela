@@ -228,3 +228,7 @@ test_js/Am.js
 test_js/CUnsigned.js
 src/Stela/Ast/Ast_Lambda.h
 src/Stela/Ast/Ast_Lambda.cpp
+src/Stela/Ssa/IpSnapshot.h
+src/Stela/Ssa/IpSnapshot.cpp
+src/Stela/Ssa/UnknownInst.h
+src/Stela/Ssa/UnknownInst.cpp

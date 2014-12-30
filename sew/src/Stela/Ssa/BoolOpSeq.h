@@ -30,6 +30,8 @@
 #ifndef BOOLOPSEQ_H
 #define BOOLOPSEQ_H
 
+class Expr;
+
 /**
 */
 class BoolOpSeq {
@@ -40,5 +42,8 @@ public:
 
     bool default_val;
 };
+
+/// simplify and/or stuff in cond
+Expr simplified_cond( const Expr &cond );
 
 #endif // BOOLOPSEQ_H

@@ -100,7 +100,7 @@ public:
     bool is_const() const;
 
     virtual bool always( bool val ) const;
-    virtual bool always_equal( Type *t, void *d );
+    virtual bool always_equal( Type *t, const void *d );
 
     #define DECL_BT( T ) bool always_equal( T val );
     #include "DeclArytTypes.h"
@@ -126,6 +126,7 @@ public:
     mutable Vec<Parent>   par; ///< parents
     mutable Inst         *ext_par;
     int                   flags;
+    bool                  in_an_ip_snapshot;
 
     // codegen
     BoolOpSeq             when;

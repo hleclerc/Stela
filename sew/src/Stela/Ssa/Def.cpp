@@ -175,7 +175,6 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, const String *names, Expr 
 
     // arg constraints
     for( int i = 0; i < ast_item->arg_constraints.size(); ++i ) {
-        PRINT( ast_item->arguments[ i ] );
         if ( not ast_item->arg_constraints[ i ].size() )
             continue;
         Expr v = res->ns.get_var( ast_item->arguments[ i ] );

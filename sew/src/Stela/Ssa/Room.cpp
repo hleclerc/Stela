@@ -1,4 +1,5 @@
 #include "ParsingContext.h"
+#include "IpSnapshot.h"
 #include "ReplBits.h"
 #include "Select.h"
 #include "Room.h"
@@ -21,11 +22,9 @@ struct Room : Inst {
     virtual void set( Expr obj, Expr cond ) {
         if ( cons )
             return ip->pc->disp_error( "attempting to modify a const value" );
-        if ( IpSnapshot *is = ip->pc->ip_snapshot ) {
-            TODO;
-            PRINT( is );
-            //if ( creation_date < is->date and not is->rooms.count( this ) )
-            //    is->rooms[ this ] = val;
+        if ( IpSnapshot *is = ip->ip_snapshot ) {
+            is->rooms.insert( std::make_pair( this, val ) );
+            in_an_ip_snapshot = true;
         }
         val = select( cond, repl_bits( val->simplified( cond ), SI64( 0 ), obj->simplified( cond ) ), val->simplified( not cond ) );
     }

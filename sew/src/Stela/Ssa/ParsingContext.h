@@ -33,8 +33,6 @@
 #include "GlobalVariables.h"
 #include "Inst.h"
 
-class IpSnapshot;
-
 /**
 */
 class ParsingContext {
@@ -74,12 +72,12 @@ public:
     ParsingContext  *parent;
     ParsingContext  *caller;
     Expr             self;
+    Expr            *cont; ///< wether to continue or not
     String           scope_name; ///< used to find static scope
     int              current_off;
     Vec<NamedVar>    variables;
     Vec<NamedVar>   *static_variables;
     int              scope_type;
-    IpSnapshot      *ip_snapshot;
     Expr             cond;
     int              base_size;
     int              base_alig;

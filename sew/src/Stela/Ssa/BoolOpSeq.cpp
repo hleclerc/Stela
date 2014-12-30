@@ -28,10 +28,16 @@
 
 
 #include "BoolOpSeq.h"
+#include "Expr.h"
 
 BoolOpSeq::BoolOpSeq( bool default_val ) : default_val( default_val ) {
 }
 
 bool BoolOpSeq::always( bool val ) const {
     return default_val == val;
+}
+
+
+Expr simplified_cond( const Expr &cond ) {
+    return cond;
 }

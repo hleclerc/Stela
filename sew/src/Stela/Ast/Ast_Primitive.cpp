@@ -1,6 +1,8 @@
 #include "../Ssa/ParsingContext.h"
 #include "../Ssa/Room.h"
+#include "../Ssa/Conv.h"
 #include "../Ssa/Cst.h"
+#include "../Ssa/Op.h"
 #include "../Ir/Numbers.h"
 #include "Ast_Primitive.h"
 #include "IrWriter.h"
@@ -44,7 +46,20 @@ static Expr parse_set_base_size_and_alig( ParsingContext &context, const Ast_Pri
     return ip->void_var();
 }
 static Expr parse_set_RawRef_dependancy ( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
-static Expr parse_reassign_rec( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+
+static Expr parse_reassign_rec( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr dst = p->args[ 0 ]->parse_in( context );
+    Expr src = p->args[ 1 ]->parse_in( context );
+    Type *dt = dst->ptype();
+    Type *st = src->ptype();
+    if ( dt != st )
+        dst->set( conv( dt, src->get( context.cond ) ), context.cond );
+    else
+        dst->set( src->get( context.cond ), context.cond );
+    return dst;
+}
+
 static Expr parse_assign_rec( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_set_ptr_val( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_select_SurdefList( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
@@ -80,12 +95,39 @@ static Expr parse_code( ParsingContext &context, const Ast_Primitive *p ) {
 }
 
 
+template<class OP>
+static Expr parse_una( ParsingContext &context, const Ast_Primitive *p, OP o ) {
+    CHECK_NB_ARGS( 1 );
+    Expr a = p->args[ 0 ]->parse_in( context );
+    return room( op( a->get( context.cond ), o ) );
+}
+
+template<class OP>
+static Expr parse_bin( ParsingContext &context, const Ast_Primitive *p, OP o ) {
+    CHECK_NB_ARGS( 2 );
+    Expr a = p->args[ 0 ]->parse_in( context );
+    Expr b = p->args[ 1 ]->parse_in( context );
+    return room( op( a->get( context.cond ), b->get( context.cond ), o ) );
+}
+
+#define DECL_IR_TOK( N ) static Expr parse_##N( ParsingContext &context, const Ast_Primitive *p ) { return parse_una( context, p, Op_##N() ); }
+#include "../Ir/Decl_UnaryOperations.h"
+#undef DECL_IR_TOK
+
+#define DECL_IR_TOK( N ) static Expr parse_##N( ParsingContext &context, const Ast_Primitive *p ) { return parse_bin( context, p, Op_##N() ); }
+#include "../Ir/Decl_BinaryOperations.h"
+#undef DECL_IR_TOK
+
+
 Expr Ast_Primitive::_parse_in( ParsingContext &context ) const {
     switch ( tok_number ) {
     #define DECL_IR_TOK( N ) case IR_TOK_##N: return parse_##N( context, this );
     #include "../Ir/Decl_Primitives.h"
+    #include "../Ir/Decl_UnaryOperations.h"
+    #include "../Ir/Decl_BinaryOperations.h"
     #undef DECL_IR_TOK
     }
+    PRINT( tok_number );
     return context.ret_error( "Not a primitive", false, __FILE__, __LINE__ );
 }
 

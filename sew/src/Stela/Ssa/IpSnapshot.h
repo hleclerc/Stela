@@ -27,29 +27,23 @@
 ****************************************************************************/
 
 
-#include "Rcast.h"
-#include "Type.h"
+#ifndef IPSNAPSHOT_H
+#define IPSNAPSHOT_H
 
-struct Rcast : Inst {
-    Rcast( Type *type ) : _type( type ) {
-    }
-    virtual void write_dot( Stream &os ) const {
-        os << "rcast(" << *_type << " &)";
-    }
-    virtual Expr forced_clone( Vec<Expr> &created ) const {
-        return new Rcast( _type );
-    }
-    virtual Type *type() {
-        return _type;
-    }
+#include "Inst.h"
+#include <map>
 
-    Type *_type;
+
+/**
+*/
+class IpSnapshot {
+public:
+    IpSnapshot( IpSnapshot *&prev );
+    ~IpSnapshot();
+
+    std::map<Inst *,Expr>  rooms; ///< contains variables, sys_state, ...
+    IpSnapshot           *&iptr;
+    IpSnapshot            *prev;
 };
 
-Expr rcast( Type *type, Expr val ) {
-    if ( val->type() == type )
-        return val;
-    Rcast *res = new Rcast( type );
-    res->add_inp( val );
-    return Inst::twin_or_val( res );
-}
+#endif // IPSNAPSHOT_H

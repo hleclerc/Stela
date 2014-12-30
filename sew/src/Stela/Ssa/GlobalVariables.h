@@ -35,6 +35,7 @@
 #include <map>
 #include <set>
 class ParsingContext;
+class IpSnapshot;
 class Class;
 
 struct GlobalVariables {
@@ -55,6 +56,7 @@ struct GlobalVariables {
     Vec<String>                          include_paths;
     std::set<String>                     already_parsed;
     std::map<String,Vec<Variable,-1,1> > main_scope;
+    IpSnapshot                          *ip_snapshot;
 
     #define DECL_BT( T ) Class *class_##T;
     #include "DeclParmClass.h"

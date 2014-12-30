@@ -110,8 +110,23 @@ template<class TO>
 static Expr _op( Expr a, TO to ) {
     if ( a.error() )
         return a;
+
+    // known value ?
+    Type *ta = a->type();
+    if ( ta->aryth ) {
+        PI8 da[ ta->sb() ];
+        if ( a->get_val( da, ta->sb() ) ) {
+            #define DECL_BT( T ) if ( ta == ip->type_##T ) return Expr( to( *reinterpret_cast<T *>( da ) ) );
+            #include "DeclArytTypes.h"
+            #undef DECL_BT
+        }
+    }
+
+    // symbolic simplification
     if ( Expr res = _simp_op( a, to ) )
         return res;
+
+    // else, make a new expr
     UOp<TO> *res = new UOp<TO>();
     res->add_inp( a );
     return Inst::twin_or_val( res );
@@ -248,14 +263,32 @@ Expr _op_unk_cst( Expr a, Type *tb, TB *b, Op_mul o ) {
     return (Inst *)0;
 }
 
+template<class TO>
+static Expr _simp_op( Expr a, Expr b, TO to ) {
+    return Expr();
+}
+
+static Expr _simp_op( Expr a, Expr b, Op_equ ) {
+    if ( a.inst == b.inst )
+        return true;
+    return Expr();
+}
+
+static Expr _simp_op( Expr a, Expr b, Op_neq ) {
+    if ( a.inst == b.inst )
+        return false;
+    return Expr();
+}
+
 //
 template<class TO>
 static Expr _op( Expr a, Expr b, TO op ) {
     if ( a.error() or b.error() )
         return a;
+
+    // constant values
     Type *ta = a->type();
     Type *tb = b->type();
-    //ASSERT(  and tb->aryth, "..." );
     PI8 da[ ta->sb() ], db[ tb->sb() ];
     if ( ta->aryth and a->get_val( da, ta->size() ) ) {
         if ( b->get_val( db, tb ) ) {
@@ -271,6 +304,10 @@ static Expr _op( Expr a, Expr b, TO op ) {
         #include "DeclArytTypes.h"
         #undef DECL_BT
     }
+
+    // symbolic simplification
+    if ( Expr res = _simp_op( a, b, op ) )
+        return res;
 
     BOp<TO> *res = new BOp<TO>();
     res->add_inp( a );

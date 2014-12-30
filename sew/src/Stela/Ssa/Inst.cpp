@@ -28,6 +28,7 @@
 
 #include "../Codegen/Codegen.h"
 #include "ParsingContext.h"
+#include "IpSnapshot.h"
 #include "Type.h"
 #include "Inst.h"
 
@@ -36,19 +37,23 @@
 PI64 Inst::cur_op_id = 0;
 
 Inst::Inst() {
-    ext_par    = 0;
-    op_id_vis  = 0;
-    op_id      = 0;
-    op_mp      = 0;
-    cpt_use    = 0;
-    flags      = 0;
-    next_sched = 0;
-    prev_sched = 0;
-    out_reg    = 0;
+    ext_par           = 0;
+    op_id_vis         = 0;
+    op_id             = 0;
+    op_mp             = 0;
+    cpt_use           = 0;
+    flags             = 0;
+    next_sched        = 0;
+    prev_sched        = 0;
+    out_reg           = 0;
+    in_an_ip_snapshot = false;
 }
 
 Inst::~Inst() {
     rem_ref_to_this();
+    if ( in_an_ip_snapshot )
+        for( IpSnapshot *is = ip->ip_snapshot; is; is = is->prev )
+            is->rooms.erase( this );
 }
 
 void Inst::write_to_stream( Stream &os, int prec ) {
@@ -81,13 +86,8 @@ Type *Inst::type() {
 }
 
 Expr Inst::size() {
-    Type *t = type();
-    if ( not t )
-        return Expr();
-    SI64 s = t->size();
-    if ( s >= 0 )
-        return s;
-    TODO;
+    if ( Type *t = type() )
+        return t->size( this );
     return Expr();
 }
 
@@ -115,7 +115,7 @@ bool Inst::always( bool val ) const {
     return false;
 }
 
-bool Inst::always_equal( Type *t, void *d ) {
+bool Inst::always_equal( Type *t, const void *d ) {
     return false;
 }
 

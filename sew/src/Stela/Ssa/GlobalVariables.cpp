@@ -64,8 +64,9 @@ struct Type_ : Type {
         return bool( *reinterpret_cast<const T *>( data ) ) == val and all( S<T>(), knwn );
     }
     virtual bool always_equal( Type *t, const void *d, const PI8 *data, const PI8 *knwn ) {
-        // return *reinterpret_cast<const T *>( data ) == val and all( S<T>(), knwn );
-        TODO;
+        #define DECL_BT( TT ) if ( t == ip->type_##TT ) { return *reinterpret_cast<const TT *>( d ) == *reinterpret_cast<const T *>( data ) and all( S<T>(), knwn ); }
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
         return false;
     }
 };
@@ -97,6 +98,7 @@ GlobalVariables::GlobalVariables() {
     type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
     ptr_size = 8 * sizeof( void * );
 
+    ip_snapshot = 0;
     pc = 0;
 }
 

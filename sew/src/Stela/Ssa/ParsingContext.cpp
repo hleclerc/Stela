@@ -43,18 +43,17 @@
 
 ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, String add_scope_name ) : parent( parent ), caller( caller ) {
     if ( parent ) {
-        ip_snapshot = parent->ip_snapshot;
         scope_name = parent->scope_name;
         cond = parent->cond;
     } else {
-        ip_snapshot = 0;
         cond = true;
     }
 
     scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
-    scope_type = SCOPE_TYPE_STD;
-    base_size = 0;
-    base_alig = 1;
+    scope_type  = SCOPE_TYPE_STD;
+    base_size   = 0;
+    base_alig   = 1;
+    cont        = 0;
 
     static std::map<String,Vec<NamedVar> > static_variables_map;
     static_variables = &static_variables_map[ scope_name ];

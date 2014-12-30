@@ -26,30 +26,20 @@
 **
 ****************************************************************************/
 
+#include "UnknownInst.h"
 
-#include "Rcast.h"
-#include "Type.h"
-
-struct Rcast : Inst {
-    Rcast( Type *type ) : _type( type ) {
-    }
-    virtual void write_dot( Stream &os ) const {
-        os << "rcast(" << *_type << " &)";
-    }
-    virtual Expr forced_clone( Vec<Expr> &created ) const {
-        return new Rcast( _type );
-    }
-    virtual Type *type() {
-        return _type;
-    }
-
-    Type *_type;
+/**
+*/
+struct UnknownInst : Inst {
+    UnknownInst( Type *type, int num ) : out_type( type ), num( num ) {}
+    virtual void write_dot( Stream &os ) const { os << "unk_" << num; }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new UnknownInst( out_type, num ); }
+    virtual Type *type() { return out_type; }
+    Type *out_type;
+    int num;
 };
 
-Expr rcast( Type *type, Expr val ) {
-    if ( val->type() == type )
-        return val;
-    Rcast *res = new Rcast( type );
-    res->add_inp( val );
-    return Inst::twin_or_val( res );
+Expr unknown_inst( Type *type, int num ) {
+    return new UnknownInst( type, num );
 }
+
