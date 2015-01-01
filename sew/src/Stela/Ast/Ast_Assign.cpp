@@ -4,7 +4,7 @@
 #include "IrWriter.h"
 #include "Ast_Assign.h"
 
-Ast_Assign::Ast_Assign( int off ) : Ast( off ) {
+Ast_Assign::Ast_Assign( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Assign::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -52,11 +52,16 @@ Expr Ast_Assign::_parse_in( ParsingContext &context ) const {
         return rhs;
 
     if ( type ) // ~=
-        TODO;
+        rhs = context.apply( rhs, 0, 0, 0, 0, 0, context.scope_type == ParsingContext::SCOPE_TYPE_CLASS ? ParsingContext::APPLY_MODE_PARTIAL_INST : ParsingContext::APPLY_MODE_STD );
+
     if ( ref ) // := ref
         TODO;
+
     if ( cons )
         TODO;
+
+    if ( rhs->cpt_use > 1 )
+        rhs = context.copy( rhs );
 
     context.reg_var( name, rhs, stat );
     return rhs;

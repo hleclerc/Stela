@@ -3,7 +3,7 @@
 #include "Ast_Variable.h"
 #include "IrWriter.h"
 
-Ast_Variable::Ast_Variable( int off, String str ) : Ast( off ), str( str ) {
+Ast_Variable::Ast_Variable( const char *src, int off, String str ) : Ast( src, off ), str( str ) {
 }
 
 void Ast_Variable::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

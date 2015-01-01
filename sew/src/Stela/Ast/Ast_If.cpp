@@ -5,7 +5,7 @@
 #include "IrWriter.h"
 #include "Ast_If.h"
 
-Ast_If::Ast_If( int off ) : Ast( off ) {
+Ast_If::Ast_If( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_If::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

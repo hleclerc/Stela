@@ -7,7 +7,7 @@
 */
 class Ast_Apply : public Ast_Call {
 public:
-    Ast_Apply( int off );
+    Ast_Apply( const char *src, int off );
 
     virtual void write_name( Stream &os ) const { os << "apply"; }
 

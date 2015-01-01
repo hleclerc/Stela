@@ -15,7 +15,7 @@ public:
         Vec<String>         names;
     };
 
-    Ast_Def( int off );
+    Ast_Def( const char *src, int off );
 
     virtual void write_callable_type( Stream &os ) const { os << "def"; }
 

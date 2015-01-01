@@ -7,7 +7,7 @@
 */
 class Ast_Class : public Ast_Callable {
 public:
-    Ast_Class( int off );
+    Ast_Class( const char *src, int off );
 
     virtual void write_callable_type( Stream &os ) const { os << "class"; }
 

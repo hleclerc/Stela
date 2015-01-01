@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Continue.h"
 
-Ast_Continue::Ast_Continue( int off ) : Ast( off ) {
+Ast_Continue::Ast_Continue( const char *src, int off ) : Ast( src, off ) {
     n = 1;
 }
 

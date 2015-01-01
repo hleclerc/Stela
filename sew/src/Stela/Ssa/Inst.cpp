@@ -46,14 +46,10 @@ Inst::Inst() {
     next_sched        = 0;
     prev_sched        = 0;
     out_reg           = 0;
-    in_an_ip_snapshot = false;
 }
 
 Inst::~Inst() {
     rem_ref_to_this();
-    if ( in_an_ip_snapshot )
-        for( IpSnapshot *is = ip->ip_snapshot; is; is = is->prev )
-            is->rooms.erase( this );
 }
 
 void Inst::write_to_stream( Stream &os, int prec ) {
@@ -75,6 +71,21 @@ Expr Inst::get( Expr cond ) {
 
 Expr Inst::simplified( Expr cond ) {
     return this;
+}
+
+int Inst::pointing_to_nout() {
+    return 0;
+}
+
+Type *Inst::type( int nout ) {
+    PRINT( *this );
+    ERROR( "..." );
+    return 0;
+}
+
+Type *Inst::ptype( int nout ) {
+    ERROR( "..." );
+    return 0;
 }
 
 Type *Inst::ptype() {
@@ -137,7 +148,7 @@ Inst *Inst::twin_or_val( Inst *inst ) {
     //    if ( inst->inp.size() ) {
     //        const Vec<Inst::Out::Parent,-1,1> &p = inst->inp[ 0 ].parents();
     //        for( Parent &p : inp[ 0 ]->parents ) {
-    //            if ( p.inst != inst and p.inst->equal( inst ) ) {
+    //            if ( p.inst != inst and p.inst->eq_twin_or_val( inst ) ) {
     //                delete inst;
     //                return p.inst;
     //            }

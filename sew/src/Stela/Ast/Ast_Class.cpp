@@ -6,7 +6,7 @@
 #include "IrWriter.h"
 #include "Ast_Class.h"
 
-Ast_Class::Ast_Class( int off ) : Ast_Callable( off ) {
+Ast_Class::Ast_Class( const char *src, int off ) : Ast_Callable( src, off ) {
 }
 
 void Ast_Class::_get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

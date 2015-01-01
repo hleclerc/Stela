@@ -37,7 +37,11 @@
 
 #include "IrWriter.h"
 
-Ast::Ast( int off ) : _off( off ) {
+std::set<String> Ast::sf_set;
+
+Ast::Ast( const char *src, int off ) : _off( off ) {
+    if ( src )
+        _src = &*sf_set.insert( src ).first;
 }
 
 Ast::~Ast() {
@@ -67,6 +71,7 @@ bool Ast::may_be_surdefined() const {
 Expr Ast::parse_in( ParsingContext &context ) const {
     RaiiSave<ParsingContext *> old_pc( ip->pc, &context );
     context.current_off = _off;
+    context.current_src = _src;
     return _parse_in( context );
 }
 
@@ -92,15 +97,15 @@ struct AstMaker {
     }
 
     Ast *make_ast_variable( const Lexem *l ) {
-        if ( l->eq( "break"    ) ) return new Ast_Break   ( l->off() );
-        if ( l->eq( "continue" ) ) return new Ast_Continue( l->off() );
-        if ( l->eq( "true"     ) ) return new Ast_Number  ( l->off(), true  );
-        if ( l->eq( "false"    ) ) return new Ast_Number  ( l->off(), false );
-        return new Ast_Variable( l->off(), String( l->beg, l->beg + l->len ) );
+        if ( l->eq( "break"    ) ) return new Ast_Break   ( l->src, l->off() );
+        if ( l->eq( "continue" ) ) return new Ast_Continue( l->src, l->off() );
+        if ( l->eq( "true"     ) ) return new Ast_Number  ( l->src, l->off(), true  );
+        if ( l->eq( "false"    ) ) return new Ast_Number  ( l->src, l->off(), false );
+        return new Ast_Variable( l->src, l->off(), String( l->beg, l->beg + l->len ) );
     }
 
     Ast *make_ast_number( const Lexem *l ) {
-        Ast_Number *res = new Ast_Number( l->off() );
+        Ast_Number *res = new Ast_Number( l->src, l->off() );
 
         int e = l->len - 1;
         while ( e >= 0 ) {
@@ -115,14 +120,14 @@ struct AstMaker {
     }
 
     Ast *make_ast_string( const Lexem *l ) {
-        return new Ast_String( l->off(), String( l->beg, l->beg + l->len ) );
+        return new Ast_String( l->src, l->off(), String( l->beg, l->beg + l->len ) );
     }
 
     Ast *make_ast_block( const Lexem *l ) {
         while ( l->type == Lexem::BLOCK and not l->next )
             l = l->children[ 0 ];
 
-        Ast_Block *a = new Ast_Block( l->off() );
+        Ast_Block *a = new Ast_Block( l->src, l->off() );
         for( ; l; l = l->next )
             if ( Ast *r = make_ast_single( l ) )
                 a->lst << r;
@@ -184,7 +189,7 @@ struct AstMaker {
             nb_dim += 1 + has_cd;
 
             //
-            Ast_NdList *res = new Ast_NdList( l->off() );
+            Ast_NdList *res = new Ast_NdList( l->src, l->off() );
             res->nb_dim = nb_dim;
             output_list( res, l, nb_dim, has_cd );
             return res;
@@ -195,7 +200,7 @@ struct AstMaker {
     }
 
     Ast *make_ast_assign( const Lexem *l, bool type ) {
-        Ast_Assign *res = new Ast_Assign( l->off() );
+        Ast_Assign *res = new Ast_Assign( l->src, l->off() );
 
         // LHS
         res->name = String( l->children[ 0 ]->beg, l->children[ 0 ]->end() );
@@ -253,7 +258,7 @@ struct AstMaker {
 
             delete res;
 
-            Ast_Break *nres = new Ast_Break( f->off() );
+            Ast_Break *nres = new Ast_Break( f->src, f->off() );
             if ( ch.size() == 1 ) {
                 if ( not ch[ 0 ]->is_an_int() )
                     return add_error( "break expects a known integer value", f, res );
@@ -269,7 +274,7 @@ struct AstMaker {
             if ( np >= 0 ) {
                 delete res;
 
-                Ast_Primitive *nres = new Ast_Primitive( f->off(), np );
+                Ast_Primitive *nres = new Ast_Primitive( f->src, f->off(), np );
                 for( int i = 0; i < nb_unnamed_children; ++i )
                     nres->args << make_ast_single( ch[ i ] );
                 for( int i = 0; i < nb_named_children; ++i ) {
@@ -465,9 +470,9 @@ struct AstMaker {
         // output --------------------------------------------------------------
         Ast_Callable *res;
         if ( def )
-            res = new Ast_Def  ( t->off() );
+            res = new Ast_Def  ( t->src, t->off() );
         else
-            res = new Ast_Class( t->off() );
+            res = new Ast_Class( t->src, t->off() );
 
         res->name = String( name->beg, name->end() );
 
@@ -579,7 +584,7 @@ struct AstMaker {
     }
 
     Ast *make_ast_if( const Lexem *l ) {
-        Ast_If *res = new Ast_If( l->off() );
+        Ast_If *res = new Ast_If( l->src, l->off() );
         res->cond = make_ast_single( l->children[ 0 ] );
 
         if ( l->children[ 1 ]->type == STRING___else___NUM ) {
@@ -592,7 +597,7 @@ struct AstMaker {
     }
 
     Ast *make_ast_while( const Lexem *l ) {
-        Ast_While *res = new Ast_While( l->off() );
+        Ast_While *res = new Ast_While( l->src, l->off() );
 
         if ( l->children[ 0 ]->type == STRING___else___NUM ) {
             res->ok = make_ast_block( l->children[ 0 ]->children[ 0 ] );
@@ -604,13 +609,13 @@ struct AstMaker {
     }
 
     Ast *make_ast_return( const Lexem *l ) {
-        Ast_Return *res = new Ast_Return( l->off() );
+        Ast_Return *res = new Ast_Return( l->src, l->off() );
         res->val = make_ast_single( l->children[ 0 ] );
         return res;
     }
 
     Ast *make_ast_get_attr( const Lexem *l, bool ptr, bool ask, bool ddo ) {
-        Ast_GetAttr *res = new Ast_GetAttr( l->off() );
+        Ast_GetAttr *res = new Ast_GetAttr( l->src, l->off() );
         res->name = l->children[ 1 ]->str();
         res->obj = make_ast_single( l->children[ 0 ] );
         res->ptr = ptr;
@@ -641,7 +646,7 @@ struct AstMaker {
         get_children_of_type( l->children[ 0 ]->children[ 1 ], STRING_comma_NUM, ch );
 
         //
-        Ast_For *res = new Ast_For( l->off() );
+        Ast_For *res = new Ast_For( l->src, l->off() );
 
         for( int i = 0; i < names.size(); ++i ) {
             if ( names[ i ]->type != Lexem::VARIABLE )
@@ -661,7 +666,7 @@ struct AstMaker {
         SplittedVec<const Lexem *,8> ch;
         get_children_of_type( l->children[ 0 ], STRING_comma_NUM, ch );
 
-        Ast_Import *res = new Ast_Import( l->off() );
+        Ast_Import *res = new Ast_Import( l->src, l->off() );
         for( int i = 0; i < ch.size(); ++i )
             res->files << ch[ i ]->str();
 
@@ -672,7 +677,7 @@ struct AstMaker {
         SplittedVec<const Lexem *,8> ch;
         get_children_of_type( child_if_paren( l->children[ 0 ] ), STRING_comma_NUM, ch );
 
-        Ast_Lambda *res = new Ast_Lambda( l->off() );
+        Ast_Lambda *res = new Ast_Lambda( l->src, l->off() );
         for( int i = 0; i < ch.size(); ++i ) {
             if ( ch[ i ]->type != Lexem::VARIABLE )
                 return add_error( "expecting a name", ch[ i ], res );
@@ -684,26 +689,26 @@ struct AstMaker {
     }
 
     Ast *make_ast_and( const Lexem *l ) {
-        Ast_AndOrOr *res = new Ast_AndOrOr( l->off(), true );
+        Ast_AndOrOr *res = new Ast_AndOrOr( l->src, l->off(), true );
         for( int i = 0; i < 2; ++i )
             res->args[ i ] = make_ast_single( l->children[ i ] );
         return res;
     }
 
     Ast *make_ast_or( const Lexem *l ) {
-        Ast_AndOrOr *res = new Ast_AndOrOr( l->off(), false );
+        Ast_AndOrOr *res = new Ast_AndOrOr( l->src, l->off(), false );
         for( int i = 0; i < 2; ++i )
             res->args[ i ] = make_ast_single( l->children[ i ] );
         return res;
     }
 
     Ast *make_ast_break( const Lexem *l ) {
-        return new Ast_Break( l->off() );
+        return new Ast_Break( l->src, l->off() );
     }
 
     Ast *make_ast_call_op( const Lexem *l ) {
-        Ast_Apply *res = new Ast_Apply( l->off() );
-        res->f = new Ast_Variable( l->off(), get_operators_cpp_name( l->type ) );
+        Ast_Apply *res = new Ast_Apply( l->src, l->off() );
+        res->f = new Ast_Variable( l->src, l->off(), get_operators_cpp_name( l->type ) );
         for( int i = 0; i < 2; ++i )
             if ( l->children[ i ] )
                 res->args << make_ast_single( l->children[ i ] );
@@ -725,10 +730,10 @@ struct AstMaker {
         case Lexem::CCODE               : return add_error( "todo: ``", l );
         case Lexem::BLOCK               : return make_ast_block   ( l );
         case Lexem::NONE                : return 0;
-        case Lexem::APPLY               : return make_ast_apply   ( l, new Ast_Apply ( l->off() ) );
-        case Lexem::SELECT              : return make_ast_apply   ( l, new Ast_Select( l->off() ) );
-        case Lexem::CHANGE_BEHAVIOR     : return make_ast_apply   ( l, new Ast_ChBeBa( l->off() ) );
-        case STRING___new___NUM         : return make_ast_apply   ( l->children[ 0 ], new Ast_New( l->off() ) );
+        case Lexem::APPLY               : return make_ast_apply   ( l, new Ast_Apply ( l->src, l->off() ) );
+        case Lexem::SELECT              : return make_ast_apply   ( l, new Ast_Select( l->src, l->off() ) );
+        case Lexem::CHANGE_BEHAVIOR     : return make_ast_apply   ( l, new Ast_ChBeBa( l->src, l->off() ) );
+        case STRING___new___NUM         : return make_ast_apply   ( l->children[ 0 ], new Ast_New( l->src, l->off() ) );
         case STRING_assign_NUM          : return make_ast_assign  ( l, false );
         case STRING_assign_type_NUM     : return make_ast_assign  ( l, true  );
         case STRING___def___NUM         : return make_ast_callable( l, true  );
@@ -777,7 +782,7 @@ Past make_ast( ErrorList &e, const Lexem *l, bool sibling ) {
         return am.make_ast_block( l );
     if ( Ast *r = am.make_ast_single( l ) )
         return r;
-    return new Ast_Void( l ? l->off() : 0 );
+    return new Ast_Void( l ? l->src : 0, l ? l->off() : 0 );
 }
 
 

@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Import.h"
 
-Ast_Import::Ast_Import( int off ) : Ast( off ) {
+Ast_Import::Ast_Import( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Import::write_to_stream( Stream &os, int nsp ) const {

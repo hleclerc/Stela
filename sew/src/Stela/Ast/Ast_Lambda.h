@@ -36,7 +36,7 @@
 */
 class Ast_Lambda : public Ast {
 public:
-    Ast_Lambda( int off );
+    Ast_Lambda( const char *src, int off );
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;

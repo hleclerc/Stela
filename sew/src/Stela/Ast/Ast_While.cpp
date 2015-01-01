@@ -1,11 +1,13 @@
 #include "../Ssa/ParsingContext.h"
 #include "../Ssa/UnknownInst.h"
 #include "../Ssa/IpSnapshot.h"
+#include "../Ssa/GetNout.h"
+#include "../Ssa/While.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_While.h"
 
-Ast_While::Ast_While( int off ) : Ast( off ) {
+Ast_While::Ast_While( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_While::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -42,7 +44,7 @@ Expr Ast_While::_parse_in( ParsingContext &context ) const {
     int ne = ip->error_list.size();
     std::map<Expr,Expr> unknowns;
     for( unsigned old_nsv_size = 0, cpt = 0; ; old_nsv_size = nsv.rooms.size(), ++cpt ) {
-        if ( cpt == 100 )
+        if ( cpt == 20 )
             return context.ret_error( "infinite loop during while parsing" );
 
         ParsingContext wh_scope( &context, 0, "while_" + to_string( this ) );
@@ -65,11 +67,69 @@ Expr Ast_While::_parse_in( ParsingContext &context ) const {
         }
     }
 
-    PRINT( unknowns.size() );
-    for( auto unk: unknowns )
-        std::cout << unk.first << " " << unk.second << std::endl;
+    // corr table (output number -> input number)
+    // -> find if Unknown inst are used to compute the outputs
+    ++Inst::cur_op_id;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+        const_cast<Inst *>( it.first )->get( context.cond )->mark_children();
+    int cpt = 0;
+    Vec<int> corr;
+    Vec<Type *> inp_types;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms ) {
+        if ( unknowns[ it.first ]->op_id == Inst::cur_op_id ) {
+            corr << cpt++;
+            inp_types << it.second->type();
+        } else
+            corr << -1;
+    }
 
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    // prepare a while inp (for initial values of variables modified in the loop)
+    Expr winp = while_inp( inp_types );
+
+    // set winp[...] as initial values of modified variables
+    cpt = 0;
+    for( std::pair<Inst *const,Expr> &it : nsv.rooms ) {
+        int num_inp = corr[ cpt++ ];
+        if ( num_inp >= 0 )
+            const_cast<Inst *>( it.first )->set( get_nout( winp, num_inp ), true );
+        else
+            const_cast<Inst *>( it.first )->set( it.second, true );
+    }
+
+    // relaunch the while inst
+    ParsingContext wh_scope( &context, 0, "while_" + to_string( ok ) );
+    Expr cont_var( true ); wh_scope.cont = &cont_var;
+    ok->parse_in( wh_scope );
+
+    if ( cont_var->always( false) ) {
+        ip->ip_snapshot = nsv.prev;
+    } else {
+        // make the while instruction
+        Vec<Expr> out_exprs;
+        for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+            out_exprs << const_cast<Inst *>( it.first )->get( context.cond );
+        Expr wout = while_out( out_exprs, cont_var );
+
+        cpt = 0;
+        Vec<Expr> inp_exprs;
+        for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+            if ( corr[ cpt++ ] >= 0 )
+                inp_exprs << it.second->simplified( context.cond );
+        Expr wins = while_inst( inp_exprs, winp, wout, corr );
+
+        ip->ip_snapshot = nsv.prev;
+
+        // replace changed variable by while_inst outputs
+        cpt = 0;
+        for( std::pair<Inst *const,Expr> &it : nsv.rooms )
+            const_cast<Inst *>( it.first )->set( get_nout( wins, cpt++ ), context.cond );
+    }
+
+    // break(s) to transmit ?
+    for( ParsingContext::RemBreak rb : wh_scope.rem_breaks )
+        context.BREAK( rb.count, rb.cond );
+
+    return ip->void_var();
 }
 
 PI8 Ast_While::_tok_number() const {

@@ -44,8 +44,8 @@ public:
     String str() const { return String( beg, beg + len ); }
     int off() const { return beg - beg_src; }
 
-    int type; /// >0 => operator. <=0 => @see enum
-    int num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar
+    int         type; /// >0 => operator. <=0 => @see enum
+    int         num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar
 
     const char *beg_src; /// provenance data (beginning of the .met data)
     const char *src; /// provenance
@@ -53,13 +53,13 @@ public:
     const char *beg; /// beginning in .met
     int         len; /// size in .met
 
-    Lexem *children[ 2 ], *parent, *next, *prev, *sibling, *prev_chro;
+    Lexem      *children[ 2 ], *parent, *next, *prev, *sibling, *prev_chro;
 
-    bool preceded_by_a_cr; ///<
-    int  nb_preceding_comma_dot;
-    int  nb_preceding_cr;
-    int  approx_line;
-    int  spcr;
+    bool        preceded_by_a_cr; ///<
+    int         nb_preceding_comma_dot;
+    int         nb_preceding_cr;
+    int         approx_line;
+    int         spcr;
 };
 
 inline int is_in_main_block( const Lexem *t ) { while( t->prev ) t = t->prev; return not t->parent; }

@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_New.h"
 
-Ast_New::Ast_New( int off ) : Ast_Call( off ) {
+Ast_New::Ast_New( const char *src, int off ) : Ast_Call( src, off ) {
 }
 
 Expr Ast_New::_parse_in( ParsingContext &context ) const {

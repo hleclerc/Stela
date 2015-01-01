@@ -232,3 +232,9 @@ src/Stela/Ssa/IpSnapshot.h
 src/Stela/Ssa/IpSnapshot.cpp
 src/Stela/Ssa/UnknownInst.h
 src/Stela/Ssa/UnknownInst.cpp
+src/Stela/Ssa/GetNout.h
+src/Stela/Ssa/GetNout.cpp
+src/Stela/Ssa/While.h
+src/Stela/Ssa/While.cpp
+src/Stela/Ssa/CstComputedSize.h
+src/Stela/Ssa/CstComputedSize.cpp

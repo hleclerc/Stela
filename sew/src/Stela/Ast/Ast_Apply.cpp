@@ -5,7 +5,7 @@
 #include "Ast_Variable.h"
 #include "Ast_Apply.h"
 
-Ast_Apply::Ast_Apply( int off ) : Ast_Call( off ) {
+Ast_Apply::Ast_Apply( const char *src, int off ) : Ast_Call( src, off ) {
 }
 
 Expr Ast_Apply::_parse_in( ParsingContext &context ) const {

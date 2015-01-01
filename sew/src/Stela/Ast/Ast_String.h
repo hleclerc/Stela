@@ -7,7 +7,7 @@
 */
 class Ast_String : public Ast {
 public:
-    Ast_String( int off, String str );
+    Ast_String( const char *src, int off, String str );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:

@@ -7,10 +7,111 @@ class Def
 class SurdefList
     ptr ~= SI64 # pointer to C++ data
     
+
+class Bool
+    ___set_base_size_and_alig 1, 1
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class SI8
+    ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
     
 class PI8
     ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class SI32
+    ___set_base_size_and_alig 32, 32
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
 
+class SI64
+    ___set_base_size_and_alig 64, 64
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+        
+class PI32
+    ___set_base_size_and_alig 32, 32
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+
+class PI64
+    ___set_base_size_and_alig 64, 64
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+
+    
+def add a, b
+    ___add a, b
+
+def sub a, b
+    ___sub a, b
+
+def mul a, b
+    ___mul a, b
+
+def div a, b
+    ___div a, b
+
+def mod a, b
+    ___mod a, b
+
+def self_add a, b
+    a = a + b
+
+def self_sub a, b
+    a = a - b
+
+def self_mul a, b
+    a = a * b
+
+def self_div a, b
+    a = a / b
+
+def self_mod a, b
+    a = a % b
+
+def reassign a, b
+    a.reassign b
+
+def not_boolean v
+    ___not_boolean v
+    
+def equal a, b
+    ___equ a, b
+    
+def superior a, b
+    ___sup a, b
+    
+def superior_equal a, b
+    ___sup_eq a, b
+
+def inferior a, b
+    ___inf a, b
+    
+def inferior_equal a, b
+    ___inf_eq a, b
+
+def pre_inc a
+    a += 1
+    
 # class PI96
     # ___set_base_size_and_alig 96, 96
     
@@ -106,20 +207,16 @@ class CUInt
             ++res
         res
 
-def not_boolean val
-    ___not_boolean val
-
-def reassign a, b
-    ___reassign_rec a, b
+    def init _val
+        cpt := 0
+        val := _val
+        while true
+            data[ cpt ] = _val % 128
+            if _val < 128
+                break
+            val /= 128
+            cpt += 1
         
-# a := CUInt 0
-# Comment instancier une classe de taille variable ?
-# -> init est censé démarrer sur de la mémoire déjà réservée...
-# -> prop 1: une procédure supplémentaire pour donner la taille à réserver, fonction des arguments
-# ___info a
-a := 10
-a = 20
-# while true
-    # a = 20
-    # a = 30
-
+        
+a := CUInt 0
+___info a

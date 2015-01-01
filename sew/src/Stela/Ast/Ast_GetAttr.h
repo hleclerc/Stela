@@ -8,7 +8,7 @@
 */
 class Ast_GetAttr : public Ast {
 public:
-    Ast_GetAttr( int off );
+    Ast_GetAttr( const char *src, int off );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;

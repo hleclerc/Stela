@@ -6,18 +6,18 @@
 #include "IrWriter.h"
 #include <sstream>
 
-Ast_Number::Ast_Number( int off ) : Ast( off ) {
+Ast_Number::Ast_Number( const char *src, int off ) : Ast( src, off ) {
     l = false;
     p = false;
     b = false;
 }
 
-Ast_Number::Ast_Number( int off, bool val ) : Ast_Number( off ) {
+Ast_Number::Ast_Number( const char *src, int off, bool val ) : Ast_Number( src, off ) {
     str = val ? "1" : "0";
     b = true;
 }
 
-Ast_Number::Ast_Number( int off, String str ) : Ast_Number( off ) {
+Ast_Number::Ast_Number( const char *src, int off, String str ) : Ast_Number( src, off ) {
     this->str = str;
 }
 

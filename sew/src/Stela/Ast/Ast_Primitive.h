@@ -9,7 +9,7 @@
 */
 class Ast_Primitive : public Ast {
 public:
-    Ast_Primitive( int off, int tok_number );
+    Ast_Primitive( const char *src, int off, int tok_number );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;

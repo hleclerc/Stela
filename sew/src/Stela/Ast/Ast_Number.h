@@ -7,9 +7,9 @@
 */
 class Ast_Number : public Ast {
 public:
-    Ast_Number( int off );
-    Ast_Number( int off, bool val );
-    Ast_Number( int off, String str );
+    Ast_Number( const char *src, int off );
+    Ast_Number( const char *src, int off, bool val );
+    Ast_Number( const char *src, int off, String str );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
     template<class T>

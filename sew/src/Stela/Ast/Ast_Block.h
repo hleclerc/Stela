@@ -9,7 +9,7 @@
 */
 class Ast_Block : public Ast {
 public:
-    Ast_Block( int off );
+    Ast_Block( const char *src, int off );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;

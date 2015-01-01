@@ -27,26 +27,13 @@
 ****************************************************************************/
 
 
-#ifndef IPSNAPSHOT_H
-#define IPSNAPSHOT_H
+#ifndef WHILE_H
+#define WHILE_H
 
 #include "Inst.h"
-#include <map>
 
+Expr while_inp( const Vec<Type *> &types );
+Expr while_out( const Vec<Expr> &inp, Expr cont );
+Expr while_inst( const Vec<Expr> &inp, Expr winp, Expr wout, const Vec<int> &corr );
 
-/**
-*/
-class IpSnapshot {
-public:
-    IpSnapshot( IpSnapshot *&prev );
-    // ~IpSnapshot();
-
-    std::map<Inst *,Expr>  rooms; ///< contains variables, sys_state, ...
-    IpSnapshot           *&iptr;
-    IpSnapshot            *prev;
-    int                    date;
-
-    static int cur_date;
-};
-
-#endif // IPSNAPSHOT_H
+#endif // WHILE_H

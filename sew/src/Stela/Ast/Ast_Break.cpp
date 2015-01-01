@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Break.h"
 
-Ast_Break::Ast_Break( int off ) : Ast( off ) {
+Ast_Break::Ast_Break( const char *src, int off ) : Ast( src, off ) {
     n = 1;
 }
 

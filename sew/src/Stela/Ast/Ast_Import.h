@@ -8,7 +8,7 @@
 */
 class Ast_Import : public Ast {
 public:
-    Ast_Import( int off );
+    Ast_Import( const char *src, int off );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:

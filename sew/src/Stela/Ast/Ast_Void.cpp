@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Void.h"
 
-Ast_Void::Ast_Void( int off ) : Ast( off ) {
+Ast_Void::Ast_Void( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Void::write_to_stream( Stream &os, int nsp ) const {

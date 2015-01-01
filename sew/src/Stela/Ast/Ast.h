@@ -5,6 +5,7 @@
 #include "../System/Vec.h"
 #include "../System/Ptr.h"
 #include <set>
+#include <map>
 class ParsingContext;
 class ErrorList;
 class IrWriter;
@@ -16,7 +17,7 @@ class Ast : public ObjectWithCptUse {
 public:
     typedef Ptr<Ast> Past;
 
-    Ast( int off = -1 );
+    Ast( const char *src = 0, int off = -1 );
     virtual ~Ast();
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
@@ -32,7 +33,10 @@ public:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-    int _off; ///< offset in sourcefile
+    static std::set<String> sf_set; ///< set of sourcefile
+
+    int           _off; ///< offset in sourcefile
+    const String *_src; ///> sourcefile
 };
 
 typedef Ptr<Ast> Past;

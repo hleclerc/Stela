@@ -3,7 +3,7 @@
 #include "Ast_AndOrOr.h"
 #include "IrWriter.h"
 
-Ast_AndOrOr::Ast_AndOrOr( int off, bool want_and ) : Ast( off ), want_and( want_and ) {
+Ast_AndOrOr::Ast_AndOrOr( const char *src, int off, bool want_and ) : Ast( src, off ), want_and( want_and ) {
 }
 
 void Ast_AndOrOr::write_to_stream( Stream &os, int nsp ) const {

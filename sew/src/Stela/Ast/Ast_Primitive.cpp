@@ -1,4 +1,5 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Symbol.h"
 #include "../Ssa/Room.h"
 #include "../Ssa/Conv.h"
 #include "../Ssa/Cst.h"
@@ -7,7 +8,7 @@
 #include "Ast_Primitive.h"
 #include "IrWriter.h"
 
-Ast_Primitive::Ast_Primitive( int off, int tok_number ) : Ast( off ), tok_number( tok_number ) {
+Ast_Primitive::Ast_Primitive( const char *src, int off, int tok_number ) : Ast( src, off ), tok_number( tok_number ) {
 }
 
 void Ast_Primitive::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -33,7 +34,10 @@ static Expr parse_info( ParsingContext &context, const Ast_Primitive *p ) {
     return Expr();
 }
 static Expr parse_disp( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
-static Expr parse_rand( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_rand( ParsingContext &context, const Ast_Primitive *p ) {
+    static int num = 0;
+    return room( symbol( ip->type_Bool, "rand(/*" + to_string( num++ ) + "*/)" ) );
+}
 static Expr parse_syscall( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_set_base_size_and_alig( ParsingContext &context, const Ast_Primitive *p ) {
     CHECK_NB_ARGS( 2 );

@@ -7,7 +7,7 @@
 */
 class Ast_Break : public Ast {
 public:
-    Ast_Break( int off );
+    Ast_Break( const char *src, int off );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:

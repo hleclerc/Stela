@@ -76,7 +76,7 @@ public:
 
     void add_store_dep( Inst *dst );
 
-    void mark_children( Vec<Expr> *seq );
+    void mark_children( Vec<Expr> *seq = 0 );
 
     void clone( Vec<Expr> &created ) const;
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
@@ -84,12 +84,15 @@ public:
     virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) const = 0;
 
-    virtual void set( Expr obj, Expr cond = Expr() );
-    virtual Expr get( Expr cond = Expr() );
-    virtual Expr simplified( Expr cond );
+    virtual void  set( Expr obj, Expr cond = Expr() );
+    virtual Expr  get( Expr cond = Expr() );
+    virtual Expr  simplified( Expr cond );
+    virtual int   pointing_to_nout();
+    virtual Type *type ( int nout ); ///
+    virtual Type *ptype( int nout );
     virtual Type *ptype();
-    virtual Type *type();
-    virtual Expr  size();
+    virtual Type *type ();
+    virtual Expr  size ();
 
     virtual bool get_val( void *res, Type *type );
     virtual bool get_val( void *res, int size );
@@ -126,7 +129,6 @@ public:
     mutable Vec<Parent>   par; ///< parents
     mutable Inst         *ext_par;
     int                   flags;
-    bool                  in_an_ip_snapshot;
 
     // codegen
     BoolOpSeq             when;

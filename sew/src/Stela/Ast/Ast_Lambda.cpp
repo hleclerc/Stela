@@ -33,7 +33,7 @@
 #include "../Ir/Numbers.h"
 #include "Ast_Lambda.h"
 
-Ast_Lambda::Ast_Lambda( int off ) : Ast( off ) {
+Ast_Lambda::Ast_Lambda( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Lambda::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

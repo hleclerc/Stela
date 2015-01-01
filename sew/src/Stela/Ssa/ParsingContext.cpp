@@ -34,9 +34,11 @@
 #include "SurdefList.h"
 #include "Callable.h"
 #include "Select.h"
+#include "Rcast.h"
 #include "Type.h"
 #include "Room.h"
 #include "Cst.h"
+#include "Def.h"
 #include "Op.h"
 #include <algorithm>
 #include <limits>
@@ -54,6 +56,7 @@ ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, 
     base_size   = 0;
     base_alig   = 1;
     cont        = 0;
+    current_src = 0;
 
     static std::map<String,Vec<NamedVar> > static_variables_map;
     static_variables = &static_variables_map[ scope_name ];
@@ -112,6 +115,18 @@ String ParsingContext::find_src( String filename, String current_dir ) const {
     return String();
 }
 
+Expr ParsingContext::copy( Expr var ) {
+    // shortcut (for bootstraping)
+    if ( var->ptype()->pod() )
+        return room( var->get( cond ) );
+    //
+    Expr val = var->get( cond );
+    ASSERT( var->size() >= 0, "TODO" );
+    Expr res = room( cst( val->type(), var->size(), 0 ) );
+    apply( get_attr( res, "init" ), 1, &var );
+    return res;
+}
+
 Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
     if ( scope_type == SCOPE_TYPE_MAIN ) {
         Vec<GlobalVariables::Variable,-1,1> &v = ip->main_scope[ name ];
@@ -130,10 +145,10 @@ Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
 
 Expr ParsingContext::_find_first_var_with_name( String name ) {
     for( ParsingContext *c = this; c; c = c->parent ) {
-        for( NamedVar &nv : variables )
+        for( NamedVar &nv : c->variables )
             if ( nv.name == name )
                 return nv.expr;
-        for( NamedVar &nv : *static_variables )
+        for( NamedVar &nv : *c->static_variables )
             if ( nv.name == name )
                 return nv.expr;
     }
@@ -145,10 +160,10 @@ Expr ParsingContext::_find_first_var_with_name( String name ) {
 
 void ParsingContext::_find_list_of_vars_with_name( Vec<Expr> &res, String name ) {
     for( ParsingContext *c = this; c; c = c->parent ) {
-        for( NamedVar &nv : variables )
+        for( NamedVar &nv : c->variables )
             if ( nv.name == name )
                 res << nv.expr;
-        for( NamedVar &nv : *static_variables )
+        for( NamedVar &nv : *c->static_variables )
             if ( nv.name == name )
                 res << nv.expr;
     }
@@ -166,8 +181,67 @@ Expr ParsingContext::get_var( String name, bool disp_err ) {
         return _make_surdef_list( lst );
     }
     if ( disp_err and not res )
-        disp_error( "Impossible to find variable '" + name + "'' from current scope" );
+        disp_error( "Impossible to find variable '" + name + "' from current scope" );
     return res;
+}
+
+Expr ParsingContext::_get_first_attr( Expr self, String name ) {
+    if ( self.error() )
+        return self;
+
+    Type *type = self->ptype();
+    type->parse();
+    for( Type::Attr &at : type->attributes ) {
+        if ( at.name == name ) {
+            if ( at.off == -2 )
+                TODO;
+            return at.off >= 0 ? rcast( at.val->type(), add( self, at.off ) ) : at.val;
+        }
+    }
+
+    return Expr();
+}
+
+void ParsingContext::_get_attr_clist( Vec<Expr> &lst, Expr self, String name ) {
+    if ( self.error() )
+        return;
+
+    Type *type = self->ptype();
+    type->parse();
+    for( Type::Attr &at : type->attributes )
+        if ( at.name == name and ( at.val->flags & Inst::SURDEF ) )
+            lst << at.val;
+}
+
+void ParsingContext::_keep_only_method_surdefs( Vec<Expr> &lst ) {
+    // keep only defs with self_as_arg
+    for( int i = 0; i < lst.size(); ++i ) {
+        if ( lst[ i ]->ptype()->orig == ip->class_Def ) {
+            SI64 p;
+            if ( not lst[ i ]->get( cond )->get_val( &p, 64 ) )
+                return disp_error( "weird Def" );
+            if ( reinterpret_cast<Def *>( ST( p ) )->ast_item->self_as_arg )
+                continue;
+        }
+        lst.remove( i );
+    }
+}
+
+Expr ParsingContext::get_attr( Expr self, String name ) {
+    if ( self.error() )
+        return self;
+    if ( Expr res = _get_first_attr( self, name ) )
+        if ( not ( res->flags & Inst::SURDEF ) )
+            return res;
+
+    // not found or surdef ? -> search in global scope for def ...( self, ... )
+    Vec<Expr> lst;
+    _find_list_of_vars_with_name( lst, name );
+    _keep_only_method_surdefs( lst );
+    _get_attr_clist( lst, self, name );
+    if ( lst.size() == 0 )
+        return ret_error( "no attr '" + name + "' in object of type '" + to_string( *self->ptype() ) + "' (or surdef with self as arg in parent scopes)" );
+    return _make_surdef_list( lst, self );
 }
 
 Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *n_name, Expr *n_args, ApplyMode am ) {
@@ -317,7 +391,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
             //            }
             ErrorList::Error &err = error_msg( ss.str() );
             for( int i = 0; i < nb_surdefs; ++i )
-                err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
+                err.ap( ci[ i ].c->ast_item->_src->c_str(), ci[ i ].c->ast_item->_off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
             std::cerr << err;
             return Expr();
         }
@@ -329,9 +403,9 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
             ErrorList::Error &err = ip->pc->error_msg( ss.str() );
             for( int i = 0; i < nb_surdefs; ++i ) {
                 if ( trials[ i ]->ok() )
-                    err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, "accepted" );
+                    err.ap( ci[ i ].c->ast_item->_src->c_str(), ci[ i ].c->ast_item->_off, "accepted" );
                 else
-                    err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
+                    err.ap( ci[ i ].c->ast_item->_src->c_str(), ci[ i ].c->ast_item->_off, std::string( "rejected (" ) + trials[ i ]->reason + ")" );
             }
             std::cerr << err;
             return Expr();
@@ -351,7 +425,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
                 ErrorList::Error &err = error_msg( ss.str() );
                 for( int i = 0; i < nb_surdefs; ++i )
                     if ( trials[ i ]->ok() and ci[ i ].pertinence == best_pertinence )
-                        err.ap( ci[ i ].c->ast_item->sourcefile, ci[ i ].c->ast_item->_off, "possibility" );
+                        err.ap( ci[ i ].c->ast_item->_src->c_str(), ci[ i ].c->ast_item->_off, "possibility" );
                 std::cerr << err;
                 return Expr();
             }
@@ -384,7 +458,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
 
         //        // call init
         //        if ( am != APPLY_MODE_PARTIAL_INST )
-        //            apply( get_attr( res, STRING_init_NUM ), nu, u_args, nn, n_name, n_args, Scope::APPLY_MODE_STD );
+        //            apply( get_attr( res, STRING_init_NUM ), nu, u_args, nn, n_name, n_args, ParsingContext::APPLY_MODE_STD );
         //        return res;
     }
 
@@ -404,15 +478,11 @@ Expr ParsingContext::make_type_var( Type *type ) {
     return Expr();
 }
 
-Expr ParsingContext::copy( Expr var ) {
-    TODO;
-    return Expr();
-}
 
-
-Expr ParsingContext::_make_surdef_list( const Vec<Expr> &lst ) {
+Expr ParsingContext::_make_surdef_list( const Vec<Expr> &lst, Expr self ) {
     SurdefList *res = new SurdefList;
     res->callables = lst;
+    res->self      = self;
     SI64 val = ST( res );
     return room( cst( ip->type_SurdefList, 64, &val ) );
 }
@@ -425,8 +495,9 @@ ErrorList::Error &ParsingContext::error_msg( String msg, bool warn, const char *
     ErrorList::Error &res = ip->error_list.add( msg, warn );
     if ( file )
         res.caller_stack.push_back( line, file );
-    //for( int i = parse_stack.size() - 1; i >= 0; --i )
-    //    res.ac( parse_stack[ i ].filename.c_str(), parse_stack[ i ].offset );
+    for( ParsingContext *p = this; p; p = p->caller ? p->caller : p->parent )
+        if ( p->current_src )
+            res.ac( p->current_src->c_str(), p->current_off );
     return res;
 }
 
@@ -437,4 +508,19 @@ Expr ParsingContext::ret_error( String msg, bool warn, const char *file, int lin
 
 Expr ParsingContext::error_var() {
     return Expr();
+}
+
+void ParsingContext::BREAK( int n, Expr cond ) {
+    TODO;
+    //    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
+    //        s->cond = s->cond and not cond; SAVE ip_snapshot
+    //        // found a for or a while ?
+    //        if ( s->cont ) {
+    //            *s->cont = *s->cont and not cond;
+    //            if ( n > 1 )
+    //                s->rem_breaks << RemBreak{ n - 1, cond };
+    //            return;
+    //        }
+    //    }
+    return disp_error( "nothing to break" );
 }

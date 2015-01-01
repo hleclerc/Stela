@@ -6,7 +6,7 @@
 #include "Ast_Number.h"
 #include "Ast_String.h"
 
-Ast_String::Ast_String( int off, String str ) : Ast( off ), str( str ) {
+Ast_String::Ast_String( const char *src, int off, String str ) : Ast( src, off ), str( str ) {
 }
 
 void Ast_String::write_to_stream( Stream &os, int nsp ) const {

@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_NdList.h"
 
-Ast_NdList::Ast_NdList( int off ) : Ast( off ) {
+Ast_NdList::Ast_NdList( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_NdList::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

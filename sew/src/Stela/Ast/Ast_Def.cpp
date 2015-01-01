@@ -8,7 +8,7 @@
 #include "IrWriter.h"
 #include "Ast_Def.h"
 
-Ast_Def::Ast_Def( int off ) : Ast_Callable( off ) {
+Ast_Def::Ast_Def( const char *src, int off ) : Ast_Callable( src, off ) {
     method = 0;
 }
 

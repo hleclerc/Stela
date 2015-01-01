@@ -7,7 +7,7 @@
 */
 class Ast_Select : public Ast_Call {
 public:
-    Ast_Select( int off );
+    Ast_Select( const char *src, int off );
     virtual void write_name( Stream &os ) const { os << "select"; }
 
 protected:

@@ -51,6 +51,9 @@ public:
     int   size(); ///< size in bits, or -1 if not known
     int   sb(); ///< size in bytes, or -1 if not known
     Expr  size( Expr obj ); ///< size in bits (return an expr to be computed if not known)
+
+    bool  pod(); ///< size in bits, or -1 if not known
+
     void  find_attr( Vec<Attr *> &attr_list, String name );
     Attr *find_attr( String name );
     Expr  find_static_attr( String name );

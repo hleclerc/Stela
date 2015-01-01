@@ -76,6 +76,12 @@ Expr Type::size( Expr obj ) {
     return res;
 }
 
+bool Type::pod() {
+    if ( _pod < 0 )
+        parse();
+    return _pod;
+}
+
 void Type::find_attr( Vec<Type::Attr *> &attr_list, String name ) {
     for( Attr &attr : attributes )
         if ( attr.name == name )

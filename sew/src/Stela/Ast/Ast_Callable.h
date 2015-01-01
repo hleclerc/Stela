@@ -12,7 +12,7 @@ class Ast_Callable : public Ast {
 public:
     typedef SplittedVec<Past,4> DVT;
 
-    Ast_Callable( int off );
+    Ast_Callable( const char *src, int off );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
@@ -42,8 +42,6 @@ public:
     Vec<Vec<String> > arg_constraints; ///< same size than arguments
     DVT               default_values;
     Past              block;
-
-    String            sourcefile;
 };
 
 #endif // STELA_AST_Callable_H

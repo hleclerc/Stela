@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_GetAttr.h"
 
-Ast_GetAttr::Ast_GetAttr( int off ) : Ast( off ) {
+Ast_GetAttr::Ast_GetAttr( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_GetAttr::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -33,7 +33,10 @@ void Ast_GetAttr::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_GetAttr::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    Expr self = obj->parse_in( context );
+    if ( ptr or ask or ddo )
+        TODO;
+    return context.get_attr( self, name );
 }
 
 PI8 Ast_GetAttr::_tok_number() const {

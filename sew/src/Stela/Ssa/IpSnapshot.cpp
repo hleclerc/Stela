@@ -28,10 +28,12 @@
 
 #include "IpSnapshot.h"
 
-IpSnapshot::IpSnapshot( IpSnapshot *&prev ) : iptr( prev ), prev( prev ) {
+int IpSnapshot::cur_date = 0;
+
+IpSnapshot::IpSnapshot( IpSnapshot *&prev ) : iptr( prev ), prev( prev ), date( ++cur_date ) {
     iptr = this;
 }
 
-IpSnapshot::~IpSnapshot() {
-    iptr = prev;
-}
+//IpSnapshot::~IpSnapshot() {
+//    iptr = prev;
+//}

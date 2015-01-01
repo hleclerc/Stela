@@ -8,7 +8,7 @@
 */
 class Ast_AndOrOr : public Ast {
 public:
-    Ast_AndOrOr( int off, bool want_and );
+    Ast_AndOrOr( const char *src, int off, bool want_and );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
     
 protected:

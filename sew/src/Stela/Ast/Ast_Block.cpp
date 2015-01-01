@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Block.h"
 
-Ast_Block::Ast_Block( int off ) : Ast( off ) {
+Ast_Block::Ast_Block( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Block::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

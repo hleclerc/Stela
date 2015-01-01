@@ -26,27 +26,12 @@
 **
 ****************************************************************************/
 
-
-#ifndef IPSNAPSHOT_H
-#define IPSNAPSHOT_H
+#ifndef CSTCOMPUTEDSIZE_H
+#define CSTCOMPUTEDSIZE_H
 
 #include "Inst.h"
-#include <map>
+class Type;
 
+Expr cst_computed_size( Type *type, Expr size );
 
-/**
-*/
-class IpSnapshot {
-public:
-    IpSnapshot( IpSnapshot *&prev );
-    // ~IpSnapshot();
-
-    std::map<Inst *,Expr>  rooms; ///< contains variables, sys_state, ...
-    IpSnapshot           *&iptr;
-    IpSnapshot            *prev;
-    int                    date;
-
-    static int cur_date;
-};
-
-#endif // IPSNAPSHOT_H
+#endif // CSTCOMPUTEDSIZE_H

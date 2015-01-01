@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Select.h"
 
-Ast_Select::Ast_Select( int off ) : Ast_Call( off ) {
+Ast_Select::Ast_Select( const char *src, int off ) : Ast_Call( src, off ) {
 }
 
 Expr Ast_Select::_parse_in( ParsingContext &context ) const {

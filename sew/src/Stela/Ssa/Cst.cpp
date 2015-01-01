@@ -49,12 +49,12 @@ public:
                 _data[ i ] = 0xFF;
         cst_set[ type ] << this;
     }
+    virtual ~Cst() {
+        cst_set[ _type ].remove_first_unordered( this );
+    }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         int sb = ( _size + 7 ) / 8;
         return new Cst( _type, _size, _data.ptr(), _data.ptr() + sb );
-    }
-    virtual ~Cst() {
-        cst_set[ _type ].remove_first_unordered( this );
     }
     virtual void write_to_stream( Stream &os ) const {
         write_dot( os );

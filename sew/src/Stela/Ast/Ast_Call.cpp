@@ -3,7 +3,7 @@
 #include "IrWriter.h"
 #include "Ast_Call.h"
 
-Ast_Call::Ast_Call( int off ) : Ast( off ) {
+Ast_Call::Ast_Call( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Call::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

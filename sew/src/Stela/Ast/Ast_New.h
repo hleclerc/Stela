@@ -7,7 +7,7 @@
 */
 class Ast_New : public Ast_Call {
 public:
-    Ast_New( int off );
+    Ast_New( const char *src, int off );
     virtual void write_name( Stream &os ) const { os << "new"; }
 
 protected:

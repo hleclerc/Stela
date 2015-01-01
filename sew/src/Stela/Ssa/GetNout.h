@@ -27,26 +27,11 @@
 ****************************************************************************/
 
 
-#ifndef IPSNAPSHOT_H
-#define IPSNAPSHOT_H
+#ifndef GETNOUT_H
+#define GETNOUT_H
 
 #include "Inst.h"
-#include <map>
 
+Expr get_nout( Expr inp, int nout );
 
-/**
-*/
-class IpSnapshot {
-public:
-    IpSnapshot( IpSnapshot *&prev );
-    // ~IpSnapshot();
-
-    std::map<Inst *,Expr>  rooms; ///< contains variables, sys_state, ...
-    IpSnapshot           *&iptr;
-    IpSnapshot            *prev;
-    int                    date;
-
-    static int cur_date;
-};
-
-#endif // IPSNAPSHOT_H
+#endif // GETNOUT_H

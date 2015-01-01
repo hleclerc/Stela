@@ -5,7 +5,7 @@
 #include "IrWriter.h"
 #include <limits>
 
-Ast_Callable::Ast_Callable( int off ) : Ast( off ) {
+Ast_Callable::Ast_Callable( const char *src, int off ) : Ast( src, off ) {
 }
 
 void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {

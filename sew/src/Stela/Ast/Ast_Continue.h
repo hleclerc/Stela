@@ -7,7 +7,7 @@
 */
 class Ast_Continue : public Ast {
 public:
-    Ast_Continue( int off );
+    Ast_Continue( const char *src, int off );
     virtual void write_to_stream( Stream &os, int nsp = 0 ) const;
 
 protected:

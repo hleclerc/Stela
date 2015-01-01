@@ -28,6 +28,7 @@
 
 
 #include "../Ast/Ast_Class.h"
+#include "CstComputedSize.h"
 #include "Class.h"
 #include "Type.h"
 #include "Room.h"
@@ -51,17 +52,15 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Exp
     // ns.class_scope = type;
 
     // start with a unknown cst
+    Expr ret;
     if ( type->size() < 0 ) {
         Expr func = type->find_static_attr( "size_init" );
         if ( not func )
             return caller->ret_error( "Impossible to find a static variable named 'size_init' in type (of variable size) to be instancied" );
-        PRINT( *func->ptype() );
         Expr val = caller->apply( func, nu, vu, nn, names, vn );
-        PRINT( func );
-        PRINT( val );
-        TODO;
-    }
-    Expr ret = room( cst( type, type->size(), 0, 0 ) );
+        ret = room( cst_computed_size( type, val ) );
+    } else
+        ret = room( cst( type, type->size(), 0, 0 ) );
 
     //
     if ( apply_mode == ParsingContext::APPLY_MODE_NEW )
@@ -69,8 +68,7 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Exp
 
     // call init
     if ( apply_mode == ParsingContext::APPLY_MODE_STD )
-        TODO;
-        // ns.apply( ns.get_attr( ret, STRING_init_NUM ), nu, vu, nn, names, vn, Scope::APPLY_MODE_STD );
+        ns.apply( ns.get_attr( ret, "init" ), nu, vu, nn, names, vn );
 
     return ret;
 }
