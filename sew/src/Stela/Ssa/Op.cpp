@@ -146,14 +146,14 @@ template<class TO>
 struct BOp : Op<TO> {
     virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->inp[ 1 ]->type(), this->op ); }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new BOp<TO>; }
-    virtual void set( Expr obj, const Expr &cond ) {
+    virtual void set( Expr obj, Expr cond ) {
         if ( this->flags & Inst::CONST )
             return ip->pc->disp_error( "attempting to modify a const value" );
         if ( SameType<TO,Op_add>::res )
             return this->inp[ 0 ]->set( repl_bits( this->inp[ 0 ]->get( cond ), this->inp[ 1 ]->simplified( cond ), obj->simplified( cond ) ), cond );
         return Inst::set( obj, cond );
     }
-    virtual Expr get( const Expr &cond ) {
+    virtual Expr get( Expr cond ) {
         if ( SameType<TO,Op_add>::res ) {
             Type *tr = this->inp[ 0 ]->ptype();
             return slice( tr, this->inp[ 0 ]->get( cond ), this->inp[ 1 ] );

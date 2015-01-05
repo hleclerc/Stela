@@ -25,10 +25,12 @@ Expr repl_bits( Expr src, Expr off, Expr val ) {
     int z = 0;
     if ( off->always_equal( ip->type_SI32, &z ) and equ( src->size(), val->size() )->always( true ) )
         return rcast( src->type(), val );
+
+    // size of val is 0
     if ( val->size()->always_equal( ip->type_SI32, &z ) )
         return src;
 
-    // specific simplification
+    // specific simplification (e.g. for cst)
     if ( Expr res = src->_simp_repl_bits( off, val ) )
         return res;
 

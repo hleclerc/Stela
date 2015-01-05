@@ -31,6 +31,20 @@ class PI8
     def reassign val
         ___reassign_rec self, val
     
+class SI16
+    ___set_base_size_and_alig 16, 16
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class PI16
+    ___set_base_size_and_alig 16, 16
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
 class SI32
     ___set_base_size_and_alig 32, 32
     def init val
@@ -226,12 +240,12 @@ class CUInt
 # a := CUInt 0
 # ___info a
 class Toto
-    attr := 10
-    # atts := 20
+    attr := PI16 13
+    atts := PI16 26
     def select
         attr
         
 a := Toto()
 ___info a.attr
+___info a.atts
 ___info a
-

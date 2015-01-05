@@ -28,6 +28,7 @@
 
 #include "ParsingContext.h"
 #include "Slice.h"
+#include "Rcast.h"
 #include "Type.h"
 #include "Op.h"
 
@@ -53,7 +54,7 @@ struct Slice : Inst {
             return res;
         return slice( dst, inp[ 0 ], add( off, inp[ 1 ] ) );
     }
-    virtual Expr get( const Expr &cond ) {
+    virtual Expr get( Expr cond ) {
         //        int voff;
         //        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 ) {
         //            if ( out_type->orig != ip->class_Ptr ) {
@@ -67,7 +68,7 @@ struct Slice : Inst {
         TODO;
         return 0;
     }
-    virtual void set( Expr obj, const Expr &cond ) {
+    virtual void set( Expr obj, Expr cond ) {
         if ( inp[ 1 ]->always_equal( 0 ) )
             return inp[ 0 ]->set( obj, cond );
         TODO;
@@ -102,6 +103,9 @@ struct Slice : Inst {
 };
 
 Expr slice( Type *dst, Expr var, Expr off ) {
+    if ( off->always_equal( 0 ) )
+        return rcast( dst, var );
+
     if ( Expr res = var->_simp_slice( dst, off ) )
         return res;
 

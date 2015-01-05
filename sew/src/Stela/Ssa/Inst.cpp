@@ -64,6 +64,7 @@ void Inst::write_to_stream( Stream &os, int prec ) {
 }
 
 void Inst::set( Expr obj, Expr cond ) {
+    PRINT( *this );
     ip->pc->disp_error( "setting a non pointer item" );
 }
 
@@ -143,7 +144,11 @@ Expr Inst::_simp_repl_bits( Expr off, Expr val ) {
 }
 
 Expr Inst::_simp_slice( Type *dst, Expr off ) {
-    if ( type() == dst and off->always_equal( 0 ) )
+    return Expr();
+}
+
+Expr Inst::_simp_rcast( Type *dst ) {
+    if ( type() == dst )
         return this;
     return Expr();
 }

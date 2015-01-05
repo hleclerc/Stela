@@ -28,6 +28,7 @@
 
 #include "../Codegen/Codegen.h"
 #include "../System/Memcpy.h"
+#include "GlobalVariables.h"
 #include "Type.h"
 #include "Cst.h"
 #include <map>
@@ -85,6 +86,29 @@ public:
     }
     virtual void write( Codegen *c ) {
         c->on << *c->var_decl( out_reg ) << " = " << *this << ";";
+    }
+    virtual Expr _simp_repl_bits( Expr off, Expr val ) {
+        SI32 voff, vlen = val->type()->size();
+        if ( vlen >= 0 and off->get_val( &voff, ip->type_SI32 ) ) {
+            PI8 vval[ ( vlen + 7 ) / 8 ];
+            if ( val->get_val( vval, vlen ) ) {
+                ASSERT( voff + vlen <= _size, "..." );
+                PI8 ndat[ ( _size + 7 ) / 8 ];
+                memcpy_bit( ndat, 0, _data.ptr(), 0, _size ); // copy the old bits
+                memcpy_bit( ndat, voff, vval, 0, vlen ); // copy new values
+                return cst( _type, _size, ndat );
+            }
+        }
+        return Inst::_simp_repl_bits( off, val );
+    }
+    virtual Expr _simp_slice( Type *dst, Expr off ) {
+        TODO;
+        return Expr();
+    }
+
+    virtual Expr _simp_rcast( Type *dst ) {
+        int sb = ( _size + 7 ) / 8;
+        return cst( _type, _size, _data.ptr(), _data.ptr() + sb );
     }
 
     Vec<PI8> _data; ///< values and known (should not be changed directly)

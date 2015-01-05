@@ -112,6 +112,7 @@ public:
 
     virtual Expr _simp_repl_bits( Expr off, Expr val );
     virtual Expr _simp_slice( Type *dst, Expr off );
+    virtual Expr _simp_rcast( Type *dst );
     virtual void _mk_store_dep( Inst *dst );
 
     static Inst *twin_or_val( Inst *inst ); ///< if there's already an inst doing the same thing, return this inst and delete `inst`

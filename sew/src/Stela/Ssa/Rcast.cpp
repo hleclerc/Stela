@@ -37,7 +37,7 @@ struct Rcast : Inst {
     Rcast( Type *type ) : _type( type ) {
     }
     virtual void write_dot( Stream &os ) const {
-        // os << "rcast(" << *_type << ")";
+        os << "rcast";
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new Rcast( _type );
@@ -58,7 +58,13 @@ struct Rcast : Inst {
         }
         TODO;
     }
-
+    virtual Expr _simp_slice( Type *dst, Expr off ) {
+        TODO;
+        return Expr();
+    }
+    virtual Expr _simp_rcast( Type *dst ) {
+        return rcast( dst, inp[ 0 ] );
+    }
     virtual Expr get( Expr cond ) {
         TODO;
         return Expr();
@@ -68,16 +74,8 @@ struct Rcast : Inst {
 };
 
 Expr rcast( Type *type, Expr val ) {
-    // same type ?
-    if ( val->type() == type )
-        return val;
-
-    // cst ?
-    if ( type->sb() >= 0 ) {
-        PI8 d[ type->sb() ];
-        if ( val->get_val( d, type->size() ) )
-            return cst( type, type->size(), d );
-    }
+    if ( Expr res = val->_simp_rcast( type ) )
+        return res;
 
     // else, create a new one
     Rcast *res = new Rcast( type );
