@@ -57,6 +57,7 @@ public:
     void  find_attr( Vec<Attr *> &attr_list, String name );
     Attr *find_attr( String name );
     Expr  find_static_attr( String name );
+    Expr  attr_expr( Expr self, Attr &a ); ///< get self.a
 
     // numeric/known values
     virtual bool get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn );

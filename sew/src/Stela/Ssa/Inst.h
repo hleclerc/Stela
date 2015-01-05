@@ -50,7 +50,8 @@ public:
     enum {
         CONST     = 1,
         SURDEF    = 2,
-        STATIC    = 4
+        STATIC    = 4,
+        PART_INST = 8
     };
     /// for Parent::ninp
     enum {

@@ -143,13 +143,13 @@ static Expr const_or_copy( Expr &var ) {
     if ( var->flags & Inst::CONST )
         return var;
 
-    if ( var->type()->orig == ip->class_SurdefList ) {
+    if ( var->ptype()->orig == ip->class_SurdefList ) {
         Expr i = ip->pc->apply( var, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
-        Expr v = ip->pc->make_type_var( i->type() );
-        return const_or_copy( v );
+        return ip->pc->make_type_var( i->ptype() );
     }
     if ( var.inst->flags & Inst::CONST )
         return var;
+
     Expr res = ip->pc->copy( var );
     res.inst->flags |= Inst::CONST;
     return res;

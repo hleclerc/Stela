@@ -92,7 +92,9 @@ public:
     int      _size;
 };
 
-static bool equal_cst( const Cst *cst, int size, const PI8 *value, const PI8 *known ) {
+static bool equal_cst( const Cst *cst, Type *type, int size, const PI8 *value, const PI8 *known ) {
+    if ( cst->_type != type )
+        return false;
     if ( cst->_size != size )
         return false;
     int sb = ( size + 7 ) / 8;
@@ -126,7 +128,7 @@ Expr cst( Type *type, SI64 size, const void *value, const void *known ) {
 
     // already an equivalent cst ?
     for( Cst *c : cst_set[ type ] )
-        if ( equal_cst( c, size, (const PI8 *)value, (const PI8 *)known ) )
+        if ( equal_cst( c, type, size, (const PI8 *)value, (const PI8 *)known ) )
             return c;
 
     // else, create a new one

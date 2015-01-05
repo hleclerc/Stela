@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 
+#include "../Ast/Ast_Class.h"
 #include "../Ast/Ast_Def.h"
 #include "Class.h"
 #include "Type.h"
@@ -49,42 +50,45 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
     ns.cond = and_boolean( ns.cond, cond );
 
     // particular case
-    if ( orig->ast_item->name == "init" ) {
-        TODO;
-        //        // init attributes
-        //        Type *self_type = self->ptype();
+    if ( orig->ast_item->name == "init" and not self.error() ) {
+        // init attributes
+        Type *self_type = self->ptype();
 
-        //        if ( self_type->orig->ancestors.size() )
-        //            TODO;
+        // ancestors
+        const Ast_Class *ac = static_cast<const Ast_Class *>( self_type->orig->ast_item );
+        if ( ac->inheritance.size() )
+            TODO;
 
-        //        Vec<Bool> initialised_args( Size(), self_type->attributes.size(), false );
-        //        for( AttrInit &d : orig->attr_init ) {
-        //            for( int i = 0; ; ++i ) {
-        //                if ( i == self_type->attributes.size() )
-        //                    return ip->ret_error( "no attribute " + ip->str_cor.str( d.attr ) + " in class" );
+        //
+        const Ast_Def *ad = static_cast<const Ast_Def *>( orig->ast_item );
+        Vec<Bool> initialised_args( Size(), self_type->attributes.size(), false );
+        for( const Ast_Def::StartsWith_Item &d : ad->starts_with ) {
+            for( int i = 0; ; ++i ) {
+                if ( i == self_type->attributes.size() )
+                    return ns.ret_error( "no attribute " + d.attr + " in class" );
 
-        //                Type::Attr &a = self_type->attributes[ i ];
-        //                if ( d.attr == a.name ) {
-        //                    // parse args
-        //                    Vec<Expr> args;
-        //                    int nu = d.args.size() - d.names.size();
-        //                    for( Code &c : d.args )
-        //                        args << ns.parse( c.sf, c.tok, "starts_with" );
+                Type::Attr &a = self_type->attributes[ i ];
+                if ( d.attr == a.name ) {
+                    // parse args
+                    Vec<Expr> args;
+                    int nu = d.args.size() - d.names.size();
+                    for( int i = 0; i < d.args.size(); ++i )
+                        args << d.args[ i ]->parse_in( ns );
 
-        //                    //
-        //                    ns.apply( ns.get_attr( rcast( a.val->type(), add( self, a.off ) ), STRING_init_NUM ),
-        //                              nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
-        //                    initialised_args[ i ] = true;
-        //                    break;
-        //                }
-        //            }
-        //        }
+                    //
+                    ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ),
+                              nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
+                    initialised_args[ i ] = true;
+                    break;
+                }
+            }
+        }
 
-        //        int cpt = 0;
-        //        for( Type::Attr &a : self_type->attributes )
-        //            if ( a.off >= 0 and not initialised_args[ cpt ] )
-        //                ns.apply( ns.get_attr( rcast( a.val->type(), add( self, a.off ) ), STRING_init_NUM ), not ( a.val->flags & Inst::PART_INST ), &a.val );
-        //            ++cpt;
+        int cpt = 0;
+        for( Type::Attr &a : self_type->attributes )
+            if ( a.off >= 0 and not initialised_args[ cpt ] )
+                ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ), not ( a.val->flags & Inst::PART_INST ), &a.val );
+        ++cpt;
     }
 
     // inline call

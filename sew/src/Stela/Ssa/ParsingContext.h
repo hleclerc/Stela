@@ -61,8 +61,12 @@ public:
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
-    Expr              make_type_var( Type *type );
     Expr              copy( Expr var );
+
+    Type             *type_from_type_expr( Expr type_expr );
+    Expr              make_type_var( Type *type );
+    Type             *ptr_type_for( Type *ref );
+    Expr              type_expr( Type *ref );
 
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );
@@ -70,6 +74,7 @@ public:
     Expr              error_var ();
 
     void              BREAK( int n, Expr cond );
+
 
     Expr              _make_surdef_list( const Vec<Expr> &lst, Expr self = Expr() );
     Expr              _find_first_var_with_name( String name );

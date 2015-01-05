@@ -48,6 +48,53 @@ public:
         }
     }
 
+    struct Iterator {
+        void operator++() {
+            ++cur;
+            while ( cur >= item->cur ) {
+                if ( not item->next ) {
+                    item = 0;
+                    cur  = 0;
+                    return;
+                }
+                item = item->next;
+                cur  = item->ptr();
+            }
+        }
+        T &operator*() {
+            return *cur;
+        }
+        bool operator==( const Iterator &c ) const { return item == c.item and cur == c.cur; }
+
+        Item *item;
+        T    *cur;
+    };
+
+    struct ConstIterator {
+        void operator++() {
+            ++cur;
+            while ( cur >= item->cur ) {
+                if ( not item->next )
+                    return;
+                item = item->next;
+                cur  = item->ptr();
+            }
+        }
+        const T &operator*() const { return *cur; }
+        bool operator==( const ConstIterator &c ) const { return item == c.item and cur == c.cur; }
+        bool operator!=( const ConstIterator &c ) const { return item != c.item or  cur != c.cur; }
+
+        const Item *item;
+        const T    *cur;
+    };
+
+    Iterator begin() { return Iterator{ &first, first.ptr() }; }
+    Iterator end  () { return Iterator{ last, last->cur }; }
+
+    ConstIterator begin() const { return ConstIterator{ &first, first.ptr() }; }
+    ConstIterator end  () const { return ConstIterator{ last, last->cur }; }
+
+
     void clear() {
         this->~SplittedVec();
 

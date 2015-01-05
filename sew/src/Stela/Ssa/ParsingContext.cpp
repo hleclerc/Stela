@@ -34,6 +34,7 @@
 #include "SurdefList.h"
 #include "Callable.h"
 #include "Select.h"
+#include "Class.h"
 #include "Rcast.h"
 #include "Type.h"
 #include "Room.h"
@@ -190,6 +191,7 @@ Expr ParsingContext::_get_first_attr( Expr self, String name ) {
         return self;
 
     Type *type = self->ptype();
+
     type->parse();
     for( Type::Attr &at : type->attributes ) {
         if ( at.name == name ) {
@@ -476,6 +478,23 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
 Expr ParsingContext::make_type_var( Type *type ) {
     TODO;
     return Expr();
+}
+
+Type *ParsingContext::type_from_type_expr( Expr type_expr ) {
+    ASSERT( type_expr->ptype() == ip->type_Type, "..." );
+    SI64 p;
+    if ( not type_expr->get( cond )->get_val( &p, 64 ) )
+        return 0;
+    return reinterpret_cast<Type *>( ST( p ) );
+}
+
+Type *ParsingContext::ptr_type_for( Type *ref ) {
+    return ip->class_Ptr->type_for( type_expr( ref ) );
+}
+
+Expr ParsingContext::type_expr( Type *ref ) {
+    SI64 ref_ptr = ST( ref );
+    return room( cst( ip->type_Type, 64, &ref_ptr ) );
 }
 
 

@@ -3,10 +3,12 @@ class Class
     
 class Def
     ptr ~= SI64 # pointer to C++ data
-    
+
 class SurdefList
     ptr ~= SI64 # pointer to C++ data
-    
+
+class Void
+    #
 
 class Bool
     ___set_base_size_and_alig 1, 1
@@ -196,6 +198,9 @@ class Repeated
     type := 0l # pointer to type
     func := 0l # pointer to func that gives the size
 
+class Ptr[ T ]
+    addr := 0p
+    
 class CUInt
     data := ___repeat PI8, x => ( res := 1; while x.data[ res ] >= 128; ++res; res )
     
@@ -218,5 +223,15 @@ class CUInt
             cpt += 1
         
         
-a := CUInt 0
+# a := CUInt 0
+# ___info a
+class Toto
+    attr := 10
+    # atts := 20
+    def select
+        attr
+        
+a := Toto()
+___info a.attr
 ___info a
+

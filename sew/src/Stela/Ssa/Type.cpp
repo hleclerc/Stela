@@ -30,6 +30,7 @@
 #include "../System/Assert.h"
 #include "../System/Math.h"
 #include "Class.h"
+#include "Rcast.h"
 #include "Type.h"
 #include "Op.h"
 
@@ -46,6 +47,23 @@ void Type::write_to_stream( Stream &os ) const {
         os << orig->ast_item->name;
     else
         os << "NULL";
+    if ( parameters.size() ) {
+        os << '[';
+        for( int i = 0; i < parameters.size(); ++i ) {
+            if ( i )
+                os << ',';
+            Expr p = parameters[ i ];
+            if ( p->ptype() == ip->type_Type ) {
+                if ( Type *t = ip->pc->type_from_type_expr( p ) )
+                    os << *t;
+                else
+                    os << "Undefined type";
+            } else {
+                os << p;
+            }
+        }
+        os << ']';
+    }
 }
 
 int Type::alig() {
@@ -107,9 +125,17 @@ Expr Type::find_static_attr( String name ) {
         for( Attr *attr : attr_list )
             if ( attr->val->flags & Inst::STATIC )
                 expr_list << attr->val;
-        return ip->main_parsing_context->_make_surdef_list( expr_list );
+        return ip->pc->_make_surdef_list( expr_list );
     }
     return attr->val;
+}
+
+Expr Type::attr_expr( Expr self, Type::Attr &a ) {
+    if ( a.off == -2 )
+        TODO;
+    if ( a.off == -1 )
+        return a.val;
+    return rcast( a.val->type(), add( self, a.off ) );
 }
 
 bool Type::get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn ) {

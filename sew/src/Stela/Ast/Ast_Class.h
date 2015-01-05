@@ -11,9 +11,6 @@ public:
 
     virtual void write_callable_type( Stream &os ) const { os << "class"; }
 
-protected:
-    friend class AstMaker;
-
     virtual void _get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual Expr _parse_in( ParsingContext &context ) const;
     virtual void _get_info( IrWriter *aw ) const;

@@ -98,10 +98,14 @@ GlobalVariables::GlobalVariables() {
     type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;
     ptr_size = 8 * sizeof( void * );
 
+    main_parsing_context = 0;
     ip_snapshot = 0;
     pc = 0;
+
+    main_scope[ "void" ] = Variable{ room( cst( type_Void, 0, 0 ) ) };
 }
 
 Expr GlobalVariables::void_var() {
     return room( cst( type_Void, 0, 0 ) );
 }
+

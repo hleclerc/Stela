@@ -53,6 +53,8 @@ Inst::~Inst() {
 }
 
 void Inst::write_to_stream( Stream &os, int prec ) {
+    if ( Type *t = type() )
+        os << '{' << *t << '}';
     write_dot( os );
     if ( inp.size() ) {
         for( int i = 0; i < inp.size(); ++i )
@@ -84,15 +86,17 @@ Type *Inst::type( int nout ) {
 }
 
 Type *Inst::ptype( int nout ) {
-    ERROR( "..." );
+    ERROR( "Not a pointer type" );
     return 0;
 }
 
 Type *Inst::ptype() {
+    ERROR( "Not a pointer type" );
     return 0;
 }
 
 Type *Inst::type() {
+    TODO;
     return 0;
 }
 

@@ -48,8 +48,7 @@ struct Room : Inst {
         return val ? val->type() : 0;
     }
     virtual Type *type() {
-        TODO;
-        return 0;
+        return ip->pc->ptr_type_for( val->type() );
     }
 
     Expr val;

@@ -27,14 +27,17 @@
 ****************************************************************************/
 
 
+#include "GlobalVariables.h"
+#include "ParsingContext.h"
 #include "Rcast.h"
 #include "Type.h"
+#include "Cst.h"
 
 struct Rcast : Inst {
     Rcast( Type *type ) : _type( type ) {
     }
     virtual void write_dot( Stream &os ) const {
-        os << "rcast(" << *_type << " &)";
+        // os << "rcast(" << *_type << ")";
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new Rcast( _type );
@@ -42,13 +45,41 @@ struct Rcast : Inst {
     virtual Type *type() {
         return _type;
     }
+    virtual Type *ptype() {
+        if ( _type->orig == ip->class_Ptr )
+            return ip->pc->type_from_type_expr( _type->parameters[ 0 ] );
+        TODO;
+        return 0;
+    }
+    virtual void set( Expr obj, Expr cond ) {
+        if ( _type->orig == ip->class_Ptr ) {
+            inp[ 0 ]->set( obj, cond );
+            return;
+        }
+        TODO;
+    }
+
+    virtual Expr get( Expr cond ) {
+        TODO;
+        return Expr();
+    }
 
     Type *_type;
 };
 
 Expr rcast( Type *type, Expr val ) {
+    // same type ?
     if ( val->type() == type )
         return val;
+
+    // cst ?
+    if ( type->sb() >= 0 ) {
+        PI8 d[ type->sb() ];
+        if ( val->get_val( d, type->size() ) )
+            return cst( type, type->size(), d );
+    }
+
+    // else, create a new one
     Rcast *res = new Rcast( type );
     res->add_inp( val );
     return Inst::twin_or_val( res );
