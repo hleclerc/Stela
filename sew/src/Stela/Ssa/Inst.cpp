@@ -135,6 +135,61 @@ bool Inst::always_equal( Type *t, const void *d ) {
     return false;
 }
 
+Vec<Expr> Inst::subs( Vec<Expr> &expr_list, Vec<Expr> &src, Vec<Expr> &dst ) {
+    ++Inst::cur_op_id;
+    ASSERT( src.size() == dst.size(), "..." );
+    for( int i = 0; i < src.size(); ++i ) {
+        src[ i ]->op_id = Inst::cur_op_id;
+        src[ i ]->op_mp = dst[ i ].inst;
+    }
+    Vec<Expr> created, res;
+    for( Expr e : expr_list ) {
+        e->subs( created );
+        res << e->op_mp;
+    }
+    return res;
+}
+
+Expr Inst::subs( Vec<Expr> &src, Vec<Expr> &dst ) {
+    Vec<Expr> expr_list( this ), res( subs( expr_list, src, dst ) );
+    return res[ 0 ];
+}
+
+Expr Inst::subs( Expr src, Expr dst ) {
+    Vec<Expr> s( src ), d( dst );
+    return subs( s, d );
+}
+
+void Inst::subs( Vec<Expr> &created ) {
+    if ( op_id == cur_op_id )
+        return;
+    op_id = cur_op_id;
+
+    bool change_inp = false, change_ext = false, change_dep = false;
+    for( Expr e : inp ) {
+        e->subs( created );
+        change_inp |= e->op_mp != e.inst;
+    }
+    for( Expr e : ext ) {
+        e->subs( created );
+        change_ext |= e->op_mp != e.inst;
+    }
+    for( Expr e : dep ) {
+        e->subs( created );
+        change_dep |= e->op_mp != e.inst;
+    }
+
+    if ( change_inp or change_ext or change_dep ) {
+        Expr res = _subs();
+        op_mp = res.inst;
+        created << res;
+
+        for( Expr e : dep )
+            res->add_dep( e->op_mp );
+    } else
+        op_mp = this;
+}
+
 #define DECL_BT( T ) bool Inst::always_equal( T val ) { return always_equal( ip->type_##T, &val ); }
 #include "DeclArytTypes.h"
 #undef DECL_BT

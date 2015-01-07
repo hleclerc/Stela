@@ -63,7 +63,7 @@ Expr Ast_Assign::_parse_in( ParsingContext &context ) const {
     if ( rhs->cpt_use > 1 )
         rhs = context.copy( rhs );
 
-    context.reg_var( name, rhs, stat );
+    context.reg_var( name, rhs, stat, _off, _src );
     return rhs;
 }
 

@@ -43,8 +43,10 @@ struct GlobalVariables {
         Expr expr;
     };
     struct NamedVar {
-        String name;
-        Expr   expr;
+        String        name;
+        Expr          expr;
+        int           off;
+        const String *src;
     };
 
     GlobalVariables();

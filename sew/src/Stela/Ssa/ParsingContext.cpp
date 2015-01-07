@@ -129,7 +129,7 @@ Expr ParsingContext::copy( Expr var ) {
     return res;
 }
 
-Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
+Expr ParsingContext::reg_var( String name, Expr expr, bool stat, int _off, const String *_src ) {
     if ( scope_type == SCOPE_TYPE_MAIN ) {
         Vec<GlobalVariables::Variable,-1,1> &v = ip->main_scope[ name ];
         if ( v.size() and not expr->is_surdef() )
@@ -140,6 +140,8 @@ Expr ParsingContext::reg_var( String name, Expr expr, bool stat ) {
 
     // std case
     NamedVar *nv = stat ? static_variables->push_back() : variables.push_back();
+    nv->off  = _src ? _off : current_off;
+    nv->src  = _src ? _src : current_src;
     nv->name = name;
     nv->expr = expr;
     return expr;

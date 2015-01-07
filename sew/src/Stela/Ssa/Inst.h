@@ -106,6 +106,13 @@ public:
     virtual bool always( bool val ) const;
     virtual bool always_equal( Type *t, const void *d );
 
+    static Vec<Expr> subs( Vec<Expr> &expr_list, Vec<Expr> &src, Vec<Expr> &dst );
+    Expr subs( Vec<Expr> &src, Vec<Expr> &dst );
+    Expr subs( Expr src, Expr dst );
+    void subs( Vec<Expr> &created );
+
+    virtual Expr _subs() { TODO; return Expr(); }
+
     #define DECL_BT( T ) bool always_equal( T val );
     #include "DeclArytTypes.h"
     #undef DECL_BT

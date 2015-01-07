@@ -55,7 +55,7 @@ public:
     void              add_inc_path( String path );
     String            find_src( String filename, String current_dir = "" ) const;
 
-    Expr              reg_var( String name, Expr expr, bool stat = false );
+    Expr              reg_var(String name, Expr expr, bool stat = false, int _off = -1, const String *_src = 0 );
     Expr              get_var( String name, bool disp_err = true );
     Expr              get_attr( Expr self, String name );
 

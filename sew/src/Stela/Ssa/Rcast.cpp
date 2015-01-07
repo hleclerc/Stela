@@ -66,14 +66,15 @@ struct Rcast : Inst {
         return rcast( dst, inp[ 0 ] );
     }
     virtual Expr get( Expr cond ) {
-        TODO;
-        return Expr();
+        return rcast( _type->ptype(), inp[ 0 ]->get( cond ) );
     }
 
     Type *_type;
 };
 
 Expr rcast( Type *type, Expr val ) {
+    if ( not type or val.error() )
+        return Expr();
     if ( Expr res = val->_simp_rcast( type ) )
         return res;
 

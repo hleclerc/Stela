@@ -54,6 +54,9 @@ struct Slice : Inst {
             return res;
         return slice( dst, inp[ 0 ], add( off, inp[ 1 ] ) );
     }
+    virtual Expr _simp_rcast( Type *dst ) {
+        return slice( dst, inp[ 0 ], inp[ 1 ] );
+    }
     virtual Expr get( Expr cond ) {
         //        int voff;
         //        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 ) {

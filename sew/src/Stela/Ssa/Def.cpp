@@ -59,7 +59,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
         if ( ac->inheritance.size() )
             TODO;
 
-        //
+        // : attr( val ), ...
         const Ast_Def *ad = static_cast<const Ast_Def *>( orig->ast_item );
         Vec<Bool> initialised_args( Size(), self_type->attributes.size(), false );
         for( const Ast_Def::StartsWith_Item &d : ad->starts_with ) {
@@ -86,9 +86,15 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
 
         // default initialization
         int cpt = 0;
-        for( Type::Attr &a : self_type->attributes )
-            if ( a.off_expr and initialised_args[ cpt ] == false )
+        for( Type::Attr &a : self_type->attributes ) {
+            if ( a.off_expr and initialised_args[ cpt ] == false ) {
+                ns.current_off = a.off;
+                ns.current_src = a.src;
+
+                PRINT( self_type->attr_expr( self, a ) );
                 ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ), not ( a.val->flags & Inst::PART_INST ), &a.val );
+            }
+        }
         ++cpt;
     }
 
