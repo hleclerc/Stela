@@ -45,9 +45,6 @@ public:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
-protected:
-    friend class AstMaker;
-
     Vec<String> names;
     Past        body;
 };

@@ -55,7 +55,7 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Exp
     Expr ret;
     if ( type->size() < 0 ) {
         Expr func = type->find_static_attr( "size_init" );
-        if ( not func )
+        if ( func.error() )
             return caller->ret_error( "Impossible to find a static variable named 'size_init' in type (of variable size) to be instancied" );
         Expr val = caller->apply( func, nu, vu, nn, names, vn );
         ret = room( cst_computed_size( type, val ) );

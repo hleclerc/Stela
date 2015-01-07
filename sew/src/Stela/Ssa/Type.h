@@ -39,7 +39,7 @@ class Class;
 class Type {
 public:
     struct Attr {
-        int    off; ///< -1 => static; -2 => not known because of a repeated
+        Expr   off_expr; ///< Expr() -> static
         Expr   val; ///< flags may contain to Inst::PART_INST
         String name;
     };
@@ -73,12 +73,14 @@ public:
     Class    *orig;
     Vec<Expr> parameters;
 
-    int       _len;
-    int       _ali;
-    int       _pod;
-    bool      _parsed;
-    bool      aryth;
-    Vec<Attr> attributes;
+    Expr      _symbol;    ///< symbol to use for _len_expr and off_expr substitution
+    Expr      _len_expr;
+    int       _len;       ///< sie in bits, -1 if depends on the underlying value
+    int       _ali;       ///< needed alignment in bits
+    int       _pod;       ///< plain old data
+    bool      _parsed;    ///< true is already parsed
+    bool      aryth;      ///< true if basic arythmetic type
+    Vec<Attr> attributes; ///< static and dynamic attributes
 };
 
 #endif // TYPE_H

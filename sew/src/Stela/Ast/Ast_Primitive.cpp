@@ -33,7 +33,13 @@ static Expr parse_info( ParsingContext &context, const Ast_Primitive *p ) {
         std::cout << p->args[ i ]->parse_in( context ) << std::endl;
     return Expr();
 }
-static Expr parse_disp( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_disp( ParsingContext &context, const Ast_Primitive *p ) {
+    Vec<Expr> var( Rese(), p->args.size() );
+    for( Past arg : p->args )
+        var << arg->parse_in( context )->get( context.cond );
+    Inst::display_graph( var );
+    return ip->void_var();
+}
 static Expr parse_rand( ParsingContext &context, const Ast_Primitive *p ) {
     static int num = 0;
     return room( symbol( ip->type_Bool, "rand(/*" + to_string( num++ ) + "*/)" ) );

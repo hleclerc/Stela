@@ -29,6 +29,7 @@
 #include "../System/FileExists.h"
 #include "../System/ReadFile.h"
 #include "../Ast/Ast_Callable.h"
+#include "../Ast/Ast_Lambda.h"
 #include "../Met/Lexer.h"
 #include "ParsingContext.h"
 #include "SurdefList.h"
@@ -191,15 +192,11 @@ Expr ParsingContext::_get_first_attr( Expr self, String name ) {
         return self;
 
     Type *type = self->ptype();
-
     type->parse();
-    for( Type::Attr &at : type->attributes ) {
-        if ( at.name == name ) {
-            if ( at.off == -2 )
-                TODO;
-            return at.off >= 0 ? rcast( at.val->type(), add( self, at.off ) ) : at.val;
-        }
-    }
+
+    for( Type::Attr &at : type->attributes )
+        if ( at.name == name )
+            return type->attr_expr( self, at );
 
     return Expr();
 }
@@ -210,6 +207,7 @@ void ParsingContext::_get_attr_clist( Vec<Expr> &lst, Expr self, String name ) {
 
     Type *type = self->ptype();
     type->parse();
+
     for( Type::Attr &at : type->attributes )
         if ( at.name == name and ( at.val->flags & Inst::SURDEF ) )
             lst << at.val;
@@ -368,10 +366,10 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
             if ( not ci[ i ].c->ast_item->pertinence ) // if test not done during the computed pertinence step
                 trials[ i ] = ci[ i ].c->test( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), this, self_ptr );
 
-            if ( trials[ i ]->cond.error() )
-                return trials[ i ]->cond;
 
             if ( trials[ i ]->ok() ) {
+                if ( trials[ i ]->cond.error() )
+                    return trials[ i ]->cond;
                 if ( trials[ i ]->cond->always( true ) ) {
                     has_guaranted_pertinence = true;
                     guaranted_pertinence = ci[ i ].pertinence;
@@ -384,6 +382,8 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
         if ( nb_ok == 0 ) {
             std::ostringstream ss;
             ss << "No matching surdef";
+            PRINT( s->callables.size() );
+            PRINT( ci.size() );
             //            if ( self ) {
             //                ss << " (looking for '" << *self.type;
             //                if ( lst_def.size() )
@@ -392,7 +392,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
             //                ss << ")";
             //            }
             ErrorList::Error &err = error_msg( ss.str() );
-            for( int i = 0; i < nb_surdefs; ++i )
+            for( int i = 0; i < ci.size(); ++i )
                 err.ap( ci[ i ].c->ast_item->_src->c_str(), ci[ i ].c->ast_item->_off, std::string( "possibility (" ) + trials[ i ]->reason + ")" );
             std::cerr << err;
             return Expr();
@@ -462,6 +462,23 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
         //        if ( am != APPLY_MODE_PARTIAL_INST )
         //            apply( get_attr( res, STRING_init_NUM ), nu, u_args, nn, n_name, n_args, ParsingContext::APPLY_MODE_STD );
         //        return res;
+        TODO;
+    }
+
+    // Lambda
+    if ( f_type == ip->type_Lambda ) {
+        SI64 pl;
+        if ( not f->get( cond )->get_val( &pl, 64 ) )
+            return ret_error( "expecting a known value", false, __FILE__ , __LINE__ );
+        Ast_Lambda *al = reinterpret_cast<Ast_Lambda *>( ST( pl ) );
+        if ( nn )
+            return ret_error( "TODO: named arguments for lambda expressions" );
+        if ( al->names.size() > nu )
+            return ret_error( "Too much arguments for lambda expressions" );
+        ParsingContext ns( 0, this, "Lambda_" + to_string( al ) );
+        for( int i = 0; i < al->names.size(); ++i )
+            ns.reg_var( al->names[ i ], u_args[ i ] );
+        return al->body->parse_in( ns );
     }
 
     // f.apply ...
@@ -470,6 +487,8 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
     //        return ip->error_var();
 
     //    return apply( applier, nu, u_args, nn, n_name, n_args, am );
+    disp_error( "call for type..." );
+    PRINT( *f_type );
     PRINT( f );
     TODO;
     return Expr();

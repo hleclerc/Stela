@@ -84,9 +84,10 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
             }
         }
 
+        // default initialization
         int cpt = 0;
         for( Type::Attr &a : self_type->attributes )
-            if ( a.off >= 0 and not initialised_args[ cpt ] )
+            if ( a.off_expr and initialised_args[ cpt ] == false )
                 ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ), not ( a.val->flags & Inst::PART_INST ), &a.val );
         ++cpt;
     }
@@ -182,7 +183,6 @@ Callable::Trial *Def::test( int nu, Expr *vu, int nn, const String *names, Expr 
         if ( not ast_item->arg_constraints[ i ].size() )
             continue;
         Expr v = res->ns.get_var( ast_item->arguments[ i ] );
-        PRINT( v );
         String n = v->ptype()->orig->ast_item->name;
         if ( int t = ast_item->arg_constraints[ i ].size() ) {
             for( int j = 0; ; ++j ) {

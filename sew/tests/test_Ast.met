@@ -235,17 +235,21 @@ class CUInt
                 break
             val /= 128
             cpt += 1
-        
+
+def ceil a, b
+    ( a + b - 1 ) / b * b
         
 # a := CUInt 0
 # ___info a
 class Toto
-    attr := PI16 13
-    atts := PI16 26
-    def select
-        attr
+    a := PI16 13
+    b := ___repeat PI8, x => 5
+    c := PI16 26
+    
+    static def size_init
+        4 + 5
         
-a := Toto()
-___info a.attr
-___info a.atts
-___info a
+        
+t := Toto()
+___info t.a
+

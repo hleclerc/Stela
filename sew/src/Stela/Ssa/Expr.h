@@ -52,6 +52,7 @@ public:
     operator bool() const { return inst; }
 
     bool error() const { return not inst; }
+    bool null () const { return not inst; }
 
     const Inst *operator->() const { return inst; }
     Inst *operator->() { return inst; }

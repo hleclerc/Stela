@@ -29,8 +29,10 @@
 #include "../Ast/Ast_Callable.h"
 #include "../System/Assert.h"
 #include "../System/Math.h"
+#include "Symbol.h"
 #include "Class.h"
 #include "Rcast.h"
+#include "Room.h"
 #include "Type.h"
 #include "Op.h"
 
@@ -86,11 +88,10 @@ Expr Type::size( Expr obj ) {
     int s = size();
     if ( s >= 0 )
         return Expr( s );
+    PRINT( _len_expr );
+
+    TODO;
     Expr res( 0 );
-    for( Attr &attr : attributes ) {
-        PRINT( attr.name );
-        TODO;
-    }
     return res;
 }
 
@@ -115,7 +116,7 @@ Type::Attr *Type::find_attr( String name ) {
 
 Expr Type::find_static_attr( String name ) {
     Attr *attr = find_attr( name );
-    if ( attr == 0 or attr->off != -1 )
+    if ( attr == 0 or not attr->off_expr.null() )
         return Expr();
     if ( attr->val->flags & Inst::SURDEF ) {
         // SurdefList
@@ -125,17 +126,15 @@ Expr Type::find_static_attr( String name ) {
         for( Attr *attr : attr_list )
             if ( attr->val->flags & Inst::STATIC )
                 expr_list << attr->val;
+        if ( expr_list.size() == 0 )
+            return Expr();
         return ip->pc->_make_surdef_list( expr_list );
     }
     return attr->val;
 }
 
 Expr Type::attr_expr( Expr self, Type::Attr &a ) {
-    if ( a.off == -2 )
-        TODO;
-    if ( a.off == -1 )
-        return a.val;
-    return rcast( a.val->type(), add( self, a.off ) );
+    return a.off_expr.null() ? a.val : rcast( a.val->type(), add( self, a.off_expr ) );
 }
 
 bool Type::get_val( void *res, Type *type, const PI8 *data, const PI8 *knwn ) {
@@ -181,39 +180,71 @@ void Type::parse() {
         ns.reg_var( orig->ast_item->arguments[ i ], parameters[ i ], true );
     orig->ast_item->block->parse_in( ns );
 
+    _symbol = room( symbol( this, "symbol_for_type" ) );
+
+    _len_expr = ns.base_size;
     _len = ns.base_size;
     _ali = ns.base_alig;
 
     for( ParsingContext::NamedVar &nv : ns.variables ) {
         if ( nv.expr->flags & Inst::SURDEF ) {
-            attributes << Attr{ -1, nv.expr, nv.name };
+            attributes << Attr{ Expr(), nv.expr, nv.name };
         } else {
+            Type *rep_type;
+            Expr  rep_func;
             int ali = 0;
             if ( nv.expr->ptype() == ip->type_Repeated ) {
-                SI64 p_type; if ( not nv.expr->get()->get_val( &p_type, 64 ) ) ERROR( "..." );
-                Type *type = reinterpret_cast<Type *>( (ST)p_type );
-                ali = type->alig();
-                _len = -2;
+                SI64 rep_dat[ 2 ]; if ( not nv.expr->get()->get_val( rep_dat, 2 * 64 ) ) ERROR( "..." );
+                rep_type = reinterpret_cast<Type *>( (ST)rep_dat[ 0 ] );
+                rep_func = reinterpret_cast<Inst *>( (ST)rep_dat[ 1 ] );
+                ali = rep_type->alig();
             } else {
                 ali = nv.expr->ptype()->alig();
             }
 
             _ali = ppcm( _ali, ali );
-            if ( _len >= 0 )
-                _len = ceil( _len, ali );
-
-            attributes << Attr{ _len, nv.expr, nv.name };
-
             if ( _len >= 0 ) {
+                _len = ceil( _len, ali );
+                _len_expr = _len;
+            } else {
+                Expr args[] = { room( _len_expr ), room( ali ) };
+                _len_expr = ns.apply( ns.get_var( "ceil" ), 2, args );
+                if ( _len_expr )
+                    _len_expr = _len_expr->get( ns.cond );
+            }
+
+            attributes << Attr{ _len_expr, nv.expr, nv.name };
+
+            if ( rep_func ) {
+                _len = -1;
+
+                Expr n = ns.apply( rep_func, 1, &_symbol );
+                PRINT( n );
+                PRINT( _len_expr );
+                Expr argm[] = { n, room( rep_type->size( rcast( rep_type, add( _symbol, _len_expr ) ) ) ) };
+                Expr m = ns.apply( ns.get_var( "mul" ), 2, argm );
+                PRINT( m );
+
+                Expr arga[] = { room( _len_expr ), m };
+                _len_expr = ns.apply( ns.get_var( "add" ), 2, arga )->get( ns.cond );
+                PRINT( _len_expr );
+
+            } else {
                 int s = nv.expr->ptype()->size();
-                if ( s >= 0 )
+                if ( s < 0 )
+                    _len = -1;
+
+                if ( _len >= 0 ) {
                     _len += s;
-                else
-                    _len = -2;
+                } else {
+                    Expr attr = rcast( nv.expr->type(), add( _symbol, _len_expr ) );
+                    Expr args[] = { room( _len_expr ), room( attr->size() ) };
+                    _len_expr = ns.apply( ns.get_var( "add" ), 2, args )->get( ns.cond );
+                }
             }
         }
     }
 
     for( ParsingContext::NamedVar &nv : *ns.static_variables )
-        attributes << Attr{ -1, nv.expr, nv.name };
+        attributes << Attr{ Expr(), nv.expr, nv.name };
 }
