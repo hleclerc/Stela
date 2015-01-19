@@ -165,8 +165,8 @@ class Operators:
             O( ""           , "post_dec"              , Needlarg   , 26 ),
             O( ""           , "post_inc"              , Needlarg   , 26 ),
 
-            O( "&"          , "pointer_on"            , Needrarg   , 27 ),
             O( "@"          , "pointed_value"         , Needrarg   , 27 ),
+            O( "&"          , "pointer_on"            , Needrarg   , 27 ),
             O( "$"          , "calc_name"             , Needrarg   , 27 ),
 
             O( "::"         , "doubledoubledot"       , Need2args  , 28 ),
@@ -485,6 +485,9 @@ base_primitives = string.split( """
     inst_of
     repeat
     code
+    repeated_type
+    slice
+    call
 """ ) #
 
 std_strings = string.split( """

@@ -29,6 +29,7 @@
 #include "../Codegen/Codegen.h"
 #include "../System/Memcpy.h"
 #include "GlobalVariables.h"
+#include "Slice.h"
 #include "Type.h"
 #include "Cst.h"
 #include <map>
@@ -102,13 +103,21 @@ public:
         return Inst::_simp_repl_bits( off, val );
     }
     virtual Expr _simp_slice( Type *dst, Expr off ) {
-        TODO;
+        SI32 voff;
+        if ( off->get_val( &voff, ip->type_SI32 ) ) {
+            SI32 sb = ( _size + 7 ) / 8, ns = _size - voff, nb = ( ns + 7 ) / 8;
+            PI8 nd[ nb ];
+            PI8 nk[ nb ];
+            memcpy_bit( nd, 0, _data.ptr() + 0 * sb, voff, ns );
+            memcpy_bit( nk, 0, _data.ptr() + 1 * sb, voff, ns );
+            return cst( dst, ns, nd, nk );
+        }
         return Expr();
     }
 
     virtual Expr _simp_rcast( Type *dst ) {
         int sb = ( _size + 7 ) / 8;
-        return cst( _type, _size, _data.ptr(), _data.ptr() + sb );
+        return cst( dst, _size, _data.ptr(), _data.ptr() + sb );
     }
 
     Vec<PI8> _data; ///< values and known (should not be changed directly)

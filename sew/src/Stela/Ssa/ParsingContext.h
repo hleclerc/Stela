@@ -32,6 +32,7 @@
 
 #include "GlobalVariables.h"
 #include "Inst.h"
+class Varargs;
 
 /**
 */
@@ -60,7 +61,7 @@ public:
     Expr              get_attr( Expr self, String name );
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
-    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD );
+    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD, Varargs *va_size_init = 0 );
     Expr              copy( Expr var );
 
     Type             *type_from_type_expr( Expr type_expr );
@@ -76,6 +77,7 @@ public:
     void              BREAK( int n, Expr cond );
 
 
+    Expr              _make_varars( Vec<Expr> lst, const Vec<String> &names );
     Expr              _make_surdef_list( const Vec<Expr> &lst, Expr self = Expr() );
     Expr              _find_first_var_with_name( String name );
     void              _find_list_of_vars_with_name( Vec<Expr> &res, String name );

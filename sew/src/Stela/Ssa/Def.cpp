@@ -29,7 +29,10 @@
 
 #include "../Ast/Ast_Class.h"
 #include "../Ast/Ast_Def.h"
+#include "Varargs.h"
+#include "Slice.h"
 #include "Class.h"
+#include "Room.h"
 #include "Type.h"
 #include "Inst.h"
 #include "Def.h"
@@ -42,7 +45,7 @@ Def::TrialDef::TrialDef( ParsingContext *caller, Def *orig ) : orig( orig ), ns(
 Def::TrialDef::~TrialDef() {
 }
 
-Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
+Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *va_size_init ) {
     if ( apply_mode != ParsingContext::APPLY_MODE_STD )
         TODO;
 
@@ -51,13 +54,65 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
 
     // particular case
     if ( orig->ast_item->name == "init" and not self.error() ) {
-        // init attributes
         Type *self_type = self->ptype();
+
+        if ( self_type->size() < 0 )
+            ASSERT( va_size_init, "If size is not known, expecting a va_size_init" );
+
+        Vec<Expr> offsets, lengths;
 
         // ancestors
         const Ast_Class *ac = static_cast<const Ast_Class *>( self_type->orig->ast_item );
         if ( ac->inheritance.size() )
             TODO;
+
+        // offsets
+        Expr off( 0 );
+        for( Type::Attr &a : self_type->attributes ) {
+            if ( a.off_expr ) {
+                int ali = a.val->ptype()->alig();
+                if ( a.val->ptype() == ip->type_Repeated ) {
+                    SI64 rep_dat[ 2 ]; if ( not a.val->get()->get_val( rep_dat, 2 * 64 ) ) ERROR( "..." );
+                    Type *rep_type = reinterpret_cast<Type *>( (ST)rep_dat[ 0 ] );
+                    ali = rep_type->alig();
+                }
+
+                // alig
+                Expr args[] = { room( off ), room( ali ) };
+                off = caller->apply( ns.get_var( "ceil" ), 2, args );
+                if ( not off )
+                    return off;
+                off = off->get( caller->cond );
+
+                // reg offset
+                offsets << off;
+
+                // add length
+                Expr arga[] = { room( off ), Expr() };
+
+                int s = a.val->ptype()->size();
+                if ( s < 0 or a.val->ptype() == ip->type_Repeated ) {
+                    ASSERT( va_size_init, "..." );
+                    for( int i = 0; ; ++i ) {
+                        if ( i == va_size_init->names.size() )
+                            return caller->ret_error( "attribute of variable size does not have a size_init value" );
+                        if ( va_size_init->names[ i ] == a.name ) {
+                            arga[ 1 ] = va_size_init->exprs[ i ];
+                            break;
+                        }
+                    }
+                } else
+                    arga[ 1 ] = room( s );
+
+                lengths << arga[ 1 ];
+                off = ns.apply( ns.get_var( "add" ), 2, arga )->get( ns.cond );
+            } else {
+                offsets << Expr();
+                lengths << Expr();
+            }
+        }
+        // for( auto p : offsets )
+        //     PRINT( p.second );
 
         // : attr( val ), ...
         const Ast_Def *ad = static_cast<const Ast_Def *>( orig->ast_item );
@@ -86,13 +141,20 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
 
         // default initialization
         int cpt = 0;
-        for( Type::Attr &a : self_type->attributes ) {
+        for( int num_attr = 0; num_attr < self_type->attributes.size(); ++num_attr ) {
+            Type::Attr &a = self_type->attributes[ num_attr ];
             if ( a.off_expr and initialised_args[ cpt ] == false ) {
                 ns.current_off = a.off;
                 ns.current_src = a.src;
 
-                PRINT( self_type->attr_expr( self, a ) );
-                ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ), not ( a.val->flags & Inst::PART_INST ), &a.val );
+                if ( a.val->ptype() == ip->type_Repeated ) {
+                    // call ___repeated_init rep, var, len, varargs
+                    Vec<Expr>   init_exprs;
+                    Vec<String> init_names;
+                    Expr args[] = { a.val, add( self, offsets[ num_attr ] ), lengths[ num_attr ], ns._make_varars( init_exprs, init_names ) };
+                    ns.apply( ns.get_var( "___repeated_init" ), 4, args );
+                } else
+                    ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ), not ( a.val->flags & Inst::PART_INST ), &a.val );
             }
         }
         ++cpt;
@@ -106,83 +168,75 @@ Def::Def( const Ast_Callable *ast_item ) : Callable( ast_item ) {
 }
 
 Callable::Trial *Def::test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self ) {
-    if ( ast_item->pertinence )
-        TODO;
+    //
+    if ( pnu + pnn )
+        TODO; // make a vu and names list
+
+    //
     TrialDef *res = new TrialDef( caller, this );
     if ( self ) {
         res->ns.reg_var( "self", self );
         res->ns.self = self;
     }
 
+    //
+    if ( ast_item->pertinence )
+        TODO;
+
     // nb arguments
     if ( pnu + pnn + nu + nn < ast_item->min_nb_args() ) return res->wr( "no enough arguments" );
     if ( pnu + pnn + nu + nn > ast_item->max_nb_args() ) return res->wr( "To much arguments" );
 
-    if ( pnu + pnn )
-        TODO;
-    if ( ast_item->varargs ) {
-        TODO; // var ordering
 
-        //        Vec<Expr> v_args;
-        //        Vec<int> v_names;
-        //        for( int i = 0; i < nn; ++i ) {
-        //            int o = arg_names.first_index_equal_to( names[ i ] );
-        //            if ( o >= 0 ) {
-        //                if ( arg_ok[ o ] )
-        //                    ip->disp_error( "arg is already assigned", true );
-        //                scope.local_vars << vn[ i ];
-        //                arg_ok[ o ] = true;
-        //            } else {
-        //                v_args  << vn   [ i ];
-        //                v_names << names[ i ];
-        //            }
-        //        }
+    Vec<Expr  > v_args;
+    Vec<String> v_names;
 
-        //        for( int i = 0; i < arg_names.size(); ++i ) {
-        //            if ( arg_ok[ i ] )
-        //                ip->disp_error( "arg is already assigned", true );
-        //            scope.local_vars << vu[ i ];
-        //            arg_ok[ i ] = true;
-        //        }
-        //        for( int i = arg_names.size(); i < nu; ++i )
-        //            v_args << vu[ i ];
+    // unnamed args
+    int beg_va = std::min( nu, (int)ast_item->arguments.size() );
+    for( int i = 0; i < beg_va; ++i )
+        res->ns.reg_var( ast_item->arguments[ i ], vu[ i ] );
+    for( int i = beg_va; i < nu; ++i )
+        v_args << vu[ i ];
 
-
-        //        Expr varargs = ip->make_Varargs( v_args, v_names );
-        //        scope.reg_var( STRING_varargs_NUM, varargs );
-    } else {
-        // unnamed args
-        for( int i = 0; i < nu; ++i )
-            res->ns.reg_var( ast_item->arguments[ i ], vu[ i ] );
-        // basic check
+    // basic check for named args
+    if ( not ast_item->varargs )
         for( int n = 0; n < nn; ++n )
             if ( not ast_item->arguments.contains( names[ n ] ) )
                 return res->wr( "named argument that does not appear in def args" );
-        // named args
-        Vec<bool> used_arg( Size(), nn, false );
-        for( int i = nu; i < ast_item->arguments.size(); ++i ) {
-            String arg_name = ast_item->arguments[ i ];
-            for( int n = 0; ; ++n ) {
-                if ( n == nn ) {
-                    // not specified arg
-                    int j = i - ( ast_item->arguments.size() - ast_item->default_values.size() );
-                    if ( j < 0 )
-                        return res->wr( "unspecified mandatory argument" );
-                    Expr v = ast_item->default_values[ j ]->parse_in( res->ns );
-                    res->ns.reg_var( arg_name, v );
-                    break;
-                }
-                if ( arg_name == names[ n ] ) {
-                    res->ns.reg_var( arg_name, vn[ n ] );
-                    used_arg[ n ] = true;
-                    break;
-                }
+
+    // named args
+    Vec<bool> used_arg( Size(), nn, false );
+    for( int i = nu; i < ast_item->arguments.size(); ++i ) {
+        String arg_name = ast_item->arguments[ i ];
+        for( int n = 0; ; ++n ) {
+            if ( n == nn ) {
+                // not specified arg
+                int j = i - ( ast_item->arguments.size() - ast_item->default_values.size() );
+                if ( j < 0 )
+                    return res->wr( "unspecified mandatory argument" );
+                Expr v = ast_item->default_values[ j ]->parse_in( res->ns );
+                res->ns.reg_var( arg_name, v );
+                break;
+            }
+            if ( arg_name == names[ n ] ) {
+                res->ns.reg_var( arg_name, vn[ n ] );
+                used_arg[ n ] = true;
+                break;
             }
         }
-        for( int n = 0; n < nn; ++n )
-            if ( not used_arg[ n ] )
-                res->ns.disp_error( "arg assigned twice", true );
     }
+
+    for( int n = 0; n < nn; ++n ) {
+        if ( not used_arg[ n ] ) {
+            v_args  << vn[ n ];
+            v_names << names[ n ];
+        }
+    }
+
+    if ( ast_item->varargs )
+        res->ns.reg_var( "varargs", res->ns._make_varars( v_args, v_names ) );
+    else if ( v_args.size() )
+        return res->wr( "arg name not in the declaration" );
 
     // arg constraints
     for( int i = 0; i < ast_item->arg_constraints.size(); ++i ) {

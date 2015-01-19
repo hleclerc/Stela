@@ -43,7 +43,7 @@ public:
     struct TrialClass : Trial {
         TrialClass( ParsingContext *caller, Class *orig );
         virtual ~TrialClass();
-        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self );
+        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *va_size_init );
         ParsingContext ns;
         Class *orig;
     };
@@ -51,6 +51,8 @@ public:
     Class( const Ast_Callable *ast_item = 0 );
     virtual Trial *test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
     Type *type_for( Vec<Expr> args );
+
+    static Expr call( ParsingContext &ns, Type *type, int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *_va_size_init );
 
     Vec<Type *,-1,1> types;
 };

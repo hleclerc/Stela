@@ -27,26 +27,5 @@
 ****************************************************************************/
 
 
-#ifndef DEF_H
-#define DEF_H
+#include "Varargs.h"
 
-#include "ParsingContext.h"
-#include "Callable.h"
-
-/**
-*/
-class Def : public Callable {
-public:
-    struct TrialDef : Trial {
-        TrialDef( ParsingContext *caller, Def *orig );
-        virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *va_size_init );
-        Def           *orig;
-        ParsingContext ns;
-    };
-
-    Def( const Ast_Callable *ast_item );
-    virtual Trial *test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
-};
-
-#endif // DEF_H

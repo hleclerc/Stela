@@ -238,3 +238,5 @@ src/Stela/Ssa/While.h
 src/Stela/Ssa/While.cpp
 src/Stela/Ssa/CstComputedSize.h
 src/Stela/Ssa/CstComputedSize.cpp
+src/Stela/Ssa/Varargs.h
+src/Stela/Ssa/Varargs.cpp

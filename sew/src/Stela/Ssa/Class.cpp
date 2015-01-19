@@ -29,6 +29,7 @@
 
 #include "../Ast/Ast_Class.h"
 #include "CstComputedSize.h"
+#include "Varargs.h"
 #include "Class.h"
 #include "Type.h"
 #include "Room.h"
@@ -42,23 +43,27 @@ Class::TrialClass::TrialClass( ParsingContext *caller, Class *orig ) : ns( 0, ca
 Class::TrialClass::~TrialClass() {
 }
 
-Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self ) {
-    Vec<Expr> args;
-    for( String n : orig->ast_item->arguments )
-        args << ns.get_var( n );
-
-    Type *type = orig->type_for( args );
-    ns.cond = and_boolean( ns.cond, cond );
-    // ns.class_scope = type;
-
+Expr Class::call( ParsingContext &ns, Type *type, int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *_va_size_init ) {
     // start with a unknown cst
     Expr ret;
+    Varargs *va_size_init = 0;
     if ( type->size() < 0 ) {
         Expr func = type->find_static_attr( "size_init" );
         if ( func.error() )
             return caller->ret_error( "Impossible to find a static variable named 'size_init' in type (of variable size) to be instancied" );
         Expr val = caller->apply( func, nu, vu, nn, names, vn );
-        ret = room( cst_computed_size( type, val ) );
+        if ( val->ptype() != ip->type_Varargs )
+            return caller->ret_error( "size_init must return a varargs" );
+        SI64 ptr;
+        if ( not val->get( caller->cond )->get_val( &ptr, 64 ) )
+            return caller->ret_error( "Expecting a known value" );
+        va_size_init = reinterpret_cast<Varargs *>( ST( ptr ) );
+        if ( va_size_init->exprs.size() != va_size_init->names.size() )
+            return caller->ret_error( "Expecting a varargs with named arguments only" );
+        Expr tot( 0 );
+        for( Expr s : va_size_init->exprs )
+            tot = add( tot, s->get( caller->cond ) );
+        ret = room( cst_computed_size( type, tot ) );
     } else
         ret = room( cst( type, type->size(), 0, 0 ) );
 
@@ -68,9 +73,21 @@ Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Exp
 
     // call init
     if ( apply_mode == ParsingContext::APPLY_MODE_STD )
-        ns.apply( ns.get_attr( ret, "init" ), nu, vu, nn, names, vn );
+        ns.apply( ns.get_attr( ret, "init" ), nu, vu, nn, names, vn, ParsingContext::APPLY_MODE_STD, va_size_init );
 
     return ret;
+}
+
+Expr Class::TrialClass::call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *_va_size_init ) {
+    Vec<Expr> args;
+    for( String n : orig->ast_item->arguments )
+        args << ns.get_var( n );
+
+    Type *type = orig->type_for( args );
+    ns.cond = and_boolean( ns.cond, cond );
+    // ns.class_scope = type;
+
+    return Class::call( ns, type, nu, vu, nn, names, vn, pnu, pvu, pnn, pnames, pvn, apply_mode, caller, cond, self, _va_size_init );
 }
 
 Class::Class( const Ast_Callable *ast_item ) : Callable( ast_item ) {

@@ -93,6 +93,7 @@ GlobalVariables::GlobalVariables() {
     type_Def       ->_len = 64; type_Def       ->_ali = 32; type_Def       ->_pod = 1;
     type_Class     ->_len = 64; type_Class     ->_ali = 32; type_Class     ->_pod = 1;
     type_SurdefList->_len = 64; type_SurdefList->_ali = 32; type_SurdefList->_pod = 1;
+    type_Varargs   ->_len = 64; type_Varargs   ->_ali = 32; type_Varargs   ->_pod = 1;
     type_Bool      ->_len =  1; type_Bool      ->_ali = 1;
 
     type_ST  = sizeof( void * ) == 8 ? type_SI64 : type_SI32;

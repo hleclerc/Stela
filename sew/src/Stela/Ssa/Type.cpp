@@ -221,10 +221,10 @@ void Type::parse() {
                 _len = -1;
 
                 Expr n = ns.apply( rep_func, 1, &_symbol );
-                Expr argm[] = { n, room( rep_type->size( rcast( rep_type, add( _symbol, _len_expr ) ) ) ) };
-                Expr m = ns.apply( ns.get_var( "mul" ), 2, argm );
+                // Expr argm[] = { n, room( rep_type->size( rcast( rep_type, add( _symbol, _len_expr ) ) ) ) };
+                // Expr m = ns.apply( ns.get_var( "mul" ), 2, argm );
 
-                Expr arga[] = { room( _len_expr ), m };
+                Expr arga[] = { room( _len_expr ), n };
                 _len_expr = ns.apply( ns.get_var( "add" ), 2, arga )->get( ns.cond );
             } else {
                 int s = nv.expr->ptype()->size();

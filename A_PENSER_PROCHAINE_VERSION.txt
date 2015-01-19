@@ -7,3 +7,5 @@
 
 * constify -> vÃ©rifie que la variable n'est pas rÃ©fÃ©rencÃ©e ailleurs, et la met const...
 * Utiliser Scanner (pour Token) et Parser
+
+* ne pas utiliser a = ... pour les arguments données par nom, mais plutôt l'opérateur utilisé pour décrire les map

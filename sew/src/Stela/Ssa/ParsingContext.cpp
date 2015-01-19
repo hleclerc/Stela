@@ -34,6 +34,7 @@
 #include "ParsingContext.h"
 #include "SurdefList.h"
 #include "Callable.h"
+#include "Varargs.h"
 #include "Select.h"
 #include "Class.h"
 #include "Rcast.h"
@@ -246,7 +247,7 @@ Expr ParsingContext::get_attr( Expr self, String name ) {
     return _make_surdef_list( lst, self );
 }
 
-Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *n_name, Expr *n_args, ApplyMode am ) {
+Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *n_name, Expr *n_args, ApplyMode am, Varargs *va_size_init ) {
     if ( f.error() )
         return f;
     for( int i = 0; i < nu; ++i )
@@ -384,8 +385,6 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
         if ( nb_ok == 0 ) {
             std::ostringstream ss;
             ss << "No matching surdef";
-            PRINT( s->callables.size() );
-            PRINT( ci.size() );
             //            if ( self ) {
             //                ss << " (looking for '" << *self.type;
             //                if ( lst_def.size() )
@@ -440,7 +439,7 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
         for( int i = 0; i < nb_surdefs; ++i ) {
             if ( trials[ i ]->ok() ) {
                 Expr loc_cond = and_boolean( cond, trials[ i ]->cond );
-                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, self_ptr );
+                Expr loc = trials[ i ]->call( nu, u_args, nn, n_name, n_args, pnu, pu_args.ptr(), pnn, pn_names.ptr(), pn_args.ptr(), am, this, loc_cond, self_ptr, va_size_init );
                 res << std::make_pair( loc_cond, loc );
 
                 if ( trials[ i ]->cond->always( true ) )
@@ -456,15 +455,9 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
 
     //
     if ( f_type == ip->type_Type ) {
-        //        Expr res = room( cst( ip->type_from_type_var( f ) ) );
-        //        if ( am == APPLY_MODE_NEW )
-        //            TODO;
-
-        //        // call init
-        //        if ( am != APPLY_MODE_PARTIAL_INST )
-        //            apply( get_attr( res, STRING_init_NUM ), nu, u_args, nn, n_name, n_args, ParsingContext::APPLY_MODE_STD );
-        //        return res;
-        TODO;
+        ParsingContext ns( this );
+        Type *type = type_from_type_expr( f );
+        return Class::call( ns, type, nu, u_args, nn, n_name, n_args, 0, 0, 0, 0, 0, am, this, cond, self, 0 );
     }
 
     // Lambda
@@ -563,4 +556,13 @@ void ParsingContext::BREAK( int n, Expr cond ) {
     //        }
     //    }
     return disp_error( "nothing to break" );
+}
+
+Expr ParsingContext::_make_varars( Vec<Expr> lst, const Vec<String> &names ) {
+    Varargs *res = new Varargs;
+    res->exprs = lst;
+    res->names = names;
+    SI64 val = ST( res );
+    return room( cst( ip->type_Varargs, 64, &val ) );
+
 }

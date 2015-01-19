@@ -31,8 +31,10 @@
 #define CALLABLE_H
 
 #include "Inst.h"
-class Ast_Callable;
+
 class ParsingContext;
+class Ast_Callable;
+class Varargs;
 
 /**
 */
@@ -42,7 +44,7 @@ public:
         Trial( const char *reason = 0 );
         virtual ~Trial();
 
-        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *ParsingContext, const Expr &cond, Expr self );
+        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *ParsingContext, const Expr &cond, Expr self, Varargs *va_size_init );
         Trial *wr( const char *r ) { reason = r; return this; }
         bool ok() const { return not reason; }
 

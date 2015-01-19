@@ -27,26 +27,23 @@
 ****************************************************************************/
 
 
-#ifndef DEF_H
-#define DEF_H
+#ifndef VARARGS_H
+#define VARARGS_H
 
-#include "ParsingContext.h"
-#include "Callable.h"
+#include "Inst.h"
 
 /**
 */
-class Def : public Callable {
+class Varargs {
 public:
-    struct TrialDef : Trial {
-        TrialDef( ParsingContext *caller, Def *orig );
-        virtual ~TrialDef();
-        virtual Expr call( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, int apply_mode, ParsingContext *caller, const Expr &cond, Expr self, Varargs *va_size_init );
-        Def           *orig;
-        ParsingContext ns;
-    };
+    Vec<Expr  > exprs;
+    Vec<String> names;
 
-    Def( const Ast_Callable *ast_item );
-    virtual Trial *test( int nu, Expr *vu, int nn, const String *names, Expr *vn, int pnu, Expr *pvu, int pnn, const String *pnames, Expr *pvn, ParsingContext *caller, Expr self );
+    int     nu() const { return exprs.size() - names.size(); } ///< nb unnamed
+    int     nn() const { return names.size(); } ///< nb named
+    Expr   *ua() { return exprs.ptr(); } ///< unnamed arguments
+    Expr   *na() { return exprs.ptr() + nu(); } ///< amed arguments
+    String *ns() { return names.ptr(); } ///< names (named strings)
 };
 
-#endif // DEF_H
+#endif // VARARGS_H
