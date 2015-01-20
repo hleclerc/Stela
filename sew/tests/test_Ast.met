@@ -266,7 +266,7 @@ def call func, args
     ___call func, args
     
 def ___repeated_init rep, var, len, varargs
-    rty ~= ___repeated_type rep
+    rty := ___repeated_type rep
     off := 0
     while true
         off = ceil off, aligof rty
@@ -288,5 +288,17 @@ class Toto
         make_varargs b = 8 * 5
     
 t := Toto()
-___info t.a
+___disp t.a
+# class A
+    # b := 10
+    # c := 20
+    
+# var := A()
+# obj := binary_slice SI32, var, 16
+# obh := binary_slice SI32, obj, 16
+# ___info obj
+# ___info obh
+# obh = 17
+# ___info obh
+    
 

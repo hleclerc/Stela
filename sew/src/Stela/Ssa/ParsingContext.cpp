@@ -32,6 +32,7 @@
 #include "../Ast/Ast_Lambda.h"
 #include "../Met/Lexer.h"
 #include "ParsingContext.h"
+#include "IpSnapshot.h"
 #include "SurdefList.h"
 #include "Callable.h"
 #include "Varargs.h"
@@ -58,11 +59,16 @@ ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, 
     scope_type  = SCOPE_TYPE_STD;
     base_size   = 0;
     base_alig   = 1;
-    cont        = 0;
     current_src = 0;
+    for_block   = 0;
 
     static std::map<String,Vec<NamedVar> > static_variables_map;
     static_variables = &static_variables_map[ scope_name ];
+}
+
+ParsingContext::~ParsingContext() {
+    for( IpSnapshot *is = ip->ip_snapshot; is; is = is->prev )
+        is->parsing_contexts.erase( this );
 }
 
 void ParsingContext::add_inc_path( String path ) {
@@ -544,17 +550,19 @@ Expr ParsingContext::error_var() {
 }
 
 void ParsingContext::BREAK( int n, Expr cond ) {
-    TODO;
-    //    for( Scope *s = this; s; s = s->caller ? s->caller : s->parent ) {
-    //        s->cond = s->cond and not cond; SAVE ip_snapshot
-    //        // found a for or a while ?
-    //        if ( s->cont ) {
-    //            *s->cont = *s->cont and not cond;
-    //            if ( n > 1 )
-    //                s->rem_breaks << RemBreak{ n - 1, cond };
-    //            return;
-    //        }
-    //    }
+    for( ParsingContext *s = this; s; s = s->caller ? s->caller : s->parent ) {
+        if ( IpSnapshot *is = ip->ip_snapshot )
+            is->reg_parsing_context( s );
+        s->cond = and_boolean( s->cond, not_boolean( cond ) );
+        // found a for or a while ?
+        if ( s->cont ) {
+            s->cont = and_boolean( s->cont, not_boolean( cond ) );
+            if ( n > 1 )
+                s->rem_breaks << RemBreak{ n - 1, cond };
+            return;
+        }
+    }
+
     return disp_error( "nothing to break" );
 }
 

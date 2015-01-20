@@ -50,6 +50,7 @@ public:
     };
 
     ParsingContext( ParsingContext *parent = 0, ParsingContext *caller = 0, String add_scope_name = "" );
+    ~ParsingContext();
 
     void              parse( String filename, String current_dir );
 
@@ -88,7 +89,7 @@ public:
     ParsingContext   *parent;
     ParsingContext   *caller;
     Expr              self;
-    Expr             *cont; ///< wether to continue or not
+    Expr              cont; ///< wether to continue or not
     String            scope_name; ///< used to find static scope
     int               current_off;
     const String     *current_src;
@@ -99,6 +100,7 @@ public:
     int               base_size;
     int               base_alig;
     Vec<RemBreak>     rem_breaks;
+    ParsingContext   *for_block;
 };
 
 

@@ -34,7 +34,7 @@ void Ast_Primitive::_get_info( IrWriter *aw ) const {
 static Expr parse_info( ParsingContext &context, const Ast_Primitive *p ) {
     for( int i = 0; i < p->args.size(); ++i ) {
         Expr e = p->args[ i ]->parse_in( context );
-        std::cout << e << " -> " << e->get( context.cond ) << std::endl;
+        std::cout << e << " -> " << std::flush << e->get( context.cond ) << std::endl;
     }
     return Expr();
 }

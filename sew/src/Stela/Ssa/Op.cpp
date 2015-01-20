@@ -160,6 +160,13 @@ struct BOp : Op<TO> {
         }
         return Inst::get( cond );
     }
+    virtual Type *ptype() {
+        if ( SameType<TO,Op_add>::res or SameType<TO,Op_sub>::res )
+            return this->inp[ 0 ]->ptype(); // hum... not safe
+        ip->pc->disp_error( "Not a pointer type" );
+        ERROR( "Not a pointer type" );
+        return 0;
+    }
     //    virtual void write( Codegen_C *cc ) {
     //        if ( not this->out_reg ) {
     //            to.write_oper( cc->on.write_beg() );

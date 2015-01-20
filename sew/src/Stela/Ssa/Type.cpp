@@ -157,15 +157,17 @@ void Type::write_val( Stream &os, const PI8 *data, const PI8 *knwn ) {
     // if ( orig and )
     int len = size();
     if ( len < 0 )
-        TODO;
-    const char *c = "0123456789ABCDEF";
-    for( int i = 0; i < std::min( len / 8, 4 ); ++i ) {
-        if ( i )
-            os << ' ';
-        os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
-    }
-    if ( len / 8 > 4 )
         os << "...";
+    else {
+        const char *c = "0123456789ABCDEF";
+        for( int i = 0; i < std::min( len / 8, 4 ); ++i ) {
+            if ( i )
+                os << ' ';
+            os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
+        }
+        if ( len / 8 > 4 )
+            os << "...";
+    }
 }
 
 void Type::parse() {

@@ -47,8 +47,8 @@ Expr Ast_While::_parse_in( ParsingContext &context ) const {
         if ( cpt == 20 )
             return context.ret_error( "infinite loop during while parsing" );
 
-        ParsingContext wh_scope( &context, 0, "while_" + to_string( this ) );
-        Expr cont_var( true ); wh_scope.cont = &cont_var;
+        ParsingContext wh_scope( &context, 0, "while_" + to_string( ok ) );
+        wh_scope.cont = true;
         ok->parse_in( wh_scope );
 
         if ( ne != ip->error_list.size() )
@@ -65,6 +65,7 @@ Expr Ast_While::_parse_in( ParsingContext &context ) const {
             unknowns[ it.first ] = unk;
             const_cast<Inst *>( it.first )->set( unk, true );
         }
+        nsv.undo_parsing_contexts();
     }
 
     // corr table (output number -> input number)
@@ -95,20 +96,22 @@ Expr Ast_While::_parse_in( ParsingContext &context ) const {
         else
             const_cast<Inst *>( it.first )->set( it.second, true );
     }
+    nsv.undo_parsing_contexts();
 
     // relaunch the while inst
     ParsingContext wh_scope( &context, 0, "while_" + to_string( ok ) );
-    Expr cont_var( true ); wh_scope.cont = &cont_var;
+    wh_scope.cont = true;
     ok->parse_in( wh_scope );
 
-    if ( cont_var->always( false) ) {
+    if ( wh_scope.cont->always( false ) ) {
         ip->ip_snapshot = nsv.prev;
     } else {
         // make the while instruction
         Vec<Expr> out_exprs;
         for( std::pair<Inst *const,Expr> &it : nsv.rooms )
             out_exprs << const_cast<Inst *>( it.first )->get( context.cond );
-        Expr wout = while_out( out_exprs, cont_var );
+        PRINT( wh_scope.cont );
+        Expr wout = while_out( out_exprs, wh_scope.cont );
 
         cpt = 0;
         Vec<Expr> inp_exprs;

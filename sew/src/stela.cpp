@@ -73,3 +73,19 @@ int main( int argc, char **argv ) {
     return ip->error_list;
 }
 
+
+#include <map>
+#include <iostream>
+#include <sstream>
+using namespace std;
+
+int main() {
+    istringstream is( "le la la li lu" );
+    map<string,int> cpt;
+    string tmp;
+    while ( is >> tmp )
+        cpt[ tmp ]++;
+    for( pair<string,int>::iterator iter = cpt.begin(); iter != cpt.end(); ++iter )
+        cout << iter->first << " " << iter->second << endl;
+}
+

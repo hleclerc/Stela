@@ -30,21 +30,31 @@
 #ifndef IPSNAPSHOT_H
 #define IPSNAPSHOT_H
 
-#include "Inst.h"
+#include "ParsingContext.h"
 #include <map>
-
 
 /**
 */
 class IpSnapshot {
 public:
+    struct StatePS {
+        Expr                          cond;
+        Expr                          cont;
+        Vec<ParsingContext::RemBreak> rem_breaks;
+    };
+
     IpSnapshot( IpSnapshot *&prev );
     // ~IpSnapshot();
 
-    std::map<Inst *,Expr>  rooms; ///< contains variables, sys_state, ...
-    IpSnapshot           *&iptr;
-    IpSnapshot            *prev;
-    int                    date;
+    void reg_parsing_context( ParsingContext *s );
+    void undo_parsing_contexts();
+
+
+    std::map<ParsingContext *,StatePS>  parsing_contexts; ///<
+    std::map<Inst *,Expr>               rooms; ///< contains variables, sys_state, ...
+    IpSnapshot                        *&iptr;
+    IpSnapshot                         *prev;
+    int                                 date;
 
     static int cur_date;
 };
