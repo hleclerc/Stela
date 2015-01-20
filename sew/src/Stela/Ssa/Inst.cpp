@@ -147,7 +147,7 @@ Vec<Expr> Inst::subs( Vec<Expr> &expr_list, Vec<Expr> &src, Vec<Expr> &dst ) {
     Vec<Expr> created, res;
     for( Expr e : expr_list ) {
         e->subs( created );
-        res << e->op_mp;
+        res << reinterpret_cast<Inst *>( e->op_mp );
     }
     return res;
 }

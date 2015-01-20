@@ -6,6 +6,9 @@ class Def
 
 class SurdefList
     ptr ~= SI64 # pointer to C++ data
+    
+    def select varargs
+        ___select_SurdefList self, varargs
 
 class Varargs
     ptr ~= SI64 # pointer to C++ data
@@ -216,6 +219,9 @@ class Repeated
     type := 0l # pointer to type
     func := 0l # pointer to func that gives the size
 
+class Type
+    ptr := 0l # pointer to C++ data
+
 class Ptr[ T ]
     addr := 0p
     
@@ -277,6 +283,10 @@ def ___repeated_init rep, var, len, varargs
         off += sizeof obj
             
             
+# init_args is a list of list of types to describe arg types for ctor variants
+# def make_code_for_class type, init_args
+    # ___make_code_for type, init_args
+            
 # a := CUInt 0
 # ___info a
 class Toto
@@ -287,8 +297,35 @@ class Toto
     static def size_init
         make_varargs b = 8 * 5
     
-t := Toto()
-___disp t.a
+# t := Toto()
+# make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
+
+class NdListItemBeg[ T, Tnext ]
+    data ~= Ptr[ T ]
+    next ~= Tnext
+    
+    def get_size
+        1 + next.get_size()
+
+class NdListItemEnd
+    def get_size
+        0
+
+# TV is of kind VarargsItemBeg[ T1, VarargsItemBeg[ T2, VarargsItemEnd ] ]
+# nb_dims must be a positive integer
+# sizes contains the size for each dim recursively. E.g. [ 2, 4, 4 ] for a 2x4 matrix
+class NdList[ TV, nb_dims, sizes ]
+    values ~= TV
+
+# l := [ 10, 20 ]
+
+class To[ T ]
+    ___info T
+    a := 100
+t := To[ SI32 ]()
+u := To[ SI32 ]()
+
+# ___disp t.a
 # class A
     # b := 10
     # c := 20

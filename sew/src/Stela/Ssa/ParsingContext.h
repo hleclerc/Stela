@@ -63,10 +63,10 @@ public:
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
     Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD, Varargs *va_size_init = 0 );
+    bool              always_equal( Expr a, Expr b );
     Expr              copy( Expr var );
 
     Type             *type_from_type_expr( Expr type_expr );
-    Expr              make_type_var( Type *type );
     Type             *ptr_type_for( Type *ref );
     Expr              type_expr( Type *ref );
 

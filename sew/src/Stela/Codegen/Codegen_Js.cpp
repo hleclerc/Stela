@@ -47,12 +47,41 @@ void Codegen_Js::gen_type( Stream &out, Type *type ) {
     Expr obj = symbol( type, "this" );
     set_os( &out );
 
+    on << n << " = (function() {";
+    on << "    var am = asm_mod.push( function( stdlib, foreign, buffer ) {";
+    on << "        \"use asm\";";
+    on << "        return {";
+    on << "            size_in_bits: size_in_bits,";
+    on << "            get_val     : get_val,";
+    on << "            set_val     : set_val,";
+    on << "            init        : init";
+    on << "        };";
+    on << "    } );";
+
+    on << "    function " << n << "( offset, parent ) {";
+    on << "        this.offset = offset == null ? am.allocate( 1 ) : offset;";
+    on << "        this.parent = parent == null ? undefined : parent;";
+    on << "        am.init( this.offset );";
+    on << "    }";
+
+    on << "    Object.defineProperty( " << n << ".prototype, \"size_in_bits\", {";
+    on << "        get: function() {";
+    on << "            return am.size_in_bits( this.offset );";
+    on << "        }";
+    on << "    });";
+
+    on << "    return " << n << ";";
+    on << "})();";
+
+
+
+
     on << "function " << n << "( array_buffer, offset ) {";
     on << "    this.array_buffer = array_buffer == null ? new ArrayBuffer( 1 ) : array_buffer;";
     on << "    this.offset = offset == null ? 0 : offset;";
     on << "}";
     on << n << ".prototype.size_in_bits = function() {";
-    write_expr( type->size( obj ) );
+    write_expr( obj->size() );
     on << "}";
 
     on << "module.exports = {";

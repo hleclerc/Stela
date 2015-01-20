@@ -80,4 +80,6 @@ CUnsigned = (function() {
             return am.set_val( this.offset, val );
         }
     } );
+    
+    return CUnsigned;
 })();

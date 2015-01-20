@@ -110,7 +110,6 @@ Expr Ast_While::_parse_in( ParsingContext &context ) const {
         Vec<Expr> out_exprs;
         for( std::pair<Inst *const,Expr> &it : nsv.rooms )
             out_exprs << const_cast<Inst *>( it.first )->get( context.cond );
-        PRINT( wh_scope.cont );
         Expr wout = while_out( out_exprs, wh_scope.cont );
 
         cpt = 0;

@@ -58,5 +58,7 @@ struct Room : Inst {
 };
 
 Expr room( Expr val, bool cons ) {
+    if ( val.error() )
+        return val;
     return new Room( val, cons );
 }

@@ -1,4 +1,5 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/SurdefList.h"
 #include "../Ssa/Varargs.h"
 #include "../Ssa/Symbol.h"
 #include "../Ssa/Rcast.h"
@@ -77,9 +78,29 @@ static Expr parse_reassign_rec( ParsingContext &context, const Ast_Primitive *p 
 
 static Expr parse_assign_rec( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_set_ptr_val( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
-static Expr parse_select_SurdefList( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+
+static Expr parse_select_SurdefList( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr self = p->args[ 0 ]->parse_in( context ); if ( self ) self = self->get( context.cond );
+    Expr vara = p->args[ 1 ]->parse_in( context ); if ( vara ) vara = vara->get( context.cond );
+    if ( self.error() or vara.error() )
+        return Expr();
+    SI64 psur, pvar;
+    if ( self->get_val( &psur, 64 ) == false or vara->get_val( &pvar, 64 ) == false )
+        return context.ret_error( "expecting cst values" );
+    SurdefList *sur = reinterpret_cast<SurdefList *>( ST( psur ) );
+    Varargs    *var = reinterpret_cast<Varargs    *>( ST( pvar ) );
+
+    SurdefList *n_sur = new SurdefList( *sur );
+    n_sur->parameters.append( *var );
+
+    SI64 ptr = ST( n_sur );
+    return room( cst( ip->type_SurdefList, 64, &ptr ) );
+}
+
 static Expr parse_ptr_size( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_ptr_alig( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+
 static Expr parse_size_of( ParsingContext &context, const Ast_Primitive *p ) {
     CHECK_NB_ARGS( 1 );
     Expr val = p->args[ 0 ]->parse_in( context );
@@ -87,6 +108,7 @@ static Expr parse_size_of( ParsingContext &context, const Ast_Primitive *p ) {
         val = val->get( context.cond );
     return val ? room( val->size() ) : val;
 }
+
 static Expr parse_alig_of( ParsingContext &context, const Ast_Primitive *p ) {
     CHECK_NB_ARGS( 1 );
     if ( Expr val = p->args[ 0 ]->parse_in( context ) )
@@ -94,6 +116,7 @@ static Expr parse_alig_of( ParsingContext &context, const Ast_Primitive *p ) {
             return room( tp->alig() );
     return Expr();
 }
+
 static Expr parse_typeof( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_address( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_get_slice( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }

@@ -162,7 +162,7 @@ static Expr const_or_copy( Expr &var ) {
 
     if ( var->ptype()->orig == ip->class_SurdefList ) {
         Expr i = ip->pc->apply( var, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
-        return ip->pc->make_type_var( i->ptype() );
+        return ip->pc->type_expr( i->ptype() );
     }
     if ( var.inst->flags & Inst::CONST )
         return var;
@@ -176,19 +176,23 @@ static bool all_eq( Vec<Expr> &a, Vec<Expr> &b ) {
     if ( a.size() != b.size() )
         return false;
     for( int i = 0; i < a.size(); ++i )
-        if ( a[ i ]->get() != b[ i ]->get() )
+        if ( not ip->pc->always_equal( a[ i ], b[ i ] ) )
             return false;
     return true;
 }
 
-Type *Class::type_for( Vec<Expr> args ) {
+Type *Class::type_for( Vec<Expr> _args ) {
+    Vec<Expr> args( Rese(), _args.size() );
+    for( Expr a : _args )
+        args << const_or_copy( a );
+
     for( Type *t : types )
         if ( all_eq( t->parameters, args ) )
             return t;
 
     Type *res = new Type( this );
-    for( int i = 0; i < args.size(); ++i )
-        res->parameters << const_or_copy( args[ i ] );
+    for( Expr a : args )
+        res->parameters << const_or_copy( a );
     types << res;
 
     return res;

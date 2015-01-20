@@ -30,7 +30,7 @@
 #ifndef SURDEFLIST_H
 #define SURDEFLIST_H
 
-#include "Inst.h"
+#include "Varargs.h"
 
 /**
 */
@@ -42,7 +42,7 @@ public:
     };
 
     Vec<Expr,-1,1> callables;
-    Expr           parameters;
+    Varargs        parameters;
     Expr           self;
 };
 

@@ -31,6 +31,7 @@
 #include "../Ast/Ast_Callable.h"
 #include "../Ast/Ast_Lambda.h"
 #include "../Met/Lexer.h"
+#include "CstComputedSize.h"
 #include "ParsingContext.h"
 #include "IpSnapshot.h"
 #include "SurdefList.h"
@@ -125,13 +126,14 @@ String ParsingContext::find_src( String filename, String current_dir ) const {
 }
 
 Expr ParsingContext::copy( Expr var ) {
+    if ( var.error() )
+        return var;
     // shortcut (for bootstraping)
     if ( var->ptype()->pod() )
         return room( var->get( cond ) );
     //
     Expr val = var->get( cond );
-    ASSERT( var->size() >= 0, "TODO" );
-    Expr res = room( cst( val->type(), var->size(), 0 ) );
+    Expr res = room( cst_computed_size( val->type(), var->size() ) );
     apply( get_attr( res, "init" ), 1, &var );
     return res;
 }
@@ -302,38 +304,8 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
         }
 
         // parm
-        Vec<String> pn_names;
-        Vec<Expr> pu_args, pn_args;
-        //        Type *parm_type = ip->type_from_type_var( f_type->parameters[ 1 ] );
-        //        if ( parm_type != ip->type_Void ) {
-        //            Expr parm_val = slice( parm_type, f->get( cond ), 1 * ip->ptr_size )->get( cond );
-        //            Type *pt = parm_val->type();
-        //            if ( pt->orig != ip->class_VarargsItemBeg and pt->orig != ip->class_VarargsItemEnd ) {
-        //                return ip->ret_error( "expecting a vararg type (or void) as third arg of a callable type" );
-        //            }
-
-        //            int o = 0;
-        //            //Expr vp = ( f.ptr() + 1 * ip->type_ST->size() ).at( ip->type_ST ); // pointer on varargs data
-        //            while ( pt->orig != ip->class_VarargsItemEnd ) {
-        //                //Expr p_arg = ( vp + o * ip->type_ST->size() ).at( ip->type_ST );
-
-        //                SI32 tn;
-        //                if ( not pt->parameters[ 1 ]->get( cond )->get_val( ip->type_SI32, &tn ) )
-        //                    return ip->ret_error( "expecting a known SI32 as second arg of a varargs" );
-        //                if ( tn >= 0 ) {
-        //                    pn_args << slice( ip->type_from_type_var( pt->parameters[ 0 ] ), parm_val, o * ip->ptr_size );
-        //                    pn_names << tn;
-        //                } else {
-        //                    pu_args << slice( ip->type_from_type_var( pt->parameters[ 0 ] ), parm_val, o * ip->ptr_size );
-        //                }
-
-        //                // iteration
-        //                ++o;
-        //                pt = ip->type_from_type_var( pt->parameters[ 2 ] );
-        //                if ( pt->orig != ip->class_VarargsItemBeg and pt->orig != ip->class_VarargsItemEnd )
-        //                    return ip->ret_error( "expecting a vararg type (or void) as third arg of a varargs" );
-        //            }
-        //        }
+        Vec<String> pn_names = s->parameters.names;
+        Vec<Expr> pu_args = s->parameters.u_args(), pn_args = s->parameters.n_args();
         int pnu = pu_args.size(), pnn = pn_args.size();
 
         // self
@@ -495,9 +467,8 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
     return Expr();
 }
 
-Expr ParsingContext::make_type_var( Type *type ) {
-    TODO;
-    return Expr();
+bool ParsingContext::always_equal( Expr a, Expr b ) {
+    return a->get( cond ) == b->get( cond );
 }
 
 Type *ParsingContext::type_from_type_expr( Expr type_expr ) {

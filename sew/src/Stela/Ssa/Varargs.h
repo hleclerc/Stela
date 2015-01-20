@@ -44,6 +44,11 @@ public:
     Expr   *ua() { return exprs.ptr(); } ///< unnamed arguments
     Expr   *na() { return exprs.ptr() + nu(); } ///< amed arguments
     String *ns() { return names.ptr(); } ///< names (named strings)
+
+    Vec<Expr> u_args() const;
+    Vec<Expr> n_args() const;
+
+    void append( Varargs &var );
 };
 
 #endif // VARARGS_H

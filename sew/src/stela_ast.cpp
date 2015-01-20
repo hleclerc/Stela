@@ -46,20 +46,19 @@ int main( int argc, char **argv ) {
         return gv.error_list;
 
     // objectif: sortir du code pour les classes
-    if ( code_for_class ) {
-        Expr e = pc.get_var( code_for_class );
-        if ( not e ) {
-            std::cerr << "Impossible to find var " << code_for_class << std::endl;
-            return 1;
-        }
-        Expr res = pc.apply( e, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
-        res->ptype()->parse();
+    //    if ( code_for_class ) {
+    //        Expr e = pc.get_var( code_for_class );
+    //        if ( not e ) {
+    //            std::cerr << "Impossible to find var " << code_for_class << std::endl;
+    //            return 1;
+    //        }
+    //        Expr res = pc.apply( e, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST ); //
 
-        Codegen_Js cjs;
-        std::ofstream out( output );
-        cjs.gen_type( out, res->ptype() );
+    //        Codegen_Js cjs;
+    //        std::ofstream out( output );
+    //        cjs.gen_type( out, res->ptype() );
 
-    }
+    //    }
 
 
     return 0;

@@ -2,7 +2,7 @@ MC      = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 INSTALL = `pwd`
 # SRC     = tests/test.met
 # MAIN    = stela
-SRC     = --code-for-class "PI8" -o PI8.js tests/test_Ast.met
+SRC     = --code-for-class "Toto" -o Toto.js tests/test_Ast.met
 MAIN    = stela_ast
 # tests/test.met
 
@@ -10,7 +10,7 @@ all: cmp
 
 exe: cmp
 	./${MAIN} ${SRC}
-# 	cat PI8.js
+# 	cat Toto.js
 # 	nodejs test.js
 	
 # 	metil_comp out.cpp

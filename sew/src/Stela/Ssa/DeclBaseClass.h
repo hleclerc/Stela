@@ -17,6 +17,8 @@ DECL_BT( Repeated )
 DECL_BT( Varargs )
 DECL_BT( Lambda )
 
+DECL_BT( NdListItemEnd )
+
 #ifndef DONT_WANT_DeclArytTypes_h
 #include "DeclArytTypes.h"
 #endif // DONT_WANT_DeclArytTypes_h

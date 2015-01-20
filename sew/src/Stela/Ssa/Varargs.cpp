@@ -29,3 +29,39 @@
 
 #include "Varargs.h"
 
+Vec<Expr> Varargs::u_args() const {
+    Vec<Expr> res( Rese(), nu() );
+    for( int i = 0; i < nu(); ++i )
+        res << exprs[ i ];
+    return res;
+}
+
+Vec<Expr> Varargs::n_args() const {
+    Vec<Expr> res( Rese(), nn() );
+    for( int i = nu(); i < exprs.size(); ++i )
+        res << exprs[ i ];
+    return res;
+}
+
+void Varargs::append( Varargs &var ) {
+    Vec<Expr  > n_exprs( Rese(), exprs.size() + var.exprs.size() );
+    Vec<String> n_names( Rese(), names.size() + var.names.size() );
+
+    // unnamed
+    for( int i = 0; i < nu(); ++i )
+        n_exprs << ua()[ i ];
+    for( int i = 0; i < var.nu(); ++i )
+        n_exprs << var.ua()[ i ];
+    // named
+    for( int i = 0; i < nn(); ++i ) {
+        n_exprs << na()[ i ];
+        n_names << ns()[ i ];
+    }
+    for( int i = 0; i < var.nn(); ++i ) {
+        n_exprs << var.na()[ i ];
+        n_names << var.ns()[ i ];
+    }
+
+    exprs = n_exprs;
+    names = n_names;
+}
