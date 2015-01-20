@@ -41,6 +41,11 @@ Expr Ast_Number::_parse_in( ParsingContext &context ) const {
         ss >> res;
         return room( cst( ip->type_SI64, 64, &res ) );
     }
+    if ( p ) {
+        ST res;
+        ss >> res;
+        return room( cst( ip->type_ST, 8 * sizeof( ST ), &res ) );
+    }
     SI32 res;
     ss >> res;
     return room( cst( ip->type_SI32, 32, &res ) );

@@ -301,8 +301,11 @@ class Toto
 # make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
 
 class NdListItemBeg[ T, Tnext ]
-    data ~= Ptr[ T ]
-    next ~= Tnext
+    ___info Tnext
+    data := Ptr[ T ]()
+    ___info sizeof data
+    # data := Ptr[ T ]()
+    # next ~= Tnext
     
     def get_size
         1 + next.get_size()
@@ -317,13 +320,7 @@ class NdListItemEnd
 class NdList[ TV, nb_dims, sizes ]
     values ~= TV
 
-# l := [ 10, 20 ]
-
-class To[ T ]
-    ___info T
-    a := 100
-t := To[ SI32 ]()
-u := To[ SI32 ]()
+l := [ 10, 20 ]
 
 # ___disp t.a
 # class A
