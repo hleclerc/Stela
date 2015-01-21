@@ -1,6 +1,9 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/ReplBits.h"
 #include "../Ssa/Class.h"
+#include "../Ssa/Room.h"
 #include "../Ssa/Type.h"
+#include "../Ssa/Cst.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_NdList.h"
@@ -24,21 +27,33 @@ void Ast_NdList::_get_info( IrWriter *aw ) const {
     TODO;
 }
 
-static Type *make_type_nb_var_list( Vec<Expr> vars, int o = 0 ) {
+static Type *make_type_nd_var_list( Vec<Expr> vars, int o = 0 ) {
     if ( o == vars.size() )
         return ip->type_NdListItemEnd;
     Vec<Expr> parms;
     parms << ip->pc->type_expr( vars[ o ]->ptype() );
-    parms << ip->pc->type_expr( make_type_nb_var_list( vars, o + 1 ) );
+    parms << ip->pc->type_expr( make_type_nd_var_list( vars, o + 1 ) );
     return ip->class_NdListItemBeg->type_for( parms );
 }
 
-static Expr make_nb_var_list( Vec<Expr> vars ) {
-    Type *type = make_type_nb_var_list( vars );
-    PRINT( type->size() );
+Expr Ast_NdList::_make_nd_var_list( Vec<Expr> vars ) const {
+    Type *type = make_type_nd_var_list( vars );
 
-    ERROR("");
-    return Expr();
+    Vec<Expr> size_exprs;
+    for( int s : sizes )
+        size_exprs << room( s );
+
+    Vec<Expr> args;
+    args << ip->pc->type_expr( type );
+    args << room( nb_dim );
+    args << ip->pc->make_static_list( size_exprs );
+    Type *rt = ip->class_NdList->type_for( args );
+    PRINT( rt->size() );
+
+    Expr res = cst( rt, rt->size(), 0 );
+    for( int i = 0; i < vars.size(); ++i )
+        res = repl_bits( res, 8 * sizeof( ST ) * i, vars[ i ] );
+    return room( res );
 }
 
 
@@ -46,9 +61,7 @@ Expr Ast_NdList::_parse_in( ParsingContext &context ) const {
     Vec<Expr> vars( Rese(), lst.size() );
     for( Past p : lst )
         vars << p->parse_in( context );
-    Expr lst = make_nb_var_list( vars );
-
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    return _make_nd_var_list( vars );
 }
 
 PI8 Ast_NdList::_tok_number() const {

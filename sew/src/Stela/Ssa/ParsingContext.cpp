@@ -134,7 +134,7 @@ Expr ParsingContext::copy( Expr var ) {
     //
     Expr val = var->get( cond );
     Expr res = room( cst_computed_size( val->type(), var->size() ) );
-    apply( get_attr( res, "init" ), 1, &var );
+    call_init( res, 1, &var );
     return res;
 }
 
@@ -238,6 +238,18 @@ void ParsingContext::_keep_only_method_surdefs( Vec<Expr> &lst ) {
     }
 }
 
+void ParsingContext::_init_rec( Expr dst, Expr src ) {
+    Type *t = dst->ptype();
+    ASSERT( t == src->ptype(), "..." );
+    if ( t->pod() ) {
+        dst->set( src->get( cond ), cond );
+    } else {
+        for( Type::Attr &a : t->attributes )
+            if ( a.off_expr )
+                _init_rec( t->attr_expr( dst, a ), t->attr_expr( src, a ) );
+    }
+}
+
 Expr ParsingContext::get_attr( Expr self, String name ) {
     if ( self.error() )
         return self;
@@ -255,7 +267,15 @@ Expr ParsingContext::get_attr( Expr self, String name ) {
     return _make_surdef_list( lst, self );
 }
 
-Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *n_name, Expr *n_args, ApplyMode am, Varargs *va_size_init ) {
+void ParsingContext::call_init( Expr obj, int nu, Expr *vu, int nn, const String *names, Expr *vn, Varargs *va_size_init ) {
+    bool found = true;
+    apply( get_attr( obj, "init" ), nu, vu, nn, names, vn, ParsingContext::APPLY_MODE_STD, va_size_init, nu == 1 and nn == 0 and obj->ptype() == vu[ 0 ]->ptype() ? &found : 0 );
+    if ( not found )
+        _init_rec( obj, vu[ 0 ] );
+    // PRINT( found );
+}
+
+Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *n_name, Expr *n_args, ApplyMode am, Varargs *va_size_init, bool *found ) {
     if ( f.error() )
         return f;
     for( int i = 0; i < nu; ++i )
@@ -361,6 +381,10 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
 
         // no valid surdef ?
         if ( nb_ok == 0 ) {
+            if ( found ) {
+                *found = false;
+                return Expr();
+            }
             std::ostringstream ss;
             ss << "No matching surdef";
             //            if ( self ) {
@@ -488,6 +512,15 @@ Expr ParsingContext::type_expr( Type *ref ) {
     return room( cst( ip->type_Type, 64, &ref_ptr ) );
 }
 
+Expr ParsingContext::make_static_list( Vec<Expr> values, int o ) {
+    if ( o < values.size() ) {
+        Vec<Expr> parm;
+        parm << values[ o ];
+        parm << make_static_list( values, o + 1 );
+        return room( cst( ip->class_StaticListItemBeg->type_for( parm ), 0, 0  ) );
+    }
+    return room( cst( ip->type_StaticListItemEnd, 0, 0 ) );
+}
 
 Expr ParsingContext::_make_surdef_list( const Vec<Expr> &lst, Expr self ) {
     SurdefList *res = new SurdefList;

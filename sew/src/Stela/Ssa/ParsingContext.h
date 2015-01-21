@@ -62,13 +62,15 @@ public:
     Expr              get_attr( Expr self, String name );
 
     enum              ApplyMode { APPLY_MODE_STD, APPLY_MODE_PARTIAL_INST, APPLY_MODE_NEW };
-    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD, Varargs *va_size_init = 0 );
+    Expr              apply( Expr f, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, ApplyMode am = APPLY_MODE_STD, Varargs *va_size_init = 0, bool *found = 0 );
+    void              call_init( Expr obj, int nu = 0, Expr *u_args = 0, int nn = 0, const String *n_name = 0, Expr *n_args = 0, Varargs *va_size_init = 0 );
     bool              always_equal( Expr a, Expr b );
     Expr              copy( Expr var );
 
     Type             *type_from_type_expr( Expr type_expr );
     Type             *ptr_type_for( Type *ref );
     Expr              type_expr( Type *ref );
+    Expr              make_static_list( Vec<Expr> values, int o = 0 );
 
     void              disp_error( String msg, bool warn = false, const char *file = 0, int line = -1 );
     ErrorList::Error &error_msg ( String msg, bool warn = false, const char *file = 0, int line = -1 );
@@ -85,6 +87,7 @@ public:
     Expr              _get_first_attr(Expr self, String name);
     void              _get_attr_clist(Vec<Expr> &lst, Expr self, String name);
     void              _keep_only_method_surdefs( Vec<Expr> &lst );
+    void              _init_rec( Expr dst, Expr src );
 
     ParsingContext   *parent;
     ParsingContext   *caller;

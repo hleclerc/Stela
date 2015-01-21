@@ -117,7 +117,12 @@ static Expr parse_alig_of( ParsingContext &context, const Ast_Primitive *p ) {
     return Expr();
 }
 
-static Expr parse_typeof( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
+static Expr parse_typeof( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 1 );
+    Expr val = p->args[ 0 ]->parse_in( context );
+    return context.type_expr( val->ptype() );
+}
+
 static Expr parse_address( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_get_slice( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_pointed_value( ParsingContext &context, const Ast_Primitive *p ) {

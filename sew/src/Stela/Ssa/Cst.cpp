@@ -29,6 +29,7 @@
 #include "../Codegen/Codegen.h"
 #include "../System/Memcpy.h"
 #include "GlobalVariables.h"
+#include "ParsingContext.h"
 #include "Slice.h"
 #include "Type.h"
 #include "Cst.h"
@@ -62,7 +63,10 @@ public:
         write_dot( os );
     }
     virtual void write_dot( Stream &os ) const {
-        _type->write_val( os, _data.ptr() );
+        if ( _type == ip->type_Type )
+            os << **reinterpret_cast<const Type * const *>( _data.ptr() );
+        else
+            _type->write_val( os, _data.ptr() );
     }
     virtual Type *type() {
         return _type;

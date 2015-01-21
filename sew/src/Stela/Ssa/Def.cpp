@@ -131,8 +131,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
                         args << d.args[ i ]->parse_in( ns );
 
                     //
-                    ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ),
-                              nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
+                    ns.call_init( self_type->attr_expr( self, a ), nu, args.ptr(), d.names.size(), d.names.ptr(), args.ptr() + nu );
                     initialised_args[ i ] = true;
                     break;
                 }
@@ -154,7 +153,7 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
                     Expr args[] = { a.val, add( self, offsets[ num_attr ] ), lengths[ num_attr ], ns._make_varars( init_exprs, init_names ) };
                     ns.apply( ns.get_var( "___repeated_init" ), 4, args );
                 } else
-                    ns.apply( ns.get_attr( self_type->attr_expr( self, a ), "init" ), not ( a.val->flags & Inst::PART_INST ), &a.val );
+                    ns.call_init( self_type->attr_expr( self, a ), not ( a.val->flags & Inst::PART_INST ), &a.val );
             }
         }
         ++cpt;

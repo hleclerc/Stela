@@ -22,6 +22,8 @@ protected:
     virtual void _get_info( IrWriter *aw ) const;
     virtual PI8  _tok_number() const;
 
+    Expr _make_nd_var_list( Vec<Expr> vars ) const;
+
     int                 nb_dim;
     Vec<int>            sizes; ///<
     SplittedVec<Past,8> lst;

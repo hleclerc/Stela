@@ -73,7 +73,7 @@ Expr Class::call( ParsingContext &ns, Type *type, int nu, Expr *vu, int nn, cons
 
     // call init
     if ( apply_mode == ParsingContext::APPLY_MODE_STD )
-        ns.apply( ns.get_attr( ret, "init" ), nu, vu, nn, names, vn, ParsingContext::APPLY_MODE_STD, va_size_init );
+        ns.call_init( ret, nu, vu, nn, names, vn, va_size_init );
 
     return ret;
 }

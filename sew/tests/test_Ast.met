@@ -266,7 +266,10 @@ def sizeof obj
 
 def aligof obj
     ___alig_of obj
-    
+
+def typeof a
+    ___typeof a
+
 # args must be a varargs
 def call func, args
     ___call func, args
@@ -301,16 +304,21 @@ class Toto
 # make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
 
 class NdListItemBeg[ T, Tnext ]
-    ___info Tnext
     data := Ptr[ T ]()
-    ___info sizeof data
-    # data := Ptr[ T ]()
-    # next ~= Tnext
+    next ~= Tnext
     
     def get_size
         1 + next.get_size()
 
 class NdListItemEnd
+    def get_size
+        0
+
+class StaticListItemBeg[ val, next ]
+    def get_size
+        1 + next.get_size()
+
+class StaticListItemEnd
     def get_size
         0
 
@@ -321,7 +329,9 @@ class NdList[ TV, nb_dims, sizes ]
     values ~= TV
 
 l := [ 10, 20 ]
-
+___info l.nb_dims
+___info l.sizes
+  
 # ___disp t.a
 # class A
     # b := 10
