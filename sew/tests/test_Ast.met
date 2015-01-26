@@ -12,6 +12,12 @@ class SurdefList
 
 class Varargs
     ptr ~= SI64 # pointer to C++ data
+    def select index
+        _select_rec index, 0
+    def _select_rec index, val
+        if index == val
+            return ___select_Varargs self, val
+        _select_rec index, val + 1
 
     
 class Void
@@ -225,6 +231,9 @@ class Type
 class Ptr[ T ]
     addr := 0p
     
+    def reassign p
+        addr = p.addr
+    
 def make_varargs varargs
     varargs
     
@@ -293,9 +302,26 @@ class NdListItemBeg[ T, Tnext ]
     def get_size
         1 + next.get_size()
 
+    def select index
+        if index
+            return next.select index - 1
+        data
+
 class NdListItemEnd
     def get_size
         0
+        
+    def select index
+        0
+
+# TV is of kind NdListItemBeg[ T1, NdListItemBeg[ T2, NdListItemEnd ] ]
+# nb_dims must be a positive integer
+# sizes contains the size for each dim recursively. E.g. [ 2, 4, 4 ] for a 2x4 matrix
+class NdList[ TV, nb_dims, sizes ]
+    values ~= TV
+    
+    def select index
+        values[ index ]
 
 class StaticListItemBeg[ val, next ]
     def select index
@@ -316,12 +342,6 @@ class StaticListItemEnd
     def select index
         0
 
-# TV is of kind VarargsItemBeg[ T1, VarargsItemBeg[ T2, VarargsItemEnd ] ]
-# nb_dims must be a positive integer
-# sizes contains the size for each dim recursively. E.g. [ 2, 4, 4 ] for a 2x4 matrix
-class NdList[ TV, nb_dims, sizes ]
-    values ~= TV
-
 class Toto
     a := PI16 13
     b := ___repeat PI8, x => 8 * 5
@@ -335,12 +355,22 @@ class Toto
 def make_code_for_class type, init_args
     ___make_code_for type, init_args
 
-# a := [ [] #~ no arguments ~#, [ SI32 ] ]
-# ___info a.sizes[ 0 ]
-# ___info a.sizes[ 1 ]
+class E
+    a ~= Ptr[SI32]
+    b ~= Ptr[SI32]
+    def select index
+        if index
+            return b
+        a
+        
+e := E()
+e.a = &12
+e.b = &13
+___info e[ 0 ]
+___info e[ 1 ]
+    
+# a := [ 12, 27 ]
+# ___disp a[ 0 ]
+# ___disp a[ 1 ]
 # make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
-def f
-    if ___rand()
-        return 17
-    return 23
-___info f()
+

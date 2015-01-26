@@ -106,7 +106,8 @@ struct Slice : Inst {
 };
 
 Expr slice( Type *dst, Expr var, Expr off ) {
-    if ( off->always_equal( 0 ) )
+    int s = dst->size();
+    if ( s >= 0 and off->always_equal( 0 ) and var->size()->always_equal( ip->type_SI32, &s ) )
         return rcast( dst, var );
 
     if ( Expr res = var->_simp_slice( dst, off ) )

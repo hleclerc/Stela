@@ -29,6 +29,7 @@
 
 #include "GlobalVariables.h"
 #include "ParsingContext.h"
+#include "Slice.h"
 #include "Rcast.h"
 #include "Type.h"
 #include "Cst.h"
@@ -59,14 +60,13 @@ struct Rcast : Inst {
         TODO;
     }
     virtual Expr _simp_slice( Type *dst, Expr off ) {
-        TODO;
-        return Expr();
+        return slice( dst, inp[ 0 ], off );
     }
     virtual Expr _simp_rcast( Type *dst ) {
         return rcast( dst, inp[ 0 ] );
     }
     virtual Expr get( Expr cond ) {
-        return rcast( _type->ptype(), inp[ 0 ]->get( cond ) );
+        return slice( _type->ptype(), inp[ 0 ]->get( cond ), 0 );
     }
 
     Type *_type;

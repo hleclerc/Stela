@@ -157,10 +157,10 @@ Expr ParsingContext::reg_var( String name, Expr expr, bool stat, int _off, const
 }
 
 Expr ParsingContext::_find_first_var_with_name( String name ) {
-    if ( self )
-        if ( Expr var = _get_first_attr( self, name ) )
-            return var;
     for( ParsingContext *c = this; c; c = c->parent ) {
+        if ( c->self )
+            if ( Expr var = _get_first_attr( c->self, name ) )
+                return var;
         for( NamedVar &nv : c->variables )
             if ( nv.name == name )
                 return nv.expr;
@@ -175,10 +175,10 @@ Expr ParsingContext::_find_first_var_with_name( String name ) {
 }
 
 void ParsingContext::_find_list_of_vars_with_name( Vec<Expr> &res, String name ) {
-    if ( self )
-        if ( Expr var = _get_first_attr( self, name ) )
-            res << var;
     for( ParsingContext *c = this; c; c = c->parent ) {
+        if ( c->self )
+            if ( Expr var = _get_first_attr( c->self, name ) )
+                res << var;
         for( NamedVar &nv : c->variables )
             if ( nv.name == name )
                 res << nv.expr;

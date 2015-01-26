@@ -469,6 +469,7 @@ base_primitives = string.split( """
     assign_rec
     set_ptr_val
     select_SurdefList
+    select_Varargs
     ptr_size
     ptr_alig
     size_of

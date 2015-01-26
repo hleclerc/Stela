@@ -69,6 +69,7 @@ void Inst::set( Expr obj, Expr cond ) {
 }
 
 Expr Inst::get( Expr cond ) {
+    PRINT( *this );
     return ip->pc->ret_error( "getting a non pointer item" );
 }
 

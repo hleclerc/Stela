@@ -98,6 +98,21 @@ static Expr parse_select_SurdefList( ParsingContext &context, const Ast_Primitiv
     return room( cst( ip->type_SurdefList, 64, &ptr ) );
 }
 
+static Expr parse_select_Varargs( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr self = p->args[ 0 ]->parse_in( context ); if ( self ) self = self->get( context.cond );
+    Expr inde = p->args[ 1 ]->parse_in( context ); if ( inde ) inde = inde->get( context.cond );
+    if ( self.error() or inde.error() )
+        return Expr();
+    SI64 psel, pind;
+    if ( self->get_val( &psel, 64 ) == false or inde->get_val( &pind, ip->type_SI64 ) == false )
+        return context.ret_error( "expecting cst values" );
+    Varargs *var = reinterpret_cast<Varargs *>( ST( psel ) );
+    if ( pind < 0 or pind >= var->exprs.size() )
+        return ip->pc->ret_error( "index problem" );
+    return var->exprs[ pind ];
+}
+
 static Expr parse_ptr_size( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 static Expr parse_ptr_alig( ParsingContext &context, const Ast_Primitive *p ) { TODO; return Expr(); }
 

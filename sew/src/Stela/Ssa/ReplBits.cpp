@@ -1,8 +1,8 @@
 #include "GlobalVariables.h"
 #include "ReplBits.h"
 #include "Rcast.h"
-// #include "Slice.h"
-// #include "Type.h"
+#include "Slice.h"
+#include "Type.h"
  #include "Op.h"
 
 /**
@@ -17,6 +17,31 @@ struct ReplBits : Inst {
     }
     virtual Type *type() {
         return inp[ 0 ]->type();
+    }
+    virtual Expr _simp_slice( Type *dst, Expr off ) {
+        //           inp[ 1 ]
+        //           |          inp[ 1 ] + inp[ 2 ]->size()
+        //           |          |
+        //           v          v
+        // -inp[ 0 ]- -inp[ 2 ]- -inp[ 0 ]-
+        //
+        //    off
+        //    |           off + dst->size()
+        //    |           |
+        //    v           v
+        //    [-----------]
+        //
+        if ( sup_eq( off, add( inp[ 1 ], inp[ 2 ]->size() ) )->always( true ) )
+            return slice( dst, inp[ 0 ], off );
+
+        int s = dst->size();
+        if ( s >= 0 and sup_eq( off, inp[ 1 ] )->always( true ) and inf_eq( add( off, s ), add( inp[ 1 ], inp[ 2 ]->size()) )->always( true ) )
+            return slice( dst, inp[ 2 ], sub( off, inp[ 1 ] ) );
+
+        if ( s >= 0 and inf_eq( add( off, s ), inp[ 1 ] )->always( true ) )
+            return slice( dst, inp[ 0 ], off );
+
+        return Expr();
     }
 };
 

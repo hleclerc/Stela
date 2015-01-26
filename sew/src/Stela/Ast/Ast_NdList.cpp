@@ -50,8 +50,11 @@ Expr Ast_NdList::_make_nd_var_list( Vec<Expr> vars ) const {
     Type *rt = ip->class_NdList->type_for( args );
 
     Expr res = cst( rt, rt->size(), 0 );
-    for( int i = 0; i < vars.size(); ++i )
+    PRINT( vars );
+    for( int i = 0; i < vars.size(); ++i ) {
         res = repl_bits( res, 8 * sizeof( ST ) * i, vars[ i ] );
+    }
+    PRINT( res );
     return room( res );
 }
 
