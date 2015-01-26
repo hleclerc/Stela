@@ -489,6 +489,8 @@ base_primitives = string.split( """
     repeated_type
     slice
     call
+    get_size
+    make_code_for
 """ ) #
 
 std_strings = string.split( """

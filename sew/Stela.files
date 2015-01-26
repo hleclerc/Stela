@@ -243,3 +243,7 @@ src/Stela/Ssa/Varargs.cpp
 src/Stela/Ssa/Cond.h
 src/Stela/Ssa/Cond.cpp
 tests/test_Cond.cpp
+src/Stela/Codegen/TypeGen.h
+src/Stela/Codegen/TypeGen.cpp
+src/Stela/Codegen/TypeGen_JS.h
+src/Stela/Codegen/TypeGen_JS.cpp

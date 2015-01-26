@@ -9,6 +9,7 @@
 #include "../Ssa/Cst.h"
 #include "../Ssa/Op.h"
 #include "../Ir/Numbers.h"
+#include "../Codegen/TypeGen_JS.h"
 #include "Ast_Primitive.h"
 #include "IrWriter.h"
 
@@ -205,6 +206,40 @@ static Expr parse_call( ParsingContext &context, const Ast_Primitive *p ) {
     Varargs *vargs = reinterpret_cast<Varargs *>( ST( ptr ) );
 
     return context.apply( func, vargs->nu(), vargs->ua(), vargs->nn(), vargs->ns(), vargs->na() );
+}
+static Expr parse_get_size( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 1 );
+    Expr self = p->args[ 0 ]->parse_in( context ); if ( self.error() ) return self;
+    if ( self->ptype() != ip->type_Varargs )
+        return context.ret_error( "get_size work only with varargs" );
+    SI64 ptr;
+    if ( not self->get( context.cond )->get_val( &ptr, 64 ) )
+        return context.ret_error( "Expecting a known value" );
+    Varargs *vargs = reinterpret_cast<Varargs *>( ST( ptr ) );
+    return room( vargs->exprs.size() );
+}
+
+static Expr parse_make_code_for( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr tvar = context.apply( p->args[ 0 ]->parse_in( context ), 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
+    Expr vara = p->args[ 1 ]->parse_in( context ); if ( vara ) vara = vara->get( context.cond );
+    if ( tvar.error() or vara.error() )
+        return Expr();
+
+    SI64 pvar;
+    if ( vara->get_val( &pvar, 64 ) == false )
+        return context.ret_error( "expecting cst values" );
+    Varargs *var = reinterpret_cast<Varargs *>( ST( pvar ) );
+
+    TypeGen_JS type_gen( tvar->ptype() );
+    for( int i = 0; i < var->nn(); ++i ) {
+        Vec<Type *> types;
+        PRINT( var->na()[ i ] );
+        type_gen.add_func_to_gen( var->names[ i ], types );
+    }
+    type_gen.exec();
+
+    return ip->void_var();
 }
 
 

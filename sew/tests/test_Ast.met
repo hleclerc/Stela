@@ -12,6 +12,8 @@ class SurdefList
 
 class Varargs
     ptr ~= SI64 # pointer to C++ data
+    def get_size
+        ___get_size self
     def select index
         _select_rec index, 0
     def _select_rec index, val
@@ -305,7 +307,7 @@ class NdListItemBeg[ T, Tnext ]
     def select index
         if index
             return next.select index - 1
-        data
+        @data
 
 class NdListItemEnd
     def get_size
@@ -350,27 +352,18 @@ class Toto
     static def size_init
         make_varargs b = 8 * 5
   
-    
+
 # init_args is a list of list of types to describe arg types for ctor variants
-def make_code_for_class type, init_args
-    ___make_code_for type, init_args
+def make_code_for_class type, varargs
+    ___make_code_for type, varargs
 
-class E
-    a ~= Ptr[SI32]
-    b ~= Ptr[SI32]
-    def select index
-        if index
-            return b
-        a
-        
-e := E()
-e.a = &12
-e.b = &13
-___info e[ 0 ]
-___info e[ 1 ]
+# make_code_for_class Toto,
+    # init = [ [] #~ no arguments ~#, [ SI32 ] ],
+    # size = [  ]
+def f varargs
+    ___info varargs.get_size()
+
+f 5, 
+    a = 10,
+    b = 30
     
-# a := [ 12, 27 ]
-# ___disp a[ 0 ]
-# ___disp a[ 1 ]
-# make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
-
