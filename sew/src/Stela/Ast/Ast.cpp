@@ -123,11 +123,11 @@ struct AstMaker {
         return new Ast_String( l->src, l->off(), String( l->beg, l->beg + l->len ) );
     }
 
-    Ast *make_ast_block( const Lexem *l ) {
+    Ast *make_ast_block( const Lexem *l, bool want_ret = false ) {
         while ( l->type == Lexem::BLOCK and not l->next )
             l = l->children[ 0 ];
 
-        Ast_Block *a = new Ast_Block( l->src, l->off() );
+        Ast_Block *a = new Ast_Block( l ? l->src : 0, l ? l->off() : -1, want_ret );
         for( ; l; l = l->next )
             if ( Ast *r = make_ast_single( l ) )
                 a->lst << r;
@@ -141,6 +141,9 @@ struct AstMaker {
     }
 
     void output_list( Ast_NdList *res, const Lexem *l, int nb_dim, bool has_cd ) {
+        if ( not l )
+            return;
+
         // ... , ...
         if ( nb_dim == 1 ) {
             SplittedVec<const Lexem *,8> ch;
@@ -189,7 +192,7 @@ struct AstMaker {
             nb_dim += 1 + has_cd;
 
             //
-            Ast_NdList *res = new Ast_NdList( l->src, l->off() );
+            Ast_NdList *res = new Ast_NdList( l ? l->src : 0, l ? l->off() : -1 );
             res->nb_dim = nb_dim;
             output_list( res, l, nb_dim, has_cd );
             return res;
@@ -519,7 +522,7 @@ struct AstMaker {
         Ast_Class *old_in_class = in_class;
         in_class = def ? 0 : static_cast<Ast_Class *>( res );
 
-        res->block = make_ast_block( block );
+        res->block = make_ast_block( block, def );
 
         in_class = old_in_class;
 

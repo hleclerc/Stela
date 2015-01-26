@@ -284,25 +284,8 @@ def ___repeated_init rep, var, len, varargs
         obj := binary_slice rty, var, off
         call obj.init, varargs
         off += sizeof obj
-            
-            
-# init_args is a list of list of types to describe arg types for ctor variants
-# def make_code_for_class type, init_args
-    # ___make_code_for type, init_args
-            
-# a := CUInt 0
-# ___info a
-class Toto
-    a := PI16 13
-    b := ___repeat PI8, x => 8 * 5
-    c := PI16 26
-    
-    static def size_init
-        make_varargs b = 8 * 5
-    
-# t := Toto()
-# make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
 
+        
 class NdListItemBeg[ T, Tnext ]
     data := Ptr[ T ]()
     next ~= Tnext
@@ -315,11 +298,22 @@ class NdListItemEnd
         0
 
 class StaticListItemBeg[ val, next ]
+    def select index
+        if index
+            return next.select index - 1
+        val
     def get_size
         1 + next.get_size()
+    def disp
+        ___info val
+        next.disp()
 
 class StaticListItemEnd
     def get_size
+        0
+    def disp
+        void
+    def select index
         0
 
 # TV is of kind VarargsItemBeg[ T1, VarargsItemBeg[ T2, VarargsItemEnd ] ]
@@ -328,21 +322,25 @@ class StaticListItemEnd
 class NdList[ TV, nb_dims, sizes ]
     values ~= TV
 
-l := [ 10, 20 ]
-___info l.nb_dims
-___info l.sizes
+class Toto
+    a := PI16 13
+    b := ___repeat PI8, x => 8 * 5
+    c := PI16 26
+    
+    static def size_init
+        make_varargs b = 8 * 5
   
-# ___disp t.a
-# class A
-    # b := 10
-    # c := 20
     
-# var := A()
-# obj := binary_slice SI32, var, 16
-# obh := binary_slice SI32, obj, 16
-# ___info obj
-# ___info obh
-# obh = 17
-# ___info obh
-    
+# init_args is a list of list of types to describe arg types for ctor variants
+def make_code_for_class type, init_args
+    ___make_code_for type, init_args
 
+# a := [ [] #~ no arguments ~#, [ SI32 ] ]
+# ___info a.sizes[ 0 ]
+# ___info a.sizes[ 1 ]
+# make_code_for_class Toto, [ [] #~ no arguments ~#, [ SI32 ] ]
+def f
+    if ___rand()
+        return 17
+    return 23
+___info f()

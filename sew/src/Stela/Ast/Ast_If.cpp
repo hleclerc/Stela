@@ -72,14 +72,14 @@ Expr Ast_If::_parse_in( ParsingContext &context ) const {
     Expr res_ok;
     if ( ok ) {
         ParsingContext if_scope( &context, 0, "if_" + to_string( ok ) );
-        if_scope.cond = expr;
+        if_scope.cond = and_boolean( if_scope.cond, expr );
         res_ok = ok->parse_in( if_scope );
     }
 
     Expr res_ko;
     if ( ko ) {
         ParsingContext fi_scope( &context, 0, "fi_" + to_string( ko ) );
-        fi_scope.cond = not_boolean( expr );
+        fi_scope.cond = and_boolean( fi_scope.cond, not_boolean( expr ) );
         res_ko =  ko->parse_in( fi_scope );
     }
 

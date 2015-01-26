@@ -54,7 +54,7 @@ public:
         PART_INST = 8
     };
     /// for Parent::ninp
-    enum {
+    enum Category {
         TPAR_DEP = -1
     };
     ///
@@ -102,6 +102,8 @@ public:
 
     bool is_surdef() const;
     bool is_const() const;
+
+    virtual int op_type() const;
 
     virtual bool always( bool val ) const;
     virtual bool always_equal( Type *t, const void *d );

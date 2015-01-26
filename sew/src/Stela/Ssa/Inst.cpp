@@ -99,6 +99,7 @@ Type *Inst::ptype() {
 }
 
 Type *Inst::type() {
+    PRINT( *this );
     TODO;
     return 0;
 }
@@ -127,6 +128,10 @@ bool Inst::is_surdef() const {
 
 bool Inst::is_const() const {
     return flags & CONST;
+}
+
+int Inst::op_type() const {
+    return -1;
 }
 
 bool Inst::always( bool val ) const {

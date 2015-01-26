@@ -2,8 +2,9 @@
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_Block.h"
+#include "Ast_Return.h"
 
-Ast_Block::Ast_Block( const char *src, int off ) : Ast( src, off ) {
+Ast_Block::Ast_Block( const char *src, int off, bool want_ret ) : Ast( src, off ), want_ret( want_ret ) {
 }
 
 void Ast_Block::get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
@@ -29,10 +30,13 @@ void Ast_Block::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_Block::_parse_in( ParsingContext &context ) const {
-    Expr res;
-    for( int i = 0; i < lst.size(); ++i )
-        res = lst[ i ]->parse_in( context );
-    return res; ///< return last var
+    if ( not lst.size() )
+        return ip->void_var();
+    for( int i = 0; i < lst.size() - 1; ++i )
+        lst[ i ]->parse_in( context );
+    if ( want_ret and not dynamic_cast<const Ast_Return *>( lst.back().ptr() ) )
+        return Ast_Return::ret( context, lst.back() );
+    return lst.back()->parse_in( context ); ///< return last var
 }
 
 PI8 Ast_Block::_tok_number() const {

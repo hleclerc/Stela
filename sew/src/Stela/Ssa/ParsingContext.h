@@ -42,6 +42,7 @@ public:
     enum {
         SCOPE_TYPE_CLASS, ///< first level (methods and attributes) of a class content
         SCOPE_TYPE_MAIN,
+        SCOPE_TYPE_DEF,
         SCOPE_TYPE_STD
     };
     struct RemBreak {
@@ -84,7 +85,7 @@ public:
     Expr              _make_surdef_list( const Vec<Expr> &lst, Expr self = Expr() );
     Expr              _find_first_var_with_name( String name );
     void              _find_list_of_vars_with_name( Vec<Expr> &res, String name );
-    Expr              _get_first_attr(Expr self, String name);
+    Expr              _get_first_attr( Expr self, String name );
     void              _get_attr_clist(Vec<Expr> &lst, Expr self, String name);
     void              _keep_only_method_surdefs( Vec<Expr> &lst );
     void              _init_rec( Expr dst, Expr src );
@@ -100,6 +101,7 @@ public:
     Vec<NamedVar>    *static_variables;
     int               scope_type;
     Expr              cond;
+    Expr              ret; ///< return var (if there is a return)
     int               base_size;
     int               base_alig;
     Vec<RemBreak>     rem_breaks;

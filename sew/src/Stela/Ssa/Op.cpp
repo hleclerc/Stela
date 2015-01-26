@@ -82,6 +82,9 @@ template<class TO>
 struct UOp : Op<TO> {
     virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->op ); }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new UOp<TO>; }
+    virtual int op_type() const {
+        return to.op_id;
+    }
     //    virtual void write( Codegen_C *cc ) {
     //        cc->on.write_beg();
     //        this->out_reg->write( cc, this->new_reg ) << " = ";
@@ -167,6 +170,10 @@ struct BOp : Op<TO> {
         ERROR( "Not a pointer type" );
         return 0;
     }
+    virtual int op_type() const {
+        return to.op_id;
+    }
+
     //    virtual void write( Codegen_C *cc ) {
     //        if ( not this->out_reg ) {
     //            to.write_oper( cc->on.write_beg() );

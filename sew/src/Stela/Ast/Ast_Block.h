@@ -9,7 +9,7 @@
 */
 class Ast_Block : public Ast {
 public:
-    Ast_Block( const char *src, int off );
+    Ast_Block( const char *src, int off, bool want_ret );
 
     virtual void get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const;
     virtual void prep_get_potentially_needed_ext_vars( std::set<String> &avail ) const;
@@ -23,6 +23,7 @@ protected:
     virtual PI8  _tok_number() const;
 
     SplittedVec<Past,8> lst;
+    bool want_ret;
 };
 
 #endif // STELA_AST_Block_H

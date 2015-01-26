@@ -240,3 +240,6 @@ src/Stela/Ssa/CstComputedSize.h
 src/Stela/Ssa/CstComputedSize.cpp
 src/Stela/Ssa/Varargs.h
 src/Stela/Ssa/Varargs.cpp
+src/Stela/Ssa/Cond.h
+src/Stela/Ssa/Cond.cpp
+tests/test_Cond.cpp

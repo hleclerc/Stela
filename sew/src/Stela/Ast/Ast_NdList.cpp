@@ -48,7 +48,6 @@ Expr Ast_NdList::_make_nd_var_list( Vec<Expr> vars ) const {
     args << room( nb_dim );
     args << ip->pc->make_static_list( size_exprs );
     Type *rt = ip->class_NdList->type_for( args );
-    PRINT( rt->size() );
 
     Expr res = cst( rt, rt->size(), 0 );
     for( int i = 0; i < vars.size(); ++i )

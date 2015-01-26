@@ -160,7 +160,9 @@ Expr Def::TrialDef::call( int nu, Expr *vu, int nn, const String *names, Expr *v
     }
 
     // inline call
-    return orig->ast_item->block->parse_in( ns );
+    ns.scope_type = ParsingContext::SCOPE_TYPE_DEF;
+    orig->ast_item->block->parse_in( ns );
+    return ns.ret;
 }
 
 Def::Def( const Ast_Callable *ast_item ) : Callable( ast_item ) {
