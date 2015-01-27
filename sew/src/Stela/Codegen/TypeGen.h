@@ -38,6 +38,7 @@ class TypeGen {
 public:
     struct FuncToGen {
         bool operator==( const FuncToGen &g ) const { return name == g.name and arg_types == g.arg_types; }
+        void write_to_stream( Stream &os ) const;
         String name;
         Vec<Type *> arg_types;
     };

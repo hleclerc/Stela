@@ -33,6 +33,10 @@
 BoolOpSeq::BoolOpSeq( bool default_val ) : default_val( default_val ) {
 }
 
+void BoolOpSeq::write_to_stream( Stream &os ) const {
+    os << default_val;
+}
+
 bool BoolOpSeq::always( bool val ) const {
     return default_val == val;
 }

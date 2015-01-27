@@ -1,4 +1,5 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/IpSnapshot.h"
 #include "../Ssa/Select.h"
 #include "../Ssa/Cond.h"
 #include "../Ssa/Op.h"
@@ -23,6 +24,9 @@ Expr Ast_Return::ret( ParsingContext &context, Past past ) {
     Expr cond = context.cond;
     for( ParsingContext *s = &context; s; s = s->parent ) {
         if ( s->scope_type == ParsingContext::SCOPE_TYPE_DEF ) {
+            if ( IpSnapshot *is = ip->ip_snapshot )
+                is->reg_parsing_context( s );
+
             if ( s->ret )
                 s->ret = select( cond, res, s->ret );
             else
@@ -32,6 +36,8 @@ Expr Ast_Return::ret( ParsingContext &context, Past past ) {
             break;
         }
 
+        if ( IpSnapshot *is = ip->ip_snapshot )
+            is->reg_parsing_context( s );
         s->cond = and_boolean( s->cond, not_boolean( cond ) );
     }
     return res;

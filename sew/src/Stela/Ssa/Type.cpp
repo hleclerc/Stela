@@ -68,6 +68,19 @@ void Type::write_to_stream( Stream &os ) const {
     }
 }
 
+void Type::as_var( Stream &os, bool und ) const {
+    if ( und )
+        os << '_';
+    os << orig->ast_item->name.size() << orig->ast_item->name << parameters.size();
+    if ( parameters.size() )
+        os << '_';
+    for( Expr p : parameters ) {
+        Expr g = p->get( ip->pc->cond );
+        g->type()->as_var( os, false );
+        g->as_var( os, false );
+    }
+}
+
 int Type::alig() {
     if ( _ali < 0 )
         parse();

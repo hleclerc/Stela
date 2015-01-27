@@ -27,9 +27,11 @@
 ****************************************************************************/
 
 
+#include "../Ssa/GlobalVariables.h"
 #include "../Ssa/Symbol.h"
 #include "../Ssa/Type.h"
 #include "Codegen_Js.h"
+#include "InstBlock.h"
 #include "OutReg.h"
 
 struct JsRepr {
@@ -40,53 +42,6 @@ struct JsRepr {
 };
 
 Codegen_Js::Codegen_Js() {
-}
-
-void Codegen_Js::gen_type( Stream &out, Type *type ) {
-    String n = to_string( JsRepr{ type } );
-    Expr obj = symbol( type, "this" );
-    set_os( &out );
-
-    on << n << " = (function() {";
-    on << "    var am = asm_mod.push( function( stdlib, foreign, buffer ) {";
-    on << "        \"use asm\";";
-    on << "        return {";
-    on << "            size_in_bits: size_in_bits,";
-    on << "            get_val     : get_val,";
-    on << "            set_val     : set_val,";
-    on << "            init        : init";
-    on << "        };";
-    on << "    } );";
-
-    on << "    function " << n << "( offset, parent ) {";
-    on << "        this.offset = offset == null ? am.allocate( 1 ) : offset;";
-    on << "        this.parent = parent == null ? undefined : parent;";
-    on << "        am.init( this.offset );";
-    on << "    }";
-
-    on << "    Object.defineProperty( " << n << ".prototype, \"size_in_bits\", {";
-    on << "        get: function() {";
-    on << "            return am.size_in_bits( this.offset );";
-    on << "        }";
-    on << "    });";
-
-    on << "    return " << n << ";";
-    on << "})();";
-
-
-
-
-    on << "function " << n << "( array_buffer, offset ) {";
-    on << "    this.array_buffer = array_buffer == null ? new ArrayBuffer( 1 ) : array_buffer;";
-    on << "    this.offset = offset == null ? 0 : offset;";
-    on << "}";
-    on << n << ".prototype.size_in_bits = function() {";
-    write_expr( obj->size() );
-    on << "}";
-
-    on << "module.exports = {";
-    on << "  " << n << ": " << n;
-    on << "};";
 }
 
 static Expr cloned( const Expr &val, Vec<Expr> &created ) {
@@ -107,16 +62,20 @@ Vec<Expr> Codegen_Js::make_code() {
         out << cloned( inst, created );
 
     // scheduling (and creation of IfInst)
-    Inst *beg = scheduling( out );
+    InstBlock inst_block;
+    scheduling( inst_block, out );
 
-    // variables (registers)
-    for( Inst *i = beg; i; i = i->next_sched ) {
-        i->out_reg = new_reg();
+    // set missing out_regs
+    for( Inst *i = inst_block.beg; i; i = i->next_sched ) {
+        if ( not i->out_reg )
+            i->out_reg = new_reg( i->type() );
     }
 
     //
-    for( Inst *i = beg; i; i = i->next_sched ) {
+    for( Inst *i = inst_block.beg; i; i = i->next_sched ) {
         i->write( this );
+        if ( i->next_sched == 0 and i->out_reg->type != ip->type_Void )
+            on << "return " << *i->out_reg << ";";
     }
 
     return out;
@@ -126,15 +85,20 @@ void Codegen_Js::exec() {
     TODO;
 }
 
-AutoPtr<Codegen::Writable> Codegen_Js::var_decl( OutReg *reg ) {
-    struct VarDeclJS : Codegen::Writable {
-        VarDeclJS( OutReg *reg ) : reg( reg ) {}
-         virtual void write_to_stream( Stream &os ) const {
-            os << "var " << *reg;
-        }
-        OutReg *reg;
-    };
-    return new VarDeclJS( reg );
+void Codegen_Js::write_beg_cast_bop( Type *type ) {
+    if ( ip->is_integer( type ) ) {
+        *on << "( ";
+    } else {
+        TODO;
+    }
+}
+
+void Codegen_Js::write_end_cast_bop( Type *type ) {
+    if ( ip->is_integer( type ) ) {
+        *on << " ) | 0";
+    } else {
+        TODO;
+    }
 }
 
 void Codegen_Js::write_expr( Expr expr ) {
@@ -190,7 +154,7 @@ static void get_front( Vec<Expr> &front, Expr inst ) {
         front << inst;
 }
 
-Inst *Codegen_Js::scheduling( Vec<Expr> &out ) {
+void Codegen_Js::scheduling( InstBlock &block, Vec<Expr> &out ) {
     // get the front
     ++Inst::cur_op_id;
     Vec<Expr> front;
@@ -201,7 +165,6 @@ Inst *Codegen_Js::scheduling( Vec<Expr> &out ) {
         inst->op_id = Inst::cur_op_id;
 
     // go to the roots
-    Inst *beg = 0, *end;
     ++Inst::cur_op_id;
     while ( front.size() ) {
         // try to find an instruction with the same condition set or an inst that is not going to write anything
@@ -214,14 +177,7 @@ Inst *Codegen_Js::scheduling( Vec<Expr> &out ) {
 
         // register
         inst->op_id = Inst::cur_op_id; // say that it's done
-        if ( not beg ) {
-            beg = inst;
-            end = inst;
-        } else {
-            end->next_sched = inst;
-            inst->prev_sched = end;
-            end = inst;
-        }
+        block << inst;
 
         // update the front
         for( Inst::Parent &p : inst->par ) {
@@ -231,6 +187,4 @@ Inst *Codegen_Js::scheduling( Vec<Expr> &out ) {
             }
         }
     }
-
-    return beg;
 }

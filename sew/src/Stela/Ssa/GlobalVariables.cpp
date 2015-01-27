@@ -110,3 +110,14 @@ Expr GlobalVariables::void_var() {
     return room( cst( type_Void, 0, 0 ) );
 }
 
+bool GlobalVariables::is_integer( const Type *type ) const {
+    return type == type_Bool or
+           type == type_SI8  or
+           type == type_PI8  or
+           type == type_SI16 or
+           type == type_PI16 or
+           type == type_SI32 or
+           type == type_PI32 or
+           type == type_SI64 or
+           type == type_PI64;
+}

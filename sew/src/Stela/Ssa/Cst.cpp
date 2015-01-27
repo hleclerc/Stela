@@ -27,6 +27,7 @@
 ****************************************************************************/
 
 #include "../Codegen/Codegen.h"
+#include "../Codegen/OutReg.h"
 #include "../System/Memcpy.h"
 #include "GlobalVariables.h"
 #include "ParsingContext.h"
@@ -68,6 +69,13 @@ public:
         else
             _type->write_val( os, _data.ptr() );
     }
+    virtual void as_var( Stream &os, bool und ) const {
+        int sb = ( _size + 7 ) / 8;
+        os << "c" << sb;
+        const char *c = "0123456789ABCDEF";
+        for( int i = 0; i < sb; ++i )
+            os << c[ _data[ i ] >> 4 ] << c[ _data[ i ] & 0xF ];
+    }
     virtual Type *type() {
         return _type;
     }
@@ -90,7 +98,7 @@ public:
         return _type->always_equal( t, d, _data.ptr(), _data.ptr() + sb );
     }
     virtual void write( Codegen *c ) {
-        c->on << *c->var_decl( out_reg ) << " = " << *this << ";";
+        c->on << *out_reg << " = " << *this << ";";
     }
     virtual Expr _simp_repl_bits( Expr off, Expr val ) {
         SI32 voff, vlen = val->type()->size();

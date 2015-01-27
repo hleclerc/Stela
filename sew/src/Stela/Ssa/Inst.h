@@ -83,6 +83,7 @@ public:
     virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
 
     virtual void write_to_stream( Stream &os, int prec = -1 );
+    virtual void as_var( Stream &os, bool und = true ) const;
     virtual void write_dot( Stream &os ) const = 0;
 
     virtual void  set( Expr obj, Expr cond = Expr() );

@@ -30,15 +30,20 @@
 #define OUTREG_H
 
 #include "../System/Stream.h"
+class Codegen;
+class Type;
 
 /**
 */
 class OutReg {
 public:
-    OutReg( String name );
+    OutReg( Type *type, String name );
+
     void write_to_stream( Stream &os ) const;
 
+    Type  *type;
     String name;
+    //    bool   ptr;
 };
 
 #endif // OUTREG_H

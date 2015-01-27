@@ -52,6 +52,7 @@ struct GlobalVariables {
     GlobalVariables();
     Expr void_var();
 
+    bool is_integer( const Type *type ) const;
 
     ParsingContext                      *pc; ///< current parsing context
     ParsingContext                      *main_parsing_context;

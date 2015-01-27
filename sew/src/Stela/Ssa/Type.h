@@ -45,10 +45,15 @@ public:
         int           off;
         const String *src;
     };
+    struct AsVar {
+        void write_to_stream( Stream &os ) const { type->as_var( os ); }
+        Type *type;
+    };
 
     Type( Class *orig );
 
     void  write_to_stream( Stream &os ) const;
+    void  as_var( Stream &os, bool und = true ) const;
     int   alig(); ///< needed alignement in bits
     int   size(); ///< size in bits, or -1 if not known
     int   sb(); ///< size in bytes, or -1 if not known

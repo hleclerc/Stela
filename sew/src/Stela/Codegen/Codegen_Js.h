@@ -40,13 +40,12 @@ class Codegen_Js : public Codegen {
 public:
     Codegen_Js();
 
-    void              gen_type( Stream &out, Type *type );
-
     virtual void      write_to( Stream &os );
     virtual Vec<Expr> make_code();
     virtual void      exec();
 
-    virtual AutoPtr<Writable> var_decl( OutReg *reg );
+    virtual void      write_beg_cast_bop( Type *type );
+    virtual void      write_end_cast_bop( Type *type );
 
     void              write_expr( Expr expr );
     Inst             *scheduling( Vec<Expr> &out );

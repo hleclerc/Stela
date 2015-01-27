@@ -30,15 +30,22 @@
 #ifndef TYPEGEN_JS_H
 #define TYPEGEN_JS_H
 
+#include "../System/StreamSep.h"
+#include "../System/Stream.h"
 #include "TypeGen.h"
 
 /**
 */
 class TypeGen_JS : public TypeGen {
 public:
-    TypeGen_JS( Type *type );
+    TypeGen_JS( Type *type, Stream *ms = &std::cout );
 
     virtual void exec();
+
+    void gen_func( FuncToGen &f );
+
+    StreamSepMaker<Stream> on;
+    Stream                *os; ///< currrent stream
 };
 
 #endif // TYPEGEN_JS_H

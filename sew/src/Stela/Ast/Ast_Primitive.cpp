@@ -11,6 +11,7 @@
 #include "../Ir/Numbers.h"
 #include "../Codegen/TypeGen_JS.h"
 #include "Ast_Primitive.h"
+#include "Ast_NdList.h"
 #include "IrWriter.h"
 
 Ast_Primitive::Ast_Primitive( const char *src, int off, int tok_number ) : Ast( src, off ), tok_number( tok_number ) {
@@ -233,9 +234,25 @@ static Expr parse_make_code_for( ParsingContext &context, const Ast_Primitive *p
 
     TypeGen_JS type_gen( tvar->ptype() );
     for( int i = 0; i < var->nn(); ++i ) {
-        Vec<Type *> types;
-        PRINT( var->na()[ i ] );
-        type_gen.add_func_to_gen( var->names[ i ], types );
+        int nb_dim = 0;
+        Vec<int> sizes;
+        Vec<Expr> variants;
+        Ast_NdList::get_items( nb_dim, sizes, variants, var->na()[ i ] );
+        if ( nb_dim != 1 )
+            return ip->pc->ret_error( "...", false, __FILE__, __LINE__ );
+
+        for( Expr v : variants ) {
+            Vec<Expr> expr_types;
+            Ast_NdList::get_items( nb_dim, sizes, expr_types, v );
+
+            Vec<Type *> types;
+            for( Expr e : expr_types ) {
+                Expr tvar = context.apply( e, 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
+                types << tvar->ptype();
+            }
+            type_gen.add_func_to_gen( var->names[ i ], types );
+        }
+
     }
     type_gen.exec();
 

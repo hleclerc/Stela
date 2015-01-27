@@ -27,7 +27,9 @@
 ****************************************************************************/
 
 
+#include "../Ssa/Type.h"
 #include "TypeGen.h"
+#include <sstream>
 
 TypeGen::TypeGen( Type *type ) : type( type ) {
 }
@@ -36,3 +38,10 @@ void TypeGen::add_func_to_gen( String name, Vec<Type *> arg_types ) {
     funcs_to_gen.push_back_unique( FuncToGen{ name, arg_types } );
 }
 
+
+
+void TypeGen::FuncToGen::write_to_stream( Stream &os ) const {
+    os << '_' << name.size() << name;
+    for( Type *t : arg_types )
+        t->as_var( os, false );
+}

@@ -26,6 +26,8 @@
 **
 ****************************************************************************/
 
+#include "../Codegen/Codegen.h"
+#include "../Codegen/OutReg.h"
 #include "../System/SameType.h"
 #include "../System/Math.h"
 #include "ParsingContext.h"
@@ -174,29 +176,30 @@ struct BOp : Op<TO> {
         return to.op_id;
     }
 
-    //    virtual void write( Codegen_C *cc ) {
-    //        if ( not this->out_reg ) {
-    //            to.write_oper( cc->on.write_beg() );
-    //            cc->on.write_end( " ??;" );
-    //            return;
-    //        }
-    //        cc->on.write_beg();
-    //        this->out_reg->write( cc, this->new_reg ) << " = ";
-    //        if (  SameType<TO,Op_mod>::res and ip->is_integer( this->out_reg->type ) ) {
-    //            cc->write_out( this->inp[ 0 ] );
-    //            *cc->os << " % ";
-    //            cc->write_out( this->inp[ 1 ] );
-    //            cc->on.write_end( ";" );
-    //        } else {
-    //            if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }
-    //            cc->write_out( this->inp[ 0 ] );
-    //            if ( not TO::is_oper ) *cc->os << ", ";
-    //            else { *cc->os << " "; to.write_oper( *cc->os ); *cc->os << " "; }
-    //            cc->write_out( this->inp[ 1 ] );
-    //            if ( not TO::is_oper ) *cc->os << " )";
-    //            cc->on.write_end( ";" );
-    //        }
-    //    }
+    virtual void write( Codegen *cc ) {
+        if ( not this->out_reg ) {
+            to.write_oper( cc->on.write_beg() );
+            cc->on.write_end( " ??;" );
+            return;
+        }
+        cc->on.write_beg() << *this->out_reg << " = ";
+        cc->write_beg_cast_bop( this->out_reg->type );
+        if ( SameType<TO,Op_mod>::res and ip->is_integer( this->out_reg->type ) ) {
+            cc->write_out( this->inp[ 0 ] );
+            *cc->os << " % ";
+            cc->write_out( this->inp[ 1 ] );
+        } else {
+            if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }
+            cc->write_out( this->inp[ 0 ] );
+            if ( not TO::is_oper ) *cc->os << ", ";
+            else { *cc->os << " "; to.write_oper( *cc->os ); *cc->os << " "; }
+            cc->write_out( this->inp[ 1 ] );
+            if ( not TO::is_oper ) *cc->os << " )";
+        }
+        cc->write_end_cast_bop( this->out_reg->type );
+        cc->on.write_end( ";" );
+        //        c->on << *c->var_decl( out_reg ) << " = " << *this << ";";
+    }
 
     TO to;
 };

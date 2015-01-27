@@ -28,6 +28,7 @@
 
 #include "../Codegen/Codegen.h"
 #include "ParsingContext.h"
+#include "PointedValue.h"
 #include "IpSnapshot.h"
 #include "Type.h"
 #include "Inst.h"
@@ -63,14 +64,17 @@ void Inst::write_to_stream( Stream &os, int prec ) {
     }
 }
 
+void Inst::as_var( Stream &os, bool und ) const {
+    TODO;
+}
+
 void Inst::set( Expr obj, Expr cond ) {
     PRINT( *this );
     ip->pc->disp_error( "setting a non pointer item" );
 }
 
 Expr Inst::get( Expr cond ) {
-    PRINT( *this );
-    return ip->pc->ret_error( "getting a non pointer item" );
+    return pointed_value( this );
 }
 
 Expr Inst::simplified( Expr cond ) {
@@ -94,9 +98,10 @@ Type *Inst::ptype( int nout ) {
 }
 
 Type *Inst::ptype() {
-    ip->pc->disp_error( "Not a pointer type" );
-    ERROR( "Not a pointer type" );
-    return 0;
+    Type *res = type()->ptype();
+    if ( not res )
+        ip->pc->disp_error( "Not a pointer type", false, __FILE__, __LINE__ );
+    return res;
 }
 
 Type *Inst::type() {
@@ -340,6 +345,7 @@ void Inst::clone( Vec<Expr> &created ) const {
         res->add_ext( reinterpret_cast<Inst *>( i->op_mp ) );
 
     // register
+    res->out_reg = out_reg;
     op_mp = res.inst;
     created << res;
 }

@@ -30,6 +30,7 @@
 #ifndef BOOLOPSEQ_H
 #define BOOLOPSEQ_H
 
+#include "../System/Stream.h"
 class Expr;
 
 /**
@@ -38,6 +39,7 @@ class BoolOpSeq {
 public:
     BoolOpSeq( bool default_val = true );
 
+    void write_to_stream( Stream &os ) const;
     bool always( bool val ) const;
 
     bool default_val;

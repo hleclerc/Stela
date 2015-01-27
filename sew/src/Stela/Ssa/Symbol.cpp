@@ -27,7 +27,10 @@
 ****************************************************************************/
 
 
+#include "../Codegen/Codegen.h"
+#include "../Codegen/OutReg.h"
 #include "Symbol.h"
+#include "Type.h"
 
 /**
 */
@@ -36,6 +39,10 @@ struct Symbol : Inst {
     virtual void write_dot( Stream &os ) const { os << name; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Symbol( out_type, name ); }
     virtual Type *type() { return out_type; }
+    virtual void write( Codegen *c ) {
+        if ( name.size() )
+            c->on << *out_reg << " = " << name << ";";
+    }
     Type  *out_type;
     String name;
 };

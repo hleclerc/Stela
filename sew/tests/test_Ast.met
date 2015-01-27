@@ -351,19 +351,19 @@ class Toto
     
     static def size_init
         make_varargs b = 8 * 5
+        
+    def foo arg
+        2 * arg + 1
   
 
 # init_args is a list of list of types to describe arg types for ctor variants
 def make_code_for_class type, varargs
     ___make_code_for type, varargs
 
-# make_code_for_class Toto,
-    # init = [ [] #~ no arguments ~#, [ SI32 ] ],
-    # size = [  ]
-def f varargs
-    ___info varargs.get_size()
-
-f 5, 
-    a = 10,
-    b = 30
+class Pouetox[ a ]
+    az := 1
     
+make_code_for_class Toto,
+    # init = [ [] ],
+    # size = [ [] ],
+    foo  = [ [ SI32 ] ]

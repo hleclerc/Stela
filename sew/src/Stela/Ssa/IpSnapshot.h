@@ -38,13 +38,13 @@
 class IpSnapshot {
 public:
     struct StatePS {
+        Expr                          ret;
         Expr                          cond;
         Expr                          cont;
         Vec<ParsingContext::RemBreak> rem_breaks;
     };
 
     IpSnapshot( IpSnapshot *&prev );
-    // ~IpSnapshot();
 
     void reg_parsing_context( ParsingContext *s );
     void undo_parsing_contexts();

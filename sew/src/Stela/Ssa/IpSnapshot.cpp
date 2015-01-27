@@ -36,6 +36,7 @@ IpSnapshot::IpSnapshot( IpSnapshot *&prev ) : iptr( prev ), prev( prev ), date( 
 
 void IpSnapshot::reg_parsing_context( ParsingContext *s ) {
     StatePS sp;
+    sp.ret        = s->ret;
     sp.cond       = s->cond;
     sp.cont       = s->cont;
     sp.rem_breaks = s->rem_breaks;
@@ -44,6 +45,7 @@ void IpSnapshot::reg_parsing_context( ParsingContext *s ) {
 
 void IpSnapshot::undo_parsing_contexts() {
     for( std::pair<ParsingContext *,StatePS> o : parsing_contexts ) {
+        o.first->ret        = o.second.ret;
         o.first->cond       = o.second.cond;
         o.first->cont       = o.second.cont;
         o.first->rem_breaks = o.second.rem_breaks;

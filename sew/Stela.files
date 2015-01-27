@@ -247,3 +247,7 @@ src/Stela/Codegen/TypeGen.h
 src/Stela/Codegen/TypeGen.cpp
 src/Stela/Codegen/TypeGen_JS.h
 src/Stela/Codegen/TypeGen_JS.cpp
+src/Stela/Ssa/PointedValue.h
+src/Stela/Ssa/PointedValue.cpp
+src/Stela/Codegen/InstBlock.h
+src/Stela/Codegen/InstBlock.cpp

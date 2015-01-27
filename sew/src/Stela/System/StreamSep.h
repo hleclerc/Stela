@@ -70,6 +70,8 @@ public:
         return *stream;
     }
 
+    TS &operator*() { return *stream; }
+
     TS *stream;
     const char *sep;
     const char *end;
