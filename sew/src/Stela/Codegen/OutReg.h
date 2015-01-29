@@ -30,7 +30,9 @@
 #define OUTREG_H
 
 #include "../System/Stream.h"
+#include "../System/Vec.h"
 class Codegen;
+class Inst;
 class Type;
 
 /**
@@ -41,9 +43,9 @@ public:
 
     void write_to_stream( Stream &os ) const;
 
-    Type  *type;
-    String name;
-    //    bool   ptr;
+    Type       *type;
+    String      name;
+    Vec<Inst *> used_by;
 };
 
 #endif // OUTREG_H

@@ -9,3 +9,5 @@
 * Utiliser Scanner (pour Token) et Parser
 
 * ne pas utiliser a = ... pour les arguments données par nom, mais plutôt l'opérateur utilisé pour décrire les map
+
+* Il FAUT faire un type Error pour a := un_truc_qui_marche_pas -> on doit stocker l'erreur

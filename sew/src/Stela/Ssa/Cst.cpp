@@ -57,8 +57,9 @@ public:
         cst_set[ _type ].remove_first_unordered( this );
     }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
-        int sb = ( _size + 7 ) / 8;
-        return new Cst( _type, _size, _data.ptr(), _data.ptr() + sb );
+        return this;
+        // int sb = ( _size + 7 ) / 8;
+        // return new Cst( _type, _size, _data.ptr(), _data.ptr() + sb );
     }
     virtual void write_to_stream( Stream &os ) const {
         write_dot( os );

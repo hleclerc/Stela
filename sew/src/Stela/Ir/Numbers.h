@@ -85,3 +85,4 @@
 #define IR_TOK_div  PI8( 82 )
 #define IR_TOK_pow  PI8( 83 )
 #define IR_TOK_mod  PI8( 84 )
+#define IR_TOK_shift_left  PI8( 85 )

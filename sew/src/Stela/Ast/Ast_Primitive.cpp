@@ -9,10 +9,12 @@
 #include "../Ssa/Cst.h"
 #include "../Ssa/Op.h"
 #include "../Ir/Numbers.h"
-#include "../Codegen/TypeGen_JS.h"
+#include "../Codegen/TypeGen_Js.h"
 #include "Ast_Primitive.h"
+#include "Ast_String.h"
 #include "Ast_NdList.h"
 #include "IrWriter.h"
+#include <fstream>
 
 Ast_Primitive::Ast_Primitive( const char *src, int off, int tok_number ) : Ast( src, off ), tok_number( tok_number ) {
 }
@@ -221,9 +223,12 @@ static Expr parse_get_size( ParsingContext &context, const Ast_Primitive *p ) {
 }
 
 static Expr parse_make_code_for( ParsingContext &context, const Ast_Primitive *p ) {
-    CHECK_NB_ARGS( 2 );
-    Expr tvar = context.apply( p->args[ 0 ]->parse_in( context ), 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
-    Expr vara = p->args[ 1 ]->parse_in( context ); if ( vara ) vara = vara->get( context.cond );
+    CHECK_NB_ARGS( 3 );
+    String file = Ast_String::to_string( p->args[ 0 ]->parse_in( context )->get( context.cond ) );
+    std::ofstream fout( file.c_str() );
+
+    Expr tvar = context.apply( p->args[ 1 ]->parse_in( context ), 0, 0, 0, 0, 0, ParsingContext::APPLY_MODE_PARTIAL_INST );
+    Expr vara = p->args[ 2 ]->parse_in( context ); if ( vara ) vara = vara->get( context.cond );
     if ( tvar.error() or vara.error() )
         return Expr();
 
@@ -232,7 +237,7 @@ static Expr parse_make_code_for( ParsingContext &context, const Ast_Primitive *p
         return context.ret_error( "expecting cst values" );
     Varargs *var = reinterpret_cast<Varargs *>( ST( pvar ) );
 
-    TypeGen_JS type_gen( tvar->ptype() );
+    TypeGen_Js type_gen( tvar->ptype(), &fout );
     for( int i = 0; i < var->nn(); ++i ) {
         int nb_dim = 0;
         Vec<int> sizes;
@@ -254,6 +259,7 @@ static Expr parse_make_code_for( ParsingContext &context, const Ast_Primitive *p
         }
 
     }
+
     type_gen.exec();
 
     return ip->void_var();

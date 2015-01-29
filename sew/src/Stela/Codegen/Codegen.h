@@ -1,10 +1,12 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "../System/SplittedVec.h"
 #include "../System/StreamSep.h"
 #include "../System/AutoPtr.h"
 #include "../System/Stream.h"
 #include "../Ssa/Inst.h"
+#include "OutReg.h"
 #include <sstream>
 
 /**
@@ -32,10 +34,12 @@ public:
 
     virtual void write_beg_cast_bop( Type *type ) = 0;
     virtual void write_end_cast_bop( Type *type ) = 0;
+    virtual void write_decl( Type *type, const Vec<OutReg *> &regs );
 
     Vec<Expr> fresh;
     OutReg *new_reg( Type *type, String name = "" );
 
+    SplittedVec<OutReg,16> out_regs;
     StreamSepMaker<Stream> on;
     std::ostringstream     ms; ///< main stream
     Stream                *os; ///< currrent stream

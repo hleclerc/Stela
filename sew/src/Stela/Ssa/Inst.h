@@ -32,6 +32,7 @@
 #include "../System/Vec.h"
 #include "BoolOpSeq.h"
 #include "Expr.h"
+class InstBlock;
 class Codegen;
 class OutReg;
 class Type;
@@ -99,8 +100,6 @@ public:
     virtual bool get_val( void *res, Type *type );
     virtual bool get_val( void *res, int size );
 
-    virtual void write( Codegen *c );
-
     bool is_surdef() const;
     bool is_const() const;
 
@@ -127,6 +126,10 @@ public:
 
     static Inst *twin_or_val( Inst *inst ); ///< if there's already an inst doing the same thing, return this inst and delete `inst`
 
+    // codegen
+    virtual void write( Codegen *c );
+    virtual bool need_out_reg();
+
 
     // display
     static  int  display_graph( Vec<Expr> outputs, const char *filename = ".res" );
@@ -143,10 +146,10 @@ public:
     int                   flags;
 
     // codegen
-    BoolOpSeq             when;
-    Inst                 *next_sched;
-    Inst                 *prev_sched;
+    Vec<InstBlock *>      children_inst_blocks;
+    InstBlock            *parent_block;
     OutReg               *out_reg;
+    BoolOpSeq             when;
 
     // graph
     static  PI64          cur_op_id; ///<

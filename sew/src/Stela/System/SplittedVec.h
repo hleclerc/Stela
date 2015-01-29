@@ -52,19 +52,15 @@ public:
         void operator++() {
             ++cur;
             while ( cur >= item->cur ) {
-                if ( not item->next ) {
-                    item = 0;
-                    cur  = 0;
+                if ( not item->next )
                     return;
-                }
                 item = item->next;
                 cur  = item->ptr();
             }
         }
-        T &operator*() {
-            return *cur;
-        }
+        T &operator*() { return *cur; }
         bool operator==( const Iterator &c ) const { return item == c.item and cur == c.cur; }
+        bool operator!=( const Iterator &c ) const { return item != c.item or  cur != c.cur; }
 
         Item *item;
         T    *cur;

@@ -64,8 +64,9 @@ Expr Class::call( ParsingContext &ns, Type *type, int nu, Expr *vu, int nn, cons
         for( Expr s : va_size_init->exprs )
             tot = add( tot, s->get( caller->cond ) );
         ret = room( cst_computed_size( type, tot ) );
-    } else
+    } else {
         ret = room( cst( type, type->size(), 0, 0 ) );
+    }
 
     //
     if ( apply_mode == ParsingContext::APPLY_MODE_NEW )

@@ -32,26 +32,28 @@
 #include "../Ssa/Room.h"
 #include "../Ssa/Type.h"
 #include "../Ssa/Op.h"
-#include "TypeGen_JS.h"
+#include "TypeGen_Js.h"
 #include "Codegen_Js.h"
 #include "OutReg.h"
 
-TypeGen_JS::TypeGen_JS( Type *type, Stream *ms ) : TypeGen( type ), on( ms ), os( ms ) {
+TypeGen_Js::TypeGen_Js( Type *type, Stream *ms ) : TypeGen( type ), on( ms ), os( ms ) {
 }
 
-void TypeGen_JS::exec() {
+void TypeGen_Js::exec() {
+    on << "// dep AsmMod.coffee";
+    on << "";
     on << Type::AsVar{ type } << " = (function() {";
     on << "    var am = asm_mod.push( function( stdlib, foreign, buffer ) {";
     on << "        \"use asm\";";
     on << "        ";
     on << "        var v_SI8  = new stdlib.Uint8Array  ( buffer );";
-    on << "        var v_PI8  = new stdlib.Int8Array   ( buffer );";
     on << "        var v_SI16 = new stdlib.Uint16Array ( buffer );";
-    on << "        var v_PI16 = new stdlib.Int16Array  ( buffer );";
     on << "        var v_SI32 = new stdlib.Uint32Array ( buffer );";
+    // on << "        var v_SI64 = new stdlib.Uint64Array ( buffer );";
+    on << "        var v_PI8  = new stdlib.Int8Array   ( buffer );";
+    on << "        var v_PI16 = new stdlib.Int16Array  ( buffer );";
     on << "        var v_PI32 = new stdlib.Int32Array  ( buffer );";
-    on << "        var v_SI64 = new stdlib.Uint64Array ( buffer );";
-    on << "        var v_PI64 = new stdlib.Int64Array  ( buffer );";
+    // on << "        var v_PI64 = new stdlib.Int64Array  ( buffer );";
     on << "        var v_FP32 = new stdlib.Float32Array( buffer );";
     on << "        var v_FP64 = new stdlib.Float64Array( buffer );";
     on << "        ";
@@ -104,16 +106,10 @@ void TypeGen_JS::exec() {
     on << "};";
 }
 
-void TypeGen_JS::gen_func( FuncToGen &f ) {
+void TypeGen_Js::gen_func( FuncToGen &f ) {
     Codegen_Js cjs;
     //    Expr off = symbol( ip->type_SI32, "offset_self" );
     //    Expr pof = room( off );
-
-    // func
-    Expr var = room( symbol( type, "self" ) );
-    Expr func = ip->pc->get_attr( var, f.name );
-    if ( func.error() )
-        return ip->pc->disp_error( "Impossible to find function named..." );
 
     // args
     Vec<Expr> args;
@@ -124,8 +120,24 @@ void TypeGen_JS::gen_func( FuncToGen &f ) {
         args << p;
     }
 
+
+    // func
+    Expr var = room( symbol( type, "self" ) );
     IpSnapshot nsv( ip->ip_snapshot );
-    Expr res = ip->pc->apply( func, args.size(), args.ptr() );
+
+    Expr res;
+    if ( f.name == "init" ) {
+        res = ip->pc->apply( ip->pc->type_expr( type ), args.size(), args.ptr() );
+    } else {
+        Expr func = ip->pc->get_attr( var, f.name );
+        if ( func.error() )
+            return ip->pc->disp_error( "Impossible to find function named..." );
+
+        res = ip->pc->apply( func, args.size(), args.ptr() );
+    }
+
+    PRINT( res );
+    // if ( f.name == "init" )
 
     // signature
     on.write_beg() << "function " << f << "( offset_self";

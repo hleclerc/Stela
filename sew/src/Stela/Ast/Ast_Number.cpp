@@ -1,4 +1,5 @@
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Slice.h"
 #include "../Ssa/Room.h"
 #include "../Ssa/Cst.h"
 #include "../Ir/Numbers.h"
@@ -25,6 +26,26 @@ void Ast_Number::write_to_stream( Stream &os, int nsp ) const {
     os << str;
     if ( l ) os << 'l';
     if ( p ) os << 'p';
+}
+
+int Ast_Number::CUInt_to_int( Expr expr, int *bytes ) {
+    if ( bytes ) ++*bytes;
+
+    int res = 0, off = 0, shift = 0;
+    while ( true ) {
+        PI8 v;
+        if ( not slice( ip->type_PI8, expr, off )->get_val( &v, 8 ) ) {
+            ip->pc->disp_error( "exp known number", false, __FILE__, __LINE__ );
+            return 0;
+        }
+        if ( v < 128 )
+            return res + ( v << shift );
+
+        res += ( v - 128 ) << shift;
+        if ( bytes ) ++*bytes;
+        shift += 7;
+        off += 8;
+    }
 }
 
 

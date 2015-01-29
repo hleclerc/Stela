@@ -44,6 +44,9 @@ static Type *type_promote( Type *a, Type *b, TO ) {
         return ip->type_Bool;
     if ( a == b or a->orig == ip->class_Ptr )
         return a;
+    if ( a == ip->type_Bool ) {
+        return b;
+    }
     if ( a == ip->type_SI32 ) {
         if ( b == ip->type_PI64 ) return ip->type_SI64;
         if ( b == ip->type_SI64 ) return b;
@@ -121,7 +124,7 @@ static Expr _op( Expr a, TO to ) {
     if ( ta->aryth ) {
         PI8 da[ ta->sb() ];
         if ( a->get_val( da, ta->sb() ) ) {
-            #define DECL_BT( T ) if ( ta == ip->type_##T ) return Expr( to( *reinterpret_cast<T *>( da ) ) );
+            #define DECL_BT( T ) if ( ta == ip->type_##T ) { return Expr( to( *reinterpret_cast<T *>( da ) ) ); }
             #include "DeclArytTypes.h"
             #undef DECL_BT
         }

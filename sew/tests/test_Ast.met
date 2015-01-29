@@ -103,6 +103,9 @@ def div a, b
 
 def mod a, b
     ___mod a, b
+    
+def shift_left a, b
+    ___shift_left a, b
 
 def self_add a, b
     a = a + b
@@ -172,8 +175,7 @@ def pre_inc a
         
     # def add name, inode
         # data.push_back name, inode
-        # # -> data doit être connu pour que la génération de code fasse appel �  la méthode...
-    
+        
 # class Directory_RedBlack
     # class Item
         # name ~= CString
@@ -232,9 +234,17 @@ class Type
 
 class Ptr[ T ]
     addr := 0p
+
+    def init p
+        addr = p.addr
     
     def reassign p
         addr = p.addr
+        
+    def select index
+        inst ~= T
+        ___slice T, @self, sizeof( inst ) * index
+    
     
 def make_varargs varargs
     varargs
@@ -260,6 +270,11 @@ class CUInt
             val /= 128
             cpt += 1
 
+class CString
+    size := CUInt 0
+    data := ___repeat PI8, x => x.size
+    
+            
 def ceil a, b
     ( a + b - 1 ) / b * b
         
@@ -348,22 +363,42 @@ class Toto
     a := PI16 13
     b := ___repeat PI8, x => 8 * 5
     c := PI16 26
+
+    def init
+        
     
     static def size_init
         make_varargs b = 8 * 5
         
     def foo arg
         2 * arg + 1
+
+class JsAllocate
+    static def init_allocator buffer_SI32
+        for i in 0 .. sizes.get_size()
+            buffer_SI32[ 0 ] = 0
+        
+    # buffer -> Ptr[SI32]
+    static def js_allocate buffer, size
+        # void *res = free_room;
+        # if ( not res )
+            # res = new_allocator_chunk( size );
+        # free_room = *reinterpret_cast<void **>( res );
+        # return res;
+
+        if size <= 4
+            res = Ptr[SI32] buffer[ 0 ]
+            if not res
+                res = new_allocator_chunk buffer, size
+            buffer[ 0 ] = res
+            return res
   
-
+  
 # init_args is a list of list of types to describe arg types for ctor variants
-def make_code_for_class type, varargs
-    ___make_code_for type, varargs
+def make_code_for_class filename, type, varargs
+    ___make_code_for filename, type, varargs
 
-class Pouetox[ a ]
-    az := 1
-    
-make_code_for_class Toto,
-    # init = [ [] ],
-    # size = [ [] ],
-    foo  = [ [ SI32 ] ]
+make_code_for_class "test_js/Toto.js", Toto,
+    init = [ [] ]
+    # foo  = [ [ SI32 ] ]
+

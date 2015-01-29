@@ -27,6 +27,8 @@ public:
         *( buf++ ) = val;
     }
 
+    static int CUInt_to_int( Expr expr, int *bytes = 0 );
+
 protected:
     friend class AstMaker;
 

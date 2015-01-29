@@ -61,22 +61,31 @@ Vec<Expr> Codegen_Js::make_code() {
     for( Expr inst : fresh )
         out << cloned( inst, created );
 
-    // scheduling (and creation of IfInst)
+    // replace select nodes by IfInst nodes
+    makeifinst( out );
+
+    // scheduling
     InstBlock inst_block;
     scheduling( inst_block, out );
 
     // set missing out_regs
-    for( Inst *i = inst_block.beg; i; i = i->next_sched ) {
-        if ( not i->out_reg )
-            i->out_reg = new_reg( i->type() );
+    for( Expr i : inst_block.seq ) {
+        if ( i->need_out_reg() and not i->out_reg ) {
+            Type *t = i->type();
+            if ( t == ip->type_Void )
+                continue;
+            i->out_reg = new_reg( t );
+            i->out_reg->used_by << i.inst;
+        }
     }
 
     //
-    for( Inst *i = inst_block.beg; i; i = i->next_sched ) {
-        i->write( this );
-        if ( i->next_sched == 0 and i->out_reg->type != ip->type_Void )
-            on << "return " << *i->out_reg << ";";
-    }
+    make_reg_decl( inst_block );
+
+    // write inst
+    inst_block.write( this );
+    if ( inst_block.seq.size() and inst_block.seq.back()->out_reg->type != ip->type_Void )
+        on << "return " << *inst_block.seq.back()->out_reg << ";";
 
     return out;
 }
@@ -101,6 +110,23 @@ void Codegen_Js::write_end_cast_bop( Type *type ) {
     }
 }
 
+void Codegen_Js::write_decl( Type *type, const Vec<OutReg *> &regs ) {
+    on.write_beg() << "var ";
+
+    if ( type == ip->type_SI32 or type == ip->type_Bool or type == ip->type_SI8 or type == ip->type_PI8 or type == ip->type_SI16 or type == ip->type_PI16 ) {
+        for( OutReg *reg : regs ) {
+            if ( reg != regs[ 0 ] )
+                *on << ", ";
+            *on << reg->name << " = 0";
+        }
+    } else {
+        PRINT( *type );
+        TODO;
+    }
+
+    on.write_end( ";" );
+}
+
 void Codegen_Js::write_expr( Expr expr ) {
     on << "    \"use asm\";";
 
@@ -109,6 +135,10 @@ void Codegen_Js::write_expr( Expr expr ) {
     cjs << expr;
     Vec<Expr> res = cjs.make_code();
     cjs.on << "return " << *res[ 0 ]->out_reg << ";";
+}
+
+void Codegen_Js::makeifinst( Vec<Expr> &out ) {
+    // TODO
 }
 
 // check if all the children have already been scheduled
@@ -188,3 +218,23 @@ void Codegen_Js::scheduling( InstBlock &block, Vec<Expr> &out ) {
         }
     }
 }
+
+void Codegen_Js::make_reg_decl( InstBlock &inst_block ) {
+    // struct
+    for( OutReg &reg : out_regs ) {
+        if ( not reg.used_by.size() )
+            continue;
+        int max_use = 0;
+        for( Inst *inst : reg.used_by )
+            for( InstBlock *blk = inst->parent_block; blk; blk = blk->parent )
+                max_use = blk->add_use( &reg );
+        for( InstBlock *blk = reg.used_by[ 0 ]->parent_block; blk; blk = blk->parent ) {
+            if ( blk->use_cpt == max_use  ) {
+                blk->add_decl( &reg );
+                break;
+            }
+        }
+    }
+}
+
+

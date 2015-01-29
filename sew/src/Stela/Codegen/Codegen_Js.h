@@ -32,6 +32,7 @@
 
 #include "Codegen.h"
 
+class InstBlock;
 class Type;
 
 /**
@@ -46,9 +47,13 @@ public:
 
     virtual void      write_beg_cast_bop( Type *type );
     virtual void      write_end_cast_bop( Type *type );
+    virtual void      write_decl( Type *type, const Vec<OutReg *> &regs );
 
     void              write_expr( Expr expr );
-    Inst             *scheduling( Vec<Expr> &out );
+    void              makeifinst( Vec<Expr> &out );
+    void              scheduling( InstBlock &inst_block, Vec<Expr> &out );
+    void              make_reg_decl( InstBlock &inst_block );
+
 };
 
 #endif // CODEGEN_JS_H

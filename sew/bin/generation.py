@@ -452,6 +452,7 @@ binary_homo_operations = string.split( """
     div
     pow
     mod
+    shift_left
 """ )
 binary_operations = binary_bool_operations + binary_homo_operations
 

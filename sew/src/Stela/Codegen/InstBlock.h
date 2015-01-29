@@ -2,18 +2,30 @@
 #define INSTBLOCK_H
 
 #include "../Ssa/Inst.h"
+#include <map>
 
 /**
 */
-class InstBlock {
+class InstBlock : public Inst {
 public:
-    InstBlock( InstBlock *parent );
+    InstBlock( InstBlock *parent = 0 );
+    virtual Expr forced_clone( Vec<Expr> &created ) const;
+    virtual void write_dot( Stream &os ) const;
+    virtual bool need_out_reg();
 
     void operator<<( Inst *inst );
 
-    InstBlock *parent;
-    Inst *beg;
-    Inst *end;
+    int  add_use( OutReg *reg );
+    void add_decl( OutReg *out_reg );
+
+    virtual void write( Codegen *c );
+
+    InstBlock                      *parent;
+    Vec<Expr>                       seq;
+    std::map<Type *,Vec<OutReg *> > decl;
+
+    OutReg                         *use_out_reg;
+    int                             use_cpt;
 };
 
 #endif // INSTBLOCK_H

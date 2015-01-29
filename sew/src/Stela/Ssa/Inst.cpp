@@ -44,9 +44,8 @@ Inst::Inst() {
     op_mp             = 0;
     cpt_use           = 0;
     flags             = 0;
-    next_sched        = 0;
-    prev_sched        = 0;
     out_reg           = 0;
+    parent_block      = 0;
 }
 
 Inst::~Inst() {
@@ -126,6 +125,10 @@ bool Inst::get_val( void *res, int size ) {
 
 void Inst::write( Codegen *c ) {
     c->on << "// TODO: write " << *this;
+}
+
+bool Inst::need_out_reg() {
+    return true;
 }
 
 bool Inst::is_surdef() const {

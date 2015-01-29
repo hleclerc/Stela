@@ -69,16 +69,19 @@ void Type::write_to_stream( Stream &os ) const {
 }
 
 void Type::as_var( Stream &os, bool und ) const {
-    if ( und )
-        os << '_';
-    os << orig->ast_item->name.size() << orig->ast_item->name << parameters.size();
-    if ( parameters.size() )
-        os << '_';
-    for( Expr p : parameters ) {
-        Expr g = p->get( ip->pc->cond );
-        g->type()->as_var( os, false );
-        g->as_var( os, false );
-    }
+    if ( parameters.size() ) {
+        if ( und )
+            os << '_';
+        os << orig->ast_item->name.size() << orig->ast_item->name << parameters.size();
+        if ( parameters.size() )
+            os << '_';
+        for( Expr p : parameters ) {
+            Expr g = p->get( ip->pc->cond );
+            g->type()->as_var( os, false );
+            g->as_var( os, false );
+        }
+    } else
+        os << orig->ast_item->name;
 }
 
 int Type::alig() {
@@ -143,6 +146,12 @@ Expr Type::find_static_attr( String name ) {
 }
 
 Expr Type::attr_expr( Expr self, Type::Attr &a ) {
+    if ( a.off_expr and a.val->ptype() == ip->type_Repeated ) {
+        SI64 rep_dat[ 2 ]; if ( not a.val->get()->get_val( rep_dat, 2 * 64 ) ) ERROR( "..." );
+        Type *rep_type = reinterpret_cast<Type *>( (ST)rep_dat[ 0 ] );
+
+        return room( rcast( ip->pc->ptr_type_for( rep_type ), add( self, a.off_expr ) ) );
+    }
     return a.off_expr.null() ? a.val : rcast( a.val->type(), add( self, a.off_expr ) );
 }
 

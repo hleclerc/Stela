@@ -24,8 +24,12 @@ void Codegen::set_os( Stream *_os, int nsp ) {
         on.nsp = nsp;
 }
 
+void Codegen::write_decl( Type *type, const Vec<OutReg *> &regs ) {
+    TODO;
+}
+
 OutReg *Codegen::new_reg( Type *type, String name ) {
     if ( not name.size() )
         return new_reg( type, "R" + to_string( num_reg++ ) );
-    return new OutReg( type, name );
+    return out_regs.push_back( type, name );
 }

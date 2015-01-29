@@ -503,7 +503,7 @@ bool ParsingContext::always_equal( Expr a, Expr b ) {
 
 Type *ParsingContext::type_from_type_expr( Expr type_expr ) {
     ASSERT( type_expr->ptype() == ip->type_Type, "..." );
-    SI64 p;
+    SI64 p = 0;
     if ( not type_expr->get( cond )->get_val( &p, 64 ) )
         return 0;
     return reinterpret_cast<Type *>( ST( p ) );

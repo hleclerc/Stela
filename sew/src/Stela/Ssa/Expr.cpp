@@ -26,6 +26,8 @@
 **
 ****************************************************************************/
 
+#include "../System/SizeofIf.h"
+#include "../System/Stream.h"
 #include "ParsingContext.h"
 #include "Inst.h"
 #include "Cst.h"
@@ -38,7 +40,7 @@ Expr::Expr( Inst *inst ) : inst( inst ) {
     if ( inst ) ++inst->cpt_use;
 }
 
-#define DECL_BT( T ) Expr::Expr( T val ) : Expr( cst( ip->type_##T, 8 * sizeof( val ), &val ) ) {}
+#define DECL_BT( T ) Expr::Expr( T val ) : Expr( cst( ip->type_##T, SizeofIf<T,true>::val, &val ) ) {}
 #include "DeclArytTypes.h"
 #undef DECL_BT
 

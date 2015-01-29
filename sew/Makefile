@@ -2,7 +2,7 @@ MC      = metil_comp -DDEBUG -Wall -g3 -Isrc -Iext/PrepArg/src -Iext/Celo/src
 INSTALL = `pwd`
 # SRC     = tests/test.met
 # MAIN    = stela
-SRC     = --code-for-class "Toto" -o Toto.js tests/test_Ast.met
+SRC     = tests/test_Ast.met
 MAIN    = stela_ast
 # tests/test.met
 
@@ -15,9 +15,13 @@ exe: cmp
 	
 # 	metil_comp out.cpp
 
-js:
-	cd test_js; for i in `find . -name "*.coffee"`; do coffee -b -c $$i; done
-	cd test_js; nodejs test.js
+js: cmp
+	./${MAIN} ${SRC}
+	cat test_js/Toto.js
+	python bin/soja_comp.py -e test_js/test.coffee
+# 	cd test_js; for i in `find . -name "*.coffee"`; do coffee -b -c $$i; done
+# 	cd test_js; cat AsmMod.js Toto.js test.js > concat.js
+# 	cd test_js; nodejs concat.js
 	
 
 cmp: ext/PrepArg install_dir
@@ -72,4 +76,4 @@ gen:
 	python bin/generation.py
 	# ${MC} bin/gen_base_class_wrapper.cpp met/base.met src/Stela/Vm/BaseStructs.h
 	
-.PHONY: cmp exe 
+.PHONY: cmp exe gen

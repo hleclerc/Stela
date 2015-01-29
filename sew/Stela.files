@@ -245,8 +245,8 @@ src/Stela/Ssa/Cond.cpp
 tests/test_Cond.cpp
 src/Stela/Codegen/TypeGen.h
 src/Stela/Codegen/TypeGen.cpp
-src/Stela/Codegen/TypeGen_JS.h
-src/Stela/Codegen/TypeGen_JS.cpp
+src/Stela/Codegen/TypeGen_Js.h
+src/Stela/Codegen/TypeGen_Js.cpp
 src/Stela/Ssa/PointedValue.h
 src/Stela/Ssa/PointedValue.cpp
 src/Stela/Codegen/InstBlock.h

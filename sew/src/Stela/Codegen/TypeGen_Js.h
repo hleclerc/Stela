@@ -27,8 +27,8 @@
 ****************************************************************************/
 
 
-#ifndef TYPEGEN_JS_H
-#define TYPEGEN_JS_H
+#ifndef TypeGen_Js_H
+#define TypeGen_Js_H
 
 #include "../System/StreamSep.h"
 #include "../System/Stream.h"
@@ -36,9 +36,9 @@
 
 /**
 */
-class TypeGen_JS : public TypeGen {
+class TypeGen_Js : public TypeGen {
 public:
-    TypeGen_JS( Type *type, Stream *ms = &std::cout );
+    TypeGen_Js( Type *type, Stream *ms = &std::cout );
 
     virtual void exec();
 
@@ -48,4 +48,4 @@ public:
     Stream                *os; ///< currrent stream
 };
 
-#endif // TYPEGEN_JS_H
+#endif // TypeGen_Js_H
