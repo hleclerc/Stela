@@ -426,10 +426,17 @@ def range beg, end, inc = typeof( beg )( 1 )
     Range[ typeof( beg ), typeof( end ), typeof( inc ) ]( beg, end, inc )
     
     
-def foo
-    a := 0
-    for i in 0 .. 10
-        a += i
-    ___disp a
+# def foo
+    # a := 0
+    # for i in 0 .. 10
+        # a += i
+    # ___disp a
 
-foo()
+# foo()
+cur := 0
+a := 2
+while cur < 10
+    a += cur
+    cur += 1
+# ___disp a
+

@@ -31,7 +31,7 @@ Expr Ast_Break::_parse_in( ParsingContext &context ) const {
         } else {
             // break from a while
             if ( s->cont ) {
-                --i;
+                --i; // broken loop
                 ++r;
             }
             //
@@ -40,6 +40,7 @@ Expr Ast_Break::_parse_in( ParsingContext &context ) const {
     }
 
     //
+    PRINT( r );
     context.BREAK( r, context.cond );
     return ip->void_var();
 }

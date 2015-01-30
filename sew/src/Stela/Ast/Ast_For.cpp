@@ -66,7 +66,6 @@ Expr Ast_For::_parse_in( ParsingContext &context ) const {
             blk->catched_vars.push_named( n, var );
         }
     }
-    PRINT( blk->catched_vars );
 
     if ( names.size() != 1 )
         return context.ret_error( "TODO", false, __FILE__, __LINE__ );
