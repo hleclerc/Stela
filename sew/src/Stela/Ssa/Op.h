@@ -31,15 +31,8 @@
 #define OP_H
 
 #include "../System/Math.h"
+#include "OpTypes.h"
 #include "Inst.h"
-
-enum {
-    #define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) ID_OP_##NAME,
-    #include "DeclOp_Binary.h"
-    #include "DeclOp_Unary.h"
-    #undef DECL_OP
-    ID_OP_
-};
 
 
 #define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \

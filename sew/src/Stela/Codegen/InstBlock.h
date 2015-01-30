@@ -11,6 +11,8 @@ public:
     InstBlock( InstBlock *parent = 0 );
     virtual Expr forced_clone( Vec<Expr> &created ) const;
     virtual void write_dot( Stream &os ) const;
+    virtual int op_type() const { return ID_OP_InstBlock; }
+    virtual Bool _same_op( Inst *b ) { TODO; return false; }
     virtual bool need_out_reg();
 
     void operator<<( Inst *inst );

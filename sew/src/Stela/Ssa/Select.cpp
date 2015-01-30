@@ -3,6 +3,7 @@
 
 struct Select : Inst {
     virtual void write_dot( Stream &os ) const { os << "Select"; }
+    virtual int op_type() const { return ID_OP_Select; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Select; }
     virtual Type *type() { return inp[ 1 ]->type(); }
     virtual Expr simplified( Expr cond ) {

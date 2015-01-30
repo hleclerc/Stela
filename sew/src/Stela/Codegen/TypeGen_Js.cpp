@@ -49,11 +49,9 @@ void TypeGen_Js::exec() {
     on << "        var v_SI8  = new stdlib.Uint8Array  ( buffer );";
     on << "        var v_SI16 = new stdlib.Uint16Array ( buffer );";
     on << "        var v_SI32 = new stdlib.Uint32Array ( buffer );";
-    // on << "        var v_SI64 = new stdlib.Uint64Array ( buffer );";
     on << "        var v_PI8  = new stdlib.Int8Array   ( buffer );";
     on << "        var v_PI16 = new stdlib.Int16Array  ( buffer );";
     on << "        var v_PI32 = new stdlib.Int32Array  ( buffer );";
-    // on << "        var v_PI64 = new stdlib.Int64Array  ( buffer );";
     on << "        var v_FP32 = new stdlib.Float32Array( buffer );";
     on << "        var v_FP64 = new stdlib.Float64Array( buffer );";
     on << "        ";

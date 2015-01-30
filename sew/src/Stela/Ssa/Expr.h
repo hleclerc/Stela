@@ -46,6 +46,8 @@ public:
 
     Expr &operator=( const Expr &obj );
 
+    bool equal( const Expr &expr ) const;
+
     bool operator==( const Expr &expr ) const;
     bool operator!=( const Expr &expr ) const { return not operator==( expr ); }
     bool operator<( const Expr &expr ) const { return inst < expr.inst; }

@@ -1,6 +1,11 @@
 class Class
     ptr ~= SI64 # pointer to C++ data
     
+# default init wo args -> do nothing
+def init( self, varargs ) pertinence 0.5
+    ___init_va self, varargs
+    
+    
 class Def
     ptr ~= SI64 # pointer to C++ data
 
@@ -25,6 +30,13 @@ class Varargs
 class Void
     #
 
+class Block
+    ptr ~= SI64 # pointer to C++ data
+    
+    def apply arg
+        ___call_block self, arg
+    
+    
 class Bool
     ___set_base_size_and_alig 1, 1
     def init val
@@ -218,8 +230,6 @@ def pre_inc a
     # data := repeat PI8, n = size
 
 # ___code "heap.byteLength"
-def init self
-    # init wo args -> do nothing
     
 class Lambda
     ast  := 0l # pointer to Ast_Lambda
@@ -387,7 +397,7 @@ class JsAllocate
         # return res;
 
         if size <= 4
-            res = Ptr[SI32] buffer[ 0 ]
+            res := Ptr[SI32]( buffer[ 0 ] )
             if not res
                 res = new_allocator_chunk buffer, size
             buffer[ 0 ] = res
@@ -398,7 +408,28 @@ class JsAllocate
 def make_code_for_class filename, type, varargs
     ___make_code_for filename, type, varargs
 
-make_code_for_class "test_js/Toto.js", Toto,
-    init = [ [] ]
+# make_code_for_class "test_js/Toto.js", Toto,
+    # init = [ [] ]
     # foo  = [ [ SI32 ] ]
+class Range[ TB, TE, TI ]
+    beg ~= TB
+    end ~= TE
+    inc ~= TI
 
+    def __for__ block
+        cur := beg
+        while cur < end
+            block cur
+            cur += inc
+
+def range beg, end, inc = typeof( beg )( 1 )
+    Range[ typeof( beg ), typeof( end ), typeof( inc ) ]( beg, end, inc )
+    
+    
+def foo
+    a := 0
+    for i in 0 .. 10
+        a += i
+    ___disp a
+
+foo()

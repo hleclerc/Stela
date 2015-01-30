@@ -56,12 +56,13 @@ ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, 
         cond = true;
     }
 
-    scope_name += to_string( add_scope_name.size() ) + "_" + add_scope_name;
-    scope_type  = SCOPE_TYPE_STD;
-    base_size   = 0;
-    base_alig   = 1;
-    current_src = 0;
-    for_block   = 0;
+    scope_name  += to_string( add_scope_name.size() ) + "_" + add_scope_name;
+    scope_type   = SCOPE_TYPE_STD;
+    base_size    = 0;
+    base_alig    = 1;
+    current_src  = 0;
+    for_block    = 0;
+    catched_vars = 0;
 
     static std::map<String,Vec<NamedVar> > static_variables_map;
     static_variables = &static_variables_map[ scope_name ];
@@ -158,6 +159,9 @@ Expr ParsingContext::reg_var( String name, Expr expr, bool stat, int _off, const
 
 Expr ParsingContext::_find_first_var_with_name( String name ) {
     for( ParsingContext *c = this; c; c = c->parent ) {
+        if ( c->catched_vars )
+            if ( Expr var = c->catched_vars->find( name ) )
+                return var;
         if ( c->self )
             if ( Expr var = _get_first_attr( c->self, name ) )
                 return var;
@@ -176,6 +180,9 @@ Expr ParsingContext::_find_first_var_with_name( String name ) {
 
 void ParsingContext::_find_list_of_vars_with_name( Vec<Expr> &res, String name ) {
     for( ParsingContext *c = this; c; c = c->parent ) {
+        if ( c->catched_vars )
+            if ( Expr var = c->catched_vars->find( name ) )
+                res << var;
         if ( c->self )
             if ( Expr var = _get_first_attr( c->self, name ) )
                 res << var;
@@ -485,15 +492,9 @@ Expr ParsingContext::apply( Expr f, int nu, Expr *u_args, int nn, const String *
     }
 
     // f.apply ...
-    //    Expr applier = get_attr( f, STRING_apply_NUM );
-    //    if ( applier.error() )
-    //        return ip->error_var();
+    if ( Expr applier = get_attr( f, "apply" ) )
+        return apply( applier, nu, u_args, nn, n_name, n_args, am, va_size_init, found );
 
-    //    return apply( applier, nu, u_args, nn, n_name, n_args, am );
-    disp_error( "call for type..." );
-    PRINT( *f_type );
-    PRINT( f );
-    TODO;
     return Expr();
 }
 

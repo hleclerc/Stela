@@ -29,19 +29,22 @@
 
 #include "GlobalVariables.h"
 #include "While.h"
+#include "Type.h"
 
 /**
 */
 struct WhileInp : Inst {
     WhileInp( const Vec<Type *> types ) : types( types ) {}
     virtual void write_dot( Stream &os ) const { os << "while_inp"; }
+    virtual int op_type() const { return ID_OP_WhileInp; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new WhileInp( types ); }
     virtual Type *type( int nout ) { return types[ nout ]; }
-    virtual Type *ptype( int nout ) { TODO; return 0; }
+    virtual Type *ptype( int nout ) { return types[ nout ]->ptype(); }
     virtual Type *type() { return ip->type_Void; }
     virtual bool need_a_register() { return false; }
     // virtual void write( Codegen_C *cc ) {}
     virtual bool will_write_code() const { return false; }
+    virtual Bool _same_op( Inst *b ) { return types == static_cast<WhileInp *>( b )->types; }
     Vec<Type *> types;
 };
 
@@ -50,6 +53,7 @@ struct WhileInp : Inst {
 */
 struct WhileOut : Inst {
     virtual void write_dot( Stream &os ) const { os << "while_out"; }
+    virtual int op_type() const { return ID_OP_WhileOut; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new WhileOut; }
     virtual Type *type( int nout ) { return inp[ nout ]->type(); }
     virtual Type *type() { return ip->type_Void; }
@@ -63,12 +67,14 @@ struct WhileOut : Inst {
 struct WhileInst : Inst {
     WhileInst( const Vec<int> &corr ) : corr( corr ) {}
     virtual void write_dot( Stream &os ) const { os << "while"; }
+    virtual int op_type() const { return ID_OP_WhileInst; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new WhileInst( corr ); }
     virtual Type *type( int nout ) { return ext[ 0 ]->type( nout ); }
     virtual Type *ptype( int nout ) { TODO; return 0; }
     virtual Type *type() { return ip->type_Void; }
     virtual int ext_disp_size() const { return 1; }
     virtual bool need_a_register() { return false; }
+    virtual Bool _same_op( Inst *b ) { return corr == static_cast<WhileInst *>( b )->corr; }
 
     //    virtual void get_constraints() {
     //        for( int nout = 0; nout < corr.size(); ++nout ) {

@@ -41,6 +41,8 @@ public:
         Expr   expr;
     };
 
+    bool equal( const SurdefList &s ) const;
+
     Vec<Expr,-1,1> callables;
     Varargs        parameters;
     Expr           self;

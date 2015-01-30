@@ -22,9 +22,11 @@ struct Room : Inst {
     virtual void write_dot( Stream &os ) const {
         os << "&";
     }
+    virtual int op_type() const { return ID_OP_Room; }
     virtual void _mk_store_dep( Inst *dst ) {
         TODO;
     }
+    virtual Bool _same_op( Inst *b ) { TODO; return false; }
     virtual void set( Expr obj, Expr cond ) {
         // the same value ?
         if ( obj == val )

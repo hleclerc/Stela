@@ -33,8 +33,10 @@
 struct UnknownInst : Inst {
     UnknownInst( Type *type, int num ) : out_type( type ), num( num ) {}
     virtual void write_dot( Stream &os ) const { os << "unk_" << num; }
+    virtual int op_type() const { return ID_OP_UnknownInst; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new UnknownInst( out_type, num ); }
     virtual Type *type() { return out_type; }
+    virtual Bool _same_op( Inst *b ) { return out_type == static_cast<UnknownInst *>( b )->out_type and num == static_cast<UnknownInst *>( b )->num; }
     Type *out_type;
     int num;
 };

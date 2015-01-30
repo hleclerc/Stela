@@ -29,6 +29,32 @@
 
 #include "Varargs.h"
 
+Varargs::Varargs( int rese_nu, int rese_nn ) : exprs( Rese(), rese_nu + rese_nn ), names( Rese(), rese_nn ) {
+}
+
+void Varargs::write_to_stream( Stream &os ) {
+    for( int i = 0; i < nu(); ++i )
+        os << ua()[ i ] << " ";
+    for( int i = 0; i < nn(); ++i )
+        os << names[ i ] << "=" << na()[ i ] << " ";
+}
+
+bool Varargs::equal( const Varargs &s ) const {
+    return exprs.equal( s.exprs ) and names == s.names;
+}
+
+Expr Varargs::find( String n ) {
+    for( int i = 0; i < nn(); ++i )
+        if ( names[ i ] == n )
+            return na()[ i ];
+    return Expr();
+}
+
+void Varargs::push_named( String n, Expr e ) {
+    names << n;
+    exprs << e;
+}
+
 Vec<Expr> Varargs::u_args() const {
     Vec<Expr> res( Rese(), nu() );
     for( int i = 0; i < nu(); ++i )

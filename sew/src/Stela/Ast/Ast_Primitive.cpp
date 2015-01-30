@@ -1,6 +1,6 @@
+#include "../Ssa/BlockWithCatchedVars.h"
 #include "../Ssa/ParsingContext.h"
 #include "../Ssa/SurdefList.h"
-#include "../Ssa/Varargs.h"
 #include "../Ssa/Symbol.h"
 #include "../Ssa/Rcast.h"
 #include "../Ssa/Room.h"
@@ -196,13 +196,13 @@ static Expr parse_slice( ParsingContext &context, const Ast_Primitive *p ) {
     expr = add( expr, off->get( context.cond ) );
     return rcast( context.ptr_type_for( type->ptype() ), expr );
 }
+
 static Expr parse_call( ParsingContext &context, const Ast_Primitive *p ) {
     CHECK_NB_ARGS( 2 );
     Expr func = p->args[ 0 ]->parse_in( context ); if ( func.error() ) return func;
     Expr args = p->args[ 1 ]->parse_in( context ); if ( args.error() ) return args;
-
     if ( args->ptype() != ip->type_Varargs )
-        return context.ret_error( "size_init must return a varargs" );
+        return context.ret_error( "call must have a varargs as second arg" );
     SI64 ptr;
     if ( not args->get( context.cond )->get_val( &ptr, 64 ) )
         return context.ret_error( "Expecting a known value" );
@@ -210,6 +210,29 @@ static Expr parse_call( ParsingContext &context, const Ast_Primitive *p ) {
 
     return context.apply( func, vargs->nu(), vargs->ua(), vargs->nn(), vargs->ns(), vargs->na() );
 }
+
+static Expr parse_call_block( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr func = p->args[ 0 ]->parse_in( context ); if ( func.error() ) return func;
+    Expr args = p->args[ 1 ]->parse_in( context ); if ( args.error() ) return args;
+    if ( func->ptype() != ip->type_Block )
+        return context.ret_error( "call_block must have a varargs as second arg" );
+    SI64 ptr;
+    if ( not func->get( context.cond )->get_val( &ptr, 64 ) )
+        return context.ret_error( "Expecting a known value" );
+    BlockWithCatchedVars *blk = reinterpret_cast<BlockWithCatchedVars *>( ST( ptr ) );
+
+    ParsingContext pc( 0, &context, "for_" + to_string( blk ) );
+    pc.catched_vars = &blk->catched_vars;
+    pc.for_block    = blk->context;
+
+    if ( blk->name_args.size() != 1 )
+        return context.ret_error( "TODO", false, __FILE__, __LINE__ );
+    pc.reg_var( blk->name_args[ 0 ], args );
+
+    return blk->block->parse_in( pc );
+}
+
 static Expr parse_get_size( ParsingContext &context, const Ast_Primitive *p ) {
     CHECK_NB_ARGS( 1 );
     Expr self = p->args[ 0 ]->parse_in( context ); if ( self.error() ) return self;
@@ -220,6 +243,38 @@ static Expr parse_get_size( ParsingContext &context, const Ast_Primitive *p ) {
         return context.ret_error( "Expecting a known value" );
     Varargs *vargs = reinterpret_cast<Varargs *>( ST( ptr ) );
     return room( vargs->exprs.size() );
+}
+
+static Expr parse_init_va( ParsingContext &context, const Ast_Primitive *p ) {
+    CHECK_NB_ARGS( 2 );
+    Expr self = p->args[ 0 ]->parse_in( context ); if ( self.error() ) return self;
+    Expr args = p->args[ 1 ]->parse_in( context ); if ( self.error() ) return self;
+    if ( args->ptype() != ip->type_Varargs )
+        return context.ret_error( "___init_va needs a varargs as second arg" );
+    SI64 ptr;
+    if ( not args->get( context.cond )->get_val( &ptr, 64 ) )
+        return context.ret_error( "Expecting a known value" );
+    Varargs *vargs = reinterpret_cast<Varargs *>( ST( ptr ) );
+
+    //TODO;
+    Type *t = self->ptype();
+    for( int i = 0; i < vargs->nu(); ++i ) {
+        if ( i >= t->attributes.size() )
+            return context.ret_error( "no enough attributes" );
+        if ( t->attributes[ i ].off_expr ) {
+            Expr attr = t->attr_expr( self, t->attributes[ i ] );
+            context.apply( context.get_attr( attr, "reassign" ), 1, vargs->ua() + i );
+        }
+    }
+
+    for( int i = 0; i < vargs->nn(); ++i ) {
+        Expr attr = context.get_attr( attr, vargs->names[ i ] );
+        if ( attr.error() )
+            return attr;
+        context.apply( context.get_attr( attr, "reassign" ), 1, vargs->na() + i );
+    }
+
+    return ip->void_var();
 }
 
 static Expr parse_make_code_for( ParsingContext &context, const Ast_Primitive *p ) {

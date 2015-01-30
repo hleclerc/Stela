@@ -97,10 +97,11 @@ Type *Inst::ptype( int nout ) {
 }
 
 Type *Inst::ptype() {
-    Type *res = type()->ptype();
-    if ( not res )
-        ip->pc->disp_error( "Not a pointer type", false, __FILE__, __LINE__ );
-    return res;
+    return type()->ptype();
+    //    Type *res = type()->ptype();
+    //    if ( not res )
+    //        ip->pc->disp_error( "Not a pointer type", false, __FILE__, __LINE__ );
+    //    return res;
 }
 
 Type *Inst::type() {
@@ -137,10 +138,6 @@ bool Inst::is_surdef() const {
 
 bool Inst::is_const() const {
     return flags & CONST;
-}
-
-int Inst::op_type() const {
-    return -1;
 }
 
 bool Inst::always( bool val ) const {
@@ -224,16 +221,25 @@ Expr Inst::_simp_rcast( Type *dst ) {
     return Expr();
 }
 
+static bool _same_op( Inst *a, Inst *b ) {
+    if ( a->op_type() != b->op_type() )
+        return false;
+    if ( not a->inp.equal( b->inp ) )
+        return false;
+    if ( not a->ext.equal( b->ext ) )
+        return false;
+    return a->_same_op( b );
+}
+
 Inst *Inst::twin_or_val( Inst *inst ) {
-    //    if ( inst->inp.size() ) {
-    //        const Vec<Inst::Out::Parent,-1,1> &p = inst->inp[ 0 ].parents();
-    //        for( Parent &p : inp[ 0 ]->parents ) {
-    //            if ( p.inst != inst and p.inst->eq_twin_or_val( inst ) ) {
-    //                delete inst;
-    //                return p.inst;
-    //            }
-    //        }
-    //    }
+    if ( inst->inp.size() ) {
+        for( Parent &p : inst->inp[ 0 ]->par ) {
+            if ( p.inst != inst and ::_same_op( p.inst, inst ) ) {
+                delete inst;
+                return p.inst;
+            }
+        }
+    }
     return inst;
 }
 
@@ -471,4 +477,8 @@ int Inst::ext_disp_size() const {
 }
 
 void Inst::_mk_store_dep( Inst *dst ) {
+}
+
+Bool Inst::_same_op( Inst *b ) {
+    return true;
 }

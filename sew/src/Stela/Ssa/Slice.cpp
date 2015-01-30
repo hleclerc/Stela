@@ -38,6 +38,7 @@
 struct Slice : Inst {
     Slice( Type *out_type ) : out_type( out_type ) {}
     virtual void write_dot( Stream &os ) const { os << "Slice"; }
+    virtual int op_type() const { return ID_OP_Slice; }
     virtual void write_to_stream( Stream &os, int prec ) {
         int voff;
         if ( inp[ 1 ]->get_val( &voff, ip->type_SI32 ) and voff == 0 )
@@ -45,6 +46,7 @@ struct Slice : Inst {
         else
             Inst::write_to_stream( os, prec );
     }
+    virtual Bool _same_op( Inst *b ) { return out_type == static_cast<Slice *>( b )->out_type; }
 
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Slice( out_type ); }
     virtual Type *type() { return out_type; }

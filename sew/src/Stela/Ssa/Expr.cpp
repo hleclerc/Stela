@@ -29,6 +29,7 @@
 #include "../System/SizeofIf.h"
 #include "../System/Stream.h"
 #include "ParsingContext.h"
+#include "SurdefList.h"
 #include "Inst.h"
 #include "Cst.h"
 
@@ -56,6 +57,20 @@ Expr &Expr::operator=( const Expr &obj ) {
         delete inst;
     inst = obj.inst;
     return *this;
+}
+
+bool Expr::equal( const Expr &expr ) const {
+    if ( inst and expr.inst and inst->ptype() == ip->type_SurdefList and expr.inst->ptype() == ip->type_SurdefList ) {
+        Expr ea =      inst->get( ip->pc->cond );
+        Expr eb = expr.inst->get( ip->pc->cond );
+        SI64 pa, pb;
+        if ( ea->get_val( &pa, 64 ) and eb->get_val( &pb, 64 ) ) {
+            SurdefList *sa = reinterpret_cast<SurdefList *>( ST( pa ) );
+            SurdefList *sb = reinterpret_cast<SurdefList *>( ST( pb ) );
+            return sa->equal( *sb );
+        }
+    }
+    return inst == expr.inst;
 }
 
 bool Expr::operator==( const Expr &expr ) const {

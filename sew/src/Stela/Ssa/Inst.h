@@ -31,6 +31,7 @@
 
 #include "../System/Vec.h"
 #include "BoolOpSeq.h"
+#include "OpTypes.h"
 #include "Expr.h"
 class InstBlock;
 class Codegen;
@@ -103,7 +104,7 @@ public:
     bool is_surdef() const;
     bool is_const() const;
 
-    virtual int op_type() const;
+    virtual int op_type() const = 0;
 
     virtual bool always( bool val ) const;
     virtual bool always_equal( Type *t, const void *d );
@@ -123,6 +124,7 @@ public:
     virtual Expr _simp_slice( Type *dst, Expr off );
     virtual Expr _simp_rcast( Type *dst );
     virtual void _mk_store_dep( Inst *dst );
+    virtual Bool _same_op( Inst *b ); ///< for twin_or_val
 
     static Inst *twin_or_val( Inst *inst ); ///< if there's already an inst doing the same thing, return this inst and delete `inst`
 

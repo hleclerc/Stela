@@ -32,7 +32,7 @@ void Ast_Callable::get_potentially_needed_ext_vars( std::set<String> &res, std::
     if ( pertinence )
         pertinence->get_potentially_needed_ext_vars( res, navail );
 
-    // sub cases
+    // sub cases (class or def). Do the prep for the classes.
     _get_potentially_needed_ext_vars( res, navail );
 
     // block

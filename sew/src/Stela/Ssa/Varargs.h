@@ -36,8 +36,14 @@
 */
 class Varargs {
 public:
-    Vec<Expr  > exprs;
-    Vec<String> names;
+    Varargs( int rese_nu = 0, int rese_nn = 0 );
+
+    void write_to_stream( Stream &os );
+    bool equal( const Varargs &s ) const;
+    Expr find( String n ); ///< in named variables
+
+    void push_named( String n, Expr e );
+    void append( Varargs &var );
 
     int     nu() const { return exprs.size() - names.size(); } ///< nb unnamed
     int     nn() const { return names.size(); } ///< nb named
@@ -48,7 +54,8 @@ public:
     Vec<Expr> u_args() const;
     Vec<Expr> n_args() const;
 
-    void append( Varargs &var );
+    Vec<Expr  > exprs;
+    Vec<String> names;
 };
 
 #endif // VARARGS_H

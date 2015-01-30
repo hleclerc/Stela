@@ -468,6 +468,7 @@ base_primitives = string.split( """
     set_RawRef_dependancy
     reassign_rec
     assign_rec
+    init_va
     set_ptr_val
     select_SurdefList
     select_Varargs
@@ -490,6 +491,7 @@ base_primitives = string.split( """
     repeated_type
     slice
     call
+    call_block
     get_size
     make_code_for
 """ ) #

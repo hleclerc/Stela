@@ -251,3 +251,6 @@ src/Stela/Ssa/PointedValue.h
 src/Stela/Ssa/PointedValue.cpp
 src/Stela/Codegen/InstBlock.h
 src/Stela/Codegen/InstBlock.cpp
+src/Stela/Ssa/BlockWithCatchedVars.h
+src/Stela/Ssa/BlockWithCatchedVars.cpp
+src/Stela/Ssa/OpTypes.h

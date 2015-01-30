@@ -12,6 +12,8 @@ DECL_BT( SourceFile )
 DECL_BT( Class )
 DECL_BT( Def )
 
+DECL_BT( Block )
+
 DECL_BT( SurdefList )
 DECL_BT( Repeated )
 DECL_BT( Varargs )

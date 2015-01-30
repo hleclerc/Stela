@@ -36,9 +36,12 @@
 struct Conv : Inst {
     Conv( Type *dst ) : dst( dst ) {}
     virtual void write_dot( Stream &os ) const { os << "Conv[" << *dst << "]"; }
+    virtual int op_type() const { return ID_OP_Conv; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Conv( dst ); }
     virtual Type *type() { return dst; }
     virtual Expr _subs() { return conv( dst, inp[ 0 ]->op_mp ); }
+    virtual Bool _same_op( Inst *b ) { return dst == static_cast<Conv *>( b )->dst; }
+
     //    virtual void write( Codegen_C *cc ) {
     //        if ( not this->out_reg ) {
     //            cc->on << "conv reg pb";

@@ -34,6 +34,8 @@
 struct GetNout : Inst {
     GetNout( int nout ) : nout( nout ) {}
     virtual void write_dot( Stream &os ) const { os << "nout_" << nout; }
+    virtual int op_type() const { return ID_OP_GetNout; }
+    virtual Bool _same_op( Inst *b ) { return nout == static_cast<GetNout *>( b )->nout; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new GetNout( nout ); }
     virtual Type *ptype() { return inp[ 0 ]->ptype( nout ); }
     virtual Type *type() { return inp[ 0 ]->type( nout ); }

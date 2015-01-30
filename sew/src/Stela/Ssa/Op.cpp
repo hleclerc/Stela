@@ -114,6 +114,12 @@ static Expr _simp_op( Expr a, TO to ) {
     return Expr();
 }
 
+static Expr _simp_op( Expr a, Op_not_boolean ) {
+    if ( a->op_type() == ID_OP_not_boolean )
+        return a->inp[ 0 ];
+    return Expr();
+}
+
 template<class TO>
 static Expr _op( Expr a, TO to ) {
     if ( a.error() )

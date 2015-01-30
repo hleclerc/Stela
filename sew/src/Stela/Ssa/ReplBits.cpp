@@ -15,6 +15,7 @@ struct ReplBits : Inst {
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new ReplBits;
     }
+    virtual int op_type() const { return ID_OP_ReplBits; }
     virtual Type *type() {
         return inp[ 0 ]->type();
     }

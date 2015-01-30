@@ -12,6 +12,7 @@ Ast_Class::Ast_Class( const char *src, int off ) : Ast_Callable( src, off ) {
 void Ast_Class::_get_potentially_needed_ext_vars( std::set<String> &res, std::set<String> &avail ) const {
     for( int i = 0; i < inheritance.size(); ++i )
         inheritance[ i ]->get_potentially_needed_ext_vars( res, avail );
+    block->prep_get_potentially_needed_ext_vars( avail );
 }
 
 void Ast_Class::_get_info( IrWriter *aw ) const {

@@ -29,3 +29,8 @@
 
 #include "SurdefList.h"
 
+
+
+bool SurdefList::equal( const SurdefList &s ) const {
+    return callables.equal( s.callables ) and parameters.equal( s.parameters ) and self.equal( self );
+}

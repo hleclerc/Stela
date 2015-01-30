@@ -37,8 +37,10 @@
 struct Symbol : Inst {
     Symbol( Type *type, String name ) : out_type( type ), name( name ) {}
     virtual void write_dot( Stream &os ) const { os << name; }
+    virtual int op_type() const { return ID_OP_Symbol; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new Symbol( out_type, name ); }
     virtual Type *type() { return out_type; }
+    virtual Bool _same_op( Inst *b ) { TODO; return false; }
     virtual void write( Codegen *c ) {
         if ( name.size() )
             c->on << *out_reg << " = " << name << ";";

@@ -40,6 +40,8 @@ struct Rcast : Inst {
     virtual void write_dot( Stream &os ) const {
         os << "rcast";
     }
+    virtual Bool _same_op( Inst *b ) { return _type == static_cast<Rcast *>( b )->_type; }
+    virtual int op_type() const { return ID_OP_Rcast; }
     virtual Expr forced_clone( Vec<Expr> &created ) const {
         return new Rcast( _type );
     }

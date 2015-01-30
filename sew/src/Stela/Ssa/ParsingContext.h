@@ -106,6 +106,7 @@ public:
     int               base_alig;
     Vec<RemBreak>     rem_breaks;
     ParsingContext   *for_block;
+    Varargs          *catched_vars;
 };
 
 

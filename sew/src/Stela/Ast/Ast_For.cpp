@@ -1,4 +1,7 @@
+#include "../Ssa/BlockWithCatchedVars.h"
 #include "../Ssa/ParsingContext.h"
+#include "../Ssa/Room.h"
+#include "../Ssa/Cst.h"
 #include "../Ir/Numbers.h"
 #include "IrWriter.h"
 #include "Ast_For.h"
@@ -44,7 +47,33 @@ void Ast_For::_get_info( IrWriter *aw ) const {
 }
 
 Expr Ast_For::_parse_in( ParsingContext &context ) const {
-    return context.ret_error( "TODO: _parse_in", false, __FILE__, __LINE__ );
+    if ( objects.size() != 1 )
+        return context.ret_error( "TODO", false, __FILE__, __LINE__ );
+    Expr o = objects[ 0 ]->parse_in( context );
+
+    std::set<String> res, avail;
+    for( String n : names )
+        avail.insert( n );
+
+    block->get_potentially_needed_ext_vars( res, avail );
+
+    BlockWithCatchedVars *blk = new BlockWithCatchedVars( block, &context, res.size() );
+    for( String n : res ) {
+        if ( Expr var = context.get_var( n, false ) ) {
+            // if the same variable is in the main scope -> we do not store it again (we will have access to it after that)
+            if ( ip->main_parsing_context->get_var( n, false ).equal( var ) )
+                continue;
+            blk->catched_vars.push_named( n, var );
+        }
+    }
+    PRINT( blk->catched_vars );
+
+    if ( names.size() != 1 )
+        return context.ret_error( "TODO", false, __FILE__, __LINE__ );
+    blk->name_args << names[ 0 ];
+
+    Expr blk_expr = room( cst( ip->type_Block, 64, &blk ) );
+    return context.apply( context.get_attr( o, "__for__" ), 1, &blk_expr );
 }
 
 PI8 Ast_For::_tok_number() const {

@@ -45,10 +45,12 @@ struct CstComputedSize : Inst {
     virtual Type *type() {
         return _type;
     }
+    virtual Bool _same_op( Inst *b ) { return _type == static_cast<CstComputedSize *>( b )->_type; }
     virtual void write( Codegen *c ) {
         //        c->on << *c->var_decl( out_reg ) << " = " << *this << ";";
         TODO;
     }
+    virtual int op_type() const { return ID_OP_CstComputedSize; }
     virtual bool eq_twin_or_val( const Inst *inst ) {
         if ( const CstComputedSize *c = dcast( inst ) )
             return c->_type == _type;

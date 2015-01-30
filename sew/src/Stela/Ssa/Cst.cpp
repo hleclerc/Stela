@@ -70,6 +70,8 @@ public:
         else
             _type->write_val( os, _data.ptr() );
     }
+    virtual Bool _same_op( Inst *b ) { TODO; return false; }
+    virtual int op_type() const { return ID_OP_Cst; }
     virtual void as_var( Stream &os, bool und ) const {
         int sb = ( _size + 7 ) / 8;
         os << "c" << sb;

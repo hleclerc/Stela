@@ -7,6 +7,7 @@
 */
 struct PointedValue : Inst {
     virtual void write_dot( Stream &os ) const { os << "*"; }
+    virtual int op_type() const { return ID_OP_PointedValue; }
     virtual Expr forced_clone( Vec<Expr> &created ) const { return new PointedValue; }
     virtual Type *type() { return inp[ 0 ]->ptype(); }
     virtual void write( Codegen *c ) {

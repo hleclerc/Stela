@@ -762,6 +762,16 @@ public:
         return true;
     }
 
+    template<class TC>
+    bool equal( const TC &v ) const {
+        if ( size() != v.size() )
+            return false;
+        for( int i = 0; i < _size; ++i )
+            if ( not _data[ i ].equal( v[ i ] ) )
+                return false;
+        return true;
+    }
+
     bool operator!=( const Vec &v ) const {
         if ( size() != v.size() )
             return true;
