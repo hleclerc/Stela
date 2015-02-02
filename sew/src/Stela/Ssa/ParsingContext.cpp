@@ -52,6 +52,8 @@ ParsingContext::ParsingContext( ParsingContext *parent, ParsingContext *caller, 
     if ( parent ) {
         scope_name = parent->scope_name;
         cond = parent->cond;
+    } else if ( caller ) {
+        cond = caller->cond;
     } else {
         cond = true;
     }

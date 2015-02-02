@@ -91,7 +91,7 @@ Type *Inst::type( int nout ) {
 }
 
 Type *Inst::ptype( int nout ) {
-    ip->pc->disp_error( "Not a pointer type" );
+    ip->pc->disp_error( "Not a pointer type", false, __FILE__, __LINE__ );
     ERROR( "Not a pointer type" );
     return 0;
 }

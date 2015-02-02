@@ -115,8 +115,11 @@ static Expr _simp_op( Expr a, TO to ) {
 }
 
 static Expr _simp_op( Expr a, Op_not_boolean ) {
-    if ( a->op_type() == ID_OP_not_boolean )
-        return a->inp[ 0 ];
+    if ( a->op_type() == ID_OP_not_boolean ) return a->inp[ 0 ];
+    if ( a->op_type() == ID_OP_inf_eq ) return sup( a->inp[ 0 ], a->inp[ 1 ] );
+    if ( a->op_type() == ID_OP_sup_eq ) return inf( a->inp[ 0 ], a->inp[ 1 ] );
+    if ( a->op_type() == ID_OP_inf ) return sup_eq( a->inp[ 0 ], a->inp[ 1 ] );
+    if ( a->op_type() == ID_OP_sup ) return inf_eq( a->inp[ 0 ], a->inp[ 1 ] );
     return Expr();
 }
 
@@ -177,8 +180,6 @@ struct BOp : Op<TO> {
     virtual Type *ptype() {
         if ( SameType<TO,Op_add>::res or SameType<TO,Op_sub>::res )
             return this->inp[ 0 ]->ptype(); // hum... not safe
-        ip->pc->disp_error( "Not a pointer type" );
-        ERROR( "Not a pointer type" );
         return 0;
     }
     virtual int op_type() const {
@@ -303,6 +304,17 @@ static Expr _simp_op( Expr a, Expr b, Op_equ ) {
 static Expr _simp_op( Expr a, Expr b, Op_neq ) {
     if ( a.inst == b.inst )
         return false;
+    return Expr();
+}
+
+static Expr _simp_op( Expr a, Expr b, Op_and_boolean ) {
+    if ( a == b )
+        return a;
+    if ( a->always( true  ) ) return b;
+    if ( b->always( true  ) ) return a;
+    if ( a->always( false ) ) return a;
+    if ( b->always( false ) ) return b;
+    if ( not_boolean( a ) == b ) return false;
     return Expr();
 }
 
