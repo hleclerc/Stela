@@ -1,0 +1,263 @@
+# classes et fonctions.
+# if
+# fonctions -> avec scope statique, surdefs, ...
+# boucles
+# 
+    
+# MUST be defined first
+class Class
+    pass
+    
+class Def
+    pass
+    
+# MUST be defined before any call to find_var
+class Callable[ surdef_list, self_type, parm_type ]
+    def select( varargs )
+        ___select_SurdefList self, varargs
+
+class SurdefList
+    pass
+
+
+# data_name -> ptr on a C string
+class VarargsItemBeg[ data_type, data_name, next_type ]
+    def select i
+        i
+
+class VarargsItemEnd
+    def select i
+        i
+        
+# used by for loops
+class Block[ code, arg_names ]
+    scope_ptr := 0l
+    def apply val
+        a_def_bk := 0
+        ___block_exec code, arg_names, val, scope_ptr
+
+class Void
+    def init
+        0
+    def write_to_stream os
+        os << "void"
+
+class Type
+    data := 0l
+    def apply varargs
+         todo()
+
+class SI8
+    ___set_base_size_and_alig 8, 8
+    
+    def init
+    
+    def init val : [ SI8, SI32, SI64, PI64 ]
+        ___assign_rec val
+    
+    def reassign val : [ SI8, SI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+
+class SI32
+    ___set_base_size_and_alig 32, 32
+    
+    def init
+    
+    def init val : [ SI8, SI32, SI64, PI64 ]
+        ___assign_rec val
+    
+    def reassign val : [ SI8, SI32, SI64, PI64 ]
+        ___reassign_rec val
+    
+class SI64
+    ___set_base_size_and_alig 64, 32
+    
+    def init val : [ SI8, SI32, PI32, SI64, PI64, Bool ]
+        ___assign_rec val
+    
+    def reassign val : [ SI8, SI32, PI32, SI64, PI64, Bool ]
+        ___reassign_rec val
+    
+class PI64
+    ___set_base_size_and_alig 64, 32
+    
+    def init val : PI64
+        ___assign_rec val
+    
+    def reassign val : PI64
+        ___reassign_rec val
+
+class Bool
+    ___set_base_size_and_alig 1, 1
+
+    def init val : [ Bool, SI32, SI64, PI64 ]
+        ___assign_rec val
+
+    def reassign val : [ Bool, SI32, SI64, PI64 ]
+        ___reassign_rec val
+
+
+def self_add a, b
+    a = a + b
+
+def self_sub a, b
+    a = a - b
+
+def self_mul a, b
+    a = a * b
+
+def self_div a, b
+    a = a / b
+
+def self_mod a, b
+    a = a % b
+
+void := Void()
+        
+# default init, that does nothing
+def init self
+    # nothing :)
+
+def add( a, b )
+    ___add a, b
+    
+def sub( a, b )
+    ___sub a, b
+
+def mul( a, b )
+    ___mul a, b
+    
+def div( a, b )
+    ___div a, b
+
+def mod( a, b )
+    ___mod a, b
+
+def not( a )
+    ___not a
+
+def not_boolean a
+    ___not Bool a
+
+def inferior a, b
+    ___inf a, b
+
+class Vec[ T, static_size ]
+    ___set_base_size_and_alig ___size_of( T ) * static_size, ___alig_of( T )
+    
+    def init
+        i := 0
+        while i < static_size
+            select( i ).init()
+            i += 1
+    
+    def init val
+        i := 0
+        while i < static_size
+            select( i ).init val
+            i += 1
+    
+    def select i
+        ___get_slice self, T, ___size_of( T ) * i
+        
+    def __for__ block
+        _for_rec block, 0
+        
+    def _for_rec block, i
+        if i < static_size
+            block select i
+            _for_rec block, i + 1
+    
+def sys_write fd, data, size
+    ___syscall SI64( 1 ), SI64( fd ), data, SI64( size )
+
+def print val
+    sit := 10
+    tmp := Vec[ SI8, sit ]()
+    vcp := val
+    nbc := sit - 1
+    tmp[ nbc ] = 10
+    while true
+        tmp[ nbc -= 1 ] = 48 + vcp % 10
+        vcp /= 10
+        if not vcp
+            break
+    sys_write 0, &tmp + nbc, sit - nbc
+
+
+
+def print_rec val
+    sit := 5
+    tmp := Vec[ SI8, sit ]()
+    nbc := sit - 1
+    tmp[ nbc ] = 10
+
+    def print_int tmp, nbc, val
+        tmp[ nbc -= 1 ] = 48 + val % 10
+        # val / 10 and nbc ne marche pas a cause du Bool( phi(...) ) qui 
+        # donne un conv[]( ... )
+        # if not Bool nbc
+            # ___info ___rand() and ( nbc * 1 )
+            #___disp Bool ___rand() and ( nbc * 1 ) # Bool( val / 10 and nbc ) * 1
+        if val / 10 and nbc
+            print_int tmp, nbc, val / 10
+
+    print_int tmp, nbc, val
+    sys_write 0, &tmp + nbc, sit - nbc
+
+
+def typeof val
+    ___typeof val
+
+class Range[ T ]
+    beg ~= T
+    end ~= T
+    inc ~= T
+    def init a, b
+        beg = a
+        end = b
+        inc = 1
+    def __for__ block
+        cur := beg
+        while cur < end
+            block cur
+            cur += inc
+
+def range beg, end
+    Range[ typeof beg ]( beg, end )
+   
+            
+# print_rec SI32 ___rand() * 0 + 4716
+#___syscall SI64 Bool ___rand() and ___rand() * 1
+class SpObject
+    _offt := 0
+    _type := 0
+    _data ~= PI64
+
+class Val extends SpObject
+    def init v : SI32
+        _type = 0
+        
+class Ptr[ T ]
+    adress ~= SI64
+    def init ptr : SI64
+        adress = ptr # la copie passe en expr() 
+    def pointed_value
+        ___pointed_value T, adress
+        
+def pointed_value obj
+    obj.pointed_value()
+
+def pointer_on val
+    Ptr[ typeof val ]( ___pointer_on val )
+        
+a := 7l
+
+@Ptr[ SI32 ]( ( &a ).adress ) = 10
+___info a
+        
+        
+        
+
+

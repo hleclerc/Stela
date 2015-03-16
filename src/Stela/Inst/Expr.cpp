@@ -1,42 +1,49 @@
-#include "Expr.h"
+#include "../System/SizeofIf.h"
+#include "Symbol.h"
+#include "Type.h"
+#include "Room.h"
+#include "Cst.h"
+#include "Ip.h"
 
-Expr::Expr( Ptr<Inst> inst, int nout ) : inst( inst ), nout( nout ) {
+Expr::Expr( const Expr &obj ) : inst( obj.inst ) {
+    if ( inst ) ++inst->cpt_use;
 }
 
-Expr::Expr() {
+Expr::Expr( Inst *inst ) : inst( inst ) {
+    if ( inst ) ++inst->cpt_use;
 }
 
-const PI8 *Expr::cst_data( int beg, int end ) const {
-    return inst->cst_data( nout, beg, end );
+#define DECL_BT( T ) Expr::Expr( T val ) : Expr( cst( ip->type_##T, SizeofIf<T,true>::val, &val ) ) {}
+#include "DeclArytTypes.h"
+#undef DECL_BT
+
+Expr::~Expr() {
+    if ( inst and --inst->cpt_use <= 0 )
+        delete inst;
 }
 
-const PI8 *Expr::cst_data() const {
-    return cst_data( 0, size_in_bits() );
+Expr &Expr::operator=( const Expr &obj ) {
+    if ( obj.inst )
+        ++obj.inst->cpt_use;
+    if ( inst and --inst->cpt_use <= 0 )
+        delete inst;
+    inst = obj.inst;
+    return *this;
 }
 
-const PI8 *Expr::vat_data( int beg, int end ) const {
-    return inst->vat_data( nout, beg, end );
-}
-
-const PI8 *Expr::vat_data() const {
-    return vat_data( 0, size_in_bits() );
+bool Expr::operator==( const Expr &expr ) const {
+    if ( inst->same_cst( expr.inst ) )
+        return true;
+    return inst == expr.inst;
 }
 
 void Expr::write_to_stream( Stream &os ) const {
-    os << inst;
-    if ( inst and inst->out_size() > 1 )
-        os << '(' << nout << ')';
+    if ( inst )
+        os << *inst;
+    else
+        os << "NULL";
 }
 
-int Expr::size_in_bits() const {
-    return inst->size_in_bits( nout );
+bool Expr::error() {
+    return inst == 0 or inst->type() == ip->type_Error;
 }
-
-int Expr::size_in_bytes() const {
-    return inst->size_in_bytes( nout );
-}
-
-//const BaseType *Expr::out_bt() const {
-//    return inst->out_bt( nout );
-//}
-

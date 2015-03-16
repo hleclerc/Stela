@@ -1,0 +1,435 @@
+class Class
+    ptr ~= SI64 # pointer to C++ data
+    
+# default init wo args -> do nothing
+def init( self, varargs ) pertinence 0.5
+    ___init_va self, varargs
+    
+    
+class Def
+    ptr ~= SI64 # pointer to C++ data
+
+class SurdefList
+    ptr ~= SI64 # pointer to C++ data
+    
+    def select varargs
+        ___select_SurdefList self, varargs
+
+class Varargs
+    ptr ~= SI64 # pointer to C++ data
+    def get_size
+        ___get_size self
+    def select index
+        _select_rec index, 0
+    def _select_rec index, val
+        if index == val
+            return ___select_Varargs self, val
+        _select_rec index, val + 1
+
+    
+class Void
+    #
+
+class Block
+    ptr ~= SI64 # pointer to C++ data
+    
+    def apply arg
+        ___call_block self, arg
+    
+    
+class Bool
+    ___set_base_size_and_alig 1, 1
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class SI8
+    ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class PI8
+    ___set_base_size_and_alig 8, 8
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class SI16
+    ___set_base_size_and_alig 16, 16
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class PI16
+    ___set_base_size_and_alig 16, 16
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+    
+class SI32
+    ___set_base_size_and_alig 32, 32
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+
+class SI64
+    ___set_base_size_and_alig 64, 64
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+        
+class PI32
+    ___set_base_size_and_alig 32, 32
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+
+class PI64
+    ___set_base_size_and_alig 64, 64
+    def init val
+        ___reassign_rec self, val
+    def reassign val
+        ___reassign_rec self, val
+
+    
+def add a, b
+    ___add a, b
+
+def sub a, b
+    ___sub a, b
+
+def mul a, b
+    ___mul a, b
+
+def div a, b
+    ___div a, b
+
+def mod a, b
+    ___mod a, b
+    
+def shift_left a, b
+    ___shift_left a, b
+
+def self_add a, b
+    a = a + b
+
+def self_sub a, b
+    a = a - b
+
+def self_mul a, b
+    a = a * b
+
+def self_div a, b
+    a = a / b
+
+def self_mod a, b
+    a = a % b
+
+def reassign a, b
+    a.reassign b
+
+def not_boolean v
+    ___not_boolean v
+    
+def equal a, b
+    ___equ a, b
+    
+def superior a, b
+    ___sup a, b
+    
+def superior_equal a, b
+    ___sup_eq a, b
+
+def inferior a, b
+    ___inf a, b
+    
+def inferior_equal a, b
+    ___inf_eq a, b
+
+def pre_inc a
+    a += 1
+    
+# class PI96
+    # ___set_base_size_and_alig 96, 96
+    
+# class Inode
+    # val ~= PI96
+    
+# class CUnsigned
+    # beg ~= repeat PI8, cond = _0 >= 128
+    # end ~= PI8
+    
+# class CString
+    # size ~= CUnsigned
+    # data ~= repeat PI8, size
+
+# class Directory
+    # class Item
+        # name ~= CString
+        # file ~= Inode
+    # icon ~= CString
+    # data ~= repeat Item, cond = _0.name.size
+    
+    # def find name
+        # for item in data
+            # if item.name == name
+                # return item.file
+        # Inode 0
+        
+    # def add name, inode
+        # data.push_back name, inode
+        
+# class Directory_RedBlack
+    # class Item
+        # name ~= CString
+        # file ~= Inode
+        # lech ~= Offset
+        # rich ~= Offset
+        
+    # nb_items ~= CUnsigned
+    # icon     ~= CString
+    # data     ~= repeat Item, size = nb_items
+    
+    # def find name
+        # for item in data
+            # if item.name == name
+                # return item.file
+        # Inode 0
+    
+    # def add name, inode
+        # #
+
+# # 
+# class N[ val ]
+
+# #
+# class JsHeap
+    # def size
+        # ___code "heap.byteLength"
+
+# # Heap allocation
+# js_heap := JsHeap()
+    
+# def heap_allocation size
+    
+# def test
+    # ___code "heap.byteLength"
+        
+# st := ___gen_ssa_tree test
+# class CString
+    # size := CUInt 0
+    # data := repeat PI8, n = size
+
+# ___code "heap.byteLength"
+    
+class Lambda
+    ast  := 0l # pointer to Ast_Lambda
+    refs := 0l # catched references
+   
+class Repeated
+    type := 0l # pointer to type
+    func := 0l # pointer to func that gives the size
+
+class Type
+    ptr := 0l # pointer to C++ data
+
+class Ptr[ T ]
+    addr := 0p
+
+    def init p
+        addr = p.addr
+    
+    def reassign p
+        addr = p.addr
+        
+    def select index
+        inst ~= T
+        ___slice T, @self, sizeof( inst ) * index
+    
+    
+def make_varargs varargs
+    varargs
+    
+class CUInt
+    data := ___repeat PI8, x => ( res := 1; while x.data[ res ] >= 128; ++res; res )
+    
+    static def size_init _val
+        res := 8
+        val := _val
+        while val >= 128
+            val /= 128
+            res += 8
+        make_varargs data = res
+
+    def init _val
+        cpt := 0
+        val := _val
+        while true
+            data[ cpt ] = _val % 128
+            if _val < 128
+                break
+            val /= 128
+            cpt += 1
+
+class CString
+    size := CUInt 0
+    data := ___repeat PI8, x => x.size
+    
+            
+def ceil a, b
+    ( a + b - 1 ) / b * b
+        
+def pointer_on val
+    ___pointer_on val
+    
+def pointed_value val
+    ___pointed_value val
+    
+def binary_slice type, val, off
+    ___slice type, val, off
+
+def sizeof obj
+    ___size_of obj
+
+def aligof obj
+    ___alig_of obj
+
+def typeof a
+    ___typeof a
+
+# args must be a varargs
+def call func, args
+    ___call func, args
+    
+def ___repeated_init rep, var, len, varargs
+    rty := ___repeated_type rep
+    off := 0
+    while true
+        off = ceil off, aligof rty
+        if off >= len
+            break
+        obj := binary_slice rty, var, off
+        call obj.init, varargs
+        off += sizeof obj
+
+        
+class NdListItemBeg[ T, Tnext ]
+    data := Ptr[ T ]()
+    next ~= Tnext
+    
+    def get_size
+        1 + next.get_size()
+
+    def select index
+        if index
+            return next.select index - 1
+        @data
+
+class NdListItemEnd
+    def get_size
+        0
+        
+    def select index
+        0
+
+# TV is of kind NdListItemBeg[ T1, NdListItemBeg[ T2, NdListItemEnd ] ]
+# nb_dims must be a positive integer
+# sizes contains the size for each dim recursively. E.g. [ 2, 4, 4 ] for a 2x4 matrix
+class NdList[ TV, nb_dims, sizes ]
+    values ~= TV
+    
+    def select index
+        values[ index ]
+
+class StaticListItemBeg[ val, next ]
+    def select index
+        if index
+            return next.select index - 1
+        val
+    def get_size
+        1 + next.get_size()
+    def disp
+        ___info val
+        next.disp()
+
+class StaticListItemEnd
+    def get_size
+        0
+    def disp
+        void
+    def select index
+        0
+
+class Toto
+    a := PI16 13
+    b := ___repeat PI8, x => 8 * 5
+    c := PI16 26
+
+    def init
+        
+    
+    static def size_init
+        make_varargs b = 8 * 5
+        
+    def foo arg
+        2 * arg + 1
+
+  
+  
+# init_args is a list of list of types to describe arg types for ctor variants
+def make_code_for_class filename, type, varargs
+    ___make_code_for filename, type, varargs
+
+# make_code_for_class "test_js/Toto.js", Toto,
+    # init = [ [] ]
+    # foo  = [ [ SI32 ] ]
+class Range[ TB, TE, TI ]
+    beg ~= TB
+    end ~= TE
+    inc ~= TI
+
+    def __for__ block
+        cur := beg
+        while cur < end
+            block cur
+            cur += inc
+
+def range beg, end, inc = typeof( beg )( 1 )
+    Range[ typeof( beg ), typeof( end ), typeof( inc ) ]( beg, end, inc )
+
+def __init_js_allocator buffer_SI32
+    for i in 0 .. sizes.get_size()
+        buffer_SI32[ 0 ] = 0
+    
+# buffer -> Ptr[SI32]
+def allocate buffer, size
+    # void *res = free_room;
+    # if ( not res )
+        # res = new_allocator_chunk( size );
+    # free_room = *reinterpret_cast<void **>( res );
+    # return res;
+
+    if size <= 4
+        res := Ptr[SI32]( buffer[ 0 ] )
+        if not res
+            res = new_allocator_chunk buffer, size
+        buffer[ 0 ] = res
+        return res
+
+    
+# cur := 0
+# a := 2
+# while cur < 10
+    # a += cur
+    # cur += 1
+# ___disp a
+

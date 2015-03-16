@@ -1,28 +1,45 @@
-#include "InstVisitor.h"
+#include "../Codegen/Codegen_C.h"
+#include "IpSnapshot.h"
 #include "Syscall.h"
-#include "Arch.h"
+#include "Ip.h"
 
-class Syscall : public Inst_<2,-1> {
-public:
-    virtual int size_in_bits( int nout ) const { return arch->ptr_size; }
-    virtual void write_dot( Stream &os ) const { os << "syscall"; }
-    virtual void apply( InstVisitor &visitor ) const { visitor.syscall( *this ); }
-    virtual int inst_id() const { return Inst::Id_Syscall; }
-};
-
-
-syscall::syscall( Expr sys, int ninp, Expr *inp ) {
-    Syscall *res = new Syscall;
-    res->inp_resize( 1 + ninp );
-    res->inp_repl( 0, sys );
-    for( int i = 0; i < ninp; ++i ) {
-        ASSERT( inp[ i ].size_in_bits() == arch->ptr_size, "non compatible input for syscall" );
-        res->inp_repl( 1 + i, inp[ i ] );
+/**
+*/
+struct Syscall : Inst {
+    Syscall() {} 
+    virtual void write_dot( Stream &os ) const { os << "Syscall"; }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new Syscall(); }
+    virtual Type *type() { return ip->type_ST; }
+    virtual void write( Codegen_C *cc ) {
+        cc->on.write_beg();
+        if ( out_reg )
+            out_reg->write( cc, new_reg ) << " = ";
+        *cc->os << "syscall( ";
+        for( int i = 0; i < inp.size(); ++i ) {
+            if ( i )
+                *cc->os << ", ";
+            if ( inp[ i ]->type() != ip->type_ST )
+                *cc->os << "(long)";
+            cc->write_out( inp[ i ] );
+        }
+        cc->on.write_end( " );" );
     }
 
-    // ret
-    Inst *s = Inst::factorized( res );
-    this->sys = Expr( s, 0 );
-    this->ret = Expr( s, 1 );
+
+};
+
+Expr syscall( Vec<Expr> inp, const BoolOpSeq &cond ) {
+    Syscall *res = new Syscall();
+    ++Inst::cur_op_id;
+    for( Expr i : inp ) {
+        if ( i.error() )
+            return ip->error_var();
+        i->add_store_dep( res );
+        res->add_inp( i );
+    }
+    res->add_dep( ip->sys_state->get( cond ) );
+
+    ip->sys_state->set( res, cond );
+    return res;
 }
 

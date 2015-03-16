@@ -41,7 +41,7 @@ typename EnableIf<
   TensorOrder<T>::res == 0,
   typename ShouldBeDisplayedWriteToStream<T,std::ostream>::T
 >::T &operator<<( std::ostream &os, const T &val ) {
-    val.write_to_stream( os );
+    const_cast<T &>( val ).write_to_stream( os );
     return os;
 }
 
@@ -65,6 +65,8 @@ typename EnableIf<
         std::cout << "  " << #A << " -> " << (A) << std::endl
     #define PRINTN( A ) \
         std::cout << "  " << #A << " ->\n" << (A) << std::endl
+    #define PRN( A ) \
+        std::cout << "  " << #A << " => " << ip->str_cor.str( A ) << std::endl
 #endif
 
 typedef std::string  String;
@@ -76,6 +78,8 @@ String to_string( const T &val ) {
     ss << val;
     return ss.str();
 }
+
+String to_string( const PI8 *val );
 
 
 #endif // STREAM_H

@@ -5,6 +5,7 @@
 #include "../System/Assert.h"
 #include <stdlib.h>
 #include <string.h>
+#include <utility>
 #include <new>
 
 ///
@@ -47,6 +48,49 @@ public:
         }
     }
 
+    struct Iterator {
+        void operator++() {
+            ++cur;
+            while ( cur >= item->cur ) {
+                if ( not item->next )
+                    return;
+                item = item->next;
+                cur  = item->ptr();
+            }
+        }
+        T &operator*() { return *cur; }
+        bool operator==( const Iterator &c ) const { return item == c.item and cur == c.cur; }
+        bool operator!=( const Iterator &c ) const { return item != c.item or  cur != c.cur; }
+
+        Item *item;
+        T    *cur;
+    };
+
+    struct ConstIterator {
+        void operator++() {
+            ++cur;
+            while ( cur >= item->cur ) {
+                if ( not item->next )
+                    return;
+                item = item->next;
+                cur  = item->ptr();
+            }
+        }
+        const T &operator*() const { return *cur; }
+        bool operator==( const ConstIterator &c ) const { return item == c.item and cur == c.cur; }
+        bool operator!=( const ConstIterator &c ) const { return item != c.item or  cur != c.cur; }
+
+        const Item *item;
+        const T    *cur;
+    };
+
+    Iterator begin() { return Iterator{ &first, first.ptr() }; }
+    Iterator end  () { return Iterator{ last, last->cur }; }
+
+    ConstIterator begin() const { return ConstIterator{ &first, first.ptr() }; }
+    ConstIterator end  () const { return ConstIterator{ last, last->cur }; }
+
+
     void clear() {
         this->~SplittedVec();
 
@@ -73,6 +117,13 @@ public:
     T *push_back( const T0 &v0 ) {
         T *res = get_room_for();
         new( res ) T( v0 );
+        return res;
+    }
+
+    template<class T0>
+    T *push_back( T0 &&v0 ) {
+        T *res = get_room_for();
+        new( res ) T( std::move( v0 ) );
         return res;
     }
 
@@ -111,6 +162,16 @@ public:
             if ( operator[]( i ) == val )
                 return &operator[]( i );
             return push_back( val );
+    }
+
+    template<class T2>
+    T *insert( ST index, const T2 &val ) {
+        if ( index == 0 )
+            return push_back( val );
+        push_back( std::move( back() ) );
+        for( int i = size() - 3; i >= index; --i )
+            operator[]( i + 1 ) = std::move( operator[]( i ) );
+        return &( operator[]( index ) = val );
     }
 
     ///
@@ -177,7 +238,7 @@ public:
         }
     }
 
-    T operator[]( ST index ) const {
+    const T &operator[]( ST index ) const {
         ASSERT_IF_DEBUG( index >= 0 );
         for( const Item *i = &first; i; i = i->next ) {
             ST s = i->cur - i->ptr();

@@ -1,10 +1,11 @@
-#ifndef WHILE_H
-#define WHILE_H
+#ifndef STELA_INST_While_H
+#define STELA_INST_While_H
 
 #include "Inst.h"
 
-Inst *while_inst( const Vec<Expr> &inp_exprs, const Inst *winp, const Inst *wout, const Vec<int> &corr_inp );
-Inst *while_inp( const Vec<int> &sizes_in_bits );
-Inst *while_out( const Vec<Expr> &out_exprs );
+Expr while_inp( const Vec<Type *> &types );
+Expr while_out( const Vec<Expr> &inp, const Vec<Vec<bool> > &pos );
+Expr while_inst( const Vec<Expr> &inp, Expr winp, Expr wout, const Vec<int> &corr );
 
-#endif // WHILE_H
+#endif // STELA_INST_While_H
+

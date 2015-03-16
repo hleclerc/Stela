@@ -11,7 +11,8 @@ class ErrorList {
 public:
     struct Provenance {
         Provenance( const char *beg, const char *pos, std::string provenance, std::string msg = "" );
-        Provenance( const char *src, int off, std::string msg = "" );
+        Provenance( const String &src, int off, std::string msg = "" );
+        Provenance( int line, String provenance );
 
         void _init( const char *beg, const char *pos );
 
@@ -30,7 +31,7 @@ public:
         Error &ac( const char *src, int off );
 
         Error &ap( const char *beg, const char *pos, std::string provenance, std::string msg = "" ); ///< add a possibility
-        Error &ap( const char *src, int off, std::string msg = "" );
+        Error &ap( const String &src, int off, std::string msg = "" );
 
         bool due_to_not_ended_expr, display_col, display_escape_sequences, warn;
         Vec<Provenance> caller_stack;  /// "copy" of caller stack

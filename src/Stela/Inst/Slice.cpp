@@ -1,76 +1,91 @@
-#include "InstVisitor.h"
-#include "PointerOn.h"
+#include "../Codegen/Codegen_C.h"
+#include "BoolOpSeq.h"
 #include "Slice.h"
-#include "Inst_.h"
-#include "Arch.h"
-#include "Cst.h"
+#include "Type.h"
 #include "Op.h"
+#include "Ip.h"
 
-///
-class Slice : public Inst_<1,1> {
-public:
-    virtual int size_in_bits( int nout ) const { return end - beg; }
-    virtual void write_dot( Stream &os ) const { os << "slice[" << beg << "," << end << "]"; }
-    virtual void apply( InstVisitor &visitor ) const { visitor.slice( *this, beg, end ); }
-    virtual int inst_id() const { return Inst::Id_Slice; }
-    virtual bool equal( const Inst *b ) const {
-        return Inst::equal( b ) and 
-            beg == static_cast<const Slice *>( b )->beg and 
-            end == static_cast<const Slice *>( b )->end;
+/**
+   slice[ out_type ]( var, offset )
+*/
+struct Slice : Inst {
+    Slice( Type *out_type ) : out_type( out_type ) {}
+    virtual void write_dot( Stream &os ) const { os << "Slice"; }
+    virtual void write_to_stream( Stream &os, int prec ) {
+        int voff;
+        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
+            os << "rcast[" << *out_type << "](" << inp[ 0 ] << ")";
+        else
+            Inst::write_to_stream( os, prec );
     }
-    virtual const PI8 *cst_data( int nout, int lbeg, int lend ) const {
-        return inp_expr( 0 ).cst_data( beg + lbeg, beg + lend );
-    }
-    virtual int sizeof_additionnal_data() const {
-        return 2 * sizeof( int );
-    }
-    virtual void copy_additionnal_data_to( PI8 *dst ) const {
-        memcpy( dst + 0 * sizeof( int ), &beg, sizeof( int ) );
-        memcpy( dst + 1 * sizeof( int ), &end, sizeof( int ) );
-    }
-    virtual Expr _smp_pointer_on( int nout ) {
-        if ( Expr res = Inst::_smp_pointer_on( nout ) )
+
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new Slice( out_type ); }
+    virtual Type *type() { return out_type; }
+
+    virtual Expr _simp_slice( Type *dst, Expr off ) {
+        if ( Expr res = Inst::_simp_slice( dst, off ) )
             return res;
-        if ( beg % 8 )
-            TODO;
-        return op_add( arch->bt_ptr(), pointer_on( inp_expr( 0 ) ), arch->cst_ptr( beg / 8 ) );
+        return slice( dst, inp[ 0 ], add( off, inp[ 1 ] ) );
     }
-    int beg, end;
+    virtual Expr get( const BoolOpSeq &cond ) {
+        int voff;
+        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 ) {
+            if ( out_type->orig != ip->class_Ptr ) {
+                PRINT( *out_type );
+                ERROR( "" );
+                return ip->ret_error( "expecting a ptr" );
+            }
+            Type *val_type = ip->type_from_type_var( out_type->parameters[ 0 ] );
+            return rcast( val_type, inp[ 0 ]->get( cond ) );
+        }
+        TODO;
+        return 0;
+    }
+    virtual void set( Expr obj, const BoolOpSeq &cond ) {
+        int voff;
+        if ( inp[ 1 ]->get_val( ip->type_SI32, &voff ) and voff == 0 )
+            return inp[ 0 ]->set( obj, cond );
+        TODO;
+    }
+
+    virtual void get_constraints() {
+        if ( inp[ 0 ]->type()->size() == type()->size() ) {
+            add_same_out( 0, this, -1, COMPULSORY ); // inp[ 0 ] <-> out
+        }
+    }
+
+    virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out ) {
+        if ( inp[ 0 ]->type()->size() == type()->size() )
+            replace_this_by_inp( 0, out );
+    }
+
+    virtual void write( Codegen_C *cc ) {
+        if ( out_reg == inp[ 0 ]->out_reg )
+            return;
+        Type *t = inp[ 1 ]->type();
+        for( int i = 0; i < t->sb(); ++i ) {
+            cc->on.write_beg() << "*( (char *)&";
+            out_reg->write( cc, false ) << " + ";
+            inp[ 1 ]->out_reg->write( cc, false ) << " / 8 + " << i << " ) = ";
+            *cc->os << "*( (char *)&";
+            inp[ 0 ]->out_reg->write( cc, false ) << " + " << i << " )";
+            cc->on.write_end( ";" );
+        }
+    }
+
+    Type *out_type;
 };
 
-
-///
-class SliceUnk : public Inst_<1,2> {
-public:
-    virtual int size_in_bits( int nout ) const { return len; }
-    virtual void write_dot( Stream &os ) const { os << "slice[" << inp[ 0 ] << ",len=" << len << "]"; }
-    virtual void apply( InstVisitor &visitor ) const { visitor.slice( *this, len ); }
-    virtual int inst_id() const { return Inst::Id_SliceUnk; }
-    virtual bool equal( const Inst *b ) const { return Inst::equal( b ) and len == static_cast<const SliceUnk *>( b )->len; }
-    int len;
-};
-
-Expr slice( Expr expr, const Expr &beg, int len ) {
-    SliceUnk *res = new SliceUnk;
-    res->inp_repl( 0, expr );
-    res->inp_repl( 1, beg  );
-    res->len = len;
-    return Expr( Inst::factorized( res ), 0 );
-}
-
-Expr slice( Expr expr, int beg, int end ) {
-    ASSERT( beg >= 0 and beg <= expr.size_in_bits(), "Wrong size" );
-    ASSERT( end >= 0 and end <= expr.size_in_bits(), "Wrong size" );
-    ASSERT( beg <= end, "Wrong size" );
-
-    // simplifications ?
-    if ( Expr res = expr.inst->_smp_slice( expr.nout, beg, end ) )
+Expr slice( Type *dst, Expr var, Expr off ) {
+    if ( Expr res = var->_simp_slice( dst, off ) )
         return res;
 
-    // else create a new inst
-    Slice *res = new Slice;
-    res->inp_repl( 0, expr );
-    res->beg = beg;
-    res->end = end;
-    return Expr( Inst::factorized( res ), 0 );
+    Slice *res = new Slice( dst );
+    res->add_inp( var );
+    res->add_inp( off );
+    return res;
+}
+
+Expr rcast( Type *dst, Expr var ) {
+    return slice( dst, var, 0 );
 }

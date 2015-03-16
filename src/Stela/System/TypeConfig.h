@@ -60,6 +60,7 @@ struct FreeSlot {
     template<class Str>
     void write_to_stream( Str &os ) const { os << "FreeSlot"; }
 };
+struct Ref {};
 struct Size {};
 struct Rese {};
 struct True {};

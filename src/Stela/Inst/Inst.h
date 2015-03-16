@@ -1,104 +1,190 @@
 #ifndef INST_H
 #define INST_H
 
-#include "../System/Stream.h"
-#include "../System/Ptr.h"
 #include "../System/Vec.h"
-#include <cstddef>
-
-class InstVisitor;
-class BaseType;
-class Expr;
+#include "Expr.h"
+#include <map>
+#include <set>
+class CppOutReg;
+class BoolOpSeq;
+class Codegen_C;
+class Type;
 
 /**
 */
-class Inst : public ObjectWithCptUse {
+class Inst {
 public:
-    // types
-    typedef Expr      Inp;
-    typedef ConstPtr<Inst> Ext;
-
-    struct Out {
-        struct Parent {
-            bool operator==( const Parent &item ) const { return inst == item.inst and ninp == item.ninp; }
-            Inst *inst;
-            int   ninp;
-        };
-        Vec<Parent,-1,1> parents;
+    struct Parent {
+        bool operator==( const Parent &p ) const { return inst == p.inst and ninp == p.ninp; }
+        bool operator< ( const Parent &p ) const { return inst != p.inst ? inst < p.inst : ninp < p.ninp; }
+        Inst *inst;
+        int   ninp; ///< input number (or TPAR_...)
     };
-
-    enum { ///< very bad...
-        #define DECL_INST( INST ) Id_##INST,
-        #include "DeclInst.h"
-        #undef DECL_INST
-        Id__fake_end
+    /// flags
+    enum {
+        CONST     = 1,
+        SURDEF    = 2,
+        PART_INST = 4 // partial instanciation
+    };
+    /// for Parent::ninp
+    enum {
+        TPAR_DEP = -1
+    };
+    /// for same_out and diff_out level
+    enum {
+        OPTIONNAL  = 0,
+        COMPULSORY = 100 ///< for same_out and diff_out
+    };
+    /// for same_out and diff_out level
+    struct PortConstraint {
+        bool operator<( const PortConstraint &p ) const {
+            if ( src_ninp != p.src_ninp ) return src_ninp < p.src_ninp;
+            if ( dst_inst != p.dst_inst ) return dst_inst < p.dst_inst;
+            return dst_ninp < p.dst_ninp;
+        }
+        int   src_ninp; ///< -1 -> out
+        Inst *dst_inst;
+        int   dst_ninp; ///< -1 -> out
+    };
+    ///
+    struct Visitor {
+        virtual bool operator()( Inst *inst ) = 0;
+    };
+    ///
+    struct ParentBlockIterator {
+        ParentBlockIterator( Inst *b ) : inst( b ) {
+            while( inst->prev_sched )
+                inst = inst->prev_sched;
+        }
+        operator bool() const { return inst; }
+        Inst *operator*() { return inst; }
+        void operator++() {
+            inst = inst->par_ext_sched;
+            if ( inst )
+                while( inst->prev_sched )
+                    inst = inst->prev_sched;
+        }
+        Inst *inst;
     };
 
     Inst();
     virtual ~Inst();
 
-    virtual int size_in_bits( int nout ) const = 0;
-    virtual int size_in_bytes( int nout ) const;
+    virtual void set( Expr obj, const BoolOpSeq &cond ); ///< set pointed value
+    virtual Expr get( const BoolOpSeq &cond ); ///< get pointed value
+    virtual Expr get(); ///< get pointed value
+    virtual Expr simplified( const BoolOpSeq &cond );
+    virtual bool same_cst( const Inst *inst ) const;
+    virtual bool emas_cst( const Inst *inst ) const;
+    virtual SI32 size();
+
+    void add_dep( const Expr &val );
+    void add_inp( const Expr &val );
+    void add_ext( const Expr &val );
+
+    void mod_inp( const Expr &val, int num );
+    void mod_dep( const Expr &val, Inst *d );
+
+    void rem_dep( Inst *d );
+
+    void add_store_dep( Inst *dst );
+
+    virtual void write_to_stream( Stream &os, int prec = -1 );
     virtual void write_dot( Stream &os ) const = 0;
-    virtual void write_to_stream( Stream &os ) const;
-    void mark_children() const;
+    virtual Type *type( int nout ); ///
+    virtual Type *ptype( int nout );
+    virtual Type *type() = 0;
+    virtual Type *ptype();
 
-    virtual const PI8 *cst_data( int nout, int beg, int end ) const;
-    virtual const PI8 *vat_data( int nout, int beg, int end ) const;
-    virtual bool undefined() const;
+    void rem_ref_to_this();
+    void replace_this_by_inp( int ninp, Vec<Expr> &out );
+    Inst *find_par_for_nout( int nout );
+    virtual int pointing_to_nout();
 
-    virtual Expr clone( Expr *ch, int nout ) const;
+    void mark_children( Vec<Expr> *seq = 0 );
 
-    // inp
-    virtual int inp_size() const = 0;
-    virtual void inp_push( Expr var ) = 0;
-    virtual void inp_resize( int ns ) = 0;
-    virtual void inp_repl( int num, Expr var ) = 0;
-    virtual void inp_repl( Expr src, Expr dst ) = 0;
-    virtual const Expr &inp_expr( int num ) const = 0;
-    virtual Expr &inp_expr( int num ) = 0;
-
-    // out
-    virtual int out_size() const = 0;
-    virtual Out &out_expr( int n ) = 0;
-    virtual const Out &out_expr( int n ) const = 0;
-
-    virtual const BaseType *out_bt( int n ) const;
-
-    // ext
-    virtual int ext_size() const = 0;
-    virtual void ext_repl( int num, const Inst *inst ) = 0;
-    virtual const Inst *ext_inst( int num_ext ) const = 0;
-    virtual int ext_size_disp() const;
-
-    //
-    virtual void apply( InstVisitor &visitor ) const = 0;
-    virtual bool equal( const Inst *b ) const;
-    virtual int  inst_id() const = 0; ///< unique id for each inst. very bad...
-    virtual int  sizeof_additionnal_data() const; ///< to make clones. very bad
-    virtual void copy_additionnal_data_to( PI8 *dst ) const; ///< to make clones. very bad
+    virtual void clone( Vec<Expr> &created ) const;
+    virtual Expr forced_clone( Vec<Expr> &created ) const = 0;
 
 
-    static int display_graph( const Vec<ConstPtr<Inst> > &outputs, const char *filename = ".res" );
-    virtual void write_graph_rec( Vec<const Inst *> &ext_buf, Stream &os ) const;
-    virtual void write_sub_graph_rec( Stream &os ) const;
+    // properties
+    virtual bool has_inp_parent( Inst *inst ) const;
+    virtual bool has_inp_parent() const;
+    virtual int  always_checked() const;
+    virtual int  nb_inp_parents() const;
 
-    /// return inst unless there's already the same operation somewhere
-    /// if it's the case, delete inst and return the corresponding instruction
-    static Inst *factorized( Inst *inst );
+    virtual bool uninitialized() const;
+    virtual bool is_surdef() const;
+    virtual bool is_const() const;
 
-    // methods to construct expressions
-    virtual Expr _smp_slice( int nout, int beg, int end );
-    virtual Expr _smp_val_at( int nout, int beg, int end );
-    virtual Expr _smp_pointer_on( int nout );
-    virtual Expr _smp_setval( int nout, const Expr &b, int beg );
+    virtual bool is_Select() const;
 
-    // attributes
-    mutable const Inst *ext_parent;
-    static  PI64  cur_op_id; ///<
-    mutable PI64  op_id_vis; ///<
-    mutable PI64  op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
-    mutable void *op_mp;     ///< result of current operations
+    virtual bool get_val( Type *type, void *data ) const;
+    virtual operator BoolOpSeq();
+    virtual int op_num() const; ///< only for Op<>
+
+    virtual bool referenced_more_than_one_time() const;
+
+    // codegen
+    virtual void get_constraints();
+    virtual void update_when( const BoolOpSeq &cond );
+    virtual void write( Codegen_C *cc );
+    // virtual void add_break_and_continue_internal( CC_SeqItemBlock **b );
+    virtual bool will_write_code() const;
+    virtual bool need_a_register();
+    virtual void codegen_simplification( Vec<Expr> &created, Vec<Expr> &out );
+
+    void add_same_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
+    void add_diff_out( int src_ninp, Inst *dst_inst, int dst_ninp, int level );
+    int  set_inp_reg( int ninp, CppOutReg *reg ); /// -1 -> impossible, 0 -> no change, 1 -> ok with change
+    CppOutReg *get_inp_reg( int ninp );
+
+    bool visit_sched( Visitor &v, bool with_ext = true, bool forward = true, Inst *end = 0 );
+    bool sched_contains( Inst *inst ); ///< if this of ext_sched contains inst
+    void update_sched_num();
+
+    // display
+    static int display_graph( Vec<Expr> outputs, const char *filename = ".res" );
+    virtual void write_graph_rec( Vec<Inst *> &ext_buf, Vec<Inst *> &seq, Stream &os );
+    virtual void write_sub_graph_rec( Vec<Inst *> &seq, Stream &os );
+    virtual int ext_disp_size() const;
+
+    virtual Expr _simp_repl_bits( Expr off, Expr val );
+    virtual Expr _simp_slice( Type *dst, Expr off );
+    virtual void _mk_store_dep( Inst *dst );
+
+    Vec<Expr>             inp;
+    Vec<Expr>             ext;
+    Vec<Expr>             dep;
+    mutable Vec<Parent>   par; ///< parents
+    mutable Inst         *ext_par;
+    int                   flags;
+
+    // codegen
+    bool                  used_reg_ok_for( CppOutReg *reg, Inst *inst, int dir = 0 );
+    void                  add_used_reg( CppOutReg *reg, Inst *inst );
+    void                  used_regs_erase( CppOutReg *out_reg );
+
+    BoolOpSeq            *when; ///< used for code generation (to know when needed)
+    Inst                 *next_sched;
+    Inst                 *prev_sched;
+    Inst                 *par_ext_sched;
+    Vec<Inst *>           ext_sched;
+    int                   sched_num; ///< in local block (temporary variable, updated on demand)
+    CppOutReg            *out_reg;
+    Vec<CppOutReg *>      inp_reg;
+    bool                  new_reg;
+    std::map<PortConstraint,int> same_out; ///< instructions that must have == out_reg than this. int = COMPULSORY or less
+    std::map<PortConstraint,int> diff_out; ///< instructions that must have != out_reg than this. int = COMPULSORY or less
+    std::map<CppOutReg *,Inst *> used_regs; ///< for this inst, some regs must correspond to some inst outputs
+    Vec<CppOutReg *>      reg_to_decl; ///< used for Block instructions (If, ...)
+
+
+    static  PI64          cur_op_id; ///<
+    mutable PI64          op_id_vis; ///<
+    mutable PI64          op_id;     ///< operation id (every new operation on the graph begins with ++current_MO_op_id and one can compare op_id with cur_op_id to see if operation on this node has been done or not).
+    mutable void         *op_mp;     ///< result of current operations
+    mutable int           cpt_use;
 };
 
 #endif // INST_H

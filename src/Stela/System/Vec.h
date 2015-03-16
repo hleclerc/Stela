@@ -8,6 +8,7 @@
 #include "Assert.h"
 #include "N.h"
 #include <stdlib.h>
+#include <utility>
 #include <new>
 
 #ifdef ALLOW_Cpp0X
@@ -514,6 +515,13 @@ public:
         return _data[ i ];
     }
 
+    Vec slice( int beg, int end ) {
+        Vec res( Size(), end - beg );
+        for( int i = beg, o = 0; i < end; ++i, ++o )
+            res[ o ] = operator[]( i );
+        return res;
+    }
+
     ST size() const { return _size; }
 
     bool empty() const { return size() == 0; }
@@ -615,6 +623,12 @@ public:
         return _data[ _size ];
     }
 
+    T pop_back_val() {
+        T res = back();
+        pop_back();
+        return res;
+    }
+
     // append val if not present and return pointer to new elem. Else, return pointer to elem which is equal to val
     template<class T2>
     T *push_back_unique( const T2 &val ) {
@@ -629,6 +643,28 @@ public:
     T *push_back_in_reserved( const T0 &v0 ) {
         T *res = _data + _size++;
         new( res ) T( v0 );
+        return res;
+    }
+
+    template<class V>
+    void append( const V &v ) {
+        for( const T &i : v )
+            push_back( i );
+    }
+
+    template<class V>
+    bool subset_of( const V &v ) const {
+        for( const T &i : *this )
+            if ( not v.contains( i ) )
+                return false;
+        return true;
+    }
+
+    Vec without_vals_of( const Vec &v ) const {
+        Vec res;
+        for( const T &val : *this )
+            if ( not v.contains( val ) )
+                res << val;
         return res;
     }
 
@@ -679,10 +715,19 @@ public:
 
     template<class T2>
     bool contains( const T2 &d ) const {
-        for(int i=0;i<_size;++i)
+        for(int i = 0; i < _size; ++i )
             if ( _data[ i ] == d )
                 return true;
         return false;
+    }
+
+    /// true if this contains all items of vec
+    template<int a,int b>
+    bool contains( const Vec<T,a,b> &vec ) const {
+        for(int i = 0; i < vec.size(); ++i )
+            if ( not contains( vec[ i ] ) )
+                return false;
+        return true;
     }
 
     template<class T2>
@@ -690,6 +735,14 @@ public:
         for(int i = 0; i < _size; ++i )
             if ( _data[ i ] == d )
                 return i;
+        return -1;
+    }
+
+    template<class T2>
+    int first_item_equal_to( const T2 &d ) const { /// returns -1 if not found
+        for(int i = 0; i < _size; ++i )
+            if ( _data[ i ] == d )
+                return _data[ i ];
         return -1;
     }
 
@@ -705,6 +758,16 @@ public:
             return false;
         for( int i = 0; i < _size; ++i )
             if ( _data[ i ] != v[ i ] )
+                return false;
+        return true;
+    }
+
+    template<class TC>
+    bool equal( const TC &v ) const {
+        if ( size() != v.size() )
+            return false;
+        for( int i = 0; i < _size; ++i )
+            if ( not _data[ i ].equal( v[ i ] ) )
                 return false;
         return true;
     }
@@ -745,14 +808,14 @@ public:
 
     Vec operator+( const Vec &vec ) const {
         Vec res( Size(), ( size() < vec.size() ? size() : vec.size() ) );
-        for(int i=0;i<res.size();++i)
+        for( int i = 0; i < res.size(); ++i )
             res[ i ] = operator[]( i ) + vec[ i ];
         return res;
     }
 
     Vec left_to( ST end ) const {
         Vec res( Rese(), end );
-        for(int i=0;i<end;++i)
+        for( int i = 0; i < end; ++i )
             res << operator[]( i );
         return res;
     }
@@ -802,9 +865,9 @@ private:
         _rese = wanted_in_bytes;
         _data = _alloc();
         for( ST i = 0; i < _size; ++i )
-            new( _data + i ) T_( old_data[ i ] );
-        for( ST i = _size - 1; i >= 0; --i )
-            old_data[ i ].~T_();
+            new( _data + i ) T_( std::move( old_data[ i ] ) );
+        //for( ST i = _size - 1; i >= 0; --i )
+        //    old_data[ i ].~T_();
         __free( old_data, old_rese );
     }
 

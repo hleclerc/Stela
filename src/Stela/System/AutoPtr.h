@@ -23,7 +23,8 @@ template<class T,class M=Delete>
 struct AutoPtr {
     AutoPtr() : data( 0 ) {}
     AutoPtr( T *obj ) : data( obj ) {}
-    AutoPtr( const AutoPtr &obj ) { ERROR( "forbidden" ); }
+    // AutoPtr( const AutoPtr &obj ) { ERROR( "forbidden" ); }
+    AutoPtr( AutoPtr &&obj ) : data( obj.data ) { obj.data = 0; }
 
     template<class U>
     AutoPtr( const AutoPtr<U> &obj ) { ERROR( "forbidden" ); }

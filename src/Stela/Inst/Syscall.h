@@ -1,17 +1,9 @@
-#ifndef SYSCALL_H
-#define SYSCALL_H
+#ifndef STELA_INST_Syscall_H
+#define STELA_INST_Syscall_H
 
-#include "Inst_.h"
+#include "Inst.h"
 
-/**
-  out
-     -> new sys state
-     -> return value
-*/
-struct syscall {
-    syscall( Expr sys, int ninp, Expr *inp );
-    Expr sys;
-    Expr ret;
-};
+Expr syscall( Vec<Expr> inp, const BoolOpSeq &cond );
 
-#endif // SYSCALL_H
+#endif // STELA_INST_Syscall_H
+

@@ -56,6 +56,7 @@ class Operators:
             O( "extends"    , "__extends__"           , Need2args  , 2  ),
             O( "pertinence" , "__pertinence__"        , Need2args  , 2  ),
             O( "when"       , "__when__"              , Need2args  , 2  ),
+            O( "starts_with" , "__starts_with__"      , Need2args  , 2  ),
 
             #
             O( "else"       , "__else__"              , Need2args  , 4  ),
@@ -115,67 +116,67 @@ class Operators:
 
 
             #
-            O( "or"         , "__or__"                , Need2args  , 14 ),
+            O( "or"         , "__or__"                , Need2args  , 13 ),
             O( "and"        , "__and__"               , Need2args  , 14 ),
-            O( "xor"        , "__xor___"              , Need2args  , 14 ),
+            O( "xor"        , "__xor___"              , Need2args  , 15 ),
 
             #
-            O( "not"        , "not_boolean"           , Needrarg   , 15 ),
+            O( "not"        , "not_boolean"           , Needrarg   , 16 ),
 
             #
-            O( "inst_of"    , "__inst_of__"           , Need2args  , 16 ),
-            O( "in"         , "__in__"                , Need2args  , 16 ),
-            O( "not_inst_of", "__not_inst_of__"       , Need2args  , 16 ),
-            O( "not_in"     , "__not_in__"            , Need2args  , 16 ),
+            O( "inst_of"    , "__inst_of__"           , Need2args  , 17 ),
+            O( "in"         , "__in__"                , Need2args  , 17 ),
+            O( "not_inst_of", "__not_inst_of__"       , Need2args  , 17 ),
+            O( "not_in"     , "__not_in__"            , Need2args  , 17 ),
 
             #
-            O( "!="         , "not_equal"             , Need2args  , 17 ),
-            O( "=="         , "equal"                 , Need2args  , 17 ),
-            O( ">="         , "superior_equal"        , Need2args  , 17 ),
-            O( "<="         , "inferior_equal"        , Need2args  , 17 ),
-            O( ">"          , "superior"              , Need2args  , 17 ),
-            O( "<"          , "inferior"              , Need2args  , 17 ),
+            O( "!="         , "not_equal"             , Need2args  , 18 ),
+            O( "=="         , "equal"                 , Need2args  , 18 ),
+            O( ">="         , "superior_equal"        , Need2args  , 18 ),
+            O( "<="         , "inferior_equal"        , Need2args  , 18 ),
+            O( ">"          , "superior"              , Need2args  , 18 ),
+            O( "<"          , "inferior"              , Need2args  , 18 ),
 
-            O( "+++"        , "concatenate"           , Need2args  , 18 ),
+            O( "+++"        , "concatenate"           , Need2args  , 19 ),
 
-            O( ".."         , "range"                 , Need2args  , 19 ),
-            O( "..."        , "triple_dots"           , Needlarg   , 19 ),
+            O( ".."         , "range"                 , Need2args  , 20 ),
+            O( "..."        , "triple_dots"           , Needlarg   , 20 ),
 
-            O( "+"          , "add"                   , Need2args  , 20 ),
-            O( "-"          , "sub"                   , MayNeedlarg+Needrarg, 20 ),
-            O( ""           , "neg"                   , Needrarg   , 20 ),
+            O( "+"          , "add"                   , Need2args  , 21 ),
+            O( "-"          , "sub"                   , MayNeedlarg+Needrarg, 21 ),
+            O( ""           , "neg"                   , Needrarg   , 21 ),
 
-            O( "%"          , "mod"                   , Need2args  , 21 ),
-            O( "*"          , "mul"                   , Need2args  , 21 ),
-            O( ":"          , "doubledot"             , Need2args  , 21 ),
-            O( ":."         , "doubledotdot"          , Need2args  , 21 ),
-            O( "/"          , "div"                   , Need2args  , 21 ),
-            O( "//"         , "div_int"               , Need2args  , 21 ),
-            O( "\\"         , "ml_div"                , Need2args  , 21 ),
+            O( "%"          , "mod"                   , Need2args  , 22 ),
+            O( "*"          , "mul"                   , Need2args  , 22 ),
+            O( ":"          , "doubledot"             , Need2args  , 22 ),
+            O( ":."         , "doubledotdot"          , Need2args  , 22 ),
+            O( "/"          , "div"                   , Need2args  , 22 ),
+            O( "//"         , "div_int"               , Need2args  , 22 ),
+            O( "\\"         , "ml_div"                , Need2args  , 22 ),
 
-            O( "^"          , "pow"                   , Need2args  , 22 ),
+            O( "^"          , "pow"                   , Need2args  , 23 ),
 
-            O( "~"          , "not_bitwise"           , Needrarg   , 23 ),
+            O( "~"          , "not_bitwise"           , Needrarg   , 24 ),
 
-            O( "'"          , "trans"                 , Needlarg   , 24 ),
+            O( "'"          , "trans"                 , Needlarg   , 25 ),
 
-            O( "--"         , "pre_dec"               , Needrarg   , 25 ),
-            O( "++"         , "pre_inc"               , Needrarg   , 25 ),
-            O( ""           , "post_dec"              , Needlarg   , 25 ),
-            O( ""           , "post_inc"              , Needlarg   , 25 ),
+            O( "--"         , "pre_dec"               , Needrarg   , 26 ),
+            O( "++"         , "pre_inc"               , Needrarg   , 26 ),
+            O( ""           , "post_dec"              , Needlarg   , 26 ),
+            O( ""           , "post_inc"              , Needlarg   , 26 ),
 
-            O( "&"          , "pointer_on"            , Needrarg   , 26 ),
-            O( "@"          , "pointed_value"         , Needrarg   , 26 ),
-            O( "$"          , "calc_name"             , Needrarg   , 26 ),
+            O( "@"          , "pointed_value"         , Needrarg   , 27 ),
+            O( "&"          , "pointer_on"            , Needrarg   , 27 ),
+            O( "$"          , "calc_name"             , Needrarg   , 27 ),
 
-            O( "::"         , "doubledoubledot"       , Need2args  , 27 ),
-            O( "->"         , "get_attr_ptr"          , Need2args  , 27 ),
-            O( "."          , "get_attr"              , Need2args  , 27 ),
-            O( ".?"         , "get_attr_ask"          , Need2args  , 27 ),
-            O( "->?"        , "get_attr_ptr_ask"      , Need2args  , 27 ),
+            O( "::"         , "doubledoubledot"       , Need2args  , 28 ),
+            O( "->"         , "get_attr_ptr"          , Need2args  , 28 ),
+            O( "."          , "get_attr"              , Need2args  , 28 ),
+            O( ".?"         , "get_attr_ask"          , Need2args  , 28 ),
+            O( "->?"        , "get_attr_ptr_ask"      , Need2args  , 28 ),
 
-            O( ""           , "__string_assembly__"   , Need2args  , 28 ),
-            O( ""           , "tensorial_product"     , Need2args  , 29 ),
+            O( ""           , "__string_assembly__"   , Need2args  , 29 ),
+            O( ""           , "tensorial_product"     , Need2args  , 30 ),
             
         ]
         
@@ -421,7 +422,7 @@ def make_primitive_inc():
 operators = Operators()
 
 unary_bool_operations = string.split( """
-    not
+    not_boolean
 """ )
 
 unary_homo_operations = string.split( """
@@ -434,8 +435,8 @@ unary_operations = unary_bool_operations + unary_homo_operations
 # conv
 
 binary_bool_operations = string.split( """
-    or
-    and
+    or_boolean
+    and_boolean
 
     equ
     neq
@@ -451,6 +452,7 @@ binary_homo_operations = string.split( """
     div
     pow
     mod
+    shift_left
 """ )
 binary_operations = binary_bool_operations + binary_homo_operations
 
@@ -466,8 +468,10 @@ base_primitives = string.split( """
     set_RawRef_dependancy
     reassign_rec
     assign_rec
+    init_va
     set_ptr_val
     select_SurdefList
+    select_Varargs
     ptr_size
     ptr_alig
     size_of
@@ -482,6 +486,14 @@ base_primitives = string.split( """
     get_argv
     apply_LambdaFunc
     inst_of
+    repeat
+    code
+    repeated_type
+    slice
+    call
+    call_block
+    get_size
+    make_code_for
 """ ) #
 
 std_strings = string.split( """
@@ -535,7 +547,6 @@ base_token_types = string.split( """
     STRING
     VAR
     ASSIGN
-    REASSIGN
     GET_ATTR
     GET_ATTR_PTR
     GET_ATTR_ASK
@@ -555,7 +566,6 @@ base_token_types = string.split( """
     NEW
     LIST
     LAMBDA
-    NULL_REF
     AND
     OR
 """ )

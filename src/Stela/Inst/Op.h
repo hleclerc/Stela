@@ -1,29 +1,32 @@
-#ifndef Expr_OP_H
-#define Expr_OP_H
+#ifndef STELA_INST_Op_H
+#define STELA_INST_Op_H
 
-#include "OpStructs.h"
-#include "BaseType.h"
-#include "Expr.h"
+#include "Inst.h"
 
-
-// e.g. op_add( bt_SI32, a, b )
-#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a, Expr b );
-#include "../Ir/Decl_BinaryOperations.h"
-#undef DECL_IR_TOK
-
-#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a );
-#include "../Ir/Decl_UnaryOperations.h"
-#undef DECL_IR_TOK
+enum {
+    #define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) ID_OP_##NAME,
+    #include "DeclOp_Binary.h"
+    #include "DeclOp_Unary.h"
+    #undef DECL_OP
+    ID_OP_
+};
 
 
-// e.g. op( bt_SI32, a, b, Op_Add() )
-#define DECL_IR_TOK( OP ) Expr op( const BaseType *bt, Expr a, Expr b, Op_##OP );
-#include "../Ir/Decl_BinaryOperations.h"
-#undef DECL_IR_TOK
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    struct Op_##NAME { void write_to_stream( Stream &os ) const { os << #NAME; } enum { is_oper = OPER, n = 2, prec = PREC, b = BOOL, op_id = ID_OP_##NAME }; void write_oper( Stream &os ) const { os << #GEN; } }; \
+    Expr op( Expr a, Expr b, Op_##NAME ); \
+    Expr NAME( Expr a, Expr b ); \
+    enum { PREC_##NAME = PREC };
+#include "DeclOp_Binary.h"
+#undef DECL_OP
 
-#define DECL_IR_TOK( OP ) Expr op( const BaseType *bt, Expr a, Op_##OP );
-#include "../Ir/Decl_UnaryOperations.h"
-#undef DECL_IR_TOK
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    struct Op_##NAME { void write_to_stream( Stream &os ) const { os << #NAME; } enum { is_oper = OPER, n = 1, prec = PREC, b = BOOL, op_id = ID_OP_##NAME }; void write_oper( Stream &os ) const { os << #GEN; } }; \
+    Expr op( Expr a, Op_##NAME ); \
+    Expr NAME( Expr a ); \
+    enum { PREC_##NAME = PREC };
+#include "DeclOp_Unary.h"
+#undef DECL_OP
 
+#endif // STELA_INST_Op_H
 
-#endif // Expr_OP_H

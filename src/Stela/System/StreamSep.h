@@ -54,6 +54,11 @@ public:
         return *stream;
     }
 
+    template<class T>
+    TS &write_beg( const T &add ) {
+        return write_beg() << add;
+    }
+
     TS &write_end() {
         *stream << end;
         return *stream;
@@ -64,6 +69,8 @@ public:
         *stream << add << end;
         return *stream;
     }
+
+    TS &operator*() { return *stream; }
 
     TS *stream;
     const char *sep;

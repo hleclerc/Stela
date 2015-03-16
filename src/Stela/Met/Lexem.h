@@ -2,6 +2,7 @@
 #define LEXEM_H
 
 #include "../System/TypeConfig.h"
+#include "../System/Stream.h"
 
 /** */
 class Lexem {
@@ -21,6 +22,11 @@ public:
 
         NB_BASE_TYPE    = 16
     };
+    enum {
+        SCOPE_TYPE_CLASS   = 1,
+
+        SCOPE_TYPE_STATIC  = 2
+    };
 
     Lexem();
 
@@ -33,9 +39,13 @@ public:
     bool   is_an_int() const;
     bool   eq( const char *p ) const;
     bool   begin_with( const char *p ) const;
+    bool   same_str( const char *p, int len ) const;
+    const char *end() const { return beg + len; }
+    String str() const { return String( beg, beg + len ); }
+    int off() const { return beg - beg_src; }
 
-    int type; /// >0 => operator. <=0 => @see enum
-    int num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar
+    int         type; /// >0 => operator. <=0 => @see enum
+    int         num;  /// Used by type==CR for nb_spaces. If type==CCODE, num in size_cvar
 
     const char *beg_src; /// provenance data (beginning of the .met data)
     const char *src; /// provenance
@@ -43,13 +53,13 @@ public:
     const char *beg; /// beginning in .met
     int         len; /// size in .met
 
-    Lexem *children[ 2 ], *parent, *next, *prev, *sibling, *prev_chro;
+    Lexem      *children[ 2 ], *parent, *next, *prev, *sibling, *prev_chro;
 
-    bool preceded_by_a_cr; ///<
-    int  nb_preceding_comma_dot;
-    int  nb_preceding_cr;
-    int  approx_line;
-    int  spcr;
+    bool        preceded_by_a_cr; ///<
+    int         nb_preceding_comma_dot;
+    int         nb_preceding_cr;
+    int         approx_line;
+    int         spcr;
 };
 
 inline int is_in_main_block( const Lexem *t ) { while( t->prev ) t = t->prev; return not t->parent; }
@@ -62,8 +72,8 @@ const Lexem *rightmost_child( const Lexem *t );
 
 
 /// a,b,c -> [a b c]
-template<class TL>
-void get_children_of_type( const Lexem *t, int type, TL &res ) {
+template<class CL,class TL>
+void get_children_of_type( CL t, int type, TL &res ) {
     if ( not t )
         return;
     if ( t->type == type ) {

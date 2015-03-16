@@ -61,33 +61,61 @@ inline bool conv( bool &, Error ) { return false; }
 
 //
 template<class T1,class T2,class TR>
-TR mod( T1 a, T2 b, N<0>, N<0>, S<TR> ) {
+TR my_mod( T1 a, T2 b, N<0>, N<0>, S<TR> ) {
     return a % b;
 }
 
 template<class T1,class T2,int n1,int n2,class TR>
-TR mod( T1 a, T2 b, N<n1>, N<n2>, S<TR> ) {
+TR my_mod( T1 a, T2 b, N<n1>, N<n2>, S<TR> ) {
     return std::fmod( TR( a ), TR( b ) );
 }
 
 template<class T1,class T2>
-typename TypePromote<T1,T2>::T mod( T1 a, T2 b ) {
-    return mod( a, b,
-                N<TypeInformation<T1>::float_type>(),
-                N<TypeInformation<T2>::float_type>(),
-                S<typename TypePromote<T1,T2>::T>()
-                );
+typename TypePromote<T1,T2>::T my_mod( T1 a, T2 b ) {
+    return my_mod( a, b, N<TypeInformation<T1>::float_type>(), N<TypeInformation<T2>::float_type>(), S<typename TypePromote<T1,T2>::T>() );
 }
 
 template<class T2>
-ST mod( void *a, T2 b ) {
+ST my_mod( void *a, T2 b ) {
     return 0;
 }
 
 template<class T2>
-ST mod( T2 a, void *b ) {
+ST my_mod( T2 a, void *b ) {
     return 0;
 }
 
+
+// xor
+template<class T1,class T2>
+bool my_xor( T1 a, T2 b ) {
+    return bool( a ) ^ bool( b );
+}
+
+//
+template<class T1,class T2,int n1,int n2,class TR>
+TR my_shift_left( T1 a, T2 b, N<n1>, N<n2>, S<TR> ) {
+    return 0;
+}
+
+template<class T1,class T2,class TR>
+TR my_shift_left( T1 a, T2 b, N<0>, N<0>, S<TR> ) {
+    return a << b;
+}
+
+template<class T1,class T2> T1 my_shift_left( T1 a, T2 b ) {
+    return my_shift_left( a, b, N<TypeInformation<T1>::float_type>(), N<TypeInformation<T2>::float_type>(), S<T1>() );
+}
+
+
+//template<class T1,class T2> typename TypePromoteInt<T1,T2>::T my_mod( T1 a, T2 b ) { return a % b; }
+//template<class T1> FP32 my_mod( T1 a, FP32 b ) { return fmod( a, b ); }
+//template<class T1> FP64 my_mod( T1 a, FP64 b ) { return fmod( a, b ); }
+//template<class T2> FP32 my_mod( FP32 a, T2 b ) { return fmod( a, b ); }
+//template<class T2> FP64 my_mod( FP64 a, T2 b ) { return fmod( a, b ); }
+//FP32 my_mod( FP32 a, FP32 b ) { return fmod( a, b ); }
+//FP64 my_mod( FP32 a, FP64 b ) { return fmod( a, b ); }
+//FP64 my_mod( FP64 a, FP32 b ) { return fmod( a, b ); }
+//FP64 my_mod( FP64 a, FP64 b ) { return fmod( a, b ); }
 
 #endif // MATH_H

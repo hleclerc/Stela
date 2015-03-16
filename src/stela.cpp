@@ -1,12 +1,12 @@
 /**
   main file for the stela interpreter / compiler
 */
-#include <Stela/Interpreter/Interpreter.h>
-#include <Stela/Compilers/CppCompiler.h>
+#include <Stela/Codegen/Codegen_C.h>
 #include <Stela/System/InstallDir.h>
 #include <Stela/System/ReadFile.h>
-#include <Stela/Met/IrWriter.h>
 #include <Stela/Met/Lexer.h>
+#include <Stela/Inst/Ip.h>
+#include <fstream>
 #include <math.h>
 
 
@@ -53,24 +53,39 @@ int main( int argc, char **argv ) {
         input_files << argv[ i ];
 
     // context
-    ErrorList e;
-    ip = new Interpreter( e );
+    Ip ip_inst; ip = &ip_inst;
     ip->add_inc_path( base_met_files );
 
     // parse
+    // ip->main_scope.disp_tok = true;
     for( int i = 0; i < input_files.size(); ++i )
-        ip->import( input_files[ i ] );
-    Vec<ConstPtr<Inst> > outputs = ip->get_outputs();
+        ip->main_scope.import( input_files[ i ] );
 
     // compile
-    CppCompiler cr;
-    cr.disp_inst_graph = disp_inst_g;
+    Codegen_C cr;
     cr.disp_inst_graph_wo_phi = disp_inst_g_wo_phi;
-    for( int i = 0; i < outputs.size(); ++i )
-        cr << outputs[ i ];
-    cr.exec();
+    cr.disp_inst_graph = disp_inst_g;
+    cr << ip->sys_state->get();
 
-    delete ip;
-    return e;
+    std::ofstream out_file( "out.cpp" );
+    cr.write_to( out_file );
+
+    return ip->error_list;
+}
+
+
+#include <map>
+#include <iostream>
+#include <sstream>
+using namespace std;
+
+int main() {
+    istringstream is( "le la la li lu" );
+    map<string,int> cpt;
+    string tmp;
+    while ( is >> tmp )
+        cpt[ tmp ]++;
+    for( pair<string,int>::iterator iter = cpt.begin(); iter != cpt.end(); ++iter )
+        cout << iter->first << " " << iter->second << endl;
 }
 

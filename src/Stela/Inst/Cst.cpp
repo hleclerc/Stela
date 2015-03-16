@@ -1,144 +1,182 @@
+#include "../Codegen/Codegen_C.h"
 #include "../System/Memcpy.h"
-#include "InstVisitor.h"
-#include "Inst_.h"
+#include "../System/dcast.h"
+#include <string.h>
+#include <typeinfo>
+#include "Type.h"
 #include "Cst.h"
+#include "Ip.h"
 
-///
-static Vec<class Cst *> cst_set;
-
-///
-class Cst : public Inst_<1,0> {
-public:
-    Cst( const PI8 *value, const PI8 *known, int size_in_bits ) : data( Size(), 2 * ( ( size_in_bits + 7 ) / 8 ) ), size( size_in_bits ) {
-        int sb = ( size_in_bits + 7 ) / 8;
-        memcpy_bit( data.ptr() + 0 * sb, 0, value, 0, size_in_bits );
-        if ( known )
-            memcpy_bit( data.ptr() + 1 * sb, 0, known, 0, size_in_bits );
-        else
-            for( int i = 1 * sb; i < 2 * sb; ++i )
-                data[ i ] = 0xFF;
-        cst_set << this;
-    }
-    virtual ~Cst() {
-        cst_set.remove_first_unordered( this );
-    }
-    virtual int size_in_bits( int nout ) const {
-        return size;
-    }
-    virtual const PI8 *cst_data( int nout, int beg, int end ) const {
-        if ( beg % 8 )
-            TODO;
-        return data.ptr() + beg / 8;
-    }
-    virtual bool undefined() const {
-        int s = ( size + 7 ) / 8;
-        const PI8 *k = data.ptr() + s;
-        for( int i = 0; i < s; ++i )
-            if ( k[ i ] )
-                return false;
-        return true;
-    }
-    virtual Expr _smp_slice( int nout, int beg, int end ) {
-        if ( beg == 0 and end == size )
-            return Expr( this, nout );
-        if ( beg == end )
-            return cst();
-        if ( beg % 8 == 0 and end % 8 == 0 )
-            return cst( data.ptr() + beg / 8, data.ptr() + ( size + 7 ) / 8 + beg / 8, end - beg );
-        return Expr();
-    }
-    virtual Expr _smp_setval( int nout, const Expr &b, int beg ) {
-        if ( const PI8 *b_data = b.cst_data() ) {
-            Vec<PI8> ndata = data;
-            int sb = b.size_in_bits(), o = ( size + 7 ) / 8;
-            memcpy_bit( ndata.ptr(), beg + 0 * size, b_data, 0 * sb, sb );
-            memcpy_bit( ndata.ptr(), beg + 1 * size, b_data, 1 * sb, sb );
-            return cst( ndata.ptr() + 0 * o, ndata.ptr() + 1 * o, size );
-        }
-        return Expr();
-    }
-    virtual void write_to_stream( Stream &os ) const {
-        write_dot( os );
-    }
+/**
+*/
+struct Cst : Inst {
     virtual void write_dot( Stream &os ) const {
-        if ( size == 0 )
-            os << "";
-        else if ( size <= 8 )
-            os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
-        else if ( size == 16 )
-            os << *reinterpret_cast<const SI16 *>( data.ptr() );
-        else if ( size == 32 )
-            os << *reinterpret_cast<const SI32 *>( data.ptr() );
-        else if ( size == 64 )
-            os << *reinterpret_cast<const SI64 *>( data.ptr() );
-        else {
-            const char *c = "0123456789ABCDEF";
-            for( int i = 0; i < std::min( size / 8, 4 ); ++i ) {
-                if ( i )
-                    os << ' ';
-                os << c[ data[ i ] >> 4 ] << c[ data[ i ] & 0xF ];
-            }
-            if ( size / 8 > 4 )
-                os << "...";
+        //
+        if ( out_type == ip->type_SI8 ) {
+            os << (int)*reinterpret_cast<const SI8 *>( data.ptr() );
+            return;
         }
+        if ( out_type == ip->type_PI8 ) {
+            os << (int)*reinterpret_cast<const PI8 *>( data.ptr() );
+            return;
+        }
+        //
+        #define DECL_BT( T ) \
+            if ( out_type == ip->type_##T ) { os << *reinterpret_cast<const T *>( data.ptr() ); return; }
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+        //
+        if ( out_type == ip->type_Type ) {
+            ST d = *reinterpret_cast<const SI64 *>( data.ptr() );
+            os << *reinterpret_cast<Type *>( d );
+            return;
+        }
+        if ( out_type == ip->type_Void ) {
+            os << "void";
+            return;
+        }
+        if ( out_type == ip->type_Error ) {
+            os << "error";
+            return;
+        }
+        out_type->write_to_stream( os, data.ptr(), len );
     }
-    virtual int sizeof_additionnal_data() const {
-        return sizeof( int ) + ( size + 7 ) / 8 * 2;
+    virtual Expr forced_clone( Vec<Expr> &created ) const {
+        Cst *res = new Cst;
+        res->out_type = out_type;
+        res->data = data;
+        res->knwn = knwn;
+        res->len = len;
+        return res;
     }
-    virtual void copy_additionnal_data_to( PI8 *dst ) const {
-        memcpy( dst, &size, sizeof( int ) );
-        memcpy( dst + sizeof( int ), data.ptr(), ( size + 7 ) / 8 * 2 );
-    }
-    virtual void apply( InstVisitor &visitor ) const {
-        int sb = ( size + 7 ) / 8;
-        visitor.cst( *this, data.ptr() + 0 * sb, data.ptr() + 1 * sb, size );
-    }
-    virtual int inst_id() const {
-        return Inst::Id_Cst;
+    virtual Type *type() {
+        return out_type;
     }
 
-    Vec<PI8> data; ///< values and known (should not be changed directly)
-    Vec<PI8> shifted_data;
-    int size;
+    template<class T>
+    bool _get_val( T *dst ) const {
+        #define DECL_BT( OT ) if ( out_type == ip->type_##OT ) { *dst = *reinterpret_cast<const OT *>( data.ptr() ); return true; }
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+        return false;
+    }
+
+    virtual bool get_val( Type *type, void *dst ) const {
+        if ( type == out_type ) {
+            memcpy( dst, data.ptr(), data.size() );
+            return true;
+        }
+        if ( type->aryth and out_type->aryth ) {
+            #define DECL_BT( RT ) if ( type == ip->type_##RT ) return _get_val( reinterpret_cast<RT *>( dst ) );
+            #include "DeclArytTypes.h"
+            #undef DECL_BT
+        }
+
+        PRINT( *type );
+        PRINT( *out_type );
+        TODO;
+        return false;
+    }
+    virtual bool same_cst( const Inst *inst ) const {
+        return inst->emas_cst( this );
+    }
+    virtual bool emas_cst( const Inst *inst ) const {
+        const Cst *c = static_cast<const Cst *>( inst );
+        return c->out_type == out_type and c->data == data and c->knwn == knwn and c->len == len;
+    }
+    virtual Expr _simp_repl_bits( Expr off, Expr val ) {
+        if ( Cst *c = dcast( val.inst ) ) {
+            SI32 voff;
+            if ( off->get_val( ip->type_SI32, &voff ) ) {
+                SI32 vlen = val->size();
+                Cst *res = new Cst;
+                res->out_type = out_type;
+                res->len = std::max( len, voff + vlen );
+                res->data.resize( res->sb() );
+                res->knwn.resize( res->sb() );
+                // old values
+                memcpy( res->data.ptr(), data.ptr(), res->sb() );
+                memcpy( res->knwn.ptr(), knwn.ptr(), res->sb() );
+                // new (replaced) ones
+                memcpy_bit( res->data.ptr(), voff, c->data.ptr(), 0, vlen );
+                memset_bit( res->knwn.ptr(), voff, true, vlen );
+                return res;
+            }
+        }
+        return (Inst *)0;
+    }
+    virtual Expr _simp_slice( Type *dst, Expr off ) {
+        SI32 voff;
+        if ( off->get_val( ip->type_SI32, &voff ) ) {
+            Cst *res = new Cst;
+            res->out_type = dst;
+            res->len = len - voff;
+            res->knwn.resize( ( res->len + 7 ) / 8 );
+            res->data.resize( ( res->len + 7 ) / 8 );
+            // vlen = std::min( vlen, SI32( len - voff ) );
+            memcpy_bit( res->data.ptr(), 0, data.ptr(), voff, res->len );
+            memcpy_bit( res->knwn.ptr(), 0, knwn.ptr(), voff, res->len );
+            return res;
+        }
+        return (Inst *)0;
+    }
+    int sb() const {
+        return ( len + 7 ) / 8;
+    }
+    virtual bool need_a_register() {
+        return len;
+    }
+    virtual void write( Codegen_C *cc ) {
+        if ( not out_reg )
+            return;
+        if ( out_type->aryth ) {
+            cc->on.write_beg();
+            out_reg->write( cc, new_reg ) << " = ";
+            write_dot( *cc->os );
+            cc->on.write_end( ";" );
+        } else {
+            // decl
+            if ( new_reg ) {
+                cc->on.write_beg();
+                out_reg->write( cc, new_reg );
+                cc->on.write_end( ";" );
+            }
+
+            // fill in
+            for( int i = 0; i < sb(); ++i ) {
+                if ( knwn[ i ] ) {
+                    cc->on.write_beg();
+                    out_reg->write( cc, false ) << ".data[ " << i << " ] = " << (int)data[ i ];
+                    cc->on.write_end( ";" );
+                }
+            }
+        }
+    }
+
+    Type *out_type;
+    Vec<PI8> data;
+    Vec<PI8> knwn;
+    int len;
 };
 
-static bool equal_cst( const Cst *cst, const PI8 *ptr, const PI8 *kno, int size_in_bits ) {
-    if ( cst->size != size_in_bits )
-        return false;
-    int sb = ( size_in_bits + 7 ) / 8;
-    for( int i = 0; i < sb; ++i )
-        if ( ( cst->data[ i ] & cst->data[ i + sb ] ) != ( ptr[ i ] & cst->data[ i + sb ] ) )
-            return false;
-    if ( kno ) {
-        for( int i = 0; i < sb; ++i )
-            if ( cst->data[ i + sb ] != kno[ i ] )
-                return false;
-    } else {
-        for( int i = 0; i < sb; ++i )
-            if ( cst->data[ i + sb ] != 0xFF )
-                return false;
-    }
-    return true;
-}
+Expr cst( Type *type, int len, const void *data, const void *knwn ) {
+    Cst *res = new Cst;
+    res->out_type = type;
+    res->len = len;
 
-Expr cst( const PI8 *ptr, const PI8 *kno, int size_in_bits ) {
-    if ( size_in_bits and not ptr ) {
-        ASSERT( kno == 0, "weird" );
-        int sb = ( size_in_bits + 7 ) / 8;
-        PI8 nptr[ sb ];
-        PI8 nkno[ sb ];
-        for( int i = 0; i < sb; ++i ) {
-            nptr[ i ] = 0x00;
-            nkno[ i ] = 0x00;
-        }
-        return cst( nptr, nkno, size_in_bits );
+    if ( len >= 0 ) {
+        int sb = ( len + 7 ) / 8;
+        if ( data )
+            res->data = Vec<PI8>( (PI8 *)data, (PI8 *)data + sb );
+        else
+            res->data.resize( sb, 0 );
+
+        if ( knwn )
+            res->knwn = Vec<PI8>( (PI8 *)knwn, (PI8 *)knwn + sb );
+        else
+            res->knwn.resize( sb, 0 );
     }
 
-    // already an equivalent cst ?
-    for( int i = 0; i < cst_set.size(); ++i )
-        if ( equal_cst( cst_set[ i ], ptr, kno, size_in_bits ) )
-            return Expr( cst_set[ i ], 0 );
-
-    // else, create a new one
-    return Expr( new Cst( ptr, kno, size_in_bits ), 0 );
+    return res;
 }
+

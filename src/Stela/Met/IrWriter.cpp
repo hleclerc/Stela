@@ -18,7 +18,7 @@ void IrWriter::parse( const Lexem *root ) {
 }
 
 ST IrWriter::size_of_binary_data() {
-    ST res = 0;
+    ST res = 2;
     for( auto iter : nstrings )
         res += BinStreamWriter::size_needed_for( iter.first.size() ) + iter.first.size();
     return res + 1 + data.size();
@@ -412,9 +412,9 @@ void IrWriter::parse_variable( const Lexem *l ) {
     } else if ( l->eq( "false" ) ) {
         data << IR_TOK_FALSE;
         push_offset( l );
-    } else if ( l->eq( "self" ) ) {
-        data << IR_TOK_SELF;
-        push_offset( l );
+    //} else if ( l->eq( "self" ) ) {
+    //    data << IR_TOK_SELF;
+    //    push_offset( l );
     } else if ( l->eq( "this" ) ) {
         data << IR_TOK_THIS;
         push_offset( l );
@@ -430,7 +430,55 @@ void IrWriter::parse_variable( const Lexem *l ) {
         data << IR_TOK_NULL_REF;
         push_offset( l );
     } else {
-        data << IR_TOK_VAR;
+        Vec<CatchedVar> cvl;
+        find_needed_var( cvl, l );
+        if ( cvl.size() ) {
+            int r = 0;
+            bool surdef = false;
+            for( CatchedVar cv : cvl ) {
+                if ( cv.l->num_scope ) {
+                    surdef |= cv.surdef;
+                    ++r;
+                }
+            }
+            if ( surdef ) {
+                data << IR_TOK_VAR_SET;
+                push_offset( l );
+                data << r;
+                push_nstring( l );
+            }
+            for( CatchedVar cv : cvl ) {
+                if ( cv.l->num_scope ) {
+                    if ( cv.s >= 0 ) {
+                        // -> in catched vars of cv.l
+                        data << IR_TOK_VAR_IN_CATCHED_VARS;
+                        if ( not surdef )
+                            push_offset( l );
+                        data << cv.s;
+                    } else if ( cv.l->attribute ) {
+                        data << IR_TOK_VAR_IN_ATTR;
+                        if ( not surdef )
+                            push_offset( l );
+                        push_nstring( cv.l );
+                    } else {
+                        // -> in local or static scope
+                        if ( cv.l->scope_type & Lexem::SCOPE_TYPE_CLASS )
+                            TODO;
+                        data << ( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IR_TOK_VAR_IN_STATIC_SCOPE : IR_TOK_VAR_IN_LOCAL_SCOPE );
+                        if ( not surdef )
+                            push_offset( l );
+                        data << l->num_scope - cv.l->num_scope;
+                        data << cv.l->num_in_scope;
+                    }
+                    if ( not surdef )
+                        return;
+                }
+            }
+            if ( surdef )
+                return;
+        }
+
+        data << PI8( IR_TOK_VAR );
         push_offset( l );
         push_nstring( l );
     }
@@ -443,10 +491,15 @@ void IrWriter::parse_assign( const Lexem *l, bool assign_type ) {
          c = c->children[ 0 ];
 
      // LHS
-     data << IR_TOK_ASSIGN;
-     push_offset( l );
+     if ( c->num_scope ) {
+         data << IR_TOK_PUSH_IN_SCOPE;
+         push_offset( l );
+     } else {
+         data << IR_TOK_ASSIGN;
+         push_offset( l );
+         push_nstring( l->children[ 0 ] );
+     }
 
-     push_nstring( l->children[ 0 ] );
      data << ref         * IR_ASSIGN_REF +
              static_inst * IR_ASSIGN_STATIC +
              const_inst  * IR_ASSIGN_CONST +
@@ -483,7 +536,6 @@ void IrWriter::parse_if( const Lexem *l ) {
         push_delayed_parse( child_if_block( l->children[ 1 ] ) ); // ok
         push_delayed_parse(                 0                  ); // ko
     }
-
 }
 
 void IrWriter::parse_while( const Lexem *l ) {
@@ -495,7 +547,7 @@ void IrWriter::parse_while( const Lexem *l ) {
         push_delayed_parse( child_if_block( l->children[ 0 ]->children[ 1 ] ) ); // ko
     } else {
         push_delayed_parse( child_if_block( l->children[ 0 ] ) ); // ok
-        push_delayed_parse(                  0                 ); // ko
+        push_delayed_parse(                                  0 ); // ko
     }
 }
 
@@ -574,6 +626,10 @@ void IrWriter::parse_for( const Lexem *l ) {
     SplittedVec<const Lexem *,8> ch;
     get_children_of_type( l->children[ 0 ]->children[ 1 ], STRING_comma_NUM, ch );
 
+    // catched vars
+    std::map<String,CatchedVarWithNum> &catched_vars = catched[ l ];
+    get_needed_var_rec( catched_vars, l->children[ 1 ], l->num_scope );
+
     //
     data << IR_TOK_FOR;
     push_offset( l );
@@ -589,7 +645,53 @@ void IrWriter::parse_for( const Lexem *l ) {
     for( int i = 0; i < ch.size(); ++i )
         push_delayed_parse( ch[ i ] );
 
+    out_catched_vars( catched_vars, l->num_scope );
+
     push_delayed_parse( child_if_block( l->children[ 1 ] ) );
+}
+
+void IrWriter::out_catched_vars( std::map<String,CatchedVarWithNum> &catched_vars, int num_scope ) {
+    //
+    bool need_self = false;
+    Vec<String> keys_to_rm;
+    for( auto it : catched_vars ) {
+        Vec<CatchedVar> &cl = it.second.cv;
+        if ( cl[ 0 ].l->attribute ) {
+            need_self = true;
+            keys_to_rm << it.first;
+        }
+    }
+    for( String &s : keys_to_rm )
+        catched_vars.erase( s );
+    if ( need_self and not catched_vars.count( "self" ) )
+        catched_vars[ "self" ] = CatchedVarWithNum{ CatchedVar{ 0, -2, false }, int( catched_vars.size() ) };
+
+    //
+    data << catched_vars.size();
+    for( auto it : catched_vars ) {
+        Vec<CatchedVar> &cl = it.second.cv;
+        if ( cl[ 0 ].surdef ) {
+            TODO;
+        } else {
+            CatchedVar cv = cl[ 0 ];
+            if ( cv.s >= 0 ) { // in catched vars of a parent callable
+                data << PI8( IN_CATCHED_VARS );
+                data << cv.s;
+            } else if ( cv.s == -2 ) { // self
+                data << PI8( IN_SELF );
+            } else {
+                if ( cv.l->attribute ) {
+                    ERROR( "weird" );
+                    data << PI8( IN_ATTR );
+                    push_nstring( cv.l );
+                } else {
+                    data << PI8( cv.l->scope_type & Lexem::SCOPE_TYPE_STATIC ? IN_STATIC_SCOPE : IN_LOCAL_SCOPE );
+                    data << num_scope - cv.l->num_scope; // nb parents
+                    data << cv.l->num_in_scope;
+                }
+            }
+        }
+    }
 }
 
 void IrWriter::parse_import( const Lexem *l ) {
@@ -656,6 +758,166 @@ static bool is_a_method( const Lexem *t ) {
     return t and t->parent->type == STRING___class___NUM;
 }
 
+void IrWriter::find_needed_var( Vec<CatchedVar> &cl, const Lexem *v ) {
+    const Lexem *b = v;
+    if ( b->prev )
+        b = b->prev;
+    else {
+        b = b->parent;
+        if ( b )
+            while ( b->next )
+                b = b->next;
+    }
+
+    for( ; b; ) {
+        const Lexem *a = b;
+        while ( true ) {
+            if ( a->type == STRING___static___NUM ) { a = a->children[ 0 ]; continue; }
+            if ( a->type == STRING___const___NUM  ) { a = a->children[ 0 ]; continue; }
+            break;
+        }
+
+        if ( a->type == STRING_assign_NUM or a->type == STRING_assign_type_NUM ) {
+            // foo := ...
+            if ( a->children[ 0 ]->same_str( v->beg, v->len ) )
+                cl << CatchedVar{ a->children[ 0 ], -1, false };
+        } else if ( a->type == STRING___def___NUM or a->type == STRING___class___NUM ) {
+            // def foo / class foo
+            const Lexem *c = a->children[ 0 ];
+            while ( true ) {
+                if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
+                break;
+            }
+            if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT )
+                c = c->children[ 0 ];
+
+            // name of the callable itself ?
+            if ( c->same_str( v->beg, v->len ) )
+                cl << CatchedVar{ c, -1, true };
+        }
+
+        // in args or catched vars of a for ?
+        if ( b->parent and b->parent->type == STRING___for___NUM ) {
+            const Lexem *t = b->parent, *c = t->children[ 0 ];
+
+            // in args ?
+            SplittedVec<const Lexem *,8> tl;
+            get_children_of_type( c->children[ 0 ], STRING_comma_NUM, tl );
+            for( int i = 0; i < tl.size(); ++i ) {
+                const Lexem *t = tl[ i ];
+                if ( t->same_str( v->beg, v->len ) )
+                    cl << CatchedVar{ t, -1, false };
+            }
+
+            // in catched vars ?
+            auto it = catched[ t ].find( String( v->beg, v->beg + v->len ) );
+            if ( it != catched[ t ].end() )
+                cl << CatchedVar{ t, it->second.num, false };
+
+            // looking for self
+            if ( v->eq( "self" ) )
+                cl << CatchedVar{ t, -2, false };
+        }
+
+        // in args or catched vars of a callable ?
+        if ( b->parent and ( b->parent->type == STRING___def___NUM or b->parent->type == STRING___class___NUM ) ) {
+            const Lexem *t = b->parent, *c = t->children[ 0 ];
+
+            while ( true ) {
+                if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
+                break;
+            }
+
+            // in args ?
+            if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT ) {
+                SplittedVec<const Lexem *,8> tl;
+                get_children_of_type( c->children[ 1 ], STRING_comma_NUM, tl );
+                for( int i = 0; i < tl.size(); ++i ) {
+                    const Lexem *t = tl[ i ];
+                    if ( t->type == STRING_reassign_NUM  ) t = t->children[ 0 ];
+                    if ( t->type == STRING_doubledot_NUM ) t = t->children[ 0 ];
+
+                    if ( t->same_str( v->beg, v->len ) )
+                        cl << CatchedVar{ t, -1, false };
+                }
+                c = c->children[ 0 ];
+            }
+
+            // in catched vars ?
+            auto it = catched[ t ].find( String( v->beg, v->beg + v->len ) );
+            if ( it != catched[ t ].end() )
+                cl << CatchedVar{ t, it->second.num, false };
+
+            // looking for self, in "def ..." that is a method ?
+            if ( v->eq( "self" ) and is_a_method( t ) )
+                cl << CatchedVar{ t, -2, false };
+        }
+
+        if ( b->prev )
+            b = b->prev;
+        else {
+            b = b->parent;
+            if ( b )
+                while ( b->next )
+                    b = b->next;
+        }
+    }
+}
+
+void IrWriter::get_needed_var_rec( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp ) {
+    for( ; b; b = b->next ) {
+        if ( b->type == STRING_assign_NUM or b->type == STRING_assign_type_NUM ) {
+            if ( b->children[ 1 ] )
+                get_needed_var_rec( vars, b->children[ 1 ], onp );
+        } else if ( b->type == STRING___def___NUM or b->type == STRING___class___NUM ) {
+            const Lexem *c = b->children[ 0 ];
+            while ( true ) {
+                if ( c->type == STRING___extends___NUM    ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___starts_with___NUM ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___pertinence___NUM ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING___when___NUM       ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                if ( c->type == STRING_doubledot_NUM      ) { get_needed_var_rec( vars, c->children[ 1 ], onp ); c = c->children[ 0 ]; continue; }
+                break;
+            }
+
+            if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT ) {
+                SplittedVec<const Lexem *,8> tl;
+                get_children_of_type( c->children[ 1 ], STRING_comma_NUM, tl );
+                for( int i = 0; i < tl.size(); ++i ) {
+                    const Lexem *t = tl[ i ];
+                    if ( t->type == STRING_reassign_NUM  ) { get_needed_var_rec( vars, t->children[ 1 ], onp ); t = t->children[ 0 ]; }
+                    if ( t->type == STRING_doubledot_NUM ) { get_needed_var_rec( vars, t->children[ 1 ], onp ); t = t->children[ 0 ]; }
+                }
+            }
+
+            get_needed_var_rec( vars, b->children[ 1 ], onp );
+        } else if ( b->type == Lexem::VARIABLE ) {
+            Vec<CatchedVar> cl;
+            find_needed_var( cl, b );
+            if ( cl.size() ) {
+                if ( cl[ 0 ].l->num_scope and cl[ 0 ].l->num_scope <= onp ) {
+                    String str( b->beg, b->beg + b->len );
+                    if ( not vars.count( str ) ) {
+                        int os = vars.size();
+                        vars[ str ] = CatchedVarWithNum{ cl, os };
+                    }
+                }
+            }
+        } else {
+            if ( b->children[ 0 ] ) get_needed_var_rec( vars, b->children[ 0 ], onp );
+            if ( b->children[ 1 ] ) get_needed_var_rec( vars, b->children[ 1 ], onp );
+        }
+    }
+}
+
 /**
  *   (c)def +-> base_size_... +-> extends    +-> pertinence +-> when       +-> :         +-> apply     +-> name
  *          |                 |              |              |              |             |             |-> args
@@ -668,7 +930,7 @@ static bool is_a_method( const Lexem *t ) {
  */
 void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     // parsed data
-    SplittedVec<const Lexem *,2> inheritance;
+    SplittedVec<const Lexem *,2> inheritance, starts_with;
     SplittedVec<Argument,8> arguments;
     bool self_as_arg, varargs, abstract;
     int default_pertinence_num, default_pertinence_den;
@@ -685,33 +947,17 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     // beginning of arguments
     const Lexem *c = t->children[ 0 ];
 
-    // inheritance
-    if ( c->type == STRING___extends___NUM ) {
-        get_children_of_type( c->children[ 1 ], STRING_comma_NUM, inheritance );
-        c = c->children[ 0 ];
+    pertinence  = 0;
+    condition   = 0;
+    return_type = 0;
+    while ( true ) {
+        if ( c->type == STRING___extends___NUM     ) { get_children_of_type( c->children[ 1 ], STRING_comma_NUM, inheritance ); c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___starts_with___NUM ) { get_children_of_type( c->children[ 1 ], STRING_comma_NUM, starts_with ); c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___pertinence___NUM  ) { pertinence  = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING___when___NUM        ) { condition   = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
+        if ( c->type == STRING_doubledot_NUM       ) { return_type = c->children[ 1 ]; c = c->children[ 0 ]; continue; }
+        break;
     }
-
-    // pertinence
-    if ( c->type == STRING___pertinence___NUM ) {
-        pertinence = c->children[ 1 ];
-        c = c->children[ 0 ];
-    } else
-        pertinence = 0;
-
-    // condition
-    if ( c->type == STRING___when___NUM ) {
-        condition = c->children[ 1 ];
-        c = c->children[ 0 ];
-    } else
-        condition = 0;
-
-    // return_type
-    if ( c->type == STRING_doubledot_NUM ) {
-        return_type = c->children[ 1 ];
-        c = c->children[ 0 ];
-    }
-    else
-        return_type = 0;
 
     // name and arguments
     if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT ) {
@@ -748,15 +994,13 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
             if ( t->type == STRING_doubledot_NUM ) {
                 arg->type_constraint = t->children[ 1 ];
                 t = t->children[ 0 ];
-            }
-            else
+            } else
                 arg->type_constraint = 0;
 
             // name
             arg->name = t;
         }
-    }
-    else {
+    } else {
         name = c;
     }
 
@@ -824,6 +1068,17 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         if ( name->type == Lexem::VARIABLE and name->begin_with( "sop_" ) ) { sop_beg = name->beg + 4; sop_len = name->len - 4; }
     }
 
+    // variables to catch
+    std::map<String,CatchedVarWithNum> &catched_vars = catched[ t ];
+    get_needed_var_rec( catched_vars, block, name->num_scope );
+
+    if ( is_a_method( t ) ) {
+        if ( not catched_vars.count( "self" ) ) {
+            CatchedVarWithNum &cn = catched_vars[ "self" ];
+            cn.num = catched_vars.size() - 1;
+            cn.cv = CatchedVar{ 0, -2, false };
+        }
+    }
 
     // output --------------------------------------------------------------
     data << token_type;
@@ -880,54 +1135,57 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
     if ( condition )
         push_delayed_parse( condition );
 
-    // block
-    push_delayed_parse( block );
+    // catched var data
+    out_catched_vars( catched_vars, t->num_scope );
 
+    //
     if ( token_type == IR_TOK_DEF ) {
+        // block
+        push_delayed_parse( block );
+
         // return type
-        if ( return_type ) {
-            if ( name->eq( "init" ) ) {
-                SplittedVec<const Lexem *,16> cha;
-                get_children_of_type( return_type, STRING___and___NUM, cha );
-                data << cha.size();
+        if ( return_type )
+            push_delayed_parse( return_type );
 
-                for( int i = 0; i < cha.size(); ++i ) {
-                    SplittedVec<const Lexem *,16> ch;
-                    int nb_unnamed_children = 0;
-                    int nb_named_children = 0;
-                    const Lexem *l = cha[ i ];
+        if ( name->eq( "init" ) ) {
+            data << starts_with.size();
 
-                    if ( l->children[ 1 ] ) {
-                        get_children_of_type( next_if_CR( l->children[ 1 ] ), STRING_comma_NUM, ch );
-                        for( ; nb_unnamed_children < ch.size() and ch[ nb_unnamed_children ]->type != STRING_reassign_NUM; ++nb_unnamed_children )
-                            ;
-                        for( int i = nb_unnamed_children; i < ch.size(); ++i, ++nb_named_children )
-                            if ( ch[ i ]->type != STRING_reassign_NUM )
-                                return add_error( "after a named argument, all arguments must be named", ch[ i ] );
-                    }
+            for( int i = 0; i < starts_with.size(); ++i ) {
+                SplittedVec<const Lexem *,16> ch;
+                int nb_unnamed_children = 0;
+                int nb_named_children = 0;
+                const Lexem *l = starts_with[ i ];
 
-                    const Lexem *f = l->children[ 0 ] ? l->children[ 0 ] : l;
-
-                    // argument
-                    if ( f->type != Lexem::VARIABLE )
-                        return add_error( "expecting attribute name", ch[ i ] );
-                    push_nstring( f );
-
-                    // unnamed arguments
-                    data << nb_unnamed_children;
-                    for( int i = 0; i < nb_unnamed_children; ++i )
-                        push_delayed_parse( ch[ i ] );
-
-                    // named arguments
-                    data << nb_named_children;
-                    for( int i = 0; i < nb_named_children; ++i ) {
-                        push_nstring( ch[ nb_unnamed_children + i ]->children[ 0 ] );
-                        push_delayed_parse( ch[ nb_unnamed_children + i ]->children[ 1 ] );
-                    }
+                if ( l->children[ 1 ] ) {
+                    get_children_of_type( next_if_CR( l->children[ 1 ] ), STRING_comma_NUM, ch );
+                    for( ; nb_unnamed_children < ch.size() and ch[ nb_unnamed_children ]->type != STRING_reassign_NUM; ++nb_unnamed_children )
+                        ;
+                    for( int i = nb_unnamed_children; i < ch.size(); ++i, ++nb_named_children )
+                        if ( ch[ i ]->type != STRING_reassign_NUM )
+                            return add_error( "after a named argument, all arguments must be named", ch[ i ] );
                 }
-            } else
-                push_delayed_parse( return_type );
+
+                const Lexem *f = l->children[ 0 ] ? l->children[ 0 ] : l;
+
+                // argument
+                if ( f->type != Lexem::VARIABLE )
+                    return add_error( "expecting attribute name", ch[ i ] );
+                push_nstring( f );
+
+                // unnamed arguments
+                data << nb_unnamed_children;
+                for( int i = 0; i < nb_unnamed_children; ++i )
+                    push_delayed_parse( ch[ i ] );
+
+                // named arguments
+                data << nb_named_children;
+                for( int i = 0; i < nb_named_children; ++i ) {
+                    push_nstring( ch[ nb_unnamed_children + i ]->children[ 0 ] );
+                    push_delayed_parse( ch[ nb_unnamed_children + i ]->children[ 1 ] );
+                }
+            }
         }
+
         // get set sop
         if ( get_len ) push_nstring( nstring( get_beg, get_beg + get_len ) );
         if ( set_len ) push_nstring( nstring( set_beg, set_beg + set_len ) );
@@ -937,6 +1195,91 @@ void IrWriter::parse_callable( const Lexem *t, PI8 token_type ) {
         data << inheritance.size();
         for( int i = 0; i < inheritance.size(); ++i )
             push_delayed_parse( inheritance[ i ] );
+
+        // methods
+        Vec<std::pair<int,const Lexem *> > methods;
+        for( const Lexem *l = block; l; l = l->next ) {
+            while ( true ) {
+                if ( l->type == STRING___virtual___NUM ) { l = l->children[ 0 ]; continue; }
+                if ( l->type == STRING___static___NUM  ) { l = l->children[ 0 ]; continue; }
+                break;
+            }
+
+            if ( l->type == STRING___def___NUM ) {
+                const Lexem *c = l->children[ 0 ];
+                while ( true ) {
+                    if ( c->type == STRING___extends___NUM    ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING___starts_with___NUM ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING___pertinence___NUM ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING___when___NUM       ) { c = c->children[ 0 ]; continue; }
+                    if ( c->type == STRING_doubledot_NUM      ) { c = c->children[ 0 ]; continue; }
+                    break;
+                }
+                if ( c->type == Lexem::APPLY or c->type == Lexem::SELECT )
+                    c = c->children[ 0 ];
+
+                methods << std::make_pair( nstring( c->beg, c->beg + c->len ), l );
+            }
+        }
+
+        data << methods.size();
+        for( std::pair<int,const Lexem *> attr : methods ) {
+            push_nstring( attr.first );
+            push_delayed_parse( attr.second, false );
+        }
+
+        // attributes
+        struct Attr {
+            int type;
+            int name;
+            const Lexem *code;
+        };
+        Vec<Attr> attributes;
+        for( const Lexem *l = block; l; l = l->next ) {
+            bool stat = false;
+            while ( true ) {
+                if ( l->type == STRING___virtual___NUM ) { l = l->children[ 0 ]; continue; }
+                if ( l->type == STRING___static___NUM  ) { l = l->children[ 0 ]; stat = true; continue; }
+                break;
+            }
+
+            switch ( l->type ) {
+            case STRING_assign_NUM:
+                attributes << Attr{ CALLABLE_ATTR_STATIC * stat, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
+                break;
+            case STRING_assign_type_NUM:
+                attributes << Attr{ CALLABLE_ATTR_STATIC * stat + CALLABLE_ATTR_TYPE, nstring( l->children[ 0 ]->beg, l->children[ 0 ]->beg + l->children[ 0 ]->len ), l->children[ 1 ] };
+                break;
+            case STRING___class___NUM:
+                // PRINT( *l->children[ 0 ] );
+                TODO;
+                break;
+            case Lexem::APPLY:
+                if ( l->children[ 0 ]->eq( "___set_base_size" ) ) {
+                    attributes << Attr{ CALLABLE_ATTR_BASE_SIZE, 0, l->children[ 1 ] };
+                    break;
+                }
+                if ( l->children[ 0 ]->eq( "___set_base_alig" ) ) {
+                    attributes << Attr{ CALLABLE_ATTR_BASE_ALIG, 0, l->children[ 1 ] };
+                    break;
+                }
+                add_error( "unexpected token (class block has a limited set of acceptable tokens)", l );
+                break;
+            case STRING___def___NUM:
+                break;
+            default:
+                PRINT( l );
+                add_error( "unexpected token (class block has a limited set of acceptable tokens)", l );
+                break;
+            }
+        }
+
+        data << attributes.size();
+        for( Attr &attr : attributes  ) {
+            data << attr.type;
+            push_nstring( attr.name );
+            push_delayed_parse( attr.code );
+        }
     }
 }
 

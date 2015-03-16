@@ -1,215 +1,277 @@
-#include "InstVisitor.h"
-#include "OpStructs.h"
-#include "Inst_.h"
-#include "ValAt.h"
+#include "../Codegen/Codegen_C.h"
+//#include "../Codegen/CppOutReg.h"
+#include "../System/SameType.h"
+#include "../System/Math.h"
+#include "ReplBits.h"
+#include "Slice.h"
+#include "Type.h"
+#include "Conv.h"
 #include "Cst.h"
 #include "Op.h"
+#include "Ip.h"
+
+template<class TO>
+static Type *type_promote( Type *a, Type *b, TO ) {
+    if ( TO::b )
+        return ip->type_Bool;
+    if ( a == b or a->orig == ip->class_Ptr )
+        return a;
+    if ( a == ip->type_SI32 ) {
+        if ( b == ip->type_PI64 ) return ip->type_SI64;
+        if ( b == ip->type_SI64 ) return b;
+        if ( b == ip->type_FP32 ) return b;
+        if ( b == ip->type_FP64 ) return b;
+        return a;
+    }
+    if ( a == ip->type_SI64 ) {
+        if ( b == ip->type_FP32 ) return b;
+        if ( b == ip->type_FP64 ) return b;
+        return a;
+    }
+    PRINT( *a );
+    PRINT( *b );
+    TODO;
+    return 0;
+}
+
+template<class TO>
+static Type *type_promote( Type *a, TO ) {
+    if ( TO::b )
+        return ip->type_Bool;
+    return a;
+}
 
 /**
 */
-template<class TOP,int i_id>
-class Op : public Inst_<1,TOP::nb_ch> {
-public:
-    virtual int size_in_bits( int nout ) const { return bt->size_in_bits(); }
-    virtual void write_dot( Stream &os ) const { os << TOP::name(); }
-    virtual void apply( InstVisitor &visitor ) const;
-    virtual int inst_id() const { return i_id; }
-    virtual bool equal( const Inst *b ) const {
-        return Inst::equal( b ) and bt == static_cast<const Op *>( b )->bt;
+template<class TO>
+struct Op : Inst {
+    virtual void write_dot( Stream &os ) const { os << op; }
+    virtual int op_num() const {
+        return TO::op_id;
     }
-    virtual const BaseType *out_bt( int n ) const {
-        return bt;
-    }
-    virtual int sizeof_additionnal_data() const {
-        return sizeof( const BaseType * );
-    }
-    virtual void copy_additionnal_data_to( PI8 *dst ) const {
-        memcpy( dst, &bt, sizeof( const BaseType * ) );
-    }
-    virtual const PI8 *vat_data( int nout, int beg, int end ) const {
-        if ( TOP::op_id == int( ID_add ) ) {
-            Expr a = this->inp_expr( 0 );
-            Expr b = this->inp_expr( 1 );
-            if ( bt == bt_SI64 or bt == bt_PI64 ) {
-                SI64 nff = 0;
-                if ( b.get_val( nff ) )
-                    if ( const PI8 *da = a.inst->vat_data( a.nout, beg + 8 * nff, end + 8 * nff ) )
-                        return da;
-            }
-            if ( bt == bt_SI32 or bt == bt_PI32 ) {
-                SI32 nff = 0;
-                if ( b.get_val( nff ) )
-                    if ( const PI8 *da = a.inst->vat_data( a.nout, beg + 8 * nff, end + 8 * nff ) )
-                        return da;
-            }
-        }
-        return 0;
-    }
-    virtual Expr _smp_val_at( int nout, int beg, int end ) {
-        if ( Expr res = Inst::_smp_val_at( nout, beg, end ) )
-            return res;
-        if ( TOP::op_id == int( ID_add ) ) {
-            Expr a = this->inp_expr( 0 );
-            Expr b = this->inp_expr( 1 );
-            if ( bt == bt_SI64 or bt == bt_PI64 ) {
-                SI64 nff = 0;
-                if ( b.get_val( nff ) )
-                    return val_at( a, beg + 8 * nff, end + 8 * nff );
-            }
-            if ( bt == bt_SI32 or bt == bt_PI32 ) {
-                SI32 nff = 0;
-                if ( b.get_val( nff ) )
-                    return val_at( a, beg + 8 * nff, end + 8 * nff );
-            }
-
-        }
-        return Expr();
-    }
-
-
-    const BaseType *bt;
+    TO op;
 };
 
-// simplification rules
-#define DECL_IR_TOK( OP ) \
-    static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da, const PI8 *db ) { \
-        if ( da and db ) { \
-            PI8 res[ bt->size_in_bytes() ]; \
-            bt->op_##OP( res, da, db ); \
-            return cst( res, 0, bt->size_in_bits() ); \
-        } \
-        return Expr(); \
+/**
+*/
+template<class TO>
+struct UOp : Op<TO> {
+    virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->op ); }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new UOp<TO>; }
+    virtual void write( Codegen_C *cc ) {
+        cc->on.write_beg();
+        this->out_reg->write( cc, this->new_reg ) << " = ";
+        to.write_oper( *cc->os );
+        if ( not TO::is_oper ) *cc->os << "( ";
+        else *cc->os << " ";
+        cc->write_out( this->inp[ 0 ] );
+        if ( not TO::is_oper ) *cc->os << " )";
+        cc->on.write_end( ";" );
     }
-#include "../Ir/Decl_BinaryOperations.h"
-#undef DECL_IR_TOK
-
-#define DECL_IR_TOK( OP ) \
-    static Expr _simplify_cst( Op_##OP, const BaseType *bt, const PI8 *da ) { \
-        if ( da ) { \
-            PI8 res[ bt->size_in_bytes() ]; \
-            bt->op_##OP( res, da ); \
-            return cst( res, 0, bt->size_in_bits() ); \
-        } \
-        return Expr(); \
+    virtual operator BoolOpSeq() {
+        if ( SameType<TO,Op_not_boolean>::res )
+            return not this->inp[ 0 ]->operator BoolOpSeq();
+        return Inst::operator BoolOpSeq();
     }
-#include "../Ir/Decl_UnaryOperations.h"
-#undef DECL_IR_TOK
+    TO to;
+};
 
-// simplify by op
-template<class TOP>
-static Expr _simplify_bop( TOP op, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
+
+template<class TO>
+static Expr _simp_op( Expr a, TO to ) {
     return Expr();
 }
-static Expr _simplify_bop( Op_and, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
-    if ( bt == bt_Bool ) {
-        if ( da )
-            return *da ? b : a;
-        if ( db )
-            return *db ? a : b;
-    }
-    return Expr();
+
+template<class TO>
+static Expr _op( Expr a, TO to ) {
+    if ( a.error() )
+        return ip->error_var();
+    if ( Expr res = _simp_op( a, to ) )
+        return res;
+    UOp<TO> *res = new UOp<TO>();
+    res->add_inp( a );
+    return res;
 }
-static Expr _simplify_bop( Op_mul, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
-    if ( da ) {
-        SI64 m;
-        if ( bt_SI64->conv( (PI8 *)&m, bt, da ) ) {
-            if ( m == 1 )
-                return b;
+
+template<class TO>
+static Expr _gp( Expr a, TO op ) {
+    if ( a->type()->aryth )
+        return _op( a, op );
+    TODO;
+    return 0;
+}
+
+/**
+*/
+template<class TO>
+struct BOp : Op<TO> {
+    virtual Type *type() { return type_promote( this->inp[ 0 ]->type(), this->inp[ 1 ]->type(), this->op ); }
+    virtual Expr forced_clone( Vec<Expr> &created ) const { return new BOp<TO>; }
+    virtual void set( Expr obj, const BoolOpSeq &cond ) {
+        if ( this->flags & Inst::CONST )
+            return ip->disp_error( "attempting to modify a const value" );
+        if ( SameType<TO,Op_add>::res )
+            return this->inp[ 0 ]->set( repl_bits( this->inp[ 0 ]->get( cond ), this->inp[ 1 ]->simplified( cond ), obj->simplified( cond ) ), cond );
+        return Inst::set( obj, cond );
+    }
+    virtual Expr get( const BoolOpSeq &cond ) {
+        if ( SameType<TO,Op_add>::res ) {
+            Type *tr = this->inp[ 0 ]->ptype();
+            return slice( tr, this->inp[ 0 ]->get( cond ), this->inp[ 1 ] );
+        }
+        return Inst::get( cond );
+    }
+    virtual void write( Codegen_C *cc ) {
+        if ( not this->out_reg ) {
+            to.write_oper( cc->on.write_beg() );
+            cc->on.write_end( " ??;" );
+            return;
+        }
+        cc->on.write_beg();
+        this->out_reg->write( cc, this->new_reg ) << " = ";
+        if (  SameType<TO,Op_mod>::res and ip->is_integer( this->out_reg->type ) ) {
+            cc->write_out( this->inp[ 0 ] );
+            *cc->os << " % ";
+            cc->write_out( this->inp[ 1 ] );
+            cc->on.write_end( ";" );
+        } else {
+            if ( not TO::is_oper ) { to.write_oper( *cc->os ); *cc->os << "( "; }
+            cc->write_out( this->inp[ 0 ] );
+            if ( not TO::is_oper ) *cc->os << ", ";
+            else { *cc->os << " "; to.write_oper( *cc->os ); *cc->os << " "; }
+            cc->write_out( this->inp[ 1 ] );
+            if ( not TO::is_oper ) *cc->os << " )";
+            cc->on.write_end( ";" );
         }
     }
+
+    TO to;
+};
+
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    template<class TA,class TB> \
+    static Expr _op_cst_bin( TA *da, TB *db, Op_##NAME ) { return *da GEN *db; }
+#include "DeclOp_Binary_Oper.h"
+#undef DECL_OP
+
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    template<class TA,class TB> \
+    static Expr _op_cst_bin( TA *da, TB *db, Op_##NAME ) { return GEN( *da, *db ); }
+#include "DeclOp_Binary_Func.h"
+#undef DECL_OP
+
+template<class TA,class OP>
+static Expr _op_cst_bin( TA *da, Type *tb, PI8 *db, OP op ) {
+    #define DECL_BT( T ) if ( tb == ip->type_##T ) return _op_cst_bin( da, reinterpret_cast<T *>( db ), op );
+    #include "DeclArytTypes.h"
+    #undef DECL_BT
     return Expr();
 }
 
-
-template<class TOP>
-static Expr _simplify_bop( TOP op, const BaseType *bt, const PI8 *da, Expr a ) {
-    return Expr();
+// cst op ...
+template<class TA,class TO>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, TO ) {
+    return (Inst *)0;
 }
-static Expr _simplify_bop( Op_not, const BaseType *bt, const PI8 *da, Expr a ) {
-    if ( a.inst->inst_id() == Inst::Id_Op_not )
-        return a.inst->inp_expr( 0 );
-    return Expr();
+template<class TA>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_add o ) {
+    if ( *a == 0 )
+        return conv( type_promote( ta, b->type(), o ), b );
+    return (Inst *)0;
+}
+template<class TA>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_and_boolean o ) {
+    if ( *a )
+        return b;
+    return (Inst *)0;
+}
+template<class TA>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_or_boolean o ) {
+    if ( not *a )
+        return b;
+    return (Inst *)0;
+}
+template<class TA>
+Expr _op_cst_unk( Type *ta, TA *a, Expr b, Op_mul o ) {
+    if ( *a == 0 ) {
+        Type *tr = type_promote( ta, b->type(), o );
+        return cst( tr, tr->size(), 0 );
+    }
+    if ( *a == 1 )
+        return conv( type_promote( ta, b->type(), o ), b );
+    return (Inst *)0;
 }
 
-// generic simplify
-template<class TOP>
-static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, const PI8 *db, Expr a, Expr b ) {
-    if ( Expr res = _simplify_bop( op, bt, da, db, a, b ) )
-        return res;
-    if ( Expr res = _simplify_cst( op, bt, da, db ) )
-        return res;
-    return Expr();
+// ... op cst
+template<class TB,class TO>
+Expr _op_unk_cst( Expr a, Type *tb, TB *b, TO ) {
+    return (Inst *)0;
+}
+template<class TB>
+Expr _op_unk_cst( Expr a, Type *tb, TB *b, Op_add o ) {
+    if ( *b == 0 )
+        return conv( type_promote( a->type(), tb, o ), a );
+    return (Inst *)0;
+}
+template<class TB>
+Expr _op_unk_cst( Expr a, Type *tb, TB *b, Op_mul o ) {
+    if ( *b == 0 ) {
+        Type *tr = type_promote( a->type(), tb, o );
+        return cst( tr, tr->size(), 0 );
+    }
+    if ( *b == 1 )
+        return conv( type_promote( a->type(), tb, o ), a );
+    return (Inst *)0;
 }
 
-template<class TOP>
-static Expr _simplify( TOP op, const BaseType *bt, const PI8 *da, Expr a ) {
-    if ( Expr res = _simplify_bop( op, bt, da, a ) )
-        return res;
-    if ( Expr res = _simplify_cst( op, bt, da ) )
-        return res;
-    return Expr();
-}
-
-// factory
-template<int i_id,class TOP>
-static Expr _op( TOP top, const BaseType *bt, Expr a, Expr b ) {
-    if ( bt->size_in_bits() > a.size_in_bits() or bt->size_in_bits() > b.size_in_bits() ) {
-        PRINT( *bt );
-        PRINT( a );
-        PRINT( b );
-        ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
-        ASSERT( bt->size_in_bits() <= b.size_in_bits(), "wrong size (base type do not correspond to arg data)" );
+//
+template<class TO>
+static Expr _op( Expr a, Expr b, TO op ) {
+    if ( a.error() or b.error() )
+        return ip->error_var();
+    Type *ta = a->type();
+    Type *tb = b->type();
+    //ASSERT(  and tb->aryth, "..." );
+    PI8 da[ ta->sb() ], db[ tb->sb() ];
+    if ( ta->aryth and a->get_val( ta, da ) ) {
+        if ( b->get_val( tb, db ) ) {
+            #define DECL_BT( T ) if ( ta == ip->type_##T ) if ( Expr res = _op_cst_bin( reinterpret_cast<T *>( da ), tb, db, op ) ) return res;
+            #include "DeclArytTypes.h"
+            #undef DECL_BT
+        }
+        #define DECL_BT( T ) if ( ta == ip->type_##T ) if ( Expr res = _op_cst_unk( ta, reinterpret_cast<T *>( da ), b, op ) ) return res;
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
+    } else if ( b->get_val( tb, db ) ) {
+        #define DECL_BT( T ) if ( tb == ip->type_##T ) if ( Expr res = _op_unk_cst( a, tb, reinterpret_cast<T *>( db ), op ) ) return res;
+        #include "DeclArytTypes.h"
+        #undef DECL_BT
     }
 
-    // known values ?
-    const PI8 *da = a.cst_data();
-    const PI8 *db = b.cst_data();
-    if ( Expr res = _simplify( top, bt, da, db, a, b ) )
-        return res;
-
-    // else, create a new inst
-    Op<TOP,i_id> *res = new Op<TOP,i_id>;
-    res->inp_repl( 0, a );
-    res->inp_repl( 1, b );
-    res->bt = bt;
-    return Expr( Inst::factorized( res ), 0 );
+    BOp<TO> *res = new BOp<TO>();
+    res->add_inp( a );
+    res->add_inp( b );
+    return res;
 }
 
-template<int i_id,class TOP>
-static Expr _op( TOP top, const BaseType *bt, Expr a ) {
-    ASSERT( bt->size_in_bits() <= a.size_in_bits(), "wrong size" );
-
-    // known values ?
-    const PI8 *da = a.cst_data();
-    if ( Expr res = _simplify( top, bt, da, a ) ) {
-        return res;
-    }
-
-    // else, create a new inst
-    Op<TOP,i_id> *res = new Op<TOP,i_id>;
-    res->inp_repl( 0, a );
-    res->bt = bt;
-    return Expr( Inst::factorized( res ), 0 );
+template<class TO>
+static Expr _gp( Expr a, Expr b, TO op ) {
+    if ( ( a->type()->aryth or a->type()->orig == ip->class_Ptr ) and b->type()->aryth )
+        return _op( a, b, op );
+    TODO;
+    return 0;
 }
 
-// apply
-#define DECL_IR_TOK( OP ) template<> void Op<Op_##OP,Inst::Id_Op_##OP>::apply( InstVisitor &visitor ) const { visitor.op_##OP( *this, bt ); }
-#include "../Ir/Decl_Operations.h"
-#undef DECL_IR_TOK
 
-// functions
-#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a, Expr b ) { return _op<Inst::Id_Op_##OP>( Op_##OP(), bt, a, b ); }
-#include "../Ir/Decl_BinaryOperations.h"
-#undef DECL_IR_TOK
 
-#define DECL_IR_TOK( OP ) Expr op_##OP( const BaseType *bt, Expr a ) { return _op<Inst::Id_Op_##OP>( Op_##OP(), bt, a ); }
-#include "../Ir/Decl_UnaryOperations.h"
-#undef DECL_IR_TOK
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    Expr op( Expr a, Expr b, Op_##NAME op ) { return _op( a, b, op ); } \
+    Expr NAME( Expr a, Expr b ) { return _gp( a, b, Op_##NAME() ); }
+#include "DeclOp_Binary.h"
+#undef DECL_OP
 
-#define DECL_IR_TOK( OP ) Expr op( const BaseType *bt, Expr a, Expr b, Op_##OP ) { return op_##OP( bt, a, b ); }
-#include "../Ir/Decl_BinaryOperations.h"
-#undef DECL_IR_TOK
-
-#define DECL_IR_TOK( OP ) Expr op( const BaseType *bt, Expr a, Op_##OP ) { return op_##OP( bt, a ); }
-#include "../Ir/Decl_UnaryOperations.h"
-#undef DECL_IR_TOK
+#define DECL_OP( NAME, GEN, OPER, BOOL, PREC ) \
+    Expr op( Expr a, Op_##NAME op ) { return _op( a, op ); } \
+    Expr NAME( Expr a ) { return _gp( a, Op_##NAME() ); }
+#include "DeclOp_Unary.h"
+#undef DECL_OP

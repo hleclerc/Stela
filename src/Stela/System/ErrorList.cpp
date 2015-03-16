@@ -2,19 +2,24 @@
 #include "ReadFile.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 ErrorList::Provenance::Provenance( const char *beg, const char *pos, String provenance, std::string msg ) : provenance( provenance ), msg( msg ) {
     _init( beg, pos );
 }
 
-ErrorList::Provenance::Provenance( const char *src, int off, std::string msg ) : provenance( src ), msg( msg ) {
-    if ( src and off >= 0 ) {
-        ReadFile rf( src );
+ErrorList::Provenance::Provenance( const String &src, int off, std::string msg ) : provenance( src ), msg( msg ) {
+    if ( src.size() and off >= 0 ) {
+        ReadFile rf( src.c_str() );
         _init( rf.data, rf.data + off );
     } else {
         line = -1;
         col  = -1;
     }
+}
+
+ErrorList::Provenance::Provenance( int line, String provenance ) : provenance( provenance ), line( line ) {
+    col = -1;
 }
 
 void ErrorList::Provenance::_init( const char *beg, const char *pos ) {
@@ -92,7 +97,8 @@ ErrorList::Error &ErrorList::Error::ac( const char *beg, const char *pos, std::s
 }
 
 ErrorList::Error &ErrorList::Error::ac( const char *src, int off ) {
-    caller_stack.push_back( src, off );
+    if ( src and strlen( src ) and off >= 0 )
+        caller_stack.push_back( src, off );
     return *this;
 }
 
@@ -101,7 +107,7 @@ ErrorList::Error &ErrorList::Error::ap( const char *beg, const char *pos, std::s
     return *this;
 }
 
-ErrorList::Error &ErrorList::Error::ap( const char *src, int off, std::string msg ) {
+ErrorList::Error &ErrorList::Error::ap( const String &src, int off, std::string msg ) {
     possibilities.push_back( src, off, msg );
     return *this;
 }
@@ -114,8 +120,12 @@ void ErrorList::Error::write_to_stream( Stream &os ) const {
         const ErrorList::Provenance &po = caller_stack[ 0 ];
         if ( po.provenance.size() )
             os << po.provenance << ":";
-        if ( po.line )
-            os << po.line << ":" << po.col << ": ";
+        if ( po.line ) {
+            os << po.line;
+            if ( po.col > 0 )
+                os << ":" << po.col;
+            os << ": ";
+        }
         os << "error: " << msg << ( display_col ? "\n" : " in '" );
         if ( po.complete_line.size() )
             display_line( os, po.complete_line.c_str(), po.complete_line.size(), po.col, display_col );
@@ -202,5 +212,8 @@ void ErrorList::write_to_stream( Stream &os ) const {
 }
 
 int ErrorList::size() const {
-    return error_list.size();
+    int res = 0;
+    for( int i = 0; i < error_list.size(); ++i )
+        res += error_list[ i ].warn == false;
+    return res;
 }

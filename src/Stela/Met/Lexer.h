@@ -42,6 +42,8 @@ protected:
     void update_else_order();
     void remove_while_conds();
 
+    void set_num_scope( Lexem *b, int np, int &nsd, int &nss, int scope_type );
+
     const char *s; ///<
     const char *beg; ///<
     const char *src; ///< provenance

@@ -1,13 +1,10 @@
-#ifndef Expr_SLICE_H
-#define Expr_SLICE_H
+#ifndef STELA_INST_Slice_H
+#define STELA_INST_Slice_H
 
-#include "Expr.h"
+#include "Inst.h"
 
-/// return [beg;beg+len) bits from slice
-Expr slice( Expr expr, const Expr &beg, int len );
+Expr slice( Type *dst, Expr var, Expr off );
+Expr rcast( Type *dst, Expr var );
 
-/// return [beg;end) bits from slice (known beg and end version)
-Expr slice( Expr expr, int beg, int end );
+#endif // STELA_INST_Slice_H
 
-
-#endif // Expr_SLICE_H

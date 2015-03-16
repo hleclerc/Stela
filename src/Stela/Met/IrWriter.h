@@ -1,18 +1,18 @@
-#ifndef IRWRITER_H
-#define IRWRITER_H
+#ifndef Ast_WRITER_H
+#define Ast_WRITER_H
 
 #include "../System/BinStreamWriter.h"
 #include "../System/ErrorList.h"
 #include <map>
-struct Lexem;
+#include <set>
+class Ast;
 
 /**
 */
 class IrWriter {
 public:
     IrWriter( ErrorList &error_list );
-
-    void parse( const Lexem *root );
+    void parse( Ast *root );
 
     ST   size_of_binary_data(); ///< may be called to reserve the size for ptr for copy_to( ptr );
     void copy_binary_data_to( PI8 *ptr );
@@ -23,8 +23,7 @@ protected:
     struct DelayedParse {
         OffsetType  *offset;
         int          old_size;
-        const Lexem *l;
-        bool         want_siblings;
+        Ast         *l;
     };
 
     struct IntToReduce {
@@ -74,6 +73,10 @@ protected:
     void push_nstring            ( int nstring_num );
     void output_list             ( const Lexem *l, int nb_dim, bool has_cd );
 
+    void find_needed_var         ( Vec<CatchedVar> &cl, const Lexem *v );
+    void get_needed_var_rec      ( std::map<String,CatchedVarWithNum> &vars, const Lexem *b, int onp );
+    void out_catched_vars        ( std::map<String,CatchedVarWithNum> &catched_vars, int num_scope );
+
     BinStreamWriter data;
     ErrorList &error_list;
 
@@ -81,7 +84,8 @@ protected:
     SplittedVec<DelayedParse,32> delayed_parse;
     SplittedVec<IntToReduce,32> int_to_reduce;
     std::map<std::string,int> nstrings;
+    std::map<const Lexem *,std::map<String,CatchedVarWithNum> > catched; ///< catched[ callable ] -> catched vars (name -> num in catched var...)
     bool static_inst, const_inst;
 };
 
-#endif // IRWRITER_H
+#endif // Ast_WRITER_H

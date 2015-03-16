@@ -1,9 +1,9 @@
-#ifndef CONV_H
-#define CONV_H
+#ifndef STELA_INST_Conv_H
+#define STELA_INST_Conv_H
 
-#include "BaseType.h"
-#include "Expr.h"
+#include "Inst.h"
 
-Expr conv( const BaseType *dst, const BaseType *src, Expr a );
+Expr conv( Type *dst, Expr inp );
 
-#endif // CONV_H
+#endif // STELA_INST_Conv_H
+
