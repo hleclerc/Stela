@@ -1,22 +1,22 @@
 /**
   main file for the stela interpreter / compiler
 */
-#include <Stela/Codegen/Codegen_Js.h>
-#include <Stela/Ssa/ParsingContext.h>
-#include <Stela/Ssa/Type.h>
-#include <Stela/System/InstallDir.h>
-#include <Stela/System/GetCwd.h>
+#include "Stela/Codegen/Codegen_Js.h"
+#include "Stela/Ssa/ParsingContext.h"
+#include "Stela/Ssa/Type.h"
+#include "Stela/System/InstallDir.h"
+#include "Stela/System/GetCwd.h"
 #include <fstream>
 #include <math.h>
 
 
-#define PREPARG_FILE <args.h>
-#include <PrepArg/usage.h>
+#define PREPARG_FILE "../../../../src/args.h"
+#include "../ext/PrepArg/src/PrepArg/usage.h"
 
 int main( int argc, char **argv ) {
     // args
-    #include <PrepArg/declarations.h>
-    #include <PrepArg/parse.h>
+    #include "../ext/PrepArg/src/PrepArg/declarations.h"
+    #include "../ext/PrepArg/src/PrepArg/parse.h"
     if ( beg_files < 0 )
         return usage( argv[ 0 ], "Please specify an input file", 2 );
     bool add_base_files = not ( disp_lexems or disp_tokens );

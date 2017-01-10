@@ -254,3 +254,4 @@ src/Stela/Codegen/InstBlock.cpp
 src/Stela/Ssa/BlockWithCatchedVars.h
 src/Stela/Ssa/BlockWithCatchedVars.cpp
 src/Stela/Ssa/OpTypes.h
+src/Stela/System/InstallDir.h
